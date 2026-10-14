@@ -44,6 +44,8 @@ class BookingServiceTest {
     @Mock private EmailService emailService;
     @Mock private BookingChargeRepository chargeRepository;
     @Mock private BookingGuestRepository guestRepository;
+    @Mock private com.hotel.repository.TourBookingRepository tourBookingRepository;
+    @Mock private com.hotel.repository.AirportTransferRepository transferRepository;
     // Gia that (khong phu thu, khong coc vi repo cai dat rong) - test nao can thi stub them
     @Spy private PricingService pricingService =
             new PricingService(mock(PricingSettingsRepository.class), mock(SpecialRateRepository.class));
@@ -789,6 +791,153 @@ class BookingServiceTest {
         bookingService.cancelBooking(100L, 1L);
 
         assertThrows(BusinessException.class, () -> bookingService.confirmRefund(100L, null));
+    }
+
+    // ---------- Khach tu doi ngay (gia phong 300k/dem, khong phu thu vi repo cai dat rong) ----------
+
+    // Don da xac nhan: nhan phong sau 5 ngay luc 14:00, o 1 dem, tong 300k
+    private Booking changeableBooking() {
+        Booking b = bookingWithCheckIn(LocalDate.now().plusDays(5).atTime(14, 0), BookingStatus.CONFIRMED);
+        b.setRoomAmount(bd(300000));
+        lenient().when(bookingRepository.findById(100L)).thenReturn(Optional.of(b));
+        lenient().when(bookingRepository.save(any(Booking.class))).thenAnswer(inv -> inv.getArgument(0));
+        return b;
+    }
+
+    @Test
+    void changeDates_free_updatesDatesPriceFlagsAndEmails() {
+        Booking b = changeableBooking();
+        b.setReminderSentAt(LocalDateTime.now());
+        LocalDate in = LocalDate.now().plusDays(10);
+
+        Booking result = bookingService.changeDates(100L, 1L, in, in.plusDays(2));
+
+        assertEquals(in, result.getCheckInDate());
+        assertEquals(in.plusDays(2), result.getCheckOutDate());
+        assertEquals(0, bd(600000).compareTo(result.getRoomAmount()));
+        assertEquals(0, bd(600000).compareTo(result.getTotalAmount()));
+        assertEquals(LocalTime.of(14, 0), result.getCheckInTime());
+        assertEquals(BookingStatus.CONFIRMED, result.getStatus());
+        assertTrue(result.isDatesChanged());
+        assertNull(result.getReminderSentAt());
+        verify(roomRepository).findByIdForUpdate(10L);
+        verify(emailService).sendDatesChanged(result);
+    }
+
+    @Test
+    void quoteDateChange_reportsDifference_withoutSaving() {
+        changeableBooking();
+        LocalDate in = LocalDate.now().plusDays(10);
+
+        BookingService.DateChangeQuote quote = bookingService.quoteDateChange(100L, 1L, in, in.plusDays(3));
+
+        assertEquals(3, quote.nights());
+        assertEquals(0, bd(900000).compareTo(quote.totalAmount()));
+        assertEquals(0, bd(600000).compareTo(quote.difference()));
+        verify(bookingRepository, never()).save(any());
+    }
+
+    @Test
+    void changeDates_overlapsAnotherBooking_rejectedAndUnchanged() {
+        Booking b = changeableBooking();
+        LocalDate in = LocalDate.now().plusDays(10);
+        Booking other = stay(in.plusDays(1), in.plusDays(3), 600000, BookingStatus.PENDING);
+        other.setCheckInTime(LocalTime.of(14, 0));
+        other.setCheckOutTime(LocalTime.of(12, 0));
+        when(bookingRepository.findByRoomIdAndStatusIn(eq(10L), anyList())).thenReturn(List.of(other));
+
+        assertThrows(BusinessException.class, () -> bookingService.changeDates(100L, 1L, in, in.plusDays(2)));
+        assertEquals(LocalDate.now().plusDays(5), b.getCheckInDate());
+        verify(bookingRepository, never()).save(any());
+    }
+
+    @Test
+    void changeDates_invalidInput_rejected() {
+        Booking b = changeableBooking();
+        LocalDate in = LocalDate.now().plusDays(10);
+        // Trung ngay hien tai, tra phong truoc nhan phong, thieu ngay
+        assertThrows(BusinessException.class, () -> bookingService.changeDates(100L, 1L, b.getCheckInDate(), b.getCheckOutDate()));
+        assertThrows(BusinessException.class, () -> bookingService.changeDates(100L, 1L, in, in));
+        assertThrows(BusinessException.class, () -> bookingService.changeDates(100L, 1L, null, in));
+        // Khong phai chu don
+        assertThrows(BusinessException.class, () -> bookingService.changeDates(100L, 99L, in, in.plusDays(1)));
+    }
+
+    @Test
+    void changeDates_newCheckInTooSoon_orBookingLocked_rejected() {
+        Booking b = changeableBooking();
+        b.setCheckInTime(LocalTime.MIDNIGHT);
+        // Nhan phong moi 00:00 hom nay -> da qua
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> bookingService.changeDates(100L, 1L, LocalDate.now(), LocalDate.now().plusDays(1)));
+        assertEquals("err.changeDatesTooSoon", ex.render((code, args) -> code));
+
+        b.setStatus(BookingStatus.CHECKED_IN);
+        ex = assertThrows(BusinessException.class,
+                () -> bookingService.changeDates(100L, 1L, LocalDate.now().plusDays(10), LocalDate.now().plusDays(11)));
+        assertEquals("err.changeDatesClosed", ex.render((code, args) -> code));
+    }
+
+    @Test
+    void changeDates_tourOrTransferOutsideNewStay_rejected_cancelledIgnored() {
+        Booking b = changeableBooking();
+        LocalDate in = LocalDate.now().plusDays(10);
+        DivingTour diving = DivingTour.builder().id(1L).name("Lan Hon Mun").build();
+        TourBooking cancelledTour = TourBooking.builder().id(1L).booking(b).tour(diving)
+                .tourDate(b.getCheckInDate()).status(ServiceStatus.CANCELLED).build();
+        TourBooking activeTour = TourBooking.builder().id(2L).booking(b).tour(diving)
+                .tourDate(b.getCheckInDate()).status(ServiceStatus.CONFIRMED).build();
+        when(tourBookingRepository.findByBookingIdOrderByTourDateAscIdAsc(100L)).thenReturn(List.of(cancelledTour, activeTour));
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> bookingService.changeDates(100L, 1L, in, in.plusDays(2)));
+        assertEquals("err.changeDatesTour", ex.render((code, args) -> code));
+
+        when(tourBookingRepository.findByBookingIdOrderByTourDateAscIdAsc(100L)).thenReturn(List.of(cancelledTour));
+        AirportTransfer pickup = AirportTransfer.builder().id(3L).booking(b).direction(TransferDirection.PICKUP)
+                .pickupAt(b.getCheckInDate().atTime(10, 0)).status(ServiceStatus.PENDING).build();
+        when(transferRepository.findByBookingIdOrderByPickupAtAsc(100L)).thenReturn(List.of(pickup));
+
+        ex = assertThrows(BusinessException.class, () -> bookingService.changeDates(100L, 1L, in, in.plusDays(2)));
+        assertEquals("err.changeDatesTransfer", ex.render((code, args) -> code));
+
+        // Chi doi ngay tra phong -> xe don ngay nhan van khop, tour da huy bo qua
+        Booking ok = bookingService.changeDates(100L, 1L, b.getCheckInDate(), b.getCheckOutDate().plusDays(1));
+        assertEquals(b.getCheckInDate().plusDays(2), ok.getCheckOutDate());
+    }
+
+    @Test
+    void changeDates_unpaidDeposit_recalculatedAndDeadlineCapped_discountReapplied() {
+        Booking b = changeableBooking();
+        b.setStatus(BookingStatus.PENDING);
+        b.setDepositAmount(bd(90000));
+        b.setDepositDeadline(LocalDateTime.now().plusDays(4));
+        b.setDiscountCode(DiscountCode.builder().id(5L).code("SALE10").discountType(DiscountType.PERCENTAGE)
+                .discountValue(bd(10)).build());
+        doReturn(bd(162000)).when(pricingService).depositFor(any());
+        LocalDate in = LocalDate.now().plusDays(2);
+
+        Booking result = bookingService.changeDates(100L, 1L, in, in.plusDays(2));
+
+        // 2 dem x 300k = 600k, giam 10% = 540k
+        assertEquals(0, bd(60000).compareTo(result.getDiscountAmount()));
+        assertEquals(0, bd(540000).compareTo(result.getTotalAmount()));
+        assertEquals(0, bd(162000).compareTo(result.getDepositAmount()));
+        assertEquals(in.atTime(14, 0).minusHours(6), result.getDepositDeadline());
+    }
+
+    @Test
+    void changeDates_depositAlreadyPaid_keptAsPaid() {
+        Booking b = changeableBooking();
+        b.setDepositAmount(bd(90000));
+        b.setDepositPaidAt(LocalDateTime.now().minusDays(1));
+        LocalDate in = LocalDate.now().plusDays(10);
+
+        Booking result = bookingService.changeDates(100L, 1L, in, in.plusDays(3));
+
+        assertEquals(0, bd(90000).compareTo(result.getDepositAmount()));
+        assertEquals(0, bd(900000).compareTo(result.getTotalAmount()));
+        verify(pricingService, never()).depositFor(any());
     }
 
     @Test

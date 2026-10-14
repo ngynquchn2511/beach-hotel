@@ -8,6 +8,8 @@ import com.hotel.repository.BookingRepository;
 import com.hotel.repository.ComboRepository;
 import com.hotel.repository.DiscountCodeRepository;
 import com.hotel.repository.RoomRepository;
+import com.hotel.repository.AirportTransferRepository;
+import com.hotel.repository.TourBookingRepository;
 import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.dao.QueryTimeoutException;
 import org.springframework.stereotype.Service;
@@ -43,11 +45,14 @@ public class BookingService {
     private final BookingChargeRepository chargeRepository;
     private final PricingService pricingService;
     private final BookingGuestRepository guestRepository;
+    private final TourBookingRepository tourBookingRepository;
+    private final AirportTransferRepository transferRepository;
 
     public BookingService(BookingRepository bookingRepository, RoomRepository roomRepository,
                            ComboRepository comboRepository, DiscountCodeRepository discountCodeRepository,
                            EmailService emailService, BookingChargeRepository chargeRepository,
-                           PricingService pricingService, BookingGuestRepository guestRepository) {
+                           PricingService pricingService, BookingGuestRepository guestRepository,
+                           TourBookingRepository tourBookingRepository, AirportTransferRepository transferRepository) {
         this.bookingRepository = bookingRepository;
         this.roomRepository = roomRepository;
         this.comboRepository = comboRepository;
@@ -56,6 +61,8 @@ public class BookingService {
         this.chargeRepository = chargeRepository;
         this.pricingService = pricingService;
         this.guestRepository = guestRepository;
+        this.tourBookingRepository = tourBookingRepository;
+        this.transferRepository = transferRepository;
     }
 
     // Cac don dang giu phong (chua huy, chua tra phong)
@@ -426,20 +433,8 @@ public class BookingService {
 
         BigDecimal subtotal = roomAmount.add(comboAmount);
 
-        BigDecimal discountAmount = BigDecimal.ZERO;
-        if (booking.getDiscountCode() != null) {
-            DiscountCode dc = booking.getDiscountCode();
-            if (dc.getDiscountType() == DiscountType.PERCENTAGE) {
-                discountAmount = subtotal.multiply(dc.getDiscountValue()).divide(BigDecimal.valueOf(100));
-            } else {
-                discountAmount = dc.getDiscountValue().min(subtotal);
-            }
-        }
-
-        BigDecimal totalAmount = subtotal.subtract(discountAmount);
-        if (totalAmount.compareTo(BigDecimal.ZERO) < 0) {
-            totalAmount = BigDecimal.ZERO;
-        }
+        BigDecimal discountAmount = discountFor(booking.getDiscountCode(), subtotal);
+        BigDecimal totalAmount = subtotal.subtract(discountAmount).max(BigDecimal.ZERO);
 
         booking.setCombo(newCombo);
         booking.setDiscountAmount(discountAmount);
@@ -450,6 +445,119 @@ public class BookingService {
         }
 
         return bookingRepository.save(booking);
+    }
+
+    // Tien giam theo ma da ap dung luc dat (tinh lai khi tong tien thay doi: doi combo / doi ngay)
+    private static BigDecimal discountFor(DiscountCode dc, BigDecimal subtotal) {
+        if (dc == null) {
+            return BigDecimal.ZERO;
+        }
+        if (dc.getDiscountType() == DiscountType.PERCENTAGE) {
+            return subtotal.multiply(dc.getDiscountValue()).divide(BigDecimal.valueOf(100));
+        }
+        return dc.getDiscountValue().min(subtotal);
+    }
+
+    // ===== Khach tu doi ngay nhan / tra phong (giu nguyen phong, gio, combo, ma giam gia) =====
+
+    // Tien moi khi doi sang [checkIn, checkOut): gia phong tinh lai theo bang gia hien tai (cuoi tuan / le),
+    // difference = tong moi - tong cu (> 0: tra them khi tra phong, < 0: duoc giam)
+    public record DateChangeQuote(LocalDate checkIn, LocalDate checkOut, long nights, BigDecimal roomAmount,
+                                  BigDecimal discountAmount, BigDecimal totalAmount, BigDecimal difference,
+                                  BigDecimal depositAmount, boolean depositPaid) {
+    }
+
+    // Xem truoc (khong luu) - nem BusinessException neu khong doi duoc
+    public DateChangeQuote quoteDateChange(Long bookingId, Long customerId, LocalDate newCheckIn, LocalDate newCheckOut) {
+        Booking booking = findByIdForCustomer(bookingId, customerId);
+        return validateAndQuoteDateChange(booking, newCheckIn, newCheckOut);
+    }
+
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public Booking changeDates(Long bookingId, Long customerId, LocalDate newCheckIn, LocalDate newCheckOut) {
+        Booking booking = findByIdForCustomer(bookingId, customerId);
+        // Khoa phong truoc khi kiem tra trung lich (giong luc dat moi) - tranh 2 nguoi cung chiem 1 khoang ngay
+        lockRoom(booking.getRoom().getId());
+        DateChangeQuote quote = validateAndQuoteDateChange(booking, newCheckIn, newCheckOut);
+
+        booking.setCheckInDate(newCheckIn);
+        booking.setCheckOutDate(newCheckOut);
+        booking.setRoomAmount(quote.roomAmount());
+        booking.setDiscountAmount(quote.discountAmount());
+        booking.setTotalAmount(quote.totalAmount());
+        if (booking.isDepositRequired() && !booking.isDepositPaid()) {
+            booking.setDepositAmount(quote.depositAmount());
+            // Han coc khong duoc muon hon moc tu huy don chua xac nhan cua ngay nhan phong moi
+            LocalDateTime latest = LocalDateTime.of(newCheckIn, booking.getCheckInTime()).minusHours(EDIT_CUTOFF_HOURS);
+            if (booking.getDepositDeadline() == null || booking.getDepositDeadline().isAfter(latest)) {
+                booking.setDepositDeadline(latest);
+            }
+        }
+        booking.setDatesChanged(true);
+        // Ngay moi -> email nhac lich gui lai theo ngay moi
+        booking.setReminderSentAt(null);
+        Booking saved = bookingRepository.save(booking);
+        emailService.sendDatesChanged(saved);
+        return saved;
+    }
+
+    private DateChangeQuote validateAndQuoteDateChange(Booking booking, LocalDate newCheckIn, LocalDate newCheckOut) {
+        if (!canModify(booking)) {
+            throw BusinessException.of("err.changeDatesClosed", EDIT_CUTOFF_HOURS);
+        }
+        if (newCheckIn == null || newCheckOut == null) {
+            throw BusinessException.of("err.datesRequired");
+        }
+        if (!newCheckOut.isAfter(newCheckIn)) {
+            throw BusinessException.of("err.checkOutAfterCheckIn");
+        }
+        if (newCheckIn.equals(booking.getCheckInDate()) && newCheckOut.equals(booking.getCheckOutDate())) {
+            throw BusinessException.of("err.changeDatesSame");
+        }
+        // Ngay nhan moi cung phai con >= 6 tieng nhu luc sua don (nhan vien kip chuan bi phong)
+        if (!LocalDateTime.now().isBefore(LocalDateTime.of(newCheckIn, booking.getCheckInTime()).minusHours(EDIT_CUTOFF_HOURS))) {
+            throw BusinessException.of("err.changeDatesTooSoon", EDIT_CUTOFF_HOURS);
+        }
+        Room room = booking.getRoom();
+        if (room.getStatus() == RoomStatus.MAINTENANCE) {
+            throw BusinessException.of("err.roomMaintenance");
+        }
+        Availability availability = checkAvailability(room, newCheckIn, newCheckOut, booking.getId());
+        if (!availability.conflicts().isEmpty()) {
+            throw BusinessException.rendered(availability::describe);
+        }
+        checkTurnoverTimes(availability, newCheckIn, booking.getCheckInTime(), newCheckOut, booking.getCheckOutTime());
+        ensureServicesFitNewDates(booking, newCheckIn, newCheckOut);
+
+        BigDecimal roomAmount = pricingService.roomAmount(room.getPrice(), newCheckIn, newCheckOut);
+        BigDecimal subtotal = roomAmount.add(booking.getCombo() != null ? booking.getCombo().getPrice() : BigDecimal.ZERO);
+        BigDecimal discountAmount = discountFor(booking.getDiscountCode(), subtotal);
+        BigDecimal totalAmount = subtotal.subtract(discountAmount).max(BigDecimal.ZERO);
+        BigDecimal deposit = booking.isDepositRequired() && !booking.isDepositPaid()
+                ? pricingService.depositFor(totalAmount) : booking.getDepositPaidAmount();
+        return new DateChangeQuote(newCheckIn, newCheckOut, ChronoUnit.DAYS.between(newCheckIn, newCheckOut),
+                roomAmount, discountAmount, totalAmount, totalAmount.subtract(booking.getTotalAmount()),
+                deposit, booking.isDepositPaid());
+    }
+
+    // Tour lan / xe dua don da dat (chua huy) phai con nam trong ngay luu tru moi - khong thi khach huy dich vu truoc
+    private void ensureServicesFitNewDates(Booking booking, LocalDate newCheckIn, LocalDate newCheckOut) {
+        for (TourBooking tour : tourBookingRepository.findByBookingIdOrderByTourDateAscIdAsc(booking.getId())) {
+            if (tour.getStatus() != ServiceStatus.CANCELLED
+                    && (tour.getTourDate().isBefore(newCheckIn) || tour.getTourDate().isAfter(newCheckOut))) {
+                throw BusinessException.of("err.changeDatesTour", tour.getTour().getLocalizedName(),
+                        tour.getTourDate().format(DAY_FMT));
+            }
+        }
+        for (AirportTransfer transfer : transferRepository.findByBookingIdOrderByPickupAtAsc(booking.getId())) {
+            if (transfer.getStatus() == ServiceStatus.CANCELLED) {
+                continue;
+            }
+            LocalDate expected = transfer.getDirection() == TransferDirection.PICKUP ? newCheckIn : newCheckOut;
+            if (!transfer.getPickupAt().toLocalDate().equals(expected)) {
+                throw BusinessException.of("err.changeDatesTransfer", transfer.getPickupAt().format(DAY_FMT));
+            }
+        }
     }
 
     // Theo dung state flow: chi PENDING hoac CONFIRMED moi duoc chuyen sang CANCELLED
@@ -508,9 +616,10 @@ public class BookingService {
     @Transactional
     public Booking findByIdAndMarkSeenByStaff(Long bookingId) {
         Booking booking = findById(bookingId);
-        if (booking.isNewBooking() || booking.isCheckInTimeChanged()) {
+        if (booking.isNewBooking() || booking.isCheckInTimeChanged() || booking.isDatesChanged()) {
             booking.setNewBooking(false);
             booking.setCheckInTimeChanged(false);
+            booking.setDatesChanged(false);
             bookingRepository.save(booking);
         }
         return booking;

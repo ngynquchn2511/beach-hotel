@@ -143,6 +143,11 @@ public class Booking {
     @Builder.Default
     private boolean checkInTimeChanged = false;
 
+    // Danh dau khach vua tu doi ngay nhan/tra phong - hien canh bao rieng cho staff, tat khi staff mo xem chi tiet
+    @Column(name = "dates_changed", nullable = false)
+    @Builder.Default
+    private boolean datesChanged = false;
+
     public long getNights() {
         return java.time.temporal.ChronoUnit.DAYS.between(checkInDate, checkOutDate);
     }

@@ -173,6 +173,16 @@ public class EmailService {
         return queue(booking, "Sóng Xanh Resort - Nhắc lịch nhận phòng đơn #" + booking.getId(), sb.toString(), "nhac lich");
     }
 
+    // Khach tu doi ngay nhan/tra phong - gui lai thong tin don theo ngay moi (tien phong tinh lai)
+    public boolean sendDatesChanged(Booking booking) {
+        if (!canEmail(booking)) {
+            return false;
+        }
+        String body = buildBody(booking, "Bạn vừa đổi ngày lưu trú cho đơn #" + booking.getId()
+                + ". Tiền phòng đã được tính lại theo ngày mới. Thông tin đơn sau khi đổi:");
+        return queue(booking, "Sóng Xanh Resort - Đã đổi ngày lưu trú đơn #" + booking.getId(), body, "doi ngay");
+    }
+
     // Moi danh gia sau khi tra phong (GuestEmailScheduler goi). Tra ve true neu da dua vao hang doi gui
     public boolean sendReviewInvitation(Booking booking) {
         if (!canEmail(booking)) {
@@ -437,9 +447,13 @@ public class EmailService {
     }
 
     private String buildBody(Booking booking) {
+        return buildBody(booking, "Cảm ơn bạn đã đặt phòng tại Sóng Xanh Resort. Thông tin đơn đặt phòng:");
+    }
+
+    private String buildBody(Booking booking, String intro) {
         StringBuilder sb = new StringBuilder();
         sb.append("Xin chào ").append(booking.getGuestName()).append(",\n\n");
-        sb.append("Cảm ơn bạn đã đặt phòng tại Sóng Xanh Resort. Thông tin đơn đặt phòng:\n\n");
+        sb.append(intro).append("\n\n");
         sb.append("Mã đơn: #").append(booking.getId()).append("\n");
         sb.append("Phòng: ").append(booking.getRoom().getRoomNumber())
                 .append(" - ").append(booking.getRoom().getRoomType().getName()).append("\n");

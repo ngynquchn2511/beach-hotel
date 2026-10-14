@@ -314,6 +314,51 @@ public class CustomerBookingController {
         return "redirect:/customer/bookings/" + id;
     }
 
+    // Xem truoc khi doi ngay: phong con trong khong, tien phong / tong tien moi, chenh lech so voi hien tai
+    @GetMapping("/{id}/change-dates/quote")
+    @ResponseBody
+    public Map<String, Object> quoteChangeDates(@PathVariable Long id,
+                                                @RequestParam(required = false) LocalDate checkIn,
+                                                @RequestParam(required = false) LocalDate checkOut,
+                                                @AuthenticationPrincipal CustomUserDetails userDetails) {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            BookingService.DateChangeQuote q = bookingService.quoteDateChange(id, userDetails.getUser().getId(), checkIn, checkOut);
+            int diffSign = q.difference().signum();
+            result.put("ok", true);
+            result.put("nights", q.nights());
+            result.put("roomAmount", Money.format(q.roomAmount()));
+            result.put("total", Money.format(q.totalAmount()));
+            result.put("message", userMessages.get(diffSign > 0 ? "changeDates.payMore" : diffSign < 0 ? "changeDates.payLess" : "changeDates.sameTotal",
+                    Money.format(q.difference().abs())));
+            if (!q.depositPaid() && q.depositAmount().signum() > 0) {
+                result.put("depositNote", userMessages.get("changeDates.newDeposit", Money.format(q.depositAmount())));
+            }
+        } catch (BusinessException ex) {
+            result.put("ok", false);
+            result.put("message", userMessages.of(ex));
+        }
+        return result;
+    }
+
+    @PostMapping("/{id}/change-dates")
+    public String changeDates(@PathVariable Long id,
+                              @RequestParam(required = false) LocalDate checkIn,
+                              @RequestParam(required = false) LocalDate checkOut,
+                              @AuthenticationPrincipal CustomUserDetails userDetails,
+                              RedirectAttributes redirectAttributes) {
+        try {
+            Booking booking = bookingService.changeDates(id, userDetails.getUser().getId(), checkIn, checkOut);
+            redirectAttributes.addFlashAttribute("successMessage", userMessages.get("changeDates.done",
+                    booking.getCheckInDate().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")),
+                    booking.getCheckOutDate().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")),
+                    Money.format(booking.getTotalAmount())));
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", userMessages.of(ex));
+        }
+        return "redirect:/customer/bookings/" + id + "#doi-ngay";
+    }
+
     @PostMapping("/{id}/edit-combo")
     public String editCombo(@PathVariable Long id,
                              @RequestParam(required = false) Long comboId,

@@ -84,6 +84,7 @@
                     </td>
                     <td>
                         <span th:if="${b.checkInTimeChanged}" class="badge bg-warning text-dark d-block mb-1">Khách đổi giờ nhận phòng</span>
+                        <span th:if="${b.datesChanged}" class="badge bg-warning text-dark d-block mb-1">Khách đổi ngày lưu trú</span>
                         <a th:href="@{/admin/bookings/{id}(id=${b.id})}" class="btn btn-sm btn-outline-primary">Xem chi tiết</a>
                     </td>
                 </tr>

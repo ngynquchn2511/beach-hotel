@@ -57,6 +57,7 @@
     </div>
 
     <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
     <div th:if="${reviewSuccess}" class="alert alert-success" th:text="${reviewSuccess}"></div>
 
     <div class="bg-white p-4 rounded shadow-sm mb-4 ticket">
@@ -171,6 +172,36 @@
     <div th:replace="~{fragments/booking-services :: section}"></div>
 
     <div sec:authorize="isAuthenticated()">
+        <!-- Doi ngay luu tru: kiem tra phong trong + gia moi truoc (GET .../change-dates/quote) roi moi cho luu -->
+        <div class="bg-white p-4 rounded shadow-sm mb-4 section-anchor" id="doi-ngay" th:if="${canModify}">
+            <h5 class="fw-bold mb-1" th:text="#{changeDates.title}">Đổi ngày lưu trú</h5>
+            <p class="text-muted small mb-3" th:text="#{changeDates.lead}"></p>
+            <form id="changeDatesForm" th:action="@{/customer/bookings/{id}/change-dates(id=${booking.id})}" method="post"
+                  class="row g-3 align-items-end"
+                  th:attr="data-quote-url=@{/customer/bookings/{id}/change-dates/quote(id=${booking.id})},
+                           data-checking=#{changeDates.checking}, data-error=#{changeDates.error},
+                           data-quote-tpl=#{changeDates.quote('{n}', '{room}', '{total}')}, data-confirm=#{changeDates.confirm}"
+                  onsubmit="return confirm(this.dataset.confirm)">
+                <div class="col-md-4">
+                    <label class="form-label" for="newCheckIn" th:text="#{changeDates.checkIn}">Ngày nhận phòng mới</label>
+                    <input type="date" id="newCheckIn" name="checkIn" class="form-control" required
+                           th:value="${booking.checkInDate}" th:min="${#temporals.format(#temporals.createToday(), 'yyyy-MM-dd')}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="newCheckOut" th:text="#{changeDates.checkOut}">Ngày trả phòng mới</label>
+                    <input type="date" id="newCheckOut" name="checkOut" class="form-control" required
+                           th:value="${booking.checkOutDate}" th:min="${#temporals.format(#temporals.createToday().plusDays(1), 'yyyy-MM-dd')}">
+                </div>
+                <div class="col-md-4 d-flex gap-2">
+                    <button type="button" id="changeDatesCheck" class="btn btn-outline-primary flex-fill" th:text="#{changeDates.check}">Kiểm tra giá</button>
+                    <button type="submit" id="changeDatesSubmit" class="btn btn-primary flex-fill" disabled th:text="#{changeDates.submit}">Đổi sang ngày này</button>
+                </div>
+                <div class="col-12">
+                    <div id="changeDatesResult" class="small" aria-live="polite"></div>
+                </div>
+            </form>
+        </div>
+
         <div class="bg-white p-4 rounded shadow-sm mb-4" th:if="${canModify}">
             <h5 class="fw-bold mb-3" th:text="#{success.editTimes}">Sửa giờ nhận / trả phòng</h5>
             <form th:action="@{/customer/bookings/{id}/edit-time(id=${booking.id})}" method="post" class="row g-3 align-items-end">
@@ -273,6 +304,55 @@
             sync();
             render();
         });
+    })();
+</script>
+<!-- Doi ngay: moi lan chon ngay -> hoi gia + phong trong; chi bat nut "Doi" khi ngay hop le -->
+<script>
+    (function () {
+        var form = document.getElementById('changeDatesForm');
+        if (!form) return;
+        var checkIn = document.getElementById('newCheckIn');
+        var checkOut = document.getElementById('newCheckOut');
+        var submit = document.getElementById('changeDatesSubmit');
+        var result = document.getElementById('changeDatesResult');
+        var seq = 0;
+
+        function show(text, cls) {
+            result.className = 'small ' + cls;
+            result.textContent = text;
+        }
+
+        function quote() {
+            submit.disabled = true;
+            if (!checkIn.value || !checkOut.value) { show('', ''); return; }
+            var mine = ++seq;
+            show(form.dataset.checking, 'text-muted');
+            var url = form.dataset.quoteUrl + '?checkIn=' + encodeURIComponent(checkIn.value)
+                + '&checkOut=' + encodeURIComponent(checkOut.value);
+            fetch(url, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+                .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+                .then(function (data) {
+                    if (mine !== seq) return; // da co lan hoi moi hon
+                    if (!data.ok) { show(data.message, 'text-danger'); return; }
+                    var line = form.dataset.quoteTpl.replace('{n}', data.nights)
+                        .replace('{room}', data.roomAmount).replace('{total}', data.total);
+                    show(line + ' — ' + data.message + (data.depositNote ? ' ' + data.depositNote : ''), 'text-success fw-semibold');
+                    submit.disabled = false;
+                })
+                .catch(function () { if (mine === seq) show(form.dataset.error, 'text-danger'); });
+        }
+
+        checkIn.addEventListener('change', function () {
+            // Tu day ngay tra phong theo neu khach chon ngay nhan >= ngay tra cu
+            if (checkIn.value && checkOut.value && checkOut.value <= checkIn.value) {
+                var d = new Date(checkIn.value + 'T00:00:00');
+                d.setDate(d.getDate() + 1);
+                checkOut.value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+            }
+            quote();
+        });
+        checkOut.addEventListener('change', quote);
+        document.getElementById('changeDatesCheck').addEventListener('click', quote);
     })();
 </script>
 <div th:replace="~{fragments/chatbot-widget :: widget}"></div>

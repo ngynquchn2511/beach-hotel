@@ -45,6 +45,7 @@ public final class AuditLabels {
             Map.entry("checkInTime", "Giờ nhận phòng"),
             Map.entry("checkOutTime", "Giờ trả phòng"),
             Map.entry("checkInTimeChanged", "Đã đổi giờ"),
+            Map.entry("datesChanged", "Khách đã đổi ngày"),
             Map.entry("numberOfGuests", "Số khách"),
             Map.entry("guestName", "Tên người nhận phòng"),
             Map.entry("guestPhone", "SĐT người nhận phòng"),
