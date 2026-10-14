@@ -49,6 +49,13 @@ public class EmailService {
     @Value("${app.base-url:}")
     private String baseUrl;
 
+    // So Zalo cua resort (cung cau hinh nut "Nhan Zalo" tren web) - ghi vao email nhac lich
+    @Value("${app.contact.zalo-phone:}")
+    private String zaloPhone;
+
+    private static final String DIRECTIONS_URL =
+            "https://www.google.com/maps/dir/?api=1&destination=Bai+Chay,+Ha+Long,+Quang+Ninh";
+
     public EmailService(JavaMailSender mailSender,
                         @Qualifier("mailExecutor") Executor mailExecutor,
                         @Value("${spring.mail.username:}") String senderEmail,
@@ -92,6 +99,141 @@ public class EmailService {
                 log.error("Gui email xac nhan that bai cho booking #{} toi {}", bookingId, to, ex);
             }
         });
+    }
+
+    // Bao khach resort da chuyen tra tien hoan coc (sau khi nhan vien bam "Da hoan tien")
+    public void sendRefundCompleted(Booking booking) {
+        if (booking.getGuestEmail() == null || booking.getGuestEmail().isBlank()
+                || senderEmail == null || senderEmail.isBlank()
+                || senderPassword == null || senderPassword.isBlank()) {
+            log.warn("Khong gui email hoan coc cho booking #{} (thieu email nguoi nhan hoac cau hinh mail)", booking.getId());
+            return;
+        }
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom("Sóng Xanh Resort <" + senderEmail + ">");
+        message.setTo(booking.getGuestEmail());
+        message.setSubject("Sóng Xanh Resort - Đã hoàn tiền cọc đơn #" + booking.getId());
+        StringBuilder sb = new StringBuilder();
+        sb.append("Xin chào ").append(booking.getGuestName()).append(",\n\n");
+        sb.append("Sóng Xanh Resort đã chuyển hoàn ").append(money(booking.getRefundAmount()))
+                .append(" VND tiền cọc của đơn đặt phòng #").append(booking.getId()).append(" (đã hủy).\n");
+        if (booking.getRefundNote() != null) {
+            sb.append("Ghi chú: ").append(booking.getRefundNote()).append("\n");
+        }
+        sb.append("\nTiền có thể mất 1-3 ngày làm việc để về tài khoản tùy ngân hàng. "
+                + "Nếu chưa nhận được, vui lòng liên hệ hotline/Zalo của resort.\n\n");
+        sb.append("Rất mong được đón tiếp bạn trong dịp khác!\nSóng Xanh Resort");
+        message.setText(sb.toString());
+        Long bookingId = booking.getId();
+        deliverAfterCommit(() -> {
+            try {
+                mailSender.send(message);
+                log.info("Da gui email hoan coc cho booking #{}", bookingId);
+            } catch (Exception ex) {
+                log.error("Gui email hoan coc that bai cho booking #{}", bookingId, ex);
+            }
+        });
+    }
+
+    // Nhac lich truoc ngay nhan phong (GuestEmailScheduler goi). Tra ve true neu da dua vao hang doi gui -
+    // false khi khong gui duoc (khong co email khach / chua cau hinh mail) de lan sau thu lai
+    public boolean sendCheckInReminder(Booking booking) {
+        if (!canEmail(booking)) {
+            return false;
+        }
+        DateTimeFormatter dateFmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        StringBuilder sb = new StringBuilder();
+        sb.append("Xin chào ").append(booking.getGuestName()).append(",\n\n");
+        sb.append("Sóng Xanh Resort rất mong được đón bạn! Nhắc bạn lịch nhận phòng sắp tới:\n\n");
+        sb.append("Mã đơn: #").append(booking.getId()).append("\n");
+        sb.append("Phòng: ").append(booking.getRoom().getRoomNumber())
+                .append(" - ").append(booking.getRoom().getRoomType().getName()).append("\n");
+        sb.append("Nhận phòng: ").append(booking.getCheckInTime()).append(" ngày ")
+                .append(booking.getCheckInDate().format(dateFmt)).append("\n");
+        sb.append("Trả phòng: ").append(booking.getCheckOutTime()).append(" ngày ")
+                .append(booking.getCheckOutDate().format(dateFmt)).append("\n");
+        if (booking.getNumberOfGuests() != null) {
+            sb.append("Số khách: ").append(booking.getNumberOfGuests()).append("\n");
+        }
+        BigDecimal remaining = booking.getTotalAmount().subtract(booking.getDepositPaidAmount()).max(BigDecimal.ZERO);
+        sb.append("Cần thanh toán khi trả phòng: ").append(money(remaining)).append(" VND")
+                .append(booking.getDepositPaidAmount().signum() > 0 ? " (đã trừ tiền cọc)" : "")
+                .append(", chưa gồm phụ phí phát sinh\n\n");
+        sb.append("CHUẨN BỊ KHI ĐẾN\n");
+        sb.append("- Mang CCCD/hộ chiếu của tất cả khách lưu trú để làm thủ tục khai báo lưu trú.\n");
+        sb.append("- Chỉ đường tới resort (Bãi Cháy, Hạ Long): ").append(DIRECTIONS_URL).append("\n");
+        if (zaloPhone != null && !zaloPhone.isBlank()) {
+            sb.append("- Cần đổi giờ hoặc hỗ trợ gấp, nhắn Zalo: ").append(zaloPhone).append("\n");
+        }
+        String link = bookingLink(booking, "#dich-vu");
+        if (link != null) {
+            sb.append("- Đặt thêm xe đưa đón sân bay hoặc tour lặn biển: ").append(link).append("\n");
+        }
+        sb.append("\nChúc bạn có chuyến đi vui vẻ!\nSóng Xanh Resort");
+        return queue(booking, "Sóng Xanh Resort - Nhắc lịch nhận phòng đơn #" + booking.getId(), sb.toString(), "nhac lich");
+    }
+
+    // Moi danh gia sau khi tra phong (GuestEmailScheduler goi). Tra ve true neu da dua vao hang doi gui
+    public boolean sendReviewInvitation(Booking booking) {
+        if (!canEmail(booking)) {
+            return false;
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append("Xin chào ").append(booking.getGuestName()).append(",\n\n");
+        sb.append("Cảm ơn bạn đã nghỉ tại Sóng Xanh Resort (đơn #").append(booking.getId())
+                .append(", phòng ").append(booking.getRoom().getRoomNumber()).append(").\n");
+        sb.append("Bạn thấy kỳ nghỉ vừa rồi thế nào? Chỉ mất 1 phút để chấm sao và để lại vài lời - ")
+                .append("có thể kèm ảnh, video. Góp ý của bạn giúp resort phục vụ tốt hơn ")
+                .append("và giúp những du khách khác chọn phòng.\n\n");
+        String link = bookingLink(booking, "#danh-gia");
+        if (link != null) {
+            sb.append("Viết đánh giá: ").append(link).append("\n");
+            sb.append("(Link dành riêng cho đơn của bạn, vui lòng không chia sẻ.)\n\n");
+        } else {
+            sb.append("Đăng nhập website, vào Lịch sử đặt phòng, mở đơn #").append(booking.getId())
+                    .append(" để viết đánh giá.\n\n");
+        }
+        sb.append("Hẹn gặp lại bạn bên vịnh Hạ Long!\nSóng Xanh Resort");
+        return queue(booking, "Sóng Xanh Resort - Bạn thấy kỳ nghỉ thế nào?", sb.toString(), "moi danh gia");
+    }
+
+    private boolean canEmail(Booking booking) {
+        if (booking.getGuestEmail() == null || booking.getGuestEmail().isBlank()
+                || booking.getGuestEmail().endsWith("@khachvanglai.local")) {
+            return false;
+        }
+        if (senderEmail == null || senderEmail.isBlank() || senderPassword == null || senderPassword.isBlank()) {
+            log.warn("Chua dat MAIL_USERNAME va MAIL_PASSWORD - khong gui email tu dong cho booking #{}", booking.getId());
+            return false;
+        }
+        return true;
+    }
+
+    private boolean queue(Booking booking, String subject, String text, String kind) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom("Sóng Xanh Resort <" + senderEmail + ">");
+        message.setTo(booking.getGuestEmail());
+        message.setSubject(subject);
+        message.setText(text);
+        Long bookingId = booking.getId();
+        deliverAfterCommit(() -> {
+            try {
+                mailSender.send(message);
+                log.info("Da gui email {} cho booking #{}", kind, bookingId);
+            } catch (Exception ex) {
+                log.error("Gui email {} that bai cho booking #{}", kind, bookingId, ex);
+            }
+        });
+        return true;
+    }
+
+    // Link xem don cho khach (kem ma truy cap) - null neu chua cau hinh app.base-url
+    private String bookingLink(Booking booking, String anchor) {
+        if (baseUrl == null || baseUrl.isBlank() || booking.getAccessToken() == null) {
+            return null;
+        }
+        return baseUrl.replaceAll("/+$", "") + "/customer/bookings/" + booking.getId()
+                + "?token=" + booking.getAccessToken() + anchor;
     }
 
     // Dang trong giao dich: chi gui khi giao dich COMMIT thanh cong (rollback -> khong gui email cho don khong ton tai),
@@ -272,7 +414,17 @@ public class EmailService {
             }
             sb.append("Phần còn lại thanh toán khi trả phòng.\n\n");
         } else if (booking.getStatus() == BookingStatus.CANCELLED) {
-            if (booking.isDepositPaid()) {
+            if (booking.isDepositPaid() && booking.getRefundPercent() != null) {
+                sb.append("Bạn đã đặt cọc ").append(money(booking.getDepositAmount())).append(" VND. ");
+                if (booking.getRefundAmount() != null && booking.getRefundAmount().signum() > 0) {
+                    sb.append("Theo chính sách hủy, bạn được hoàn ").append(booking.getRefundPercent()).append("% tiền cọc: ")
+                            .append(money(booking.getRefundAmount()))
+                            .append(" VND. Resort sẽ chuyển khoản lại vào tài khoản bạn đã dùng để đặt cọc"
+                                    + " (cần đổi tài khoản nhận, vui lòng liên hệ hotline/Zalo).\n\n");
+                } else {
+                    sb.append("Do hủy sát ngày nhận phòng, theo chính sách hủy tiền cọc không được hoàn lại.\n\n");
+                }
+            } else if (booking.isDepositPaid()) {
                 sb.append("Bạn đã đặt cọc ").append(money(booking.getDepositAmount()))
                         .append(" VND. Resort sẽ liên hệ với bạn về việc hoàn cọc.\n\n");
             } else if (booking.getDepositDeadline() != null && java.time.LocalDateTime.now().isAfter(booking.getDepositDeadline())) {

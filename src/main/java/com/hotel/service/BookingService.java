@@ -459,10 +459,38 @@ public class BookingService {
         if (booking.getStatus() != BookingStatus.PENDING && booking.getStatus() != BookingStatus.CONFIRMED) {
             throw BusinessException.of("err.cancelState", booking.getStatus().name());
         }
-        booking.setStatus(BookingStatus.CANCELLED);
+        applyCancellation(booking, false);
         Booking cancelledBooking = bookingRepository.save(booking);
         emailService.sendBookingConfirmation(cancelledBooking);
         return cancelledBooking;
+    }
+
+    // Chuyen don sang CANCELLED va chot tien hoan coc theo chinh sach (so gio con lai truoc gio nhan phong).
+    // fullRefund = true: hoan 100% bat ke thoi diem (VD resort huy do su co phia khach san)
+    private void applyCancellation(Booking booking, boolean fullRefund) {
+        LocalDateTime now = LocalDateTime.now();
+        booking.setStatus(BookingStatus.CANCELLED);
+        booking.setCancelledAt(now);
+        if (booking.isDepositRequired() && booking.isDepositPaid()) {
+            int percent = fullRefund ? 100 : pricingService.refundPercent(checkInDateTime(booking), now);
+            booking.setRefundPercent(percent);
+            booking.setRefundAmount(PricingService.refundAmount(booking.getDepositAmount(), percent));
+        }
+    }
+
+    private static LocalDateTime checkInDateTime(Booking booking) {
+        return LocalDateTime.of(booking.getCheckInDate(), booking.getCheckInTime());
+    }
+
+    // Uoc tinh tien hoan neu huy ngay bay gio - hien cho khach/nhan vien truoc khi bam huy.
+    // null = don khong the huy hoac chua coc (khong co gi de hoan)
+    public PricingService.RefundQuote refundQuoteIfCancelledNow(Booking booking) {
+        if ((booking.getStatus() != BookingStatus.PENDING && booking.getStatus() != BookingStatus.CONFIRMED)
+                || !booking.isDepositRequired() || !booking.isDepositPaid()) {
+            return null;
+        }
+        int percent = pricingService.refundPercent(checkInDateTime(booking), LocalDateTime.now());
+        return new PricingService.RefundQuote(percent, PricingService.refundAmount(booking.getDepositAmount(), percent));
     }
 
     // ===== Cac thao tac danh cho STAFF/ADMIN =====
@@ -590,14 +618,51 @@ public class BookingService {
     // Nhan vien/admin huy don thay khach (VD: khach goi dien nho huy) - khong kiem tra chu don nhu ben customer
     @Transactional
     public Booking cancelBookingByStaff(Long bookingId) {
+        return cancelBookingByStaff(bookingId, false);
+    }
+
+    // fullRefund = true: resort huy (het phong, su co...) -> hoan 100% coc, khong ap chinh sach
+    @Transactional
+    public Booking cancelBookingByStaff(Long bookingId, boolean fullRefund) {
         Booking booking = findById(bookingId);
         if (booking.getStatus() != BookingStatus.PENDING && booking.getStatus() != BookingStatus.CONFIRMED) {
             throw new BusinessException("Không thể hủy đơn ở trạng thái hiện tại (" + booking.getStatus().getVietnameseLabel() + ")");
         }
-        booking.setStatus(BookingStatus.CANCELLED);
+        applyCancellation(booking, fullRefund);
         Booking cancelledBooking = bookingRepository.save(booking);
         emailService.sendBookingConfirmation(cancelledBooking);
         return cancelledBooking;
+    }
+
+    // Nhan vien da chuyen tra tien hoan coc cho khach -> ghi nhan (kem ghi chu ma giao dich neu co)
+    @Transactional
+    public Booking confirmRefund(Long bookingId, String note) {
+        Booking booking = findById(bookingId);
+        if (!booking.isRefundPending()) {
+            throw new BusinessException("Đơn này không có khoản hoàn cọc nào đang chờ xử lý");
+        }
+        String trimmed = note == null ? "" : note.trim();
+        if (trimmed.length() > 255) {
+            throw new BusinessException("Ghi chú hoàn tiền tối đa 255 ký tự");
+        }
+        booking.setRefundedAt(LocalDateTime.now());
+        booking.setRefundNote(trimmed.isEmpty() ? null : trimmed);
+        Booking refundedBooking = bookingRepository.save(booking);
+        emailService.sendRefundCompleted(refundedBooking);
+        return refundedBooking;
+    }
+
+    // So don da huy dang cho hoan coc - hien so o sidebar va dashboard
+    public long countPendingRefunds() {
+        return bookingRepository.countPendingRefunds(BookingStatus.CANCELLED);
+    }
+
+    // Tien coc resort giu lai (khach huy muon, mat coc) cua cac don huy trong [from, to] - theo ngay huy
+    public BigDecimal getForfeitedDeposits(LocalDate from, LocalDate to) {
+        return bookingRepository.findByStatusAndCancelledAtBetween(BookingStatus.CANCELLED,
+                        from.atStartOfDay(), to.plusDays(1).atStartOfDay().minusNanos(1)).stream()
+                .map(Booking::getForfeitedDepositAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     // Loc danh sach booking theo trang thai, dung cho man hinh quan ly cua STAFF/ADMIN

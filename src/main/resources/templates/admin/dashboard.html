@@ -95,6 +95,25 @@
                 </div>
             </div>
 
+            <!-- Huy don & hoan coc -->
+            <div class="row g-3 mt-2">
+                <div class="col-md-6">
+                    <a th:href="@{/admin/bookings(refund='pending')}" class="text-decoration-none text-reset">
+                        <div class="bg-white p-3 rounded shadow-sm text-center h-100">
+                            <div class="text-muted small">Đơn hủy chờ hoàn cọc (hiện tại)</div>
+                            <div class="fs-3 fw-bold" th:classappend="${pendingRefunds > 0} ? 'text-danger'" th:text="${pendingRefunds}"></div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-md-6">
+                    <div class="bg-white p-3 rounded shadow-sm text-center h-100"
+                         title="Phần tiền cọc không hoàn lại do khách hủy muộn, theo ngày hủy. Đã gồm trong tiền thu bằng chuyển khoản.">
+                        <div class="text-muted small">Cọc giữ lại do khách hủy muộn</div>
+                        <div class="fs-4 fw-bold" th:text="${#numbers.formatDecimal(forfeitedDeposits, 1, 'POINT', 0, 'COMMA')} + ' VND'"></div>
+                    </div>
+                </div>
+            </div>
+
             <div class="row g-3 mt-2">
                 <div class="col-md-4">
                     <div class="bg-white p-3 rounded shadow-sm text-center h-100"

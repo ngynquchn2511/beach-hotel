@@ -88,6 +88,14 @@
             <span th:if="${!booking.depositPaid and booking.status.name() == 'PENDING'}" class="badge bg-warning"
                   th:text="#{success.depositWaiting(${#numbers.formatDecimal(booking.depositAmount, 1, 'POINT', 0, 'COMMA')})}"></span>
         </p>
+        <!-- Don da huy co coc: trang thai hoan coc -->
+        <div class="alert alert-warning small mt-2 mb-0" th:if="${booking.refundPending}"
+             th:utext="#{refund.pending(${#numbers.formatDecimal(booking.refundAmount, 1, 'POINT', 0, 'COMMA')}, ${booking.refundPercent})}"></div>
+        <div class="alert alert-success small mt-2 mb-0" th:if="${booking.refunded}"
+             th:utext="#{refund.done(${#numbers.formatDecimal(booking.refundAmount, 1, 'POINT', 0, 'COMMA')}, ${#temporals.format(booking.refundedAt, 'dd/MM/yyyy')})}"></div>
+        <div class="alert alert-secondary small mt-2 mb-0"
+             th:if="${booking.status.name() == 'CANCELLED' and booking.refundPercent != null and booking.refundPercent == 0}"
+             th:text="#{refund.none}"></div>
         <p class="mb-0 mt-2">
             <span th:if="${payment != null and payment.status.name() == 'PAID'}" class="badge bg-success"
                   th:text="#{success.paid(#{'enum.PaymentMethod.' + ${payment.paymentMethod}})}"></span>
@@ -104,8 +112,10 @@
 
             <form th:action="@{/customer/bookings/{id}/cancel(id=${booking.id})}" method="post" class="mt-2"
                   th:if="${booking.status.name() == 'PENDING' or booking.status.name() == 'CONFIRMED'}"
-                  th:attr="data-confirm=${booking.depositPaid} ? #{success.cancelConfirmDeposit} : #{success.cancelConfirm}"
+                  th:attr="data-confirm=${refundQuote != null} ? #{refund.cancelConfirm(${#numbers.formatDecimal(refundQuote.amount, 1, 'POINT', 0, 'COMMA')}, ${refundQuote.percent})} : #{success.cancelConfirm}"
                   onsubmit="return confirm(this.dataset.confirm)">
+                <p class="small text-muted mb-2" th:if="${refundQuote != null}"
+                   th:utext="#{refund.quote(${#numbers.formatDecimal(refundQuote.amount, 1, 'POINT', 0, 'COMMA')}, ${refundQuote.percent})}"></p>
                 <button type="submit" class="btn btn-outline-danger w-100" th:text="#{success.cancel}">Hủy đặt phòng</button>
             </form>
         </div>
@@ -133,6 +143,7 @@
 
         <form th:if="${review == null and canReview}" th:action="@{/customer/bookings/{id}/review(id=${booking.id})}" method="post"
               enctype="multipart/form-data">
+            <input type="hidden" name="token" th:if="${accessToken != null}" th:value="${accessToken}">
             <p class="text-muted mb-2" th:text="#{success.reviewPrompt}">Bạn thấy kỳ nghỉ vừa rồi thế nào? Chọn số sao và để lại vài lời nhé.</p>
             <div class="star-picker mb-3" role="radiogroup" th:aria-label="#{success.stars}">
                 <input type="radio" name="rating" id="star5" value="5" required><label for="star5" th:title="#{success.star5}"><i class="bi bi-star-fill"></i></label>

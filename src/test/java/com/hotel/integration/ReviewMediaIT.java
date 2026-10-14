@@ -77,6 +77,36 @@ class ReviewMediaIT {
     }
 
     @Test
+    void guestWithEmailLink_seesFormAndReviewsWithoutLogin() throws Exception {
+        // Link trong email moi danh gia: ?token=... - khong dang nhap van thay form va gui duoc
+        mockMvc.perform(get("/customer/bookings/{id}", booking.getId()).param("token", booking.getAccessToken()))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("name=\"token\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("star-picker")));
+
+        mockMvc.perform(multipart("/customer/bookings/{id}/review", booking.getId()).with(csrf())
+                        .param("token", booking.getAccessToken()).param("rating", "4").param("comment", "Biển đẹp"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/customer/bookings/" + booking.getId() + "?token=" + booking.getAccessToken() + "#danh-gia"))
+                .andExpect(flash().attributeExists("reviewSuccess"));
+
+        Review review = reviewRepository.findByBookingId(booking.getId()).orElseThrow();
+        assertThat(review.getRating()).isEqualTo(4);
+        assertThat(review.getCustomer().getId()).isEqualTo(booking.getCustomer().getId());
+    }
+
+    @Test
+    void wrongOrMissingToken_withoutLogin_reviewRejected() throws Exception {
+        mockMvc.perform(multipart("/customer/bookings/{id}/review", booking.getId()).with(csrf())
+                        .param("token", "sai-ma").param("rating", "1"))
+                .andExpect(flash().attributeExists("errorMessage"));
+        mockMvc.perform(multipart("/customer/bookings/{id}/review", booking.getId()).with(csrf()).param("rating", "1"))
+                .andExpect(flash().attributeExists("errorMessage"));
+
+        assertThat(reviewRepository.findByBookingId(booking.getId())).isEmpty();
+    }
+
+    @Test
     void reviewWithImagesAndVideo_savedInOrder_filesOnDisk() throws Exception {
         mockMvc.perform(reviewRequest().file(image("a.jpg")).file(video("clip.mp4")).file(image("b.png")))
                 .andExpect(status().is3xxRedirection())

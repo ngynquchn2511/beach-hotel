@@ -82,6 +82,36 @@ public class Booking {
     @Column(nullable = false, length = 20)
     private BookingStatus status;
 
+    // ===== Huy don & hoan coc =====
+    // Thoi diem don chuyen sang CANCELLED (null voi don huy truoc khi co tinh nang nay)
+    @Column(name = "cancelled_at")
+    private LocalDateTime cancelledAt;
+
+    // Ty le (%) va so tien coc phai hoan cho khach, chot luc huy theo chinh sach hoan coc.
+    // null = don chua coc (khong co gi de hoan); 0 = khach mat coc
+    @Column(name = "refund_percent")
+    private Integer refundPercent;
+
+    @Column(name = "refund_amount", precision = 12, scale = 2)
+    private BigDecimal refundAmount;
+
+    // Thoi diem nhan vien xac nhan da chuyen tra tien hoan cho khach (null = chua hoan)
+    @Column(name = "refunded_at")
+    private LocalDateTime refundedAt;
+
+    // Ghi chu khi hoan (VD: "CK lai VCB 0123..., ma GD FT123")
+    @Column(name = "refund_note", length = 255)
+    private String refundNote;
+
+    // ===== Email tu dong (GuestEmailScheduler) - ghi thoi diem da gui de khong gui trung =====
+    // Email nhac lich truoc ngay nhan phong
+    @Column(name = "reminder_sent_at")
+    private LocalDateTime reminderSentAt;
+
+    // Email moi danh gia sau khi tra phong
+    @Column(name = "review_invite_sent_at")
+    private LocalDateTime reviewInviteSentAt;
+
     // Combo dich vu khach chon (co the null = phong thuong, khong combo)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "combo_id")
@@ -137,6 +167,24 @@ public class Booking {
     // So tien coc da thu (tru vao luc thanh toan khi tra phong)
     public BigDecimal getDepositPaidAmount() {
         return isDepositRequired() && isDepositPaid() ? depositAmount : BigDecimal.ZERO;
+    }
+
+    // Don da huy, khach duoc hoan coc nhung nhan vien chua chuyen tra
+    public boolean isRefundPending() {
+        return status == BookingStatus.CANCELLED && refundAmount != null && refundAmount.signum() > 0 && refundedAt == null;
+    }
+
+    public boolean isRefunded() {
+        return refundedAt != null;
+    }
+
+    // Tien coc resort giu lai khi khach huy (coc da thu - tien hoan).
+    // Don huy truoc khi co chinh sach hoan coc (refundAmount null) -> khong biet da xu ly the nao, tinh 0
+    public BigDecimal getForfeitedDepositAmount() {
+        if (status != BookingStatus.CANCELLED || !isDepositPaid() || !isDepositRequired() || refundAmount == null) {
+            return BigDecimal.ZERO;
+        }
+        return depositAmount.subtract(refundAmount).max(BigDecimal.ZERO);
     }
 
     @PrePersist

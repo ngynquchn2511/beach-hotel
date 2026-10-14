@@ -11,7 +11,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.DayOfWeek;
+import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,6 +24,7 @@ public class PricingService {
 
     public static final int MAX_SURCHARGE_PERCENT = 300;
     public static final int MAX_DEPOSIT_DEADLINE_HOURS = 168;
+    public static final int MAX_REFUND_HOURS = 720;
     private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
     private static final BigDecimal THOUSAND = BigDecimal.valueOf(1000);
 
@@ -43,6 +46,10 @@ public class PricingService {
             DayOfWeek day = night.getDayOfWeek();
             return day == DayOfWeek.SUNDAY ? "Chủ nhật" : "Thứ " + (day.getValue() + 1);
         }
+    }
+
+    // Ket qua tinh hoan coc: ty le (%) va so tien
+    public record RefundQuote(int percent, BigDecimal amount) {
     }
 
     public PricingSettings getSettings() {
@@ -103,6 +110,27 @@ public class PricingService {
         return deposit.min(total.setScale(0, RoundingMode.HALF_UP));
     }
 
+    // Ty le hoan coc (%) neu khach huy luc cancelAt, theo so gio con lai truoc gio nhan phong
+    public int refundPercent(LocalDateTime checkInAt, LocalDateTime cancelAt) {
+        PricingSettings settings = getSettings();
+        long hoursBefore = Duration.between(cancelAt, checkInAt).toMinutes() / 60;
+        if (hoursBefore >= settings.getRefundFullHours()) {
+            return 100;
+        }
+        if (hoursBefore >= settings.getRefundPartialHours()) {
+            return settings.getRefundPartialPercent();
+        }
+        return 0;
+    }
+
+    // Tien hoan = coc da thu x ty le, lam tron hang dong
+    public static BigDecimal refundAmount(BigDecimal depositPaid, int percent) {
+        if (depositPaid == null || depositPaid.signum() <= 0 || percent <= 0) {
+            return BigDecimal.ZERO;
+        }
+        return depositPaid.multiply(BigDecimal.valueOf(percent)).divide(HUNDRED, 0, RoundingMode.HALF_UP);
+    }
+
     // Dem thu 6 va dem thu 7 (khach o qua dem sang thu 7 / chu nhat)
     public static boolean isWeekendNight(LocalDate night) {
         DayOfWeek day = night.getDayOfWeek();
@@ -118,8 +146,17 @@ public class PricingService {
 
     // ===== Quan tri (chi ADMIN) =====
 
+    // Giu nguyen chinh sach hoan coc hien tai
     @Transactional
     public PricingSettings updateSettings(Integer weekendSurchargePercent, Integer depositPercent, Integer depositDeadlineHours) {
+        PricingSettings current = getSettings();
+        return updateSettings(weekendSurchargePercent, depositPercent, depositDeadlineHours,
+                current.getRefundFullHours(), current.getRefundPartialHours(), current.getRefundPartialPercent());
+    }
+
+    @Transactional
+    public PricingSettings updateSettings(Integer weekendSurchargePercent, Integer depositPercent, Integer depositDeadlineHours,
+                                          Integer refundFullHours, Integer refundPartialHours, Integer refundPartialPercent) {
         if (weekendSurchargePercent == null || weekendSurchargePercent < 0 || weekendSurchargePercent > MAX_SURCHARGE_PERCENT) {
             throw new BusinessException("Phụ thu cuối tuần phải từ 0 đến " + MAX_SURCHARGE_PERCENT + "%");
         }
@@ -129,11 +166,24 @@ public class PricingService {
         if (depositDeadlineHours == null || depositDeadlineHours < 1 || depositDeadlineHours > MAX_DEPOSIT_DEADLINE_HOURS) {
             throw new BusinessException("Hạn chuyển cọc phải từ 1 đến " + MAX_DEPOSIT_DEADLINE_HOURS + " giờ");
         }
+        if (refundFullHours == null || refundFullHours < 0 || refundFullHours > MAX_REFUND_HOURS
+                || refundPartialHours == null || refundPartialHours < 0 || refundPartialHours > MAX_REFUND_HOURS) {
+            throw new BusinessException("Mốc giờ hoàn cọc phải từ 0 đến " + MAX_REFUND_HOURS + " giờ");
+        }
+        if (refundPartialHours > refundFullHours) {
+            throw new BusinessException("Mốc hoàn một phần phải nhỏ hơn hoặc bằng mốc hoàn 100%");
+        }
+        if (refundPartialPercent == null || refundPartialPercent < 0 || refundPartialPercent > 100) {
+            throw new BusinessException("Tỷ lệ hoàn một phần phải từ 0 đến 100%");
+        }
         PricingSettings settings = settingsRepository.findById(PricingSettings.SINGLETON_ID)
                 .orElseGet(PricingSettings::defaults);
         settings.setWeekendSurchargePercent(weekendSurchargePercent);
         settings.setDepositPercent(depositPercent);
         settings.setDepositDeadlineHours(depositDeadlineHours);
+        settings.setRefundFullHours(refundFullHours);
+        settings.setRefundPartialHours(refundPartialHours);
+        settings.setRefundPartialPercent(refundPartialPercent);
         return settingsRepository.save(settings);
     }
 

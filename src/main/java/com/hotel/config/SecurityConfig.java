@@ -141,6 +141,8 @@ public class SecurityConfig {
                         // (kiem tra quyen trong BookingService.findForViewing giong trang xem don)
                         .requestMatchers("/customer/bookings/*/tours", "/customer/bookings/*/tours/*/cancel",
                                 "/customer/bookings/*/transfers", "/customer/bookings/*/transfers/*/cancel").permitAll()
+                        // Viet danh gia tu link trong email moi danh gia (?token=) - kiem tra quyen giong tren
+                        .requestMatchers(HttpMethod.POST, "/customer/bookings/*/review").permitAll()
                         // Rieng lich su dat phong va sua/huy don van can dang nhap (de xac dinh dung chu don)
                         .requestMatchers("/customer/**").hasRole("CUSTOMER")
                         .anyRequest().authenticated()

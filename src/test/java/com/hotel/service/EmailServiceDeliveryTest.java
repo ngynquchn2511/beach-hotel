@@ -102,6 +102,66 @@ class EmailServiceDeliveryTest {
         verify(mailSender).send(any(SimpleMailMessage.class));
     }
 
+    private SimpleMailMessage sentMessage() {
+        org.mockito.ArgumentCaptor<SimpleMailMessage> captor = org.mockito.ArgumentCaptor.forClass(SimpleMailMessage.class);
+        queued.forEach(Runnable::run);
+        verify(mailSender).send(captor.capture());
+        return captor.getValue();
+    }
+
+    @Test
+    void checkInReminder_hasScheduleRemainingAmountAndServicesLink() {
+        ReflectionTestUtils.setField(emailService, "baseUrl", "https://songxanh.vn/");
+        ReflectionTestUtils.setField(emailService, "zaloPhone", "0337196258");
+        Booking b = booking();
+        b.setStatus(BookingStatus.CONFIRMED);
+        b.setAccessToken("tok123");
+        b.setDepositAmount(BigDecimal.valueOf(150000));
+        b.setDepositPaidAt(LocalDateTime.now());
+
+        assertEquals(true, emailService.sendCheckInReminder(b));
+        SimpleMailMessage msg = sentMessage();
+
+        assertEquals("Sóng Xanh Resort - Nhắc lịch nhận phòng đơn #7", msg.getSubject());
+        String text = msg.getText();
+        org.assertj.core.api.Assertions.assertThat(text)
+                .contains("Nhận phòng: 14:00")
+                .contains("350.000 VND (đã trừ tiền cọc)")
+                .contains("CCCD")
+                .contains("Zalo: 0337196258")
+                .contains("https://songxanh.vn/customer/bookings/7?token=tok123#dich-vu");
+    }
+
+    @Test
+    void reviewInvitation_linksToReviewSection_orExplainsLoginWithoutBaseUrl() {
+        ReflectionTestUtils.setField(emailService, "baseUrl", "https://songxanh.vn");
+        Booking b = booking();
+        b.setStatus(BookingStatus.CHECKED_OUT);
+        b.setAccessToken("tok123");
+
+        assertEquals(true, emailService.sendReviewInvitation(b));
+        org.assertj.core.api.Assertions.assertThat(sentMessage().getText())
+                .contains("https://songxanh.vn/customer/bookings/7?token=tok123#danh-gia");
+
+        ReflectionTestUtils.setField(emailService, "baseUrl", "");
+        queued.clear();
+        reset(mailSender);
+        emailService.sendReviewInvitation(b);
+        org.assertj.core.api.Assertions.assertThat(sentMessage().getText()).contains("Lịch sử đặt phòng");
+    }
+
+    @Test
+    void autoEmails_skipWalkInPlaceholderAndMissingMailConfig() {
+        Booking walkIn = booking();
+        walkIn.setGuestEmail("0900000000@khachvanglai.local");
+        assertEquals(false, emailService.sendCheckInReminder(walkIn));
+        assertEquals(false, emailService.sendReviewInvitation(walkIn));
+
+        EmailService unconfigured = new EmailService(mailSender, queued::add, "", "");
+        assertEquals(false, unconfigured.sendCheckInReminder(booking()));
+        assertEquals(0, queued.size());
+    }
+
     @Test
     void smtpFailure_isLoggedNotThrown() {
         doThrow(new org.springframework.mail.MailSendException("SMTP down")).when(mailSender).send(any(SimpleMailMessage.class));

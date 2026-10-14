@@ -33,9 +33,18 @@ public class AdminPricingController {
     public String updateSettings(@RequestParam(required = false) Integer weekendSurchargePercent,
                                  @RequestParam(required = false) Integer depositPercent,
                                  @RequestParam(required = false) Integer depositDeadlineHours,
+                                 @RequestParam(required = false) Integer refundFullHours,
+                                 @RequestParam(required = false) Integer refundPartialHours,
+                                 @RequestParam(required = false) Integer refundPartialPercent,
                                  RedirectAttributes redirectAttributes) {
         try {
-            pricingService.updateSettings(weekendSurchargePercent, depositPercent, depositDeadlineHours);
+            if (refundFullHours == null && refundPartialHours == null && refundPartialPercent == null) {
+                // Form khong gui chinh sach hoan coc -> giu nguyen chinh sach hien tai
+                pricingService.updateSettings(weekendSurchargePercent, depositPercent, depositDeadlineHours);
+            } else {
+                pricingService.updateSettings(weekendSurchargePercent, depositPercent, depositDeadlineHours,
+                        refundFullHours, refundPartialHours, refundPartialPercent);
+            }
             redirectAttributes.addFlashAttribute("successMessage", "Đã lưu cài đặt. Áp dụng cho các đơn đặt từ bây giờ.");
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());

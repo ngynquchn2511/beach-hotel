@@ -49,8 +49,15 @@ public class AdminBookingController {
     @GetMapping
     public String list(@RequestParam(required = false) BookingStatus status,
                         @RequestParam(required = false) String q,
+                        @RequestParam(required = false) String refund,
                         @RequestParam(defaultValue = "1") int page, Model model) {
         List<Booking> all = bookingService.findAllBookings(status, q);
+        // ?refund=pending: chi cac don da huy dang cho hoan coc (link tu dashboard / sidebar)
+        boolean refundPending = "pending".equals(refund);
+        if (refundPending) {
+            all = all.stream().filter(Booking::isRefundPending).toList();
+        }
+        model.addAttribute("refundPending", refundPending);
         int totalPages = PaginationUtil.totalPages(all.size(), PaginationUtil.DEFAULT_PAGE_SIZE);
         model.addAttribute("bookings", PaginationUtil.slice(all, page, PaginationUtil.DEFAULT_PAGE_SIZE));
         model.addAttribute("currentPage", Math.max(1, Math.min(page, totalPages)));
@@ -76,6 +83,8 @@ public class AdminBookingController {
         if (booking.isAwaitingDeposit()) {
             model.addAttribute("depositTransferContent", paymentService.depositTransferContent(booking));
         }
+        // Tien hoan coc du kien neu huy ngay bay gio (null = chua coc / khong huy duoc)
+        model.addAttribute("refundQuote", bookingService.refundQuoteIfCancelledNow(booking));
         // Dich vu them (tour lan / xe dua don) cua don + form le tan dat ho khach
         model.addAttribute("tourOrders", serviceOrderService.toursOf(id));
         model.addAttribute("transferOrders", serviceOrderService.transfersOf(id));
@@ -256,10 +265,29 @@ public class AdminBookingController {
         return "redirect:/admin/bookings/" + id;
     }
 
+    // fullRefund: tick "Resort huy - hoan 100% coc" (het phong, su co phia khach san) thay vi ap chinh sach huy
     @PostMapping("/{id}/cancel")
-    public String cancel(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+    public String cancel(@PathVariable Long id, @RequestParam(defaultValue = "false") boolean fullRefund,
+                         RedirectAttributes redirectAttributes) {
         try {
-            bookingService.cancelBookingByStaff(id);
+            Booking booking = bookingService.cancelBookingByStaff(id, fullRefund);
+            if (booking.isRefundPending()) {
+                redirectAttributes.addFlashAttribute("successMessage", "Đã hủy đơn. Cần hoàn cho khách "
+                        + com.hotel.util.Money.format(booking.getRefundAmount()) + " VND (" + booking.getRefundPercent() + "% cọc)");
+            }
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "redirect:/admin/bookings/" + id;
+    }
+
+    // Da chuyen tra tien hoan coc cho khach -> ghi nhan, gui email bao khach
+    @PostMapping("/{id}/confirm-refund")
+    public String confirmRefund(@PathVariable Long id, @RequestParam(required = false) String refundNote,
+                                RedirectAttributes redirectAttributes) {
+        try {
+            bookingService.confirmRefund(id, refundNote);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã ghi nhận hoàn cọc cho khách");
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }

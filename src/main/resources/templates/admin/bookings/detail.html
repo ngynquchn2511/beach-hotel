@@ -42,6 +42,12 @@
                 <p class="mb-1">Ngày nhận phòng: <span th:text="${booking.checkInDate}"></span> — Giờ nhận: <span th:text="${booking.checkInTime}"></span></p>
                 <p class="mb-1">Ngày trả phòng: <span th:text="${booking.checkOutDate}"></span> — Giờ trả: <span th:text="${booking.checkOutTime}"></span></p>
                 <p class="mb-1" th:if="${booking.numberOfGuests != null}">Số khách: <span th:text="${booking.numberOfGuests}"></span></p>
+                <p class="mb-1 small text-muted" th:if="${booking.reminderSentAt != null}">
+                    <i class="bi bi-envelope-check me-1"></i>Đã gửi email nhắc lịch lúc
+                    <span th:text="${#temporals.format(booking.reminderSentAt, 'HH:mm dd/MM/yyyy')}"></span></p>
+                <p class="mb-1 small text-muted" th:if="${booking.reviewInviteSentAt != null}">
+                    <i class="bi bi-envelope-heart me-1"></i>Đã gửi email mời đánh giá lúc
+                    <span th:text="${#temporals.format(booking.reviewInviteSentAt, 'HH:mm dd/MM/yyyy')}"></span></p>
 
                 <h6 class="fw-bold mt-3" th:if="${booking.combo != null}">Combo dịch vụ</h6>
                 <p class="mb-1" th:if="${booking.combo != null}" th:text="${booking.combo.name}"></p>
@@ -67,8 +73,38 @@
                         </span>
                     </th:block>
                     <span th:if="${!booking.depositPaid and !booking.awaitingDeposit}" class="badge bg-secondary">Không nhận cọc</span>
-                    <div class="alert alert-warning small mt-2 mb-0" th:if="${booking.depositPaid and booking.status.name() == 'CANCELLED'}">
+                    <!-- Don huy truoc khi co chinh sach hoan coc (chua chot tien hoan) -->
+                    <div class="alert alert-warning small mt-2 mb-0"
+                         th:if="${booking.depositPaid and booking.status.name() == 'CANCELLED' and booking.refundPercent == null}">
                         Khách đã cọc nhưng đơn đã hủy — liên hệ khách để xử lý hoàn cọc theo chính sách của resort.
+                    </div>
+                    <div class="alert alert-warning small mt-2 mb-0" th:if="${booking.refundPending}">
+                        <div class="fw-bold mb-1">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i>Chờ hoàn cọc:
+                            <span th:text="${#numbers.formatDecimal(booking.refundAmount, 1, 'POINT', 0, 'COMMA')} + ' VND'"></span>
+                            (<span th:text="${booking.refundPercent}"></span>% cọc, hủy lúc
+                            <span th:text="${#temporals.format(booking.cancelledAt, 'HH:mm dd/MM/yyyy')}"></span>)
+                        </div>
+                        Chuyển khoản lại cho khách rồi bấm xác nhận bên dưới. Khách sẽ nhận email báo đã hoàn tiền.
+                        <form th:action="@{/admin/bookings/{id}/confirm-refund(id=${booking.id})}" method="post"
+                              class="d-flex gap-2 mt-2 flex-wrap"
+                              th:attr="onsubmit=|return confirm('Xác nhận đã chuyển ${#numbers.formatDecimal(booking.refundAmount, 1, 'POINT', 0, 'COMMA')} VND cho khách?')|">
+                            <input type="text" name="refundNote" maxlength="255" class="form-control form-control-sm"
+                                   style="max-width: 320px;" placeholder="Ghi chú (VD: CK lại VCB, mã GD FT123...)">
+                            <button type="submit" class="btn btn-sm btn-success"><i class="bi bi-check2-circle me-1"></i>Đã hoàn tiền</button>
+                        </form>
+                    </div>
+                    <div class="alert alert-success small mt-2 mb-0" th:if="${booking.refunded}">
+                        <i class="bi bi-check2-circle me-1"></i>Đã hoàn
+                        <b th:text="${#numbers.formatDecimal(booking.refundAmount, 1, 'POINT', 0, 'COMMA')} + ' VND'"></b>
+                        (<span th:text="${booking.refundPercent}"></span>% cọc) lúc
+                        <span th:text="${#temporals.format(booking.refundedAt, 'HH:mm dd/MM/yyyy')}"></span>
+                        <span th:if="${booking.refundNote != null}" th:text="'— ' + ${booking.refundNote}"></span>
+                    </div>
+                    <div class="alert alert-secondary small mt-2 mb-0"
+                         th:if="${booking.status.name() == 'CANCELLED' and booking.refundPercent != null and booking.refundPercent == 0}">
+                        Khách hủy sát ngày nhận phòng — theo chính sách, resort giữ lại toàn bộ
+                        <b th:text="${#numbers.formatDecimal(booking.depositAmount, 1, 'POINT', 0, 'COMMA')} + ' VND'"></b> tiền cọc.
                     </div>
                 </div>
                 <p class="mb-0 mt-2" th:if="${payment != null}">
@@ -117,13 +153,23 @@
                       th:action="@{/admin/bookings/{id}/cancel(id=${booking.id})}" method="post" class="d-inline"
                       onsubmit="return confirm('Bạn chắc chắn muốn hủy đơn này?')">
                     <button type="submit" class="btn btn-outline-danger">Hủy đơn</button>
+                    <!-- Don da coc: cho biet tien hoan theo chinh sach, hoac chon hoan du khi loi tu phia resort -->
+                    <div class="small text-muted mt-2" th:if="${refundQuote != null}">
+                        Hủy bây giờ theo chính sách: hoàn
+                        <b th:text="${#numbers.formatDecimal(refundQuote.amount, 1, 'POINT', 0, 'COMMA')} + ' VND'"></b>
+                        (<span th:text="${refundQuote.percent}"></span>% cọc).
+                        <div class="form-check mt-1">
+                            <input class="form-check-input" type="checkbox" name="fullRefund" value="true" id="fullRefund">
+                            <label class="form-check-label" for="fullRefund">Resort hủy (hết phòng, sự cố...) — hoàn 100% cọc</label>
+                        </div>
+                    </div>
                 </form>
 
                 <p class="text-muted small mt-3 mb-0" th:if="${booking.status.name() == 'CHECKED_OUT'}">
                     Đơn đã hoàn tất. Nếu phòng đang ở trạng thái "Chưa sẵn sàng", vào mục Phòng để xác nhận đã dọn dẹp xong.
                 </p>
                 <p class="text-muted small mt-3 mb-0" th:if="${booking.status.name() == 'CANCELLED'}">
-                    Đơn này đã bị hủy, không còn thao tác nào khả dụng.
+                    Đơn này đã bị hủy<th:block th:if="${booking.refundPending}"> — còn khoản hoàn cọc cần xử lý ở mục Thanh toán phía trên</th:block>.
                 </p>
             </div>
 

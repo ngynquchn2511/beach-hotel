@@ -58,7 +58,8 @@
 
         <div class="alert alert-warning small mt-3 mb-0" th:if="${estimatedDeposit != null and estimatedDeposit.signum() > 0}">
             <i class="bi bi-shield-check me-1"></i>
-            <span th:utext="#{confirm.deposit(${depositPercent}, ${#numbers.formatDecimal(estimatedDeposit, 1, 0)}, ${depositDeadlineHours})}"></span>
+            <span th:utext="#{confirm.deposit(${depositPercent}, ${#numbers.formatDecimal(estimatedDeposit, 1, 'POINT', 0, 'COMMA')}, ${depositDeadlineHours})}"></span>
+            <div class="mt-1" th:utext="#{refund.policy(${refundPolicy.refundFullHours}, ${refundPolicy.refundPartialHours}, ${refundPolicy.refundPartialPercent})}"></div>
         </div>
     </div>
 

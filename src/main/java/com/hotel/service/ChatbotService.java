@@ -288,6 +288,12 @@ public class ChatbotService {
             }
             if (askCancel) {
                 sections.add(t("chat.cancel"));
+                // Chi noi ve hoan coc khi resort dang yeu cau dat coc
+                PricingSettings policy = settings();
+                if (policy.getDepositPercent() > 0) {
+                    sections.add(t("chat.cancelPolicy", policy.getRefundFullHours(), policy.getRefundPartialHours(),
+                            policy.getRefundPartialPercent()));
+                }
                 actions.add(history);
                 actions.add(zalo);
             }

@@ -42,6 +42,12 @@ public class AdminSidebarModelAdvice {
         return serviceOrderService.countPending();
     }
 
+    // So don da huy dang cho hoan coc - hien so canh muc "Dat phong / Check-in-out"
+    @ModelAttribute("pendingRefundCount")
+    public long pendingRefundCount() {
+        return bookingService.countPendingRefunds();
+    }
+
     @ModelAttribute("newBookingCount")
     public long newBookingCount() {
         return bookingService.countNewBookings();

@@ -286,4 +286,69 @@ class HomestayFeaturesIT {
         // File .xlsx la file zip, bat dau bang "PK"
         assertThat(new String(xlsx, 0, 2)).isEqualTo("PK");
     }
+
+    @Test
+    void refundFlow_cancelAfterDeposit_staffConfirmsRefund() throws Exception {
+        // Chinh sach mac dinh: huy truoc >= 72h hoan 100% coc; FRIDAY cach >= 7 ngay
+        adminSetsPricing(0, 30, 24);
+        Booking b = guestBooksOnline(FRIDAY, FRIDAY.plusDays(2), "refund.it@mail.com");
+        mockMvc.perform(post("/admin/bookings/{id}/confirm-deposit", b.getId()).with(csrf()).with(user(new CustomUserDetails(staff))))
+                .andExpect(flash().attributeExists("successMessage"));
+
+        // Truoc khi huy: chu don (da dang nhap) va nhan vien deu thay tien hoan du kien
+        User owner = userRepository.findById(b.getCustomer().getId()).orElseThrow();
+        mockMvc.perform(get("/customer/bookings/{id}", b.getId()).with(user(new CustomUserDetails(owner))))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Nếu hủy bây giờ, bạn được hoàn <b>300.000 VND</b> (100% tiền cọc)")));
+        mockMvc.perform(get("/admin/bookings/{id}", b.getId()).with(user(new CustomUserDetails(staff))))
+                .andExpect(content().string(containsString("Hủy bây giờ theo chính sách")));
+
+        mockMvc.perform(post("/admin/bookings/{id}/cancel", b.getId()).with(csrf()).with(user(new CustomUserDetails(staff))))
+                .andExpect(flash().attribute("successMessage", containsString("100% cọc")));
+        Booking cancelled = bookingRepository.findById(b.getId()).orElseThrow();
+        assertThat(cancelled.getStatus()).isEqualTo(BookingStatus.CANCELLED);
+        assertThat(cancelled.getRefundPercent()).isEqualTo(100);
+        assertThat(cancelled.getRefundAmount()).isEqualByComparingTo("300000");
+        assertThat(cancelled.isRefundPending()).isTrue();
+
+        // Hien o danh sach loc "cho hoan coc", dashboard va trang don cua khach
+        mockMvc.perform(get("/admin/bookings").param("refund", "pending").with(user(new CustomUserDetails(staff))))
+                .andExpect(content().string(containsString("#" + b.getId())))
+                .andExpect(content().string(containsString("Chờ hoàn 300.000")));
+        mockMvc.perform(get("/admin/dashboard").with(user(new CustomUserDetails(admin))))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Đơn hủy chờ hoàn cọc")));
+        mockMvc.perform(get("/customer/bookings/{id}", b.getId()).param("token", b.getAccessToken()))
+                .andExpect(content().string(containsString("Bạn được hoàn")));
+
+        // Nhan vien da chuyen tien -> ghi nhan, het cho
+        mockMvc.perform(post("/admin/bookings/{id}/confirm-refund", b.getId()).with(csrf()).with(user(new CustomUserDetails(staff)))
+                        .param("refundNote", "CK VCB FT999"))
+                .andExpect(flash().attributeExists("successMessage"));
+        Booking refunded = bookingRepository.findById(b.getId()).orElseThrow();
+        assertThat(refunded.getRefundedAt()).isNotNull();
+        assertThat(refunded.getRefundNote()).isEqualTo("CK VCB FT999");
+        mockMvc.perform(get("/customer/bookings/{id}", b.getId()).param("token", b.getAccessToken()))
+                .andExpect(content().string(containsString("Resort đã hoàn")));
+
+        // Bam lan nua -> bao loi, khong ghi de
+        mockMvc.perform(post("/admin/bookings/{id}/confirm-refund", b.getId()).with(csrf()).with(user(new CustomUserDetails(staff))))
+                .andExpect(flash().attributeExists("errorMessage"));
+    }
+
+    @Test
+    void pricingSettings_saveRefundPolicy_andRejectInvalid() throws Exception {
+        mockMvc.perform(post("/admin/pricing/settings").with(csrf()).with(user(new CustomUserDetails(admin)))
+                        .param("weekendSurchargePercent", "0").param("depositPercent", "30").param("depositDeadlineHours", "24")
+                        .param("refundFullHours", "24").param("refundPartialHours", "48").param("refundPartialPercent", "50"))
+                .andExpect(flash().attributeExists("errorMessage"));
+
+        mockMvc.perform(post("/admin/pricing/settings").with(csrf()).with(user(new CustomUserDetails(admin)))
+                        .param("weekendSurchargePercent", "0").param("depositPercent", "30").param("depositDeadlineHours", "24")
+                        .param("refundFullHours", "96").param("refundPartialHours", "48").param("refundPartialPercent", "30"))
+                .andExpect(flash().attributeExists("successMessage"));
+        mockMvc.perform(get("/admin/pricing").with(user(new CustomUserDetails(admin))))
+                .andExpect(content().string(containsString("Chính sách hủy &amp; hoàn cọc")))
+                .andExpect(content().string(containsString("hoàn <b>30</b>%")));
+    }
 }

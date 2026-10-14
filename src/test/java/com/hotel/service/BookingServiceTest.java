@@ -688,6 +688,109 @@ class BookingServiceTest {
         assertThrows(BusinessException.class, () -> bookingService.confirmDeposit(100L));
     }
 
+    // ---------- Huy don & hoan coc (mac dinh: >=72h hoan 100%, >=24h hoan 50%, sat hon khong hoan) ----------
+
+    private Booking depositPaidBooking(LocalDateTime checkIn) {
+        Booking b = bookingWithCheckIn(checkIn, BookingStatus.CONFIRMED);
+        b.setDepositAmount(bd(90000));
+        b.setDepositPaidAt(LocalDateTime.now().minusDays(1));
+        lenient().when(bookingRepository.findById(100L)).thenReturn(Optional.of(b));
+        lenient().when(bookingRepository.save(any(Booking.class))).thenAnswer(inv -> inv.getArgument(0));
+        return b;
+    }
+
+    @Test
+    void cancelBooking_depositPaidLongBefore_fullRefundPending() {
+        depositPaidBooking(LocalDateTime.now().plusDays(5));
+
+        Booking result = bookingService.cancelBooking(100L, 1L);
+
+        assertEquals(BookingStatus.CANCELLED, result.getStatus());
+        assertNotNull(result.getCancelledAt());
+        assertEquals(100, result.getRefundPercent());
+        assertEquals(0, bd(90000).compareTo(result.getRefundAmount()));
+        assertTrue(result.isRefundPending());
+        assertEquals(0, BigDecimal.ZERO.compareTo(result.getForfeitedDepositAmount()));
+    }
+
+    @Test
+    void cancelBooking_depositPaidTwoDaysBefore_partialRefund() {
+        depositPaidBooking(LocalDateTime.now().plusHours(48));
+
+        Booking result = bookingService.cancelBooking(100L, 1L);
+
+        assertEquals(50, result.getRefundPercent());
+        assertEquals(0, bd(45000).compareTo(result.getRefundAmount()));
+        assertEquals(0, bd(45000).compareTo(result.getForfeitedDepositAmount()));
+    }
+
+    @Test
+    void cancelBooking_depositPaidCloseToCheckIn_noRefund() {
+        depositPaidBooking(LocalDateTime.now().plusHours(10));
+
+        Booking result = bookingService.cancelBooking(100L, 1L);
+
+        assertEquals(0, result.getRefundPercent());
+        assertFalse(result.isRefundPending());
+        assertEquals(0, bd(90000).compareTo(result.getForfeitedDepositAmount()));
+    }
+
+    @Test
+    void cancelBooking_withoutDeposit_noRefundRecorded() {
+        Booking b = bookingWithCheckIn(LocalDateTime.now().plusDays(5), BookingStatus.PENDING);
+        when(bookingRepository.findById(100L)).thenReturn(Optional.of(b));
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Booking result = bookingService.cancelBooking(100L, 1L);
+
+        assertNull(result.getRefundPercent());
+        assertNull(result.getRefundAmount());
+        assertFalse(result.isRefundPending());
+    }
+
+    @Test
+    void cancelBookingByStaff_fullRefundOverridesPolicy() {
+        depositPaidBooking(LocalDateTime.now().plusHours(10));
+
+        Booking result = bookingService.cancelBookingByStaff(100L, true);
+
+        assertEquals(100, result.getRefundPercent());
+        assertEquals(0, bd(90000).compareTo(result.getRefundAmount()));
+    }
+
+    @Test
+    void refundQuoteIfCancelledNow_matchesPolicyWithoutChangingBooking() {
+        Booking b = depositPaidBooking(LocalDateTime.now().plusHours(48));
+
+        PricingService.RefundQuote quote = bookingService.refundQuoteIfCancelledNow(b);
+
+        assertEquals(50, quote.percent());
+        assertEquals(0, bd(45000).compareTo(quote.amount()));
+        assertEquals(BookingStatus.CONFIRMED, b.getStatus());
+    }
+
+    @Test
+    void confirmRefund_pending_recordsTimeNoteAndEmails() {
+        Booking b = depositPaidBooking(LocalDateTime.now().plusDays(5));
+        bookingService.cancelBooking(100L, 1L);
+
+        Booking result = bookingService.confirmRefund(100L, "  CK VCB FT123  ");
+
+        assertNotNull(result.getRefundedAt());
+        assertEquals("CK VCB FT123", result.getRefundNote());
+        assertFalse(result.isRefundPending());
+        verify(emailService).sendRefundCompleted(b);
+        assertThrows(BusinessException.class, () -> bookingService.confirmRefund(100L, null));
+    }
+
+    @Test
+    void confirmRefund_nothingToRefund_throws() {
+        depositPaidBooking(LocalDateTime.now().plusHours(10));
+        bookingService.cancelBooking(100L, 1L);
+
+        assertThrows(BusinessException.class, () -> bookingService.confirmRefund(100L, null));
+    }
+
     @Test
     void checkIn_withoutDeclaredGuests_throws() {
         Booking b = bookingWithCheckIn(LocalDateTime.now().plusHours(1), BookingStatus.CONFIRMED);

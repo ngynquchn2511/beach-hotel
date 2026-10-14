@@ -92,6 +92,10 @@ public class AdminController {
         model.addAttribute("paidCash", paidByMethod.get(PaymentMethod.CASH));
         model.addAttribute("paidTransfer", paidByMethod.get(PaymentMethod.BANK_TRANSFER));
 
+        // Huy don & hoan coc: so don cho hoan (hien tai) va tien coc giu lai trong khoang ngay
+        model.addAttribute("pendingRefunds", bookingService.countPendingRefunds());
+        model.addAttribute("forfeitedDeposits", bookingService.getForfeitedDeposits(fromDate, toDate));
+
         // Chi so khach san: cong suat phong, ADR, RevPAR (theo ngay khach o)
         model.addAttribute("kpi", bookingService.getHotelKpi(fromDate, toDate));
 

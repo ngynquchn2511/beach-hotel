@@ -47,6 +47,37 @@
                                th:value="${settings.depositDeadlineHours}">
                         <div class="form-text">Quá hạn chưa nhận cọc thì đơn tự hủy.</div>
                     </div>
+
+                    <div class="col-12 mt-4">
+                        <h6 class="fw-bold mb-1">Chính sách hủy &amp; hoàn cọc</h6>
+                        <p class="text-muted small mb-0">Tính theo số giờ còn lại trước giờ nhận phòng lúc khách hủy.
+                            Tiền hoàn được chốt ngay khi hủy; đơn đã hủy không bị ảnh hưởng khi đổi cài đặt.</p>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Hoàn 100% nếu hủy trước (giờ)</label>
+                        <input type="number" name="refundFullHours" class="form-control" min="0" max="720" required
+                               th:value="${settings.refundFullHours}">
+                        <div class="form-text">VD 72 = hủy trước 3 ngày được hoàn đủ cọc. 0 = luôn hoàn đủ.</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Hoàn một phần nếu hủy trước (giờ)</label>
+                        <input type="number" name="refundPartialHours" class="form-control" min="0" max="720" required
+                               th:value="${settings.refundPartialHours}">
+                        <div class="form-text">Phải nhỏ hơn hoặc bằng mốc hoàn 100%. Hủy sát hơn mốc này thì mất cọc.</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Tỷ lệ hoàn một phần (%)</label>
+                        <input type="number" name="refundPartialPercent" class="form-control" min="0" max="100" required
+                               th:value="${settings.refundPartialPercent}">
+                        <div class="form-text">Phần trăm tiền cọc được hoàn trong khoảng giữa hai mốc.</div>
+                    </div>
+                    <div class="col-12">
+                        <div class="alert alert-light border small mb-0">
+                            Đang áp dụng: hủy trước <b th:text="${settings.refundFullHours}"></b> giờ → hoàn 100% ·
+                            trước <b th:text="${settings.refundPartialHours}"></b> giờ → hoàn <b th:text="${settings.refundPartialPercent}"></b>% ·
+                            sát hơn → không hoàn. Nhân viên có thể chọn "Resort hủy — hoàn 100%" khi lỗi từ phía resort.
+                        </div>
+                    </div>
                     <div class="col-12">
                         <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i>Lưu cài đặt</button>
                     </div>

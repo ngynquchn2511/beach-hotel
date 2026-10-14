@@ -47,6 +47,7 @@ public class BookingExpirationScheduler {
 
             if (now.isAfter(confirmDeadline) || depositOverdue) {
                 booking.setStatus(BookingStatus.CANCELLED);
+                booking.setCancelledAt(now);
                 bookingRepository.save(booking);
                 if (depositOverdue) {
                     // Bao cho khach biet don bi huy vi chua chuyen coc (khach co the dat lai)

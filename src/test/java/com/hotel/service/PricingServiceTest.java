@@ -113,6 +113,54 @@ class PricingServiceTest {
     }
 
     @Test
+    void refundPercent_followsHourThresholds() {
+        // Chua co dong cai dat -> mac dinh 72h hoan 100%, 24h hoan 50%
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        assertThat(pricingService.refundPercent(now.plusHours(72), now)).isEqualTo(100);
+        assertThat(pricingService.refundPercent(now.plusHours(71), now)).isEqualTo(50);
+        assertThat(pricingService.refundPercent(now.plusHours(24), now)).isEqualTo(50);
+        assertThat(pricingService.refundPercent(now.plusHours(23), now)).isEqualTo(0);
+        assertThat(pricingService.refundPercent(now.minusHours(1), now)).isEqualTo(0);
+    }
+
+    @Test
+    void refundPercent_usesSavedPolicy_andLegacyRowFallsBackToDefaults() {
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        when(settingsRepository.findById(PricingSettings.SINGLETON_ID)).thenReturn(Optional.of(
+                PricingSettings.builder().id(1L).weekendSurchargePercent(0).depositPercent(30).depositDeadlineHours(24)
+                        .refundFullHours(48).refundPartialHours(12).refundPartialPercent(30).build()));
+        assertThat(pricingService.refundPercent(now.plusHours(50), now)).isEqualTo(100);
+        assertThat(pricingService.refundPercent(now.plusHours(20), now)).isEqualTo(30);
+        assertThat(pricingService.refundPercent(now.plusHours(5), now)).isEqualTo(0);
+
+        // Dong cai dat cu (cac cot hoan coc null)
+        settings(0, 30);
+        assertThat(pricingService.refundPercent(now.plusHours(50), now)).isEqualTo(50);
+    }
+
+    @Test
+    void refundAmount_roundsToDong() {
+        assertThat(PricingService.refundAmount(bd(150000), 50)).isEqualByComparingTo(bd(75000));
+        assertThat(PricingService.refundAmount(bd(100001), 50)).isEqualByComparingTo(bd(50001));
+        assertThat(PricingService.refundAmount(bd(150000), 0)).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(PricingService.refundAmount(null, 100)).isEqualByComparingTo(BigDecimal.ZERO);
+    }
+
+    @Test
+    void updateSettings_validatesRefundPolicy() {
+        assertThatThrownBy(() -> pricingService.updateSettings(0, 30, 24, 24, 72, 50)).isInstanceOf(BusinessException.class);
+        assertThatThrownBy(() -> pricingService.updateSettings(0, 30, 24, 72, 24, 101)).isInstanceOf(BusinessException.class);
+        assertThatThrownBy(() -> pricingService.updateSettings(0, 30, 24, -1, 0, 50)).isInstanceOf(BusinessException.class);
+        assertThatThrownBy(() -> pricingService.updateSettings(0, 30, 24, 72, null, 50)).isInstanceOf(BusinessException.class);
+
+        when(settingsRepository.save(any(PricingSettings.class))).thenAnswer(inv -> inv.getArgument(0));
+        PricingSettings saved = pricingService.updateSettings(0, 30, 24, 96, 48, 30);
+        assertThat(saved.getRefundFullHours()).isEqualTo(96);
+        assertThat(saved.getRefundPartialHours()).isEqualTo(48);
+        assertThat(saved.getRefundPartialPercent()).isEqualTo(30);
+    }
+
+    @Test
     void createSpecialRate_validates() {
         LocalDate d = LocalDate.now();
         assertThatThrownBy(() -> pricingService.createSpecialRate(" ", d, d, 50)).isInstanceOf(BusinessException.class);

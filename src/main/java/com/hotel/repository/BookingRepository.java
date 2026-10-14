@@ -22,6 +22,21 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     long countByNewBookingTrue();
 
+    // Don da huy, duoc hoan coc (> 0) nhung nhan vien chua chuyen tra
+    @Query("SELECT COUNT(b) FROM Booking b WHERE b.status = :status AND b.refundAmount > 0 AND b.refundedAt IS NULL")
+    long countPendingRefunds(@Param("status") BookingStatus status);
+
+    List<Booking> findByStatusAndCancelledAtBetween(BookingStatus status, java.time.LocalDateTime from, java.time.LocalDateTime to);
+
+    // Ung vien gui email nhac lich: don da xac nhan, chua nhac, nhan phong trong khoang ngay
+    List<Booking> findByStatusAndReminderSentAtIsNullAndCheckInDateBetween(BookingStatus status, LocalDate from, LocalDate to);
+
+    // Ung vien gui email moi danh gia: don da tra phong, chua moi, ngay tra phong trong khoang ngay
+    List<Booking> findByStatusAndReviewInviteSentAtIsNullAndCheckOutDateBetween(BookingStatus status, LocalDate from, LocalDate to);
+
+    // Tien coc da chuyen tra lai khach trong khoang thoi gian - tru khoi thong ke tien thu
+    List<Booking> findByRefundedAtBetween(java.time.LocalDateTime from, java.time.LocalDateTime to);
+
     List<Booking> findByRoomIdAndStatusIn(Long roomId, List<BookingStatus> statuses);
 
     // Moi khach chi duoc dung 1 ma giam gia 1 lan - don da huy (CANCELLED) thi khong tinh, khach dung lai duoc

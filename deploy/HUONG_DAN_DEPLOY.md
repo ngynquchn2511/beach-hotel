@@ -67,6 +67,15 @@ cd deploy && docker compose up -d --build app
 
 Dữ liệu và ảnh không bị ảnh hưởng.
 
+Nếu phiên bản mới có file trong thư mục `sql/` và app đang chạy với `DDL_AUTO=validate`, chạy các file đó **trước** lệnh build ở trên (với `DDL_AUTO=update` như `docker-compose.yml` mặc định thì Hibernate tự thêm cột, không bắt buộc). Các file viết để chạy lại nhiều lần vẫn an toàn:
+
+```bash
+cd ~/beach-hotel/deploy
+for f in ../sql/*.sql; do
+  docker compose exec -T db sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" beach_hotel' < "$f" && echo "OK $f"
+done
+```
+
 ## Sao lưu cơ sở dữ liệu (nên làm)
 
 Sao lưu tự động mỗi đêm lúc 2 giờ, giữ 14 bản gần nhất:

@@ -21,6 +21,7 @@ import com.hotel.service.RoomService;
 import com.hotel.util.PaginationUtil;
 import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.util.UriComponentsBuilder;
 import com.hotel.service.UserMessages;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.multipart.MultipartFile;
@@ -228,8 +229,11 @@ public class CustomerBookingController {
         model.addAttribute("booking", booking);
         model.addAttribute("payment", paymentService.findByBookingId(id).orElse(null));
         model.addAttribute("review", reviewService.findByBookingId(id).orElse(null));
-        model.addAttribute("canReview", userDetails != null && reviewService.canReview(booking, userDetails.getUser().getId()));
+        // findForViewing da xac thuc nguoi xem la chu don (dang nhap) hoac co ma truy cap (link trong email moi danh gia)
+        model.addAttribute("canReview", reviewService.canReview(booking));
         model.addAttribute("canModify", bookingService.canModify(booking));
+        // Da coc: bao truoc tien duoc hoan neu huy ngay bay gio
+        model.addAttribute("refundQuote", bookingService.refundQuoteIfCancelledNow(booking));
         if (booking.isAwaitingDeposit()) {
             model.addAttribute("depositQrUrl", paymentService.buildDepositQrUrl(booking));
             model.addAttribute("depositTransferContent", paymentService.depositTransferContent(booking));
@@ -277,15 +281,23 @@ public class CustomerBookingController {
                          @RequestParam(required = false) Integer rating,
                          @RequestParam(required = false) String comment,
                          @RequestParam(value = "media", required = false) List<MultipartFile> media,
+                         @RequestParam(required = false) String token,
                          @AuthenticationPrincipal CustomUserDetails userDetails,
                          RedirectAttributes redirectAttributes) {
         try {
-            reviewService.createReview(id, userDetails.getUser().getId(), rating, comment, media);
+            // Khach vang lai danh gia qua link email (?token=) - viet danh gia thay mat chu don
+            Booking booking = bookingService.findForViewing(id, token,
+                    userDetails != null ? userDetails.getUser().getId() : null);
+            reviewService.createReview(id, booking.getCustomer().getId(), rating, comment, media);
             redirectAttributes.addFlashAttribute("reviewSuccess", userMessages.get("msg.reviewThanks"));
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", userMessages.of(ex));
         }
-        return "redirect:/customer/bookings/" + id + "#danh-gia";
+        UriComponentsBuilder url = UriComponentsBuilder.fromPath("/customer/bookings/{id}");
+        if (token != null && !token.isBlank()) {
+            url.queryParam("token", token);
+        }
+        return "redirect:" + url.buildAndExpand(id).encode().toUriString() + "#danh-gia";
     }
 
     @PostMapping("/{id}/edit-time")
@@ -359,6 +371,7 @@ public class CustomerBookingController {
         var settings = pricingService.getSettings();
         model.addAttribute("depositPercent", settings.getDepositPercent());
         model.addAttribute("depositDeadlineHours", settings.getDepositDeadlineHours());
+        model.addAttribute("refundPolicy", settings);
         // Uoc tinh truoc khi ap ma giam gia - so chinh xac hien o trang don sau khi dat
         model.addAttribute("estimatedDeposit", pricingService.depositFor(subtotal));
     }

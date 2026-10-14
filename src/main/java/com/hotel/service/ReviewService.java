@@ -51,6 +51,13 @@ public class ReviewService {
                 .collect(Collectors.toMap(r -> r.getBooking().getId(), Function.identity()));
     }
 
+    // Don da tra phong va chua danh gia - dung khi nguoi xem da duoc xac thuc la chu don
+    // (dang nhap dung tai khoan, hoac mo bang link co ma truy cap gui trong email)
+    public boolean canReview(Booking booking) {
+        return booking.getStatus() == BookingStatus.CHECKED_OUT
+                && !reviewRepository.existsByBookingId(booking.getId());
+    }
+
     // Chi chu don, don da tra phong (CHECKED_OUT) va chua danh gia moi duoc viet danh gia
     public boolean canReview(Booking booking, Long customerId) {
         return customerId != null

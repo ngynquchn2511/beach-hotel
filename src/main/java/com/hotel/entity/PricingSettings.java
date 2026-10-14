@@ -35,12 +35,45 @@ public class PricingSettings {
     @Column(name = "deposit_deadline_hours", nullable = false)
     private Integer depositDeadlineHours;
 
+    // Chinh sach hoan coc khi khach huy (tinh theo so gio con lai truoc gio nhan phong):
+    //   con >= refundFullHours        -> hoan 100% coc
+    //   con >= refundPartialHours     -> hoan refundPartialPercent % coc
+    //   con lai                       -> khong hoan
+    // Cot cho phep null (dong cai dat tao truoc khi co tinh nang nay) -> dung gia tri mac dinh ben duoi
+    public static final int DEFAULT_REFUND_FULL_HOURS = 72;
+    public static final int DEFAULT_REFUND_PARTIAL_HOURS = 24;
+    public static final int DEFAULT_REFUND_PARTIAL_PERCENT = 50;
+
+    @Column(name = "refund_full_hours")
+    private Integer refundFullHours;
+
+    @Column(name = "refund_partial_hours")
+    private Integer refundPartialHours;
+
+    @Column(name = "refund_partial_percent")
+    private Integer refundPartialPercent;
+
+    public Integer getRefundFullHours() {
+        return refundFullHours != null ? refundFullHours : DEFAULT_REFUND_FULL_HOURS;
+    }
+
+    public Integer getRefundPartialHours() {
+        return refundPartialHours != null ? refundPartialHours : DEFAULT_REFUND_PARTIAL_HOURS;
+    }
+
+    public Integer getRefundPartialPercent() {
+        return refundPartialPercent != null ? refundPartialPercent : DEFAULT_REFUND_PARTIAL_PERCENT;
+    }
+
     public static PricingSettings defaults() {
         return PricingSettings.builder()
                 .id(SINGLETON_ID)
                 .weekendSurchargePercent(0)
                 .depositPercent(0)
                 .depositDeadlineHours(24)
+                .refundFullHours(DEFAULT_REFUND_FULL_HOURS)
+                .refundPartialHours(DEFAULT_REFUND_PARTIAL_HOURS)
+                .refundPartialPercent(DEFAULT_REFUND_PARTIAL_PERCENT)
                 .build();
     }
 }
