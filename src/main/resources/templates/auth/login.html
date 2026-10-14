@@ -31,7 +31,9 @@
             </div>
             <div th:if="${param.error}" class="alert alert-danger border-0 rounded-3 small" th:text="#{auth.login.error}">Email hoặc mật khẩu không đúng.</div>
             <div th:if="${param.error != null and param.error[0] == 'wrong_portal'}" class="alert alert-danger border-0 rounded-3 small" th:text="#{auth.login.wrongPortal}">Tài khoản này không phải tài khoản khách hàng. Vui lòng dùng cổng quản trị.</div>
-            <div th:if="${param.locked}" class="alert alert-danger border-0 rounded-3 small" th:text="#{auth.login.locked}">Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.</div>
+            <div th:if="${param.locked != null and param.locked[0] != 'temp'}" class="alert alert-danger border-0 rounded-3 small" th:text="#{auth.login.locked}">Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.</div>
+            <div th:if="${param.locked != null and param.locked[0] == 'temp'}" class="alert alert-warning border-0 rounded-3 small"
+                 th:utext="#{auth.login.lockedTemp(${maxFailedAttempts},${lockMinutes}, @{/forgot-password})}"></div>
             <div th:if="${param.logout}" class="alert alert-success border-0 rounded-3 small" th:text="#{auth.login.loggedOut}">Bạn đã đăng xuất thành công.</div>
             <div th:if="${param.registered}" class="alert alert-success border-0 rounded-3 small" th:text="#{auth.login.registered}">Đăng ký thành công. Hãy đăng nhập để tiếp tục.</div>
             <div th:if="${param.reset}" class="alert alert-success border-0 rounded-3 small" th:text="#{auth.login.reset}">Đặt lại mật khẩu thành công. Hãy đăng nhập bằng mật khẩu mới.</div>

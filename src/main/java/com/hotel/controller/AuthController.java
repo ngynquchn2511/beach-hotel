@@ -29,8 +29,18 @@ public class AuthController {
         this.emailService = emailService;
     }
 
+    // ?locked=temp&minutes=N (tu failure handler khi khoa tam) - doc so phut o day (gioi han 1..LOCK_MINUTES)
+    // vi template hien thong bao bang th:utext, khong duoc doc thang tham so request
     @GetMapping("/login")
-    public String loginPage() {
+    public String loginPage(@RequestParam(required = false) String minutes, Model model) {
+        int lockMinutes = com.hotel.security.LoginAttemptService.LOCK_MINUTES;
+        try {
+            lockMinutes = Math.min(lockMinutes, Math.max(1, Integer.parseInt(minutes)));
+        } catch (NumberFormatException ignored) {
+            // thieu / sai -> dung so phut mac dinh
+        }
+        model.addAttribute("lockMinutes", lockMinutes);
+        model.addAttribute("maxFailedAttempts", com.hotel.security.LoginAttemptService.MAX_FAILED_ATTEMPTS);
         return "auth/login";
     }
 

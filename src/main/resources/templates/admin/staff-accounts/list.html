@@ -58,6 +58,8 @@
                     <td>
                         <span class="badge" th:classappend="${a.isLocked()} ? 'bg-danger' : 'bg-success'"
                               th:text="${a.isLocked()} ? 'Đã khóa' : 'Hoạt động'"></span>
+                        <span th:if="${!a.isLocked() and a.temporarilyLocked}" class="badge bg-warning text-dark d-block mt-1"
+                              th:text="'Tạm khóa (sai mật khẩu) đến ' + ${#temporals.format(a.loginLockedUntil, 'HH:mm')}"></span>
                     </td>
                     <td class="text-end text-nowrap">
                         <a th:href="@{/admin/staff-accounts/{id}/edit(id=${a.id})}" class="btn btn-sm btn-outline-secondary">Sửa</a>
@@ -65,8 +67,8 @@
                               th:action="@{/admin/staff-accounts/{id}/toggle-lock(id=${a.id})}" method="post" class="d-inline"
                               onsubmit="return confirm('Xác nhận thay đổi trạng thái khóa của tài khoản này?')">
                             <button type="submit" class="btn btn-sm"
-                                    th:classappend="${a.isLocked()} ? 'btn-outline-success' : 'btn-outline-danger'"
-                                    th:text="${a.isLocked()} ? 'Mở khóa' : 'Khóa'"></button>
+                                    th:classappend="${a.isLocked() or a.temporarilyLocked} ? 'btn-outline-success' : 'btn-outline-danger'"
+                                    th:text="${a.isLocked() or a.temporarilyLocked} ? 'Mở khóa' : 'Khóa'"></button>
                         </form>
                     </td>
                 </tr>

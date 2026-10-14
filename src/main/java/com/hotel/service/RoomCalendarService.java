@@ -91,7 +91,13 @@ public class RoomCalendarService {
         public int gridStart() { return 2 * index + 1; }
     }
 
-    public record RoomRow(Room room, List<Bar> bars) { }
+    public record RoomRow(Room room, List<Bar> bars) {
+        // Dem nay phong chua co don nao o qua -> o lich moi cho bam de dat tai quay
+        // (nua dau o ngay khach khac nhan phong van lo ra, khong duoc tro toi dem da co khach)
+        public boolean isFree(LocalDate night) {
+            return bars.stream().noneMatch(bar -> bar.coversNight(night));
+        }
+    }
 
     public record Bar(Booking booking, int gridStart, int gridEnd, boolean clippedLeft, boolean clippedRight) {
         boolean coversNight(LocalDate night) {
@@ -100,6 +106,19 @@ public class RoomCalendarService {
 
         public String guestName() {
             return booking.getGuestName() != null ? booking.getGuestName() : booking.getCustomer().getFullName();
+        }
+
+        // Thanh ngan (1 dem): chi hien ten goi (chu cuoi, VD "Nguyen Van An" -> "An") de con doc duoc
+        public boolean isShort() {
+            return gridEnd - gridStart <= 2;
+        }
+
+        public String displayName() {
+            String name = guestName() == null ? "" : guestName().trim();
+            if (!isShort() || name.isEmpty()) {
+                return name;
+            }
+            return name.substring(name.lastIndexOf(' ') + 1);
         }
     }
 }

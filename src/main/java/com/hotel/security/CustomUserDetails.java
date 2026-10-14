@@ -47,7 +47,8 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return !user.isLocked();
+        // Bi admin khoa, hoac dang khoa tam vi sai mat khau nhieu lan
+        return !user.isLocked() && !user.isTemporarilyLocked();
     }
 
     @Override

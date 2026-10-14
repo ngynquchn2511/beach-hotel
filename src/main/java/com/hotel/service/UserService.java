@@ -89,6 +89,8 @@ public class UserService {
         // Token chi dung duoc 1 lan
         user.setResetToken(null);
         user.setResetTokenExpiry(null);
+        // Chu email da xac minh qua link -> mo khoa tam do sai mat khau (khoa cua admin van giu)
+        user.clearLoginFailures();
         userRepository.save(user);
     }
 

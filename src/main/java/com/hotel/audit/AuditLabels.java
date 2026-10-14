@@ -34,6 +34,8 @@ public final class AuditLabels {
             Map.entry("role", "Vai trò"),
             Map.entry("customerType", "Loại khách hàng"),
             Map.entry("locked", "Khóa tài khoản"),
+            Map.entry("failedLoginAttempts", "Số lần sai mật khẩu"),
+            Map.entry("loginLockedUntil", "Tạm khóa đăng nhập đến"),
             Map.entry("resetToken", "Mã đặt lại mật khẩu"),
             Map.entry("resetTokenExpiry", "Hạn đặt lại mật khẩu"),
             Map.entry("customer", "Khách hàng"),

@@ -48,7 +48,7 @@ public class CustomerManagementService {
         if (user.getRole() != UserRole.CUSTOMER) {
             throw new BusinessException("Chỉ có thể khóa/mở khóa tài khoản CUSTOMER tại đây");
         }
-        user.setLocked(!user.isLocked());
+        user.toggleLockByAdmin();
         userRepository.save(user);
     }
 

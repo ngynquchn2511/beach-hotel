@@ -13,9 +13,15 @@
         .rc { min-width: max-content; font-size: .85rem; }
         .rc-row { display: flex; border-bottom: 1px solid #dbe9f5; }
         .rc-row:last-child { border-bottom: 0; }
-        .rc-label { position: sticky; left: 0; z-index: 4; flex: 0 0 150px; padding: 8px 10px; background: var(--paper);
-            border-right: 1.5px solid var(--ink); line-height: 1.2; }
-        .rc-label .type { display: block; color: var(--ink-soft); font-size: .72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        /* Cot ten phong rong CO DINH: min-width mac dinh cua flex item la do dai chu -> ten loai phong dai
+           lam cot phinh ra, day ca hang ngay lech sang phai so voi hang tieu de */
+        .rc-label { position: sticky; left: 0; z-index: 4; flex: 0 0 190px; width: 190px; min-width: 0; overflow: hidden;
+            padding: 6px 10px; background: var(--paper); border-right: 1.5px solid var(--ink); line-height: 1.25;
+            display: flex; flex-direction: column; justify-content: center; }
+        .rc-label .room-link { display: block; font-weight: 700; color: var(--ink); text-decoration: none; white-space: nowrap;
+            overflow: hidden; text-overflow: ellipsis; }
+        .rc-label .room-link:hover { text-decoration: underline; text-underline-offset: 2px; }
+        .rc-label .type { display: block; margin-top: 2px; color: var(--ink-soft); font-size: .72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .rc-track { display: grid; grid-template-columns: repeat(var(--halves), var(--half)); grid-template-rows: 46px; }
         .rc-cell { grid-row: 1; border-right: 1px solid #e4eef7; display: block; }
         .rc-cell.weekend { background: #f3f9fe; }
@@ -42,6 +48,9 @@
         .rc-bar:hover { transform: translateY(-2px); box-shadow: 3px 3px 0 var(--ink); z-index: 3; }
         .rc-bar .name { overflow: hidden; text-overflow: ellipsis; }
         .rc-bar .id { font-weight: 500; opacity: .7; font-size: .75rem; }
+        /* Thanh ngan (<= 1 dem trong khung nhin): bo ma don cho ten khach du cho, ma don van co trong tooltip */
+        .rc-bar.short { padding: 0 6px; }
+        .rc-bar.short .id { display: none; }
         .rc-bar.clip-l { border-top-left-radius: 0; border-bottom-left-radius: 0; border-left-style: dashed; }
         .rc-bar.clip-r { border-top-right-radius: 0; border-bottom-right-radius: 0; border-right-style: dashed; }
         .st-PENDING { background: #ffe08a; }
@@ -107,7 +116,7 @@
                 <div class="rc">
                     <!-- Hang tieu de: ngay -->
                     <div class="rc-row rc-head">
-                        <div class="rc-label fw-bold d-flex align-items-center">Phòng</div>
+                        <div class="rc-label fw-bold">Phòng</div>
                         <div class="rc-track">
                             <div th:each="d : ${cal.dayList}" class="rc-cell"
                                  th:classappend="${d.today} ? 'today' : (${d.weekend} ? 'weekend' : '')"
@@ -123,30 +132,33 @@
                          th:with="maint=${row.room.status.name() == 'MAINTENANCE'}"
                          th:classappend="${maint} ? 'maintenance'">
                         <div class="rc-label">
-                            <a th:href="@{/admin/rooms}" class="fw-bold" th:text="'Phòng ' + ${row.room.roomNumber}"></a>
-                            <span th:if="${maint}" class="badge bg-secondary ms-1">Bảo trì</span>
-                            <span class="type" th:text="${row.room.roomType.name}"></span>
+                            <a th:href="@{/admin/rooms/{id}/view(id=${row.room.id})}" class="room-link">
+                                <span th:text="'Phòng ' + ${row.room.roomNumber}"></span>
+                                <span th:if="${maint}" class="badge bg-secondary ms-1">Bảo trì</span>
+                            </a>
+                            <span class="type" th:text="${row.room.roomType.name}" th:title="${row.room.roomType.name}"></span>
                         </div>
                         <div class="rc-track">
                             <th:block th:each="d : ${cal.dayList}">
-                                <a th:if="${d.bookable and !maint}" class="rc-cell"
+                                <a th:if="${d.bookable and !maint and row.isFree(d.date)}" class="rc-cell"
                                    th:classappend="${d.today} ? 'today' : (${d.weekend} ? 'weekend' : '')"
                                    th:style="|grid-column: ${d.gridStart()} / span 2|"
-                                   th:href="@{/admin/bookings/walk-in/new(roomId=${row.room.id}, checkIn=${d.date}, checkOut=${d.date.plusDays(1)})}"
+                                   th:href="@{/admin/bookings/walk-in/new(roomId=${row.room.id}, checkIn=${d.date}, checkOut=${d.date.plusDays(1)}, src='calendar')}"
                                    th:title="|Đặt phòng ${row.room.roomNumber} từ ${#temporals.format(d.date, 'dd/MM')}|"></a>
-                                <div th:unless="${d.bookable and !maint}" class="rc-cell"
-                                     th:classappend="${d.today} ? 'today' : (${d.weekend} ? 'weekend past' : 'past')"
+                                <!-- Qua khu / bao tri: to xam; dem da co khach: o thuong (thanh don nam de len) -->
+                                <div th:unless="${d.bookable and !maint and row.isFree(d.date)}" class="rc-cell"
+                                     th:classappend="${d.today} ? 'today' : (${d.weekend} ? 'weekend' : '') + (${!d.bookable or maint} ? ' past' : '')"
                                      th:style="|grid-column: ${d.gridStart()} / span 2|"></div>
                             </th:block>
                             <a th:each="bar : ${row.bars}" class="rc-bar"
                                th:with="b=${bar.booking}"
-                               th:classappend="|st-${b.status} ${bar.clippedLeft ? 'clip-l' : ''} ${bar.clippedRight ? 'clip-r' : ''} ${b.awaitingDeposit ? 'awaiting' : ''}|"
+                               th:classappend="|st-${b.status} ${bar.clippedLeft ? 'clip-l' : ''} ${bar.clippedRight ? 'clip-r' : ''} ${b.awaitingDeposit ? 'awaiting' : ''} ${bar.isShort() ? 'short' : ''}|"
                                th:style="|grid-column: ${bar.gridStart} / ${bar.gridEnd}|"
                                th:href="@{/admin/bookings/{id}(id=${b.id})}"
                                th:title="|#${b.id} · ${bar.guestName()} · ${b.status.vietnameseLabel}${b.awaitingDeposit ? ' (chờ cọc)' : ''}
 ${#temporals.format(b.checkInDate, 'dd/MM')} ${b.checkInTime} → ${#temporals.format(b.checkOutDate, 'dd/MM')} ${b.checkOutTime} · ${b.nights} đêm · ${b.numberOfGuests != null ? b.numberOfGuests : '?'} khách|">
                                 <span th:if="${b.newBooking}" class="dot" title="Đơn mới"></span>
-                                <span class="name" th:text="${bar.guestName()}"></span>
+                                <span class="name" th:text="${bar.displayName()}"></span>
                                 <span class="id" th:text="'#' + ${b.id}"></span>
                             </a>
                         </div>
@@ -154,7 +166,7 @@ ${#temporals.format(b.checkInDate, 'dd/MM')} ${b.checkInTime} → ${#temporals.f
 
                     <!-- Hang cuoi: so phong con trong moi dem -->
                     <div class="rc-row rc-foot">
-                        <div class="rc-label small fw-bold d-flex align-items-center">Phòng trống</div>
+                        <div class="rc-label small fw-bold">Phòng trống</div>
                         <div class="rc-track">
                             <div th:each="d : ${cal.dayList}" class="rc-cell"
                                  th:classappend="${cal.freeRooms[d.index] == 0} ? 'full'"

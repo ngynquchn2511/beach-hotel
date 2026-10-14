@@ -3,6 +3,7 @@ package com.hotel.config;
 import com.hotel.security.AdminPortalSuccessHandler;
 import com.hotel.security.CustomUserDetailsService;
 import com.hotel.security.CustomerPortalSuccessHandler;
+import com.hotel.security.LoginAttemptService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,15 +24,19 @@ import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.time.LocalDateTime;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
+    private final LoginAttemptService loginAttemptService;
 
-    public SecurityConfig(CustomUserDetailsService userDetailsService) {
+    public SecurityConfig(CustomUserDetailsService userDetailsService, LoginAttemptService loginAttemptService) {
         this.userDetailsService = userDetailsService;
+        this.loginAttemptService = loginAttemptService;
     }
 
     @Bean
@@ -62,10 +67,16 @@ public class SecurityConfig {
         };
     }
 
-    // Tai khoan bi khoa -> bao rieng "?locked=true", con lai (sai email/mat khau) -> "?error=true"
+    // Dang khoa tam vi sai mat khau nhieu lan (ke ca lan sai vua cham nguong) -> "?locked=temp&minutes=N";
+    // bi admin khoa -> "?locked=true"; con lai (sai email/mat khau) -> "?error=true"
     private AuthenticationFailureHandler loginFailureHandler(String loginPage) {
-        return (request, response, exception) -> response.sendRedirect(request.getContextPath() + loginPage
-                + (exception instanceof LockedException ? "?locked=true" : "?error=true"));
+        return (request, response, exception) -> {
+            String query = loginAttemptService.temporaryLockUntil(request.getParameter("username"))
+                    .map(until -> "?locked=temp&minutes="
+                            + Math.max(1, (Duration.between(LocalDateTime.now(), until).toSeconds() + 59) / 60))
+                    .orElse(exception instanceof LockedException ? "?locked=true" : "?error=true");
+            response.sendRedirect(request.getContextPath() + loginPage + query);
+        };
     }
 
     // Cong danh cho STAFF va ADMIN - trang dang nhap tai /admin

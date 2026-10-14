@@ -66,6 +66,10 @@ class RoomCalendarIT {
                 .totalAmount(BigDecimal.valueOf(500000)).discountAmount(BigDecimal.ZERO).status(status).build());
     }
 
+    private static org.hamcrest.Matcher<String> roomSelected(Long roomId) {
+        return org.hamcrest.Matchers.matchesPattern("(?s).*<option value=\"" + roomId + "\"\\s+selected=\"selected\".*");
+    }
+
     private RoomCalendarService.RoomRow rowOf(RoomCalendarService.Calendar cal) {
         return cal.rows().stream().filter(r -> r.room().getId().equals(room.getId())).findFirst().orElseThrow();
     }
@@ -145,5 +149,67 @@ class RoomCalendarIT {
     void customer_cannotAccessCalendar() throws Exception {
         mockMvc.perform(get("/admin/room-calendar").with(user(new CustomUserDetails(customer))))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void bookedNight_hasNoWalkInLink_freeNightsKeepIt() throws Exception {
+        // Khach nhan 03/03 -> nua dau o 03/03 van lo ra nhung KHONG duoc tro toi dem da co khach
+        seedBooking(FROM.plusDays(2), FROM.plusDays(4), BookingStatus.CONFIRMED, "Khach Dem");
+        String base = "/admin/bookings/walk-in/new?roomId=" + room.getId() + "&amp;checkIn=";
+
+        mockMvc.perform(get("/admin/room-calendar").param("from", FROM.toString()).param("days", "7")
+                        .with(user(new CustomUserDetails(staff))))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString(base + FROM.plusDays(1))))
+                .andExpect(content().string(not(containsString(base + FROM.plusDays(2) + "&amp;"))))
+                .andExpect(content().string(not(containsString(base + FROM.plusDays(3) + "&amp;"))))
+                // Ngay tra phong 05/03: dem 05/03 con trong -> dat tiep duoc
+                .andExpect(content().string(containsString(base + FROM.plusDays(4) + "&amp;")));
+
+        RoomCalendarService.RoomRow row = rowOf(roomCalendarService.build(FROM, 7, FROM));
+        assertFalse(row.isFree(FROM.plusDays(2)));
+        assertTrue(row.isFree(FROM.plusDays(4)));
+    }
+
+    @Test
+    void walkInForm_preselectedRoomTaken_warnsAndForcesChoice_insteadOfSilentlyPickingAnother() throws Exception {
+        seedBooking(FROM.plusDays(2), FROM.plusDays(4), BookingStatus.CONFIRMED, "Khach Dem");
+        // Phong khac con trong - truoc day dropdown tu chon phong nay ma khong bao gi
+        Room other = roomRepository.save(Room.builder().roomNumber("CAL2-" + System.nanoTime() % 100000)
+                .roomType(room.getRoomType()).price(BigDecimal.valueOf(500000)).status(RoomStatus.AVAILABLE).build());
+
+        mockMvc.perform(get("/admin/bookings/walk-in/new").with(user(new CustomUserDetails(staff)))
+                        .param("roomId", room.getId().toString()).param("src", "calendar")
+                        .param("checkIn", FROM.plusDays(2).toString()).param("checkOut", FROM.plusDays(3).toString()))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("không còn trống")))
+                .andExpect(content().string(containsString("-- Chọn phòng --")))
+                .andExpect(content().string(containsString("Quay lại lịch phòng")))
+                .andExpect(content().string(not(roomSelected(other.getId()))))
+                .andExpect(content().string(not(roomSelected(room.getId()))));
+
+        // Phong con trong -> chon san dung phong, khong co o "-- Chon phong --"
+        mockMvc.perform(get("/admin/bookings/walk-in/new").with(user(new CustomUserDetails(staff)))
+                        .param("roomId", room.getId().toString())
+                        .param("checkIn", FROM.plusDays(5).toString()).param("checkOut", FROM.plusDays(6).toString()))
+                .andExpect(content().string(not(containsString("-- Chọn phòng --"))))
+                .andExpect(content().string(roomSelected(room.getId())));
+    }
+
+    @Test
+    void walkInPost_error_keepsEverythingTyped() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/admin/bookings/walk-in/new")
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())
+                        .with(user(new CustomUserDetails(staff)))
+                        .param("guestName", "Tran Van Quay").param("guestPhone", "0911222333").param("guestEmail", "email-sai")
+                        .param("roomId", room.getId().toString()).param("src", "calendar")
+                        .param("checkIn", FROM.plusDays(5).toString()).param("checkOut", FROM.plusDays(6).toString())
+                        .param("checkInTime", "16:00").param("checkOutTime", "11:00"))
+                .andExpect(status().isOk())
+                .andExpect(model().attributeExists("errorMessage"))
+                .andExpect(content().string(containsString("value=\"Tran Van Quay\"")))
+                .andExpect(content().string(containsString("value=\"0911222333\"")))
+                .andExpect(content().string(containsString("value=\"16:00\" selected=\"selected\"")))
+                .andExpect(content().string(roomSelected(room.getId())));
     }
 }

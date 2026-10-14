@@ -19,15 +19,27 @@
         </div>
 
         <div class="col-md-9">
-            <a th:if="${preselectedRoomId != null}" th:href="@{/admin/rooms/{id}/view(id=${preselectedRoomId})}" class="d-inline-block mb-3">&laquo; Quay lại phòng</a>
-            <a th:unless="${preselectedRoomId != null}" th:href="@{/admin/bookings}" class="d-inline-block mb-3">&laquo; Quay lại danh sách đặt phòng</a>
+            <a th:if="${fromCalendar}" th:href="@{/admin/room-calendar(from=${checkIn != null ? checkIn.minusDays(1) : null})}"
+               class="d-inline-block mb-3">&laquo; Quay lại lịch phòng</a>
+            <a th:if="${!fromCalendar and preselectedRoomId != null}" th:href="@{/admin/rooms/{id}/view(id=${preselectedRoomId})}" class="d-inline-block mb-3">&laquo; Quay lại phòng</a>
+            <a th:if="${!fromCalendar and preselectedRoomId == null}" th:href="@{/admin/bookings}" class="d-inline-block mb-3">&laquo; Quay lại danh sách đặt phòng</a>
             <h3 class="fw-bold mb-4">Đặt phòng tại quầy (khách vãng lai)</h3>
 
             <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+            <div th:if="${unavailableRoom != null}" class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle me-1"></i>
+                <b th:text="'Phòng ' + ${unavailableRoom.roomNumber}"></b> không còn trống
+                từ <span th:text="${#temporals.format(checkIn, 'dd/MM')}"></span> đến <span th:text="${#temporals.format(checkOut, 'dd/MM')}"></span>
+                (đã có khách hoặc đang bảo trì). Hãy đổi ngày hoặc chọn phòng khác bên dưới.
+            </div>
 
             <div class="bg-white p-4 rounded shadow-sm mb-4">
                 <h6 class="fw-bold mb-3">Bước 1: Tìm phòng còn trống</h6>
                 <form th:action="@{/admin/bookings/walk-in/new}" method="get" class="row g-3 align-items-end">
+                    <!-- Giu phong / combo chon san va trang nguon khi tim lai theo ngay khac -->
+                    <input type="hidden" name="roomId" th:if="${preselectedRoomId != null}" th:value="${preselectedRoomId}">
+                    <input type="hidden" name="comboId" th:if="${preselectedComboId != null}" th:value="${preselectedComboId}">
+                    <input type="hidden" name="src" th:if="${fromCalendar}" value="calendar">
                     <div class="col-md-4">
                         <label class="form-label">Ngày nhận phòng</label>
                         <input type="date" name="checkIn" class="form-control" th:value="${checkIn}" required>
@@ -54,31 +66,35 @@
                 </div>
 
                 <form th:if="${not #lists.isEmpty(availableRooms)}" th:action="@{/admin/bookings/walk-in/new}" method="post">
-                    <div class="mb-3">
-                        <label class="form-label">Email nhan xac nhan</label>
-                        <input type="email" name="guestEmail" class="form-control" required>
-                    </div>
                     <input type="hidden" name="checkIn" th:value="${checkIn}">
                     <input type="hidden" name="checkOut" th:value="${checkOut}">
                     <input type="hidden" th:if="${guests != null}" name="guests" th:value="${guests}">
+                    <input type="hidden" name="src" th:if="${fromCalendar}" value="calendar">
 
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label class="form-label">Họ tên khách</label>
-                            <input type="text" name="guestName" class="form-control" required>
+                            <input type="text" name="guestName" class="form-control" required th:value="${guestName}">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Số điện thoại</label>
-                            <input type="text" name="guestPhone" class="form-control" required>
+                            <input type="text" name="guestPhone" class="form-control" required th:value="${guestPhone}">
                         </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Email nhận xác nhận</label>
+                        <input type="email" name="guestEmail" class="form-control" required th:value="${guestEmail}">
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label">Chọn phòng</label>
                         <select name="roomId" class="form-select" required>
+                            <!-- Khong co phong chon san con trong -> bat le tan tu chon, khong tu lay phong dau danh sach -->
+                            <option th:unless="${preselectedAvailable}" value="" selected>-- Chọn phòng --</option>
                             <option th:each="room : ${availableRooms}" th:value="${room.id}"
                                     th:text="'Phòng ' + ${room.roomNumber} + ' - ' + ${room.roomType.name} + ' (' + ${#numbers.formatDecimal(room.price, 1, 'POINT', 0, 'COMMA')} + 'VND/đêm)'"
-                                    th:selected="${preselectedRoomId != null and room.id == preselectedRoomId}"></option>
+                                    th:selected="${preselectedAvailable and room.id == preselectedRoomId}"></option>
                         </select>
                     </div>
 
@@ -86,13 +102,13 @@
                         <div class="col-md-6">
                             <label class="form-label">Giờ nhận phòng</label>
                             <select name="checkInTime" class="form-select">
-                                <option th:each="t : ${timeOptions}" th:value="${t}" th:text="${t}" th:selected="${t.toString() == '14:00'}"></option>
+                                <option th:each="t : ${timeOptions}" th:value="${t}" th:text="${t}" th:selected="${t == selectedCheckInTime}"></option>
                             </select>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Giờ trả phòng</label>
                             <select name="checkOutTime" class="form-select">
-                                <option th:each="t : ${timeOptions}" th:value="${t}" th:text="${t}" th:selected="${t.toString() == '12:00'}"></option>
+                                <option th:each="t : ${timeOptions}" th:value="${t}" th:text="${t}" th:selected="${t == selectedCheckOutTime}"></option>
                             </select>
                         </div>
                     </div>

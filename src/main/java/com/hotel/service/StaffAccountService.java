@@ -93,7 +93,7 @@ public class StaffAccountService {
         if (user.getId().equals(currentUserId)) {
             throw new BusinessException("Bạn không thể tự khóa tài khoản của chính mình");
         }
-        user.setLocked(!user.isLocked());
+        user.toggleLockByAdmin();
         userRepository.save(user);
     }
 

@@ -13,7 +13,9 @@
         <div class="text-center mb-4"><div class="badge-icon">⌘</div><div class="text-uppercase fw-bold small eyebrow-text">Sóng Xanh Resort</div><h1 class="h3 fw-bold mt-2 mb-1">Cổng quản trị</h1><p class="text-secondary mb-0">Dành cho nhân viên và quản trị viên.</p></div>
         <div th:if="${param.error}" class="alert alert-danger small">Email hoặc mật khẩu không đúng.</div>
         <div th:if="${param.error != null and param.error[0] == 'wrong_portal'}" class="alert alert-danger small">Tài khoản không có quyền truy cập khu vực quản trị.</div>
-        <div th:if="${param.locked}" class="alert alert-danger small">Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.</div>
+        <div th:if="${param.locked != null and param.locked[0] != 'temp'}" class="alert alert-danger small">Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.</div>
+        <div th:if="${param.locked != null and param.locked[0] == 'temp'}" class="alert alert-warning small"
+             th:text="|Đăng nhập sai quá ${T(com.hotel.security.LoginAttemptService).MAX_FAILED_ATTEMPTS} lần. Tài khoản tạm khóa, vui lòng thử lại sau ${param.minutes != null ? param.minutes[0] : T(com.hotel.security.LoginAttemptService).LOCK_MINUTES} phút hoặc nhờ quản trị viên mở khóa.|"></div>
         <div th:if="${param.logout}" class="alert alert-success small">Bạn đã đăng xuất thành công.</div>
         <form th:action="@{/admin/login}" method="post">
             <div class="mb-3"><label for="admin-email" class="form-label fw-semibold small">Email công việc</label><input id="admin-email" type="email" name="username" class="form-control" placeholder="name@hotel.com" autocomplete="email" required autofocus></div>

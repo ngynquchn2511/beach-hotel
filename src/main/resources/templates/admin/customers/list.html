@@ -55,13 +55,15 @@
                     <td>
                         <span class="badge" th:classappend="${c.isLocked()} ? 'bg-danger' : 'bg-success'"
                               th:text="${c.isLocked()} ? 'Đã khóa' : 'Hoạt động'"></span>
+                        <span th:if="${!c.isLocked() and c.temporarilyLocked}" class="badge bg-warning text-dark d-block mt-1"
+                              th:text="'Tạm khóa (sai mật khẩu) đến ' + ${#temporals.format(c.loginLockedUntil, 'HH:mm')}"></span>
                     </td>
                     <td class="text-end">
                         <form sec:authorize="hasRole('ADMIN')" th:action="@{/admin/customers/{id}/toggle-lock(id=${c.id})}" method="post" class="d-inline"
                               onsubmit="return confirm('Xác nhận thay đổi trạng thái khóa của tài khoản này?')">
                             <button type="submit" class="btn btn-sm"
-                                    th:classappend="${c.isLocked()} ? 'btn-outline-success' : 'btn-outline-danger'"
-                                    th:text="${c.isLocked()} ? 'Mở khóa' : 'Khóa'"></button>
+                                    th:classappend="${c.isLocked() or c.temporarilyLocked} ? 'btn-outline-success' : 'btn-outline-danger'"
+                                    th:text="${c.isLocked() or c.temporarilyLocked} ? 'Mở khóa' : 'Khóa'"></button>
                         </form>
                     </td>
                 </tr>

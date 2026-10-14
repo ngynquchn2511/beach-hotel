@@ -55,6 +55,14 @@ public class User {
     @Column(name = "locked")
     private Boolean locked;
 
+    // Chong do mat khau (LoginAttemptService): so lan sai lien tiep va thoi diem het khoa tam.
+    // Cho phep null (tai khoan cu) = chua sai lan nao / khong bi khoa tam
+    @Column(name = "failed_login_attempts")
+    private Integer failedLoginAttempts;
+
+    @Column(name = "login_locked_until")
+    private LocalDateTime loginLockedUntil;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -68,5 +76,33 @@ public class User {
 
     public boolean isLocked() {
         return Boolean.TRUE.equals(locked);
+    }
+
+    // Dang bi khoa tam vi nhap sai mat khau nhieu lan (tu mo khi het han)
+    public boolean isTemporarilyLocked() {
+        return loginLockedUntil != null && loginLockedUntil.isAfter(LocalDateTime.now());
+    }
+
+    public int getFailedLoginCount() {
+        return failedLoginAttempts == null ? 0 : failedLoginAttempts;
+    }
+
+    // Nut Khoa / Mo khoa cua admin: dang khoa tam (sai mat khau) -> mo ngay; con lai doi trang thai khoa,
+    // mo khoa thi xoa luon dem sai mat khau
+    public void toggleLockByAdmin() {
+        if (!isLocked() && isTemporarilyLocked()) {
+            clearLoginFailures();
+            return;
+        }
+        locked = !isLocked();
+        if (!locked) {
+            clearLoginFailures();
+        }
+    }
+
+    // Xoa dem sai mat khau + khoa tam (dang nhap dung, admin mo khoa, dat lai mat khau qua email)
+    public void clearLoginFailures() {
+        failedLoginAttempts = 0;
+        loginLockedUntil = null;
     }
 }
