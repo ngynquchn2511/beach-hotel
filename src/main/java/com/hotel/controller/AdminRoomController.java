@@ -205,13 +205,18 @@ public class AdminRoomController {
     }
 
     @PostMapping("/{id}/mark-ready")
-    public String markReady(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+    // back=today: bam tu man hinh "Hom nay" -> quay lai do
+    public String markReady(@PathVariable Long id, @RequestParam(required = false) String back,
+                            RedirectAttributes redirectAttributes) {
         try {
             roomService.markReady(id);
+            if ("today".equals(back)) {
+                redirectAttributes.addFlashAttribute("successMessage", "Đã đánh dấu phòng dọn xong, sẵn sàng đón khách");
+            }
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
-        return "redirect:/admin/rooms";
+        return "today".equals(back) ? "redirect:/admin/today" : "redirect:/admin/rooms";
     }
 
     @PostMapping("/{id}/delete")

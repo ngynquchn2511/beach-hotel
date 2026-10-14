@@ -1,6 +1,7 @@
 package com.hotel.controller;
 
 import com.hotel.service.BookingService;
+import com.hotel.service.FrontDeskService;
 import com.hotel.service.ServiceOrderService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 // tren moi trang co sidebar - khong ap dung cho trang dang nhap (AdminAuthController)
 @ControllerAdvice(assignableTypes = {
         AdminController.class,
+        AdminTodayController.class,
         AdminBookingController.class,
         AdminRoomCalendarController.class,
         AdminWalkInBookingController.class,
@@ -30,10 +32,19 @@ public class AdminSidebarModelAdvice {
 
     private final BookingService bookingService;
     private final ServiceOrderService serviceOrderService;
+    private final FrontDeskService frontDeskService;
 
-    public AdminSidebarModelAdvice(BookingService bookingService, ServiceOrderService serviceOrderService) {
+    public AdminSidebarModelAdvice(BookingService bookingService, ServiceOrderService serviceOrderService,
+                                   FrontDeskService frontDeskService) {
         this.bookingService = bookingService;
         this.serviceOrderService = serviceOrderService;
+        this.frontDeskService = frontDeskService;
+    }
+
+    // So khach con phai don hom nay (chua nhan phong) - hien o muc "Hom nay"
+    @ModelAttribute("arrivalsLeftToday")
+    public long arrivalsLeftToday() {
+        return frontDeskService.arrivalsLeftToday(java.time.LocalDate.now());
     }
 
     // So dich vu them (tour lan / xe dua don) dang cho le tan xac nhan - hien so o muc "Dich vu them"

@@ -50,7 +50,8 @@ class SecurityAccessMatrixIT extends ItFixtures {
             "/admin/customers,ANONYMOUS,Chuyển về /admin", "/admin/customers,CUSTOMER,403 Forbidden", "/admin/customers,STAFF,200 OK", "/admin/customers,ADMIN,200 OK",
             "/admin/bookings/walk-in/new,ANONYMOUS,Chuyển về /admin", "/admin/bookings/walk-in/new,CUSTOMER,403 Forbidden",
             "/admin/bookings/walk-in/new,STAFF,200 OK", "/admin/bookings/walk-in/new,ADMIN,200 OK",
-            "/staff/bookings,ANONYMOUS,Chuyển về /admin", "/staff/bookings,CUSTOMER,403 Forbidden", "/staff/bookings,STAFF,200 OK", "/staff/bookings,ADMIN,200 OK",
+            "/admin/today,ANONYMOUS,Chuyển về /admin", "/admin/today,CUSTOMER,403 Forbidden", "/admin/today,STAFF,200 OK", "/admin/today,ADMIN,200 OK",
+            "/staff/bookings,ANONYMOUS,Chuyển về /admin", "/staff/bookings,CUSTOMER,403 Forbidden",
             // Tạo mới danh mục và mã giảm giá - chỉ ADMIN, STAFF bị chặn
             "/admin/room-types/new,ANONYMOUS,Chuyển về /admin", "/admin/room-types/new,CUSTOMER,403 Forbidden", "/admin/room-types/new,STAFF,403 Forbidden", "/admin/room-types/new,ADMIN,200 OK",
             "/admin/rooms/new,ANONYMOUS,Chuyển về /admin", "/admin/rooms/new,CUSTOMER,403 Forbidden", "/admin/rooms/new,STAFF,403 Forbidden", "/admin/rooms/new,ADMIN,200 OK",

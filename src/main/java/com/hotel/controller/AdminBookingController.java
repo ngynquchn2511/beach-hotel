@@ -150,13 +150,17 @@ public class AdminBookingController {
     }
 
     @PostMapping("/{id}/check-in")
-    public String checkIn(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+    // back=today: bam tu man hinh "Hom nay" -> quay lai do (chi nhan dung gia tri nay, khong redirect tuy y)
+    public String checkIn(@PathVariable Long id, @RequestParam(required = false) String back,
+                          RedirectAttributes redirectAttributes) {
         try {
-            bookingService.checkIn(id);
+            var booking = bookingService.checkIn(id);
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "Đã check-in đơn #" + id + " - phòng " + booking.getRoom().getRoomNumber());
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
-        return "redirect:/admin/bookings/" + id;
+        return "today".equals(back) ? "redirect:/admin/today" : "redirect:/admin/bookings/" + id;
     }
 
     // Man hinh check-out: chon phuong thuc thanh toan (tien mat / chuyen khoan QR / the) truoc khi tra phong

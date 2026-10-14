@@ -1,6 +1,12 @@
 <nav th:fragment="sidebar" class="list-group admin-sidebar" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
      th:with="p=${currentPath != null ? currentPath : ''}">
     <div class="admin-sidebar-title">Quầy lễ tân</div>
+    <a th:href="@{/admin/today}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+       th:classappend="${p.startsWith('/admin/today')} ? 'active'">
+        <span><i class="bi bi-calendar-check"></i>Hôm nay</span>
+        <span th:if="${arrivalsLeftToday != null and arrivalsLeftToday > 0}" class="badge rounded-pill bg-primary"
+              th:text="${arrivalsLeftToday}" title="Khách đến hôm nay chưa nhận phòng"></span>
+    </a>
     <a th:href="@{/admin/dashboard}" class="list-group-item list-group-item-action"
        th:classappend="${p.startsWith('/admin/dashboard')} ? 'active'"><i class="bi bi-speedometer2"></i>Tổng quan</a>
     <a th:href="@{/admin/bookings}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
