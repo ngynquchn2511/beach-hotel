@@ -1,0 +1,14 @@
+<!-- The SEO dung chung trong <head>: mo ta trang + Open Graph (link chia se Zalo / Facebook co tieu de, mo ta, anh).
+     title / description: chuoi da dich; image: duong dan anh tren site (VD /page-images/trangchu.jpg); path: duong dan trang -->
+<th:block th:fragment="meta(title, description, image, path)" xmlns:th="http://www.thymeleaf.org">
+    <meta name="description" th:content="${description}">
+    <link rel="canonical" th:href="${siteBaseUrl + path}">
+    <meta property="og:site_name" content="Sóng Xanh Resort">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" th:content="${#locale.language == 'en'} ? 'en_US' : 'vi_VN'">
+    <meta property="og:title" th:content="${title}">
+    <meta property="og:description" th:content="${description}">
+    <meta property="og:url" th:content="${siteBaseUrl + path}">
+    <meta property="og:image" th:if="${image != null}" th:content="${image.startsWith('http') ? image : siteBaseUrl + image}">
+    <meta name="twitter:card" content="summary_large_image">
+</th:block>
