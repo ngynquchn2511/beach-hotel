@@ -81,6 +81,8 @@ public final class AuditLabels {
             Map.entry("paymentMethod", "Phương thức"),
             Map.entry("paymentDate", "Ngày thanh toán"),
             Map.entry("rating", "Số sao"),
+            Map.entry("reply", "Trả lời của resort"),
+            Map.entry("repliedAt", "Thời điểm trả lời"),
             Map.entry("comment", "Nhận xét"),
             Map.entry("hidden", "Ẩn"),
             Map.entry("type", "Loại"),

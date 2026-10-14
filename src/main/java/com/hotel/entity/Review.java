@@ -46,6 +46,13 @@ public class Review {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    // Resort tra loi cong khai duoi danh gia (null = chua tra loi)
+    @Column(name = "reply", length = 1000)
+    private String reply;
+
+    @Column(name = "replied_at")
+    private LocalDateTime repliedAt;
+
     // Anh / video dinh kem (toi da 5), theo thu tu khach chon
     @OneToMany(mappedBy = "review", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("sortOrder ASC")
@@ -54,6 +61,10 @@ public class Review {
 
     public boolean isHidden() {
         return Boolean.TRUE.equals(hidden);
+    }
+
+    public boolean isReplied() {
+        return reply != null && !reply.isBlank();
     }
 
     @PrePersist

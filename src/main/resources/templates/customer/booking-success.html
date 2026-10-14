@@ -138,6 +138,10 @@
             </div>
             <p class="mb-1" th:if="${review.comment != null}" th:text="'“' + ${review.comment} + '”'"></p>
             <div th:replace="~{fragments/review-media :: gallery(${review.media})}"></div>
+            <div th:if="${review.replied}" class="mt-2 mb-2 ms-3 ps-3 border-start border-2 border-info">
+                <div class="small fw-bold" th:text="#{review.replyTitle}">Phản hồi từ Sóng Xanh Resort</div>
+                <p class="small mb-0" style="white-space: pre-line" th:text="${review.reply}"></p>
+            </div>
             <div class="small text-muted" th:text="#{success.reviewSent(${#temporals.format(review.createdAt, 'HH:mm dd/MM/yyyy')})}"></div>
             <div class="small text-muted mt-1" th:if="${review.hidden}">
                 <i class="bi bi-eye-slash me-1"></i><span th:text="#{success.reviewHidden}">Đánh giá này đang được ẩn khỏi trang công khai.</span>

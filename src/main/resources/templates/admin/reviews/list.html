@@ -36,7 +36,7 @@
             <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
 
             <form th:action="@{/admin/reviews}" method="get" class="row g-2 bg-white p-3 rounded shadow-sm mb-3">
-                <div class="col-md-5">
+                <div class="col-md-3">
                     <input type="text" name="q" th:value="${q}" class="form-control form-control-sm"
                            placeholder="Tên / email khách, nội dung, hoặc mã đơn">
                 </div>
@@ -47,11 +47,18 @@
                                 th:selected="${rating == n}"></option>
                     </select>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <select name="hidden" class="form-select form-select-sm">
                         <option value="">Mọi trạng thái</option>
                         <option value="false" th:selected="${hidden != null and !hidden}">Đang hiển thị</option>
                         <option value="true" th:selected="${hidden != null and hidden}">Đã ẩn</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select name="replied" class="form-select form-select-sm">
+                        <option value="">Trả lời: tất cả</option>
+                        <option value="false" th:selected="${replied != null and !replied}">Chưa trả lời</option>
+                        <option value="true" th:selected="${replied != null and replied}">Đã trả lời</option>
                     </select>
                 </div>
                 <div class="col-md-2 d-flex gap-1">
@@ -76,7 +83,7 @@
                     </tr>
                     </thead>
                     <tbody>
-                    <tr th:each="r : ${reviews}" th:classappend="${r.hidden} ? 'is-hidden'">
+                    <tr th:each="r : ${reviews}" th:classappend="${r.hidden} ? 'is-hidden'" th:id="'review-' + ${r.id}">
                         <td class="text-nowrap" th:text="${#temporals.format(r.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
                         <td>
                             <div class="fw-semibold" th:text="${r.customer.fullName}"></div>
@@ -93,6 +100,26 @@
                             <p class="review-comment" th:if="${r.comment != null}" th:text="${r.comment}"></p>
                             <span class="text-muted fst-italic" th:if="${r.comment == null}">(Không có nhận xét)</span>
                             <div th:replace="~{fragments/review-media :: gallery(${r.media})}"></div>
+                            <!-- Tra loi cong khai cua resort: hien duoi danh gia o trang phong / trang don cua khach -->
+                            <details class="mt-2" th:open="${!r.replied}">
+                                <summary class="small fw-semibold text-primary">
+                                    <span th:if="${r.replied}" th:text="|Đã trả lời ${#temporals.format(r.repliedAt, 'dd/MM/yyyy HH:mm')} — sửa|"></span>
+                                    <span th:unless="${r.replied}">Trả lời khách</span>
+                                </summary>
+                                <form th:action="@{/admin/reviews/{id}/reply(id=${r.id})}" method="post" class="mt-1">
+                                    <input type="hidden" name="rating" th:value="${rating}">
+                                    <input type="hidden" name="hidden" th:value="${hidden}">
+                                    <input type="hidden" name="replied" th:value="${replied}">
+                                    <input type="hidden" name="q" th:value="${q}">
+                                    <input type="hidden" name="page" th:value="${currentPage}">
+                                    <textarea name="reply" rows="2" maxlength="1000" class="form-control form-control-sm"
+                                              placeholder="Cảm ơn khách, giải đáp góp ý... (hiển thị công khai dưới đánh giá; để trống rồi lưu để gỡ)"
+                                              th:text="${r.reply}"></textarea>
+                                    <button type="submit" class="btn btn-sm btn-primary mt-1"
+                                            th:text="${r.replied} ? 'Lưu câu trả lời' : 'Gửi trả lời'"></button>
+                                    <span th:unless="${r.replied}" class="small text-muted ms-1">Khách sẽ nhận email báo đã có trả lời.</span>
+                                </form>
+                            </details>
                         </td>
                         <td>
                             <span th:if="${r.hidden}" class="badge bg-secondary">Đã ẩn</span>
@@ -103,6 +130,7 @@
                                   th:attr="onsubmit=${r.hidden} ? null : 'return confirm(\'Ẩn đánh giá này khỏi trang khách hàng?\')'">
                                 <input type="hidden" name="rating" th:value="${rating}">
                                 <input type="hidden" name="hidden" th:value="${hidden}">
+                                <input type="hidden" name="replied" th:value="${replied}">
                                 <input type="hidden" name="q" th:value="${q}">
                                 <input type="hidden" name="page" th:value="${currentPage}">
                                 <button type="submit" class="btn btn-sm"
@@ -118,16 +146,16 @@
             <nav th:if="${totalPages > 1}" aria-label="Phân trang">
                 <ul class="pagination justify-content-center mt-3 mb-0">
                     <li class="page-item" th:classappend="${currentPage <= 1} ? 'disabled'">
-                        <a class="page-link" th:href="@{/admin/reviews(page=${currentPage - 1}, q=${q}, rating=${rating}, hidden=${hidden})}">&laquo;</a>
+                        <a class="page-link" th:href="@{/admin/reviews(page=${currentPage - 1}, q=${q}, rating=${rating}, hidden=${hidden}, replied=${replied})}">&laquo;</a>
                     </li>
                     <li th:each="p : ${pageNumbers}" class="page-item"
                         th:classappend="${p == 0} ? 'disabled' : (${p == currentPage} ? 'active')">
                         <span th:if="${p == 0}" class="page-link">&hellip;</span>
                         <a th:unless="${p == 0}" class="page-link" th:text="${p}"
-                           th:href="@{/admin/reviews(page=${p}, q=${q}, rating=${rating}, hidden=${hidden})}"></a>
+                           th:href="@{/admin/reviews(page=${p}, q=${q}, rating=${rating}, hidden=${hidden}, replied=${replied})}"></a>
                     </li>
                     <li class="page-item" th:classappend="${currentPage >= totalPages} ? 'disabled'">
-                        <a class="page-link" th:href="@{/admin/reviews(page=${currentPage + 1}, q=${q}, rating=${rating}, hidden=${hidden})}">&raquo;</a>
+                        <a class="page-link" th:href="@{/admin/reviews(page=${currentPage + 1}, q=${q}, rating=${rating}, hidden=${hidden}, replied=${replied})}">&raquo;</a>
                     </li>
                 </ul>
             </nav>

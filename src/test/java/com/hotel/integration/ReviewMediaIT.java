@@ -195,4 +195,52 @@ class ReviewMediaIT {
             return s.count();
         }
     }
+
+    @Test
+    void staffReplies_shownPublicly_filterUnreplied_editAndRemove() throws Exception {
+        mockMvc.perform(reviewRequest()).andExpect(flash().attributeExists("reviewSuccess"));
+        Review review = reviewRepository.findByBookingId(booking.getId()).orElseThrow();
+        CustomUserDetails staff = new CustomUserDetails(userRepository.findByEmail("staff@hotel.com").orElseThrow());
+
+        // Loc "chua tra loi" thay danh gia nay
+        mockMvc.perform(get("/admin/reviews").param("replied", "false").with(user(staff)))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("review-" + review.getId())));
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/admin/reviews/{id}/reply", review.getId())
+                        .with(csrf()).with(user(staff)).param("reply", "  Cảm ơn bạn, hẹn gặp lại!  ").param("replied", "false"))
+                .andExpect(redirectedUrl("/admin/reviews?replied=false&page=1#review-" + review.getId()))
+                .andExpect(flash().attributeExists("successMessage"));
+
+        Review replied = reviewRepository.findById(review.getId()).orElseThrow();
+        assertThat(replied.getReply()).isEqualTo("Cảm ơn bạn, hẹn gặp lại!");
+        assertThat(replied.getRepliedAt()).isNotNull();
+
+        // Hien cong khai o trang phong va trang don cua khach
+        mockMvc.perform(get("/customer/rooms/{id}", room.getId()))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Phản hồi từ Sóng Xanh Resort")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Cảm ơn bạn, hẹn gặp lại!")));
+        mockMvc.perform(get("/customer/bookings/{id}", booking.getId()).with(user(me)))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Cảm ơn bạn, hẹn gặp lại!")));
+
+        // Da tra loi -> khong con trong loc "chua tra loi"
+        mockMvc.perform(get("/admin/reviews").param("replied", "false").with(user(staff)))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("review-" + review.getId() + "\""))));
+
+        // De trong -> go cau tra loi
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/admin/reviews/{id}/reply", review.getId())
+                        .with(csrf()).with(user(staff)).param("reply", "   "))
+                .andExpect(flash().attributeExists("successMessage"));
+        assertThat(reviewRepository.findById(review.getId()).orElseThrow().isReplied()).isFalse();
+    }
+
+    @Test
+    void customerCannotReply() throws Exception {
+        mockMvc.perform(reviewRequest()).andExpect(flash().attributeExists("reviewSuccess"));
+        Review review = reviewRepository.findByBookingId(booking.getId()).orElseThrow();
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/admin/reviews/{id}/reply", review.getId())
+                        .with(csrf()).with(user(me)).param("reply", "Tu khen minh"))
+                .andExpect(status().isForbidden());
+        assertThat(reviewRepository.findById(review.getId()).orElseThrow().isReplied()).isFalse();
+    }
 }

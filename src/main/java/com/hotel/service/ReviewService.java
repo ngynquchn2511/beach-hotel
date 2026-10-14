@@ -27,13 +27,15 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final BookingService bookingService;
     private final FileStorageService fileStorageService;
+    private final EmailService emailService;
 
     // Toi da so anh + video dinh kem moi danh gia
     public static final int MAX_MEDIA_PER_REVIEW = 5;
 
     public ReviewService(ReviewRepository reviewRepository, BookingService bookingService,
-                         FileStorageService fileStorageService) {
+                         FileStorageService fileStorageService, EmailService emailService) {
         this.fileStorageService = fileStorageService;
+        this.emailService = emailService;
         this.reviewRepository = reviewRepository;
         this.bookingService = bookingService;
     }
@@ -148,10 +150,16 @@ public class ReviewService {
 
     // Loc danh sach cho admin: theo so sao, trang thai an/hien, tu khoa (ten khach, email, noi dung, ma don)
     public List<Review> findAllForAdmin(Integer rating, Boolean hidden, String keyword) {
+        return findAllForAdmin(rating, hidden, null, keyword);
+    }
+
+    // replied: null = tat ca, false = chua tra loi (de le tan khong bo sot), true = da tra loi
+    public List<Review> findAllForAdmin(Integer rating, Boolean hidden, Boolean replied, String keyword) {
         String q = keyword == null ? "" : keyword.trim().toLowerCase();
         return reviewRepository.findAllByOrderByCreatedAtDesc().stream()
                 .filter(r -> rating == null || r.getRating().equals(rating))
                 .filter(r -> hidden == null || r.isHidden() == hidden)
+                .filter(r -> replied == null || r.isReplied() == replied)
                 .filter(r -> q.isEmpty()
                         || contains(r.getCustomer().getFullName(), q)
                         || contains(r.getCustomer().getEmail(), q)
@@ -166,6 +174,30 @@ public class ReviewService {
                 .orElseThrow(() -> new BusinessException("Không tìm thấy đánh giá"));
         review.setHidden(!review.isHidden());
         return reviewRepository.save(review);
+    }
+
+    // Resort tra loi cong khai duoi danh gia. De trong = go cau tra loi. Lan dau tra loi -> email bao khach
+    @Transactional
+    public Review reply(Long reviewId, String text) {
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new BusinessException("Không tìm thấy đánh giá"));
+        String trimmed = text == null ? "" : text.trim();
+        if (trimmed.length() > MAX_COMMENT_LENGTH) {
+            throw new BusinessException("Câu trả lời tối đa " + MAX_COMMENT_LENGTH + " ký tự");
+        }
+        boolean firstReply = !review.isReplied();
+        if (trimmed.isEmpty()) {
+            review.setReply(null);
+            review.setRepliedAt(null);
+            return reviewRepository.save(review);
+        }
+        review.setReply(trimmed);
+        review.setRepliedAt(java.time.LocalDateTime.now());
+        Review saved = reviewRepository.save(review);
+        if (firstReply) {
+            emailService.sendReviewReply(saved);
+        }
+        return saved;
     }
 
     private boolean contains(String value, String q) {

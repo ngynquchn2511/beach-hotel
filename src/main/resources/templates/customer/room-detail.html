@@ -109,6 +109,10 @@
                     <div class="room-stars small mb-1"><i th:each="n : ${#numbers.sequence(1, 5)}" th:class="${n <= rv.rating} ? 'bi bi-star-fill' : 'bi bi-star'"></i></div>
                     <p class="mb-0" th:if="${rv.comment != null}" th:text="${rv.comment}"></p>
                     <div th:replace="~{fragments/review-media :: gallery(${rv.media})}"></div>
+                    <div th:if="${rv.replied}" class="review-reply mt-2 ms-3 ps-3 border-start border-2 border-info">
+                        <div class="small fw-bold" th:text="#{review.replyTitle}">Phản hồi từ Sóng Xanh Resort</div>
+                        <p class="small mb-0" style="white-space: pre-line" th:text="${rv.reply}"></p>
+                    </div>
                 </div>
             </div>
         </div>

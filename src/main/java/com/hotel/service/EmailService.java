@@ -207,6 +207,25 @@ public class EmailService {
         return queue(booking, "Sóng Xanh Resort - Bạn thấy kỳ nghỉ thế nào?", sb.toString(), "moi danh gia");
     }
 
+    // Resort vua tra loi danh gia cua khach (lan dau) - gui kem noi dung tra loi va link xem
+    public boolean sendReviewReply(com.hotel.entity.Review review) {
+        Booking booking = review.getBooking();
+        if (!canEmail(booking)) {
+            return false;
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append("Xin chào ").append(booking.getGuestName()).append(",\n\n");
+        sb.append("Cảm ơn bạn đã dành thời gian đánh giá kỳ nghỉ tại Sóng Xanh Resort (đơn #")
+                .append(booking.getId()).append("). Resort đã trả lời đánh giá của bạn:\n\n");
+        sb.append("\"").append(review.getReply()).append("\"\n\n");
+        String link = bookingLink(booking, "#danh-gia");
+        if (link != null) {
+            sb.append("Xem đánh giá: ").append(link).append("\n\n");
+        }
+        sb.append("Hẹn gặp lại bạn bên vịnh Hạ Long!\nSóng Xanh Resort");
+        return queue(booking, "Sóng Xanh Resort - Đã trả lời đánh giá của bạn", sb.toString(), "tra loi danh gia");
+    }
+
     private boolean canEmail(Booking booking) {
         if (booking.getGuestEmail() == null || booking.getGuestEmail().isBlank()
                 || booking.getGuestEmail().endsWith("@khachvanglai.local")) {

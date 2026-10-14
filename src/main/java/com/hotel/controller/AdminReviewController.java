@@ -27,9 +27,11 @@ public class AdminReviewController {
     @GetMapping
     public String list(@RequestParam(required = false) Integer rating,
                        @RequestParam(required = false) Boolean hidden,
+                       @RequestParam(required = false) Boolean replied,
                        @RequestParam(required = false) String q,
                        @RequestParam(defaultValue = "1") int page, Model model) {
-        List<Review> all = reviewService.findAllForAdmin(rating, hidden, q);
+        List<Review> all = reviewService.findAllForAdmin(rating, hidden, replied, q);
+        model.addAttribute("replied", replied);
         int totalPages = PaginationUtil.totalPages(all.size(), PaginationUtil.DEFAULT_PAGE_SIZE);
         model.addAttribute("reviews", PaginationUtil.slice(all, page, PaginationUtil.DEFAULT_PAGE_SIZE));
         model.addAttribute("totalElements", all.size());
@@ -44,11 +46,43 @@ public class AdminReviewController {
         return "admin/reviews/list";
     }
 
+    // Tra loi cong khai (de trong = go cau tra loi). Giu nguyen bo loc + trang hien tai
+    @PostMapping("/{id}/reply")
+    public String reply(@PathVariable Long id,
+                        @RequestParam(required = false) String reply,
+                        @RequestParam(required = false) Integer rating,
+                        @RequestParam(required = false) Boolean hidden,
+                        @RequestParam(required = false) Boolean replied,
+                        @RequestParam(required = false) String q,
+                        @RequestParam(defaultValue = "1") int page,
+                        RedirectAttributes redirectAttributes) {
+        try {
+            Review review = reviewService.reply(id, reply);
+            redirectAttributes.addFlashAttribute("successMessage", review.isReplied()
+                    ? "Đã lưu câu trả lời cho đánh giá của đơn #" + review.getBooking().getId()
+                    : "Đã gỡ câu trả lời của đánh giá đơn #" + review.getBooking().getId());
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "redirect:" + listUrl(rating, hidden, replied, q, page) + "#review-" + id;
+    }
+
+    private static String listUrl(Integer rating, Boolean hidden, Boolean replied, String q, int page) {
+        return UriComponentsBuilder.fromPath("/admin/reviews")
+                .queryParamIfPresent("rating", Optional.ofNullable(rating))
+                .queryParamIfPresent("hidden", Optional.ofNullable(hidden))
+                .queryParamIfPresent("replied", Optional.ofNullable(replied))
+                .queryParamIfPresent("q", Optional.ofNullable(q).filter(s -> !s.isBlank()))
+                .queryParam("page", page)
+                .encode().toUriString();
+    }
+
     // Giu nguyen bo loc + trang hien tai sau khi an/hien
     @PostMapping("/{id}/toggle-hidden")
     public String toggleHidden(@PathVariable Long id,
                                @RequestParam(required = false) Integer rating,
                                @RequestParam(required = false) Boolean hidden,
+                               @RequestParam(required = false) Boolean replied,
                                @RequestParam(required = false) String q,
                                @RequestParam(defaultValue = "1") int page,
                                RedirectAttributes redirectAttributes) {
@@ -60,12 +94,6 @@ public class AdminReviewController {
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
-        String url = UriComponentsBuilder.fromPath("/admin/reviews")
-                .queryParamIfPresent("rating", Optional.ofNullable(rating))
-                .queryParamIfPresent("hidden", Optional.ofNullable(hidden))
-                .queryParamIfPresent("q", Optional.ofNullable(q).filter(s -> !s.isBlank()))
-                .queryParam("page", page)
-                .encode().toUriString();
-        return "redirect:" + url;
+        return "redirect:" + listUrl(rating, hidden, replied, q, page);
     }
 }

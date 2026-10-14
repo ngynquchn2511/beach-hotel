@@ -151,6 +151,19 @@ class EmailServiceDeliveryTest {
     }
 
     @Test
+    void reviewReply_quotesReplyAndLinksToReviewSection() {
+        ReflectionTestUtils.setField(emailService, "baseUrl", "https://songxanh.vn");
+        Booking b = booking();
+        b.setAccessToken("tok123");
+        Review review = Review.builder().id(3L).booking(b).rating(5).reply("Cảm ơn bạn!").build();
+
+        assertEquals(true, emailService.sendReviewReply(review));
+        org.assertj.core.api.Assertions.assertThat(sentMessage().getText())
+                .contains("\"Cảm ơn bạn!\"")
+                .contains("https://songxanh.vn/customer/bookings/7?token=tok123#danh-gia");
+    }
+
+    @Test
     void autoEmails_skipWalkInPlaceholderAndMissingMailConfig() {
         Booking walkIn = booking();
         walkIn.setGuestEmail("0900000000@khachvanglai.local");
