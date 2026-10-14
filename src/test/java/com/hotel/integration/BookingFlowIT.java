@@ -182,21 +182,45 @@ class BookingFlowIT {
                 .andExpect(jsonPath("$.valid").value(false));
     }
 
+    private Booking pendingBookingOf(User owner) {
+        return bookingRepository.save(Booking.builder().customer(owner).room(room)
+                .checkInDate(LocalDate.now().plusDays(3)).checkOutDate(LocalDate.now().plusDays(4))
+                .checkInTime(LocalTime.of(14, 0)).checkOutTime(LocalTime.of(12, 0)).numberOfGuests(1)
+                .guestName("Owner").guestPhone("0900111222").guestEmail(owner.getEmail())
+                .totalAmount(BigDecimal.valueOf(400000)).discountAmount(BigDecimal.ZERO).status(BookingStatus.PENDING).build());
+    }
+
+    // Khong dang nhap, khong co ma truy cap (hoac sai ma) -> khong huy duoc, bao link khong hop le
     @Test
-    void cancelBooking_requiresAuthentication() throws Exception {
-        mockMvc.perform(post("/customer/bookings/{id}/cancel", 1L).with(csrf()))
+    void cancelBooking_anonymousWithoutValidToken_rejected() throws Exception {
+        Booking booking = pendingBookingOf(persistCustomer("notoken@mail.com"));
+
+        mockMvc.perform(post("/customer/bookings/{id}/cancel", booking.getId()).with(csrf()))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrlPattern("**/login"));
+                .andExpect(flash().attributeExists("errorMessage"));
+        mockMvc.perform(post("/customer/bookings/{id}/cancel", booking.getId()).param("token", "sai-ma").with(csrf()))
+                .andExpect(flash().attributeExists("errorMessage"));
+
+        org.junit.jupiter.api.Assertions.assertEquals(BookingStatus.PENDING,
+                bookingRepository.findById(booking.getId()).orElseThrow().getStatus());
+    }
+
+    // Khach vang lai huy bang link trong email (?token=) -> huy duoc, quay lai trang don giu token
+    @Test
+    void cancelBooking_guestWithEmailLinkToken_cancels() throws Exception {
+        Booking booking = pendingBookingOf(persistCustomer("guestlink@mail.com"));
+
+        mockMvc.perform(post("/customer/bookings/{id}/cancel", booking.getId()).param("token", booking.getAccessToken()).with(csrf()))
+                .andExpect(redirectedUrl("/customer/bookings/" + booking.getId() + "?token=" + booking.getAccessToken()));
+
+        org.junit.jupiter.api.Assertions.assertEquals(BookingStatus.CANCELLED,
+                bookingRepository.findById(booking.getId()).orElseThrow().getStatus());
     }
 
     @Test
     void cancelBooking_ownerCancelsPendingBooking_statusBecomesCancelled() throws Exception {
         User owner = persistCustomer("cancelowner@mail.com");
-        Booking booking = bookingRepository.save(Booking.builder().customer(owner).room(room)
-                .checkInDate(LocalDate.now().plusDays(3)).checkOutDate(LocalDate.now().plusDays(4))
-                .checkInTime(LocalTime.of(14, 0)).checkOutTime(LocalTime.of(12, 0)).numberOfGuests(1)
-                .guestName("Owner").guestPhone("0900111222").guestEmail("cancelowner@mail.com")
-                .totalAmount(BigDecimal.valueOf(400000)).discountAmount(BigDecimal.ZERO).status(BookingStatus.PENDING).build());
+        Booking booking = pendingBookingOf(owner);
 
         mockMvc.perform(post("/customer/bookings/{id}/cancel", booking.getId()).with(csrf())
                         .with(user(new CustomUserDetails(owner))))

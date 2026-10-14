@@ -300,18 +300,22 @@ public class CustomerBookingController {
         return "redirect:" + url.buildAndExpand(id).encode().toUriString() + "#danh-gia";
     }
 
+    // ===== Khach tu sua / huy don: chu don da dang nhap, HOAC khach vang lai mo bang link co ma truy cap (?token=)
+    // (kiem tra quyen bang BookingService.findForViewing giong trang xem don; thao tac nhan danh chu don) =====
+
     @PostMapping("/{id}/edit-time")
     public String editTime(@PathVariable Long id,
                             @RequestParam LocalTime checkInTime,
                             @RequestParam LocalTime checkOutTime,
+                            @RequestParam(required = false) String token,
                             @AuthenticationPrincipal CustomUserDetails userDetails,
                             RedirectAttributes redirectAttributes) {
         try {
-            bookingService.updateTimes(id, userDetails.getUser().getId(), checkInTime, checkOutTime);
+            bookingService.updateTimes(id, ownerId(id, token, userDetails), checkInTime, checkOutTime);
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", userMessages.of(ex));
         }
-        return "redirect:/customer/bookings/" + id;
+        return backTo(id, token, "");
     }
 
     // Xem truoc khi doi ngay: phong con trong khong, tien phong / tong tien moi, chenh lech so voi hien tai
@@ -320,10 +324,11 @@ public class CustomerBookingController {
     public Map<String, Object> quoteChangeDates(@PathVariable Long id,
                                                 @RequestParam(required = false) LocalDate checkIn,
                                                 @RequestParam(required = false) LocalDate checkOut,
+                                                @RequestParam(required = false) String token,
                                                 @AuthenticationPrincipal CustomUserDetails userDetails) {
         Map<String, Object> result = new HashMap<>();
         try {
-            BookingService.DateChangeQuote q = bookingService.quoteDateChange(id, userDetails.getUser().getId(), checkIn, checkOut);
+            BookingService.DateChangeQuote q = bookingService.quoteDateChange(id, ownerId(id, token, userDetails), checkIn, checkOut);
             int diffSign = q.difference().signum();
             result.put("ok", true);
             result.put("nights", q.nights());
@@ -345,10 +350,11 @@ public class CustomerBookingController {
     public String changeDates(@PathVariable Long id,
                               @RequestParam(required = false) LocalDate checkIn,
                               @RequestParam(required = false) LocalDate checkOut,
+                              @RequestParam(required = false) String token,
                               @AuthenticationPrincipal CustomUserDetails userDetails,
                               RedirectAttributes redirectAttributes) {
         try {
-            Booking booking = bookingService.changeDates(id, userDetails.getUser().getId(), checkIn, checkOut);
+            Booking booking = bookingService.changeDates(id, ownerId(id, token, userDetails), checkIn, checkOut);
             redirectAttributes.addFlashAttribute("successMessage", userMessages.get("changeDates.done",
                     booking.getCheckInDate().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")),
                     booking.getCheckOutDate().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")),
@@ -356,32 +362,49 @@ public class CustomerBookingController {
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", userMessages.of(ex));
         }
-        return "redirect:/customer/bookings/" + id + "#doi-ngay";
+        return backTo(id, token, "#doi-ngay");
     }
 
     @PostMapping("/{id}/edit-combo")
     public String editCombo(@PathVariable Long id,
                              @RequestParam(required = false) Long comboId,
+                             @RequestParam(required = false) String token,
                              @AuthenticationPrincipal CustomUserDetails userDetails,
                              RedirectAttributes redirectAttributes) {
         try {
-            bookingService.updateCombo(id, userDetails.getUser().getId(), comboId);
+            bookingService.updateCombo(id, ownerId(id, token, userDetails), comboId);
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", userMessages.of(ex));
         }
-        return "redirect:/customer/bookings/" + id;
+        return backTo(id, token, "");
     }
 
     @PostMapping("/{id}/cancel")
     public String cancelBooking(@PathVariable Long id,
+                                 @RequestParam(required = false) String token,
                                  @AuthenticationPrincipal CustomUserDetails userDetails,
                                  RedirectAttributes redirectAttributes) {
         try {
-            bookingService.cancelBooking(id, userDetails.getUser().getId());
+            bookingService.cancelBooking(id, ownerId(id, token, userDetails));
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", userMessages.of(ex));
         }
-        return "redirect:/customer/bookings/" + id;
+        return backTo(id, token, "");
+    }
+
+    // Chu don cua booking neu nguoi gui la chu don (dang nhap) hoac co dung ma truy cap - khong thi bao link khong hop le
+    private Long ownerId(Long bookingId, String token, CustomUserDetails userDetails) {
+        return bookingService.findForViewing(bookingId, token, userDetails != null ? userDetails.getUser().getId() : null)
+                .getCustomer().getId();
+    }
+
+    // Quay lai trang don, giu ?token= cho khach vang lai
+    private static String backTo(Long id, String token, String anchor) {
+        UriComponentsBuilder url = UriComponentsBuilder.fromPath("/customer/bookings/{id}");
+        if (token != null && !token.isBlank()) {
+            url.queryParam("token", token);
+        }
+        return "redirect:" + url.buildAndExpand(id).encode().toUriString() + anchor;
     }
 
     // Thong tin tom tat don: gia tung dem (ngay thuong / cuoi tuan / le), tien phong, combo, tien coc du kien

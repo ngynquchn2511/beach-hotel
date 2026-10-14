@@ -110,16 +110,18 @@
             <a th:if="${payment != null and payment.status.name() == 'PAID'}" target="_blank"
                th:href="@{/customer/bookings/{id}/invoice(id=${booking.id})}" class="btn btn-outline-primary w-100 mt-2" th:text="#{success.invoice}">Xem / in hóa đơn</a>
             <a th:href="@{/customer/bookings}" class="btn btn-outline-secondary w-100 mt-2" th:text="#{success.history}">Xem lịch sử đặt phòng</a>
-
-            <form th:action="@{/customer/bookings/{id}/cancel(id=${booking.id})}" method="post" class="mt-2"
-                  th:if="${booking.status.name() == 'PENDING' or booking.status.name() == 'CONFIRMED'}"
-                  th:attr="data-confirm=${refundQuote != null} ? #{refund.cancelConfirm(${#numbers.formatDecimal(refundQuote.amount, 1, 'POINT', 0, 'COMMA')}, ${refundQuote.percent})} : #{success.cancelConfirm}"
-                  onsubmit="return confirm(this.dataset.confirm)">
-                <p class="small text-muted mb-2" th:if="${refundQuote != null}"
-                   th:utext="#{refund.quote(${#numbers.formatDecimal(refundQuote.amount, 1, 'POINT', 0, 'COMMA')}, ${refundQuote.percent})}"></p>
-                <button type="submit" class="btn btn-outline-danger w-100" th:text="#{success.cancel}">Hủy đặt phòng</button>
-            </form>
         </div>
+
+        <!-- Huy don: chu don dang nhap hoac khach vang lai mo bang link co ma truy cap -->
+        <form th:action="@{/customer/bookings/{id}/cancel(id=${booking.id})}" method="post" class="mt-2"
+              th:if="${booking.status.name() == 'PENDING' or booking.status.name() == 'CONFIRMED'}"
+              th:attr="data-confirm=${refundQuote != null} ? #{refund.cancelConfirm(${#numbers.formatDecimal(refundQuote.amount, 1, 'POINT', 0, 'COMMA')}, ${refundQuote.percent})} : #{success.cancelConfirm}"
+              onsubmit="return confirm(this.dataset.confirm)">
+            <input type="hidden" name="token" th:if="${accessToken != null}" th:value="${accessToken}">
+            <p class="small text-muted mb-2" th:if="${refundQuote != null}"
+               th:utext="#{refund.quote(${#numbers.formatDecimal(refundQuote.amount, 1, 'POINT', 0, 'COMMA')}, ${refundQuote.percent})}"></p>
+            <button type="submit" class="btn btn-outline-danger w-100" th:text="#{success.cancel}">Hủy đặt phòng</button>
+        </form>
 
         <div class="alert alert-light border mt-3 mb-0" sec:authorize="!isAuthenticated()"
              th:utext="#{success.guestNote(@{/login}, @{/register})}"></div>
@@ -171,17 +173,18 @@
 
     <div th:replace="~{fragments/booking-services :: section}"></div>
 
-    <div sec:authorize="isAuthenticated()">
+    <div>
         <!-- Doi ngay luu tru: kiem tra phong trong + gia moi truoc (GET .../change-dates/quote) roi moi cho luu -->
         <div class="bg-white p-4 rounded shadow-sm mb-4 section-anchor" id="doi-ngay" th:if="${canModify}">
             <h5 class="fw-bold mb-1" th:text="#{changeDates.title}">Đổi ngày lưu trú</h5>
             <p class="text-muted small mb-3" th:text="#{changeDates.lead}"></p>
             <form id="changeDatesForm" th:action="@{/customer/bookings/{id}/change-dates(id=${booking.id})}" method="post"
                   class="row g-3 align-items-end"
-                  th:attr="data-quote-url=@{/customer/bookings/{id}/change-dates/quote(id=${booking.id})},
+                  th:attr="data-quote-url=@{/customer/bookings/{id}/change-dates/quote(id=${booking.id}, token=${accessToken})},
                            data-checking=#{changeDates.checking}, data-error=#{changeDates.error},
                            data-quote-tpl=#{changeDates.quote('{n}', '{room}', '{total}')}, data-confirm=#{changeDates.confirm}"
                   onsubmit="return confirm(this.dataset.confirm)">
+                <input type="hidden" name="token" th:if="${accessToken != null}" th:value="${accessToken}">
                 <div class="col-md-4">
                     <label class="form-label" for="newCheckIn" th:text="#{changeDates.checkIn}">Ngày nhận phòng mới</label>
                     <input type="date" id="newCheckIn" name="checkIn" class="form-control" required
@@ -205,6 +208,7 @@
         <div class="bg-white p-4 rounded shadow-sm mb-4" th:if="${canModify}">
             <h5 class="fw-bold mb-3" th:text="#{success.editTimes}">Sửa giờ nhận / trả phòng</h5>
             <form th:action="@{/customer/bookings/{id}/edit-time(id=${booking.id})}" method="post" class="row g-3 align-items-end">
+                <input type="hidden" name="token" th:if="${accessToken != null}" th:value="${accessToken}">
                 <div class="col-md-5">
                     <label class="form-label"><span th:text="#{confirm.checkInTime}">Giờ nhận phòng</span> <span class="text-muted fw-normal" th:text="#{confirm.onDay(${#temporals.format(booking.checkInDate, 'dd/MM/yyyy')})}"></span></label>
                     <select name="checkInTime" class="form-select">
@@ -226,6 +230,7 @@
         <div class="bg-white p-4 rounded shadow-sm mb-4" th:if="${canModify}">
             <h5 class="fw-bold mb-3" th:text="#{success.editCombo}">Đổi / hủy combo</h5>
             <form th:action="@{/customer/bookings/{id}/edit-combo(id=${booking.id})}" method="post" class="row g-3 align-items-end">
+                <input type="hidden" name="token" th:if="${accessToken != null}" th:value="${accessToken}">
                 <div class="col-md-9">
                     <select name="comboId" class="form-select">
                         <option value="" th:text="#{success.noCombo}">Không dùng combo</option>
@@ -327,7 +332,8 @@
             if (!checkIn.value || !checkOut.value) { show('', ''); return; }
             var mine = ++seq;
             show(form.dataset.checking, 'text-muted');
-            var url = form.dataset.quoteUrl + '?checkIn=' + encodeURIComponent(checkIn.value)
+            var url = form.dataset.quoteUrl + (form.dataset.quoteUrl.indexOf('?') >= 0 ? '&' : '?')
+                + 'checkIn=' + encodeURIComponent(checkIn.value)
                 + '&checkOut=' + encodeURIComponent(checkOut.value);
             fetch(url, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
                 .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })

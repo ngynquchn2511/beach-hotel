@@ -154,7 +154,12 @@ public class SecurityConfig {
                                 "/customer/bookings/*/transfers", "/customer/bookings/*/transfers/*/cancel").permitAll()
                         // Viet danh gia tu link trong email moi danh gia (?token=) - kiem tra quyen giong tren
                         .requestMatchers(HttpMethod.POST, "/customer/bookings/*/review").permitAll()
-                        // Rieng lich su dat phong va sua/huy don van can dang nhap (de xac dinh dung chu don)
+                        // Khach vang lai tu doi ngay / gio / combo / huy don bang link co ?token= (khong co tai khoan de dang nhap) -
+                        // controller kiem tra chu don hoac dung ma truy cap truoc khi lam gi
+                        .requestMatchers(HttpMethod.POST, "/customer/bookings/*/cancel", "/customer/bookings/*/change-dates",
+                                "/customer/bookings/*/edit-time", "/customer/bookings/*/edit-combo").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/customer/bookings/*/change-dates/quote").permitAll()
+                        // Con lai (lich su dat phong, tai khoan, hoa don...) can dang nhap
                         .requestMatchers("/customer/**").hasRole("CUSTOMER")
                         .anyRequest().authenticated()
                 )
