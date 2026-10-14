@@ -223,7 +223,7 @@
 
         <div id="mayPeek" role="button" tabindex="0">
             <button type="button" id="mayPeekClose" th:aria-label="#{chat.w.peekClose}">&times;</button>
-            <span th:utext="#{chat.w.peek}">Chào bạn 👋 Mình là <b>Sóng</b>! Cần tư vấn phòng nghỉ biển Nha Trang thì hỏi Sóng nha 🌊</span>
+            <span th:utext="#{chat.w.peek}">Chào bạn 👋 Mình là <b>Sóng</b>! Cần tư vấn phòng, tour lặn hay xe đón sân bay ở Hạ Long thì hỏi Sóng nha 🌊</span>
         </div>
 
         <button type="button" id="chatbotBubble" th:aria-label="#{chat.w.open}">
@@ -278,11 +278,17 @@
             var SG_EXPLORE = /*[[#{chat.sg.explore}]]*/ '';
             var TP_DIRECTIONS = /*[[#{chat.t.directions}]]*/ '';
             var SG_DIRECTIONS = /*[[#{chat.sg.directions}]]*/ '';
+            var TP_TOUR = /*[[#{chat.t.tour}]]*/ '';
+            var SG_TOUR = /*[[#{chat.sg.tour}]]*/ '';
+            var TP_TRANSFER = /*[[#{chat.t.transfer}]]*/ '';
+            var SG_TRANSFER = /*[[#{chat.sg.transfer}]]*/ '';
             var TOPICS = [
                 ['💸', TP_PRICE, SG_PRICE],
                 ['📅', TP_AVAILABLE, SG_AVAILABLE],
                 ['🔒', TP_DEPOSIT, SG_DEPOSIT],
                 ['🍲', TP_COMBO, SG_COMBO],
+                ['🤿', TP_TOUR, SG_TOUR],
+                ['✈️', TP_TRANSFER, SG_TRANSFER],
                 ['🗺️', TP_EXPLORE, SG_EXPLORE],
                 ['🧭', TP_DIRECTIONS, SG_DIRECTIONS]
             ];

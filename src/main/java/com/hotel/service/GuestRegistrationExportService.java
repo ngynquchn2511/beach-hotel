@@ -57,7 +57,7 @@ public class GuestRegistrationExportService {
             title.setCellValue("DANH SÁCH KHÁCH LƯU TRÚ - SÓNG XANH RESORT");
             title.setCellStyle(titleStyle);
             sheet.createRow(1).createCell(0).setCellValue("Từ ngày " + from.format(DATE) + " đến ngày " + to.format(DATE)
-                    + " · Địa chỉ: Đường Trần Phú, Lộc Thọ, Nha Trang, Khánh Hòa");
+                    + " · Địa chỉ: Đường Hạ Long, phường Bãi Cháy, Hạ Long, Quảng Ninh");
 
             Row headerRow = sheet.createRow(3);
             for (int i = 0; i < HEADERS.length; i++) {

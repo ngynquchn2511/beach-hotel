@@ -127,6 +127,107 @@
                 </p>
             </div>
 
+            <!-- Dich vu them: tour lan + xe dua don san bay (khach dat online hoac le tan dat ho) -->
+            <div class="bg-white p-4 rounded shadow-sm mt-4" id="dich-vu">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold m-0"><i class="bi bi-water me-1"></i>Dịch vụ thêm (tour lặn, đưa đón sân bay)</h6>
+                    <a th:href="@{/admin/service-orders}" class="small">Tất cả dịch vụ</a>
+                </div>
+                <p class="text-muted small" th:if="${#lists.isEmpty(tourOrders) and #lists.isEmpty(transferOrders)}">Đơn này chưa đặt dịch vụ nào.</p>
+                <table class="table table-sm align-middle" th:unless="${#lists.isEmpty(tourOrders) and #lists.isEmpty(transferOrders)}">
+                    <tbody>
+                    <tr th:each="o : ${tourOrders}">
+                        <td><i class="bi bi-water"></i></td>
+                        <td>
+                            <div th:text="${o.tour.name}"></div>
+                            <div class="small text-muted" th:text="${#temporals.format(o.tourDate, 'dd/MM/yyyy')} + ' ' + ${#temporals.format(o.tour.departureTime, 'HH:mm')} + ' · ' + ${o.participants} + ' người'"></div>
+                        </td>
+                        <td class="text-end text-nowrap" th:text="${#numbers.formatDecimal(o.totalPrice, 1, 0)} + ' VND'"></td>
+                        <td><span class="badge" th:classappend="${o.status.name() == 'CONFIRMED'} ? 'bg-success' : (${o.status.name() == 'PENDING'} ? 'bg-warning text-dark' : 'bg-secondary')" th:text="${o.status.vietnameseLabel}"></span></td>
+                        <td class="text-end text-nowrap">
+                            <form th:if="${o.status.name() == 'PENDING' and canOrderServices}" method="post" class="d-inline"
+                                  th:action="@{/admin/service-orders/tours/{oid}/confirm(oid=${o.id})}">
+                                <input type="hidden" name="back" th:value="|/admin/bookings/${booking.id}#dich-vu|">
+                                <button type="submit" class="btn btn-sm btn-success">Xác nhận</button>
+                            </form>
+                            <form th:if="${o.status.name() != 'CANCELLED' and booking.status.name() != 'CHECKED_OUT'}" method="post" class="d-inline"
+                                  th:action="@{/admin/service-orders/tours/{oid}/cancel(oid=${o.id})}" onsubmit="return confirm('Hủy tour này?')">
+                                <input type="hidden" name="back" th:value="|/admin/bookings/${booking.id}#dich-vu|">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Hủy</button>
+                            </form>
+                        </td>
+                    </tr>
+                    <tr th:each="o : ${transferOrders}">
+                        <td><i class="bi bi-airplane"></i></td>
+                        <td>
+                            <div th:text="${o.direction.vietnameseLabel} + ' · ' + ${o.airport.vietnameseLabel}"></div>
+                            <div class="small text-muted">
+                                <span th:text="${#temporals.format(o.pickupAt, 'HH:mm dd/MM/yyyy')} + ' · ' + ${o.vehicleType.vietnameseLabel} + ' · ' + ${o.passengers} + ' khách'"></span>
+                                <span th:if="${o.flightNumber}" th:text="' · ' + ${o.flightNumber}"></span>
+                            </div>
+                        </td>
+                        <td class="text-end text-nowrap" th:text="${#numbers.formatDecimal(o.price, 1, 0)} + ' VND'"></td>
+                        <td><span class="badge" th:classappend="${o.status.name() == 'CONFIRMED'} ? 'bg-success' : (${o.status.name() == 'PENDING'} ? 'bg-warning text-dark' : 'bg-secondary')" th:text="${o.status.vietnameseLabel}"></span></td>
+                        <td class="text-end text-nowrap">
+                            <form th:if="${o.status.name() == 'PENDING' and canOrderServices}" method="post" class="d-inline"
+                                  th:action="@{/admin/service-orders/transfers/{oid}/confirm(oid=${o.id})}">
+                                <input type="hidden" name="back" th:value="|/admin/bookings/${booking.id}#dich-vu|">
+                                <button type="submit" class="btn btn-sm btn-success">Xác nhận</button>
+                            </form>
+                            <form th:if="${o.status.name() != 'CANCELLED' and booking.status.name() != 'CHECKED_OUT'}" method="post" class="d-inline"
+                                  th:action="@{/admin/service-orders/transfers/{oid}/cancel(oid=${o.id})}" onsubmit="return confirm('Hủy chuyến xe này?')">
+                                <input type="hidden" name="back" th:value="|/admin/bookings/${booking.id}#dich-vu|">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Hủy</button>
+                            </form>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+
+                <div class="row g-3" th:if="${canOrderServices}">
+                    <div class="col-lg-6" th:if="${not #lists.isEmpty(activeTours)}">
+                        <form method="post" th:action="@{/admin/bookings/{id}/tours(id=${booking.id})}" class="border rounded p-3 h-100">
+                            <div class="fw-semibold small mb-2">Đặt tour hộ khách (xác nhận luôn)</div>
+                            <select name="tourId" class="form-select form-select-sm mb-2" required>
+                                <option th:each="t : ${activeTours}" th:value="${t.id}"
+                                        th:text="${t.name} + ' · ' + ${#temporals.format(t.departureTime, 'HH:mm')} + ' · ' + ${#numbers.formatDecimal(t.pricePerPerson, 1, 0)} + 'đ/người'"></option>
+                            </select>
+                            <div class="row g-2 mb-2">
+                                <div class="col-7"><input type="date" name="tourDate" class="form-control form-control-sm" required
+                                                          th:min="${booking.checkInDate}" th:max="${booking.checkOutDate}" th:value="${booking.checkInDate}"></div>
+                                <div class="col-5"><input type="number" name="participants" min="1" class="form-control form-control-sm" required placeholder="Số người"
+                                                          th:value="${booking.numberOfGuests}"></div>
+                            </div>
+                            <input type="text" name="note" maxlength="300" class="form-control form-control-sm mb-2" placeholder="Ghi chú">
+                            <button type="submit" class="btn btn-sm btn-primary">Đặt tour</button>
+                        </form>
+                    </div>
+                    <div class="col-lg-6">
+                        <form method="post" th:action="@{/admin/bookings/{id}/transfers(id=${booking.id})}" class="border rounded p-3 h-100">
+                            <div class="fw-semibold small mb-2">Đặt xe đưa đón hộ khách (xác nhận luôn)</div>
+                            <div class="row g-2 mb-2">
+                                <div class="col-12"><select name="direction" class="form-select form-select-sm" required>
+                                    <option value="PICKUP" th:text="'Đón từ sân bay về resort (' + ${#temporals.format(booking.checkInDate, 'dd/MM')} + ')'"></option>
+                                    <option value="DROPOFF" th:text="'Tiễn từ resort ra sân bay (' + ${#temporals.format(booking.checkOutDate, 'dd/MM')} + ')'"></option>
+                                </select></div>
+                                <div class="col-7"><select name="airport" class="form-select form-select-sm" required>
+                                    <option th:each="a : ${airports}" th:value="${a}" th:text="${a.vietnameseLabel}"></option>
+                                </select></div>
+                                <div class="col-5"><select name="vehicleType" class="form-select form-select-sm" required>
+                                    <option th:each="v : ${vehicles}" th:value="${v}" th:text="${v.vietnameseLabel}"></option>
+                                </select></div>
+                                <div class="col-4"><input type="time" name="time" class="form-control form-control-sm" required></div>
+                                <div class="col-5"><input type="text" name="flightNumber" maxlength="10" class="form-control form-control-sm" placeholder="Chuyến bay (đón)"></div>
+                                <div class="col-3"><input type="number" name="passengers" min="1" class="form-control form-control-sm" required placeholder="Khách"
+                                                          th:value="${booking.numberOfGuests}"></div>
+                            </div>
+                            <input type="text" name="note" maxlength="300" class="form-control form-control-sm mb-2" placeholder="Ghi chú">
+                            <button type="submit" class="btn btn-sm btn-primary">Đặt xe</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
             <!-- Khai bao luu tru: giay to tung khach - bat buoc it nhat 1 nguoi truoc khi check-in -->
             <div class="bg-white p-4 rounded shadow-sm mt-4" id="khach-luu-tru"
                  th:if="${canEditGuests or !#lists.isEmpty(guests)}">

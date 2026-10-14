@@ -39,6 +39,8 @@ class ChatbotServiceParamTest {
     @Mock private ComboRepository comboRepository;
     @Mock private DiscountCodeRepository discountCodeRepository;
     @Mock private PricingService pricingService;
+    @Mock private com.hotel.repository.DivingTourRepository divingTourRepository;
+    @Mock private com.hotel.repository.TransferRateRepository transferRateRepository;
 
     @InjectMocks private ChatbotService chatbotService;
 
@@ -91,7 +93,7 @@ class ChatbotServiceParamTest {
             "tra tien the nao|Hỏi thanh toán (không dấu)|trừ luôn tiền cọc",
             "PHƯƠNG THỨC THANH TOÁN|Hỏi thanh toán (chữ hoa)|tiền mặt",
             "Resort có hồ bơi không?|Hỏi tiện ích|Hồ bơi vô cực",
-            "co cho thue xe may khong|Hỏi tiện ích (không dấu)|thuê xe máy",
+            "co ho boi khong|Hỏi tiện ích (không dấu)|Hồ bơi vô cực",
             "Tiện ích phòng VIP có gì|Hỏi tiện ích riêng của loại phòng|Tiện ích riêng của Phòng VIP: Bồn tắm",
             "Có bãi biển riêng không|Hỏi bãi biển|Bãi biển riêng",
             "Có combo ăn uống gì?|Hỏi combo|Lẩu: **399.000đ** (Lẩu thái 2 người)",
@@ -100,11 +102,11 @@ class ChatbotServiceParamTest {
             "Có mã giảm giá không?|Hỏi khuyến mãi|Mã ưu đãi đang có nè",
             "khuyen mai gi khong|Hỏi khuyến mãi (không dấu)|**VIP20**: giảm 20%",
             "Có voucher nào không|Hỏi voucher|**SUMMER50K**: giảm 50.000đ",
-            "Resort ở đâu?|Hỏi địa chỉ|Trần Phú",
-            "dia chi resort|Hỏi địa chỉ (không dấu)|Nha Trang, Khánh Hòa",
-            "VỊ TRÍ RESORT|Hỏi vị trí (chữ hoa)|Sóng Xanh ở **Đường Trần Phú",
-            "Đường tới Nha Trang đi thế nào?|Hỏi đường đi|**35 km**",
-            "tu sai gon toi bao xa|Hỏi khoảng cách (không dấu)|**430 km**",
+            "Resort ở đâu?|Hỏi địa chỉ|Bãi Cháy",
+            "dia chi resort|Hỏi địa chỉ (không dấu)|Hạ Long, Quảng Ninh",
+            "VỊ TRÍ RESORT|Hỏi vị trí (chữ hoa)|Sóng Xanh ở **Đường Hạ Long",
+            "Đường tới Hạ Long đi thế nào?|Hỏi đường đi|**150 km**",
+            "tu ha noi toi bao xa|Hỏi khoảng cách (không dấu)|**2 – 2,5 tiếng**",
             "Số điện thoại liên hệ là gì?|Hỏi liên hệ|0338932368",
             "hotline khach san|Hỏi hotline (không dấu)|0338932368",
             "cho xin email|Hỏi email|songxanhresort@gmail.com",
@@ -112,13 +114,13 @@ class ChatbotServiceParamTest {
             "Mấy giờ nhận phòng?|Hỏi giờ nhận phòng|Giờ nhận phòng: **14:00**",
             "may gio tra phong|Hỏi giờ trả phòng (không dấu)|Giờ trả phòng: **12:00**",
             "CHECK IN LÚC NÀO|Hỏi check-in (chữ hoa)|Giờ nhận phòng",
-            "Thời tiết Nha Trang thế nào|Hỏi thời tiết|kem chống nắng",
-            "Gần đây có chỗ nào đi chơi|Hỏi điểm tham quan|**Hòn Mun**",
-            "ở nha trang ăn gì ngon|Hỏi đặc sản|bún chả cá",
+            "Thời tiết Hạ Long thế nào|Hỏi thời tiết|mang áo khoác",
+            "Gần đây có chỗ nào đi chơi|Hỏi điểm tham quan|**Hang Sửng Sốt**",
+            "ở hạ long ăn gì ngon|Hỏi đặc sản|chả mực giã tay",
             "Cách đặt phòng thế nào|Hỏi cách đặt|Đặt phòng ở Sóng Xanh dễ lắm",
             "muốn hủy phòng thì sao|Hỏi hủy phòng|**Hủy đặt phòng**",
             "cảm ơn nha|Cảm ơn|Không có gì đâu nè",
-            "tạm biệt|Tạm biệt|Hẹn gặp bạn ở biển Nha Trang",
+            "tạm biệt|Tạm biệt|Hẹn gặp bạn ở vịnh Hạ Long",
             "Xin chào|Chào hỏi|Mình là **Sóng**",
             "hello|Chào hỏi tiếng Anh|trợ lý nhỏ của Sóng Xanh Resort",
             "hi|Chào hỏi ngắn|Mình là **Sóng**",
@@ -126,7 +128,7 @@ class ChatbotServiceParamTest {
             "phong thuong|Chỉ nhắc tên loại phòng (không dấu)|• Phòng thường:",
             "abc xyz|Câu hỏi không hiểu|Sóng chưa hiểu lắm",
             "dự báo chứng khoán|Câu hỏi ngoài phạm vi|\"Phòng view biển giá bao nhiêu?\"",
-            "Giá phòng và địa chỉ ở đâu|Hỏi kết hợp nhiều ý|Đường Trần Phú"})
+            "Giá phòng và địa chỉ ở đâu|Hỏi kết hợp nhiều ý|Đường Hạ Long"})
     void answer_detectsIntent(String question, String intent, String expected) {
         assertThat(chatbotService.answer(question)).contains(expected);
     }
@@ -178,7 +180,7 @@ class ChatbotServiceParamTest {
     @ParameterizedTest(name = "Chatbot kèm nút hành động ¦ câu hỏi: \"{0}\" ¦ Có nút \"{1}\"")
     @CsvSource(delimiter = '|', value = {
             "Giá phòng bao nhiêu|/rooms",
-            "Đường tới Nha Trang đi thế nào|https://www.google.com/maps/dir/",
+            "Đường tới Hạ Long đi thế nào|https://www.google.com/maps/dir/",
             "có zalo không|https://zalo.me/0337196258",
             "abc xyz|https://zalo.me/0337196258"})
     void reply_hasActions(String q, String urlPrefix) {
@@ -195,10 +197,10 @@ class ChatbotServiceParamTest {
         assertThat(chatbotService.answer(q)).contains("không yêu cầu đặt cọc");
     }
 
-    @TcSteps("Hỏi về tháp Bà Ponagar - không được nhầm thành hỏi combo")
+    @TcSteps("Hỏi về hang Sửng Sốt - không được nhầm thành hỏi combo")
     @ParameterizedTest(name = "Không nhận nhầm ý định ¦ câu hỏi: \"{0}\" ¦ Không trả lời combo")
-    @ValueSource(strings = {"Tháp Bà Ponagar có đẹp không", "đi chơi tháp bà"})
+    @ValueSource(strings = {"Hang Sửng Sốt có đẹp không", "đi chơi hang sửng sốt"})
     void answer_noFalseComboMatch(String q) {
-        assertThat(chatbotService.answer(q)).doesNotContain("Combo ăn uống").contains("Tháp Bà Ponagar");
+        assertThat(chatbotService.answer(q)).doesNotContain("Combo ăn uống").contains("Hang Sửng Sốt");
     }
 }

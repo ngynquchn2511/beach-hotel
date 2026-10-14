@@ -1,0 +1,195 @@
+<!-- Muc "Dich vu them" tren trang chi tiet don cua khach: danh sach tour lan / xe dua don da dat + form dat moi.
+     Khach vang lai mo trang bang ?token= nen moi form deu gui kem token (an) -->
+<div th:fragment="section" class="bg-white p-4 rounded shadow-sm mb-4 section-anchor" id="dich-vu">
+    <h5 class="fw-bold mb-1"><i class="bi bi-water me-2"></i><span th:text="#{svc.section}">Dịch vụ thêm</span></h5>
+    <p class="text-muted small mb-3" th:text="#{svc.section.lead}"></p>
+
+    <div class="alert alert-success py-2" th:if="${serviceSuccess}" th:text="${serviceSuccess}"></div>
+    <div class="alert alert-danger py-2" th:if="${serviceError}" th:text="${serviceError}"></div>
+
+    <!-- Dich vu da dat -->
+    <div class="row g-3 mb-3" th:if="${not #lists.isEmpty(tourOrders) or not #lists.isEmpty(transferOrders)}">
+        <div class="col-12" th:each="o : ${tourOrders}">
+            <div class="border rounded p-3 d-flex flex-wrap justify-content-between align-items-center gap-2"
+                 th:classappend="${o.status.name() == 'CANCELLED'} ? 'opacity-50'">
+                <div>
+                    <div class="fw-semibold"><i class="bi bi-water me-1"></i><span th:text="${o.tour.localizedName}"></span></div>
+                    <div class="small text-muted"
+                         th:text="${#temporals.format(o.tourDate, 'dd/MM/yyyy')} + ' · ' + ${#temporals.format(o.tour.departureTime, 'HH:mm')} + ' · ' + #{svc.persons(${o.participants})}"></div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="fw-bold" th:text="${#numbers.formatDecimal(o.totalPrice, 1, 0)} + 'đ'"></span>
+                    <span class="badge" th:classappend="${o.status.name() == 'CONFIRMED'} ? 'bg-success' : (${o.status.name() == 'PENDING'} ? 'bg-warning text-dark' : 'bg-secondary')"
+                          th:text="#{${'svc.status.' + o.status.name()}}"></span>
+                    <form th:if="${o.status.name() != 'CANCELLED' and booking.status.name() != 'CHECKED_OUT'}" method="post" class="m-0"
+                          th:action="@{/customer/bookings/{id}/tours/{oid}/cancel(id=${booking.id}, oid=${o.id})}"
+                          th:attr="onsubmit=|return confirm('#{svc.cancelConfirm}')|">
+                        <input type="hidden" name="token" th:value="${accessToken}" th:if="${accessToken}">
+                        <button type="submit" class="btn btn-sm btn-outline-danger" th:text="#{svc.cancel}">Hủy</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-12" th:each="o : ${transferOrders}">
+            <div class="border rounded p-3 d-flex flex-wrap justify-content-between align-items-center gap-2"
+                 th:classappend="${o.status.name() == 'CANCELLED'} ? 'opacity-50'">
+                <div>
+                    <div class="fw-semibold"><i class="bi bi-airplane me-1"></i><span th:text="#{${'svc.dir.' + o.direction.name()}}"></span></div>
+                    <div class="small text-muted">
+                        <span th:text="#{${'airport.' + o.airport.name()}}"></span> ·
+                        <span th:text="#{${'svc.vehicle.' + o.vehicleType.name()}}"></span> ·
+                        <span th:text="${#temporals.format(o.pickupAt, 'HH:mm dd/MM/yyyy')}"></span>
+                        <span th:if="${o.flightNumber}" th:text="' · ' + #{svc.flightNo(${o.flightNumber})}"></span>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="fw-bold" th:text="${#numbers.formatDecimal(o.price, 1, 0)} + 'đ'"></span>
+                    <span class="badge" th:classappend="${o.status.name() == 'CONFIRMED'} ? 'bg-success' : (${o.status.name() == 'PENDING'} ? 'bg-warning text-dark' : 'bg-secondary')"
+                          th:text="#{${'svc.status.' + o.status.name()}}"></span>
+                    <form th:if="${o.status.name() != 'CANCELLED' and booking.status.name() != 'CHECKED_OUT'}" method="post" class="m-0"
+                          th:action="@{/customer/bookings/{id}/transfers/{oid}/cancel(id=${booking.id}, oid=${o.id})}"
+                          th:attr="onsubmit=|return confirm('#{svc.cancelConfirm}')|">
+                        <input type="hidden" name="token" th:value="${accessToken}" th:if="${accessToken}">
+                        <button type="submit" class="btn btn-sm btn-outline-danger" th:text="#{svc.cancel}">Hủy</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 small text-muted" th:text="#{svc.cancelPolicy(${cancelHours})}"></div>
+    </div>
+    <p class="text-muted small" th:if="${#lists.isEmpty(tourOrders) and #lists.isEmpty(transferOrders)}" th:text="#{svc.my.empty}"></p>
+
+    <div class="alert alert-light border mb-0" th:unless="${canOrderServices}" th:text="#{svc.closed}"></div>
+
+    <div class="row g-4" th:if="${canOrderServices}">
+        <!-- Dat tour lan -->
+        <div class="col-lg-6" th:if="${not #lists.isEmpty(activeTours)}">
+            <form class="border rounded p-3 h-100 js-tour-form" method="post"
+                  th:action="@{/customer/bookings/{id}/tours(id=${booking.id})}">
+                <input type="hidden" name="token" th:value="${accessToken}" th:if="${accessToken}">
+                <h6 class="fw-bold mb-3"><i class="bi bi-water me-1"></i><span th:text="#{svc.form.tour.title}">Đặt tour lặn</span></h6>
+                <div class="mb-2">
+                    <label class="form-label small" th:text="#{svc.form.tour}">Chọn tour</label>
+                    <select name="tourId" class="form-select js-tour" required>
+                        <option th:each="t : ${activeTours}" th:value="${t.id}"
+                                th:attr="data-price=${t.pricePerPerson.intValue()},data-max=${t.maxParticipants}"
+                                th:text="${t.localizedName} + ' · ' + ${#temporals.format(t.departureTime, 'HH:mm')} + ' · ' + ${#numbers.formatDecimal(t.pricePerPerson, 1, 0)} + 'đ'"></option>
+                    </select>
+                </div>
+                <div class="row g-2 mb-2">
+                    <div class="col-7">
+                        <label class="form-label small" th:text="#{svc.form.date}">Ngày đi</label>
+                        <input type="date" name="tourDate" class="form-control" required
+                               th:min="${booking.checkInDate}" th:max="${booking.checkOutDate}" th:value="${booking.checkInDate}">
+                    </div>
+                    <div class="col-5">
+                        <label class="form-label small" th:text="#{svc.form.participants}">Số người</label>
+                        <input type="number" name="participants" class="form-control js-participants" min="1" required
+                               th:value="${booking.numberOfGuests != null ? booking.numberOfGuests : 1}">
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small" th:text="#{svc.form.note}">Ghi chú</label>
+                    <input type="text" name="note" class="form-control" maxlength="300" th:placeholder="#{svc.form.notePh}">
+                </div>
+                <p class="small text-muted mb-2"
+                   th:text="#{svc.form.tourHint(${#temporals.format(booking.checkInDate, 'dd/MM')}, ${#temporals.format(booking.checkOutDate, 'dd/MM')}, ${tourLeadHours})}"></p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="small"><span th:text="#{svc.form.estimate}">Tạm tính</span>: <b class="js-estimate">—</b></span>
+                    <button type="submit" class="btn btn-primary" th:text="#{svc.form.submitTour}">Đặt tour</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Dat xe dua don -->
+        <div class="col-lg-6">
+            <form class="border rounded p-3 h-100 js-transfer-form" method="post"
+                  th:action="@{/customer/bookings/{id}/transfers(id=${booking.id})}">
+                <input type="hidden" name="token" th:value="${accessToken}" th:if="${accessToken}">
+                <h6 class="fw-bold mb-3"><i class="bi bi-airplane me-1"></i><span th:text="#{svc.form.transfer.title}">Đặt xe đưa đón</span></h6>
+                <!-- Bang gia cho JS tinh tam tinh -->
+                <th:block th:each="a : ${airports}">
+                    <span th:each="v : ${vehicles}" th:if="${transferRates.get(a) != null and transferRates.get(a).get(v) != null}" class="d-none js-rate"
+                          th:attr="data-airport=${a.name()},data-vehicle=${v.name()},data-price=${transferRates.get(a).get(v).intValue()},data-max=${v.maxPassengers}"></span>
+                </th:block>
+                <div class="row g-2 mb-2">
+                    <div class="col-12">
+                        <label class="form-label small" th:text="#{svc.form.direction}">Chiều</label>
+                        <select name="direction" class="form-select js-direction" required>
+                            <option value="PICKUP" th:text="#{svc.dir.PICKUP} + ' (' + ${#temporals.format(booking.checkInDate, 'dd/MM')} + ')'"></option>
+                            <option value="DROPOFF" th:text="#{svc.dir.DROPOFF} + ' (' + ${#temporals.format(booking.checkOutDate, 'dd/MM')} + ')'"></option>
+                        </select>
+                    </div>
+                    <div class="col-md-7">
+                        <label class="form-label small" th:text="#{svc.form.airport}">Sân bay</label>
+                        <select name="airport" class="form-select js-airport" required>
+                            <option th:each="a : ${airports}" th:value="${a.name()}" th:text="#{${'airport.' + a.name()}}"></option>
+                        </select>
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label small" th:text="#{svc.form.vehicle}">Loại xe</label>
+                        <select name="vehicleType" class="form-select js-vehicle" required>
+                            <option th:each="v : ${vehicles}" th:value="${v.name()}" th:text="#{${'svc.vehicle.' + v.name()}}"></option>
+                        </select>
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label small" th:text="#{svc.form.time}">Giờ</label>
+                        <input type="time" name="time" class="form-control" required>
+                    </div>
+                    <div class="col-5">
+                        <label class="form-label small" th:text="#{svc.form.flight}">Số hiệu chuyến bay</label>
+                        <input type="text" name="flightNumber" class="form-control js-flight" maxlength="10" th:placeholder="#{svc.form.flightPh}">
+                    </div>
+                    <div class="col-3">
+                        <label class="form-label small" th:text="#{svc.form.passengers}">Số khách</label>
+                        <input type="number" name="passengers" class="form-control js-passengers" min="1" required
+                               th:value="${booking.numberOfGuests != null ? booking.numberOfGuests : 1}">
+                    </div>
+                </div>
+                <p class="small text-muted mb-2"
+                   th:text="#{svc.form.timeHint(${#temporals.format(booking.checkInDate, 'dd/MM')}, ${#temporals.format(booking.checkOutDate, 'dd/MM')})}"></p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="small"><span th:text="#{svc.form.estimate}">Tạm tính</span>: <b class="js-estimate">—</b></span>
+                    <button type="submit" class="btn btn-primary" th:text="#{svc.form.submitTransfer}">Đặt xe</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            var fmt = new Intl.NumberFormat(document.documentElement.lang === 'en' ? 'en-US' : 'vi-VN');
+            var tourForm = document.querySelector('.js-tour-form');
+            if (tourForm) {
+                var tour = tourForm.querySelector('.js-tour');
+                var people = tourForm.querySelector('.js-participants');
+                var updateTour = function () {
+                    var opt = tour.options[tour.selectedIndex];
+                    people.max = opt.dataset.max;
+                    var n = parseInt(people.value, 10) || 0;
+                    tourForm.querySelector('.js-estimate').textContent = n > 0 ? fmt.format(opt.dataset.price * n) + 'đ' : '—';
+                };
+                tour.addEventListener('change', updateTour);
+                people.addEventListener('input', updateTour);
+                updateTour();
+            }
+            var trForm = document.querySelector('.js-transfer-form');
+            if (trForm) {
+                var airport = trForm.querySelector('.js-airport');
+                var vehicle = trForm.querySelector('.js-vehicle');
+                var direction = trForm.querySelector('.js-direction');
+                var flight = trForm.querySelector('.js-flight');
+                var pax = trForm.querySelector('.js-passengers');
+                var updateTransfer = function () {
+                    var rate = trForm.querySelector('.js-rate[data-airport="' + airport.value + '"][data-vehicle="' + vehicle.value + '"]');
+                    if (rate) { pax.max = rate.dataset.max; }
+                    trForm.querySelector('.js-estimate').textContent = rate ? fmt.format(rate.dataset.price) + 'đ' : '—';
+                    // Don san bay can so hieu chuyen bay de tai xe theo doi gio ha canh
+                    flight.required = direction.value === 'PICKUP';
+                };
+                [airport, vehicle, direction].forEach(function (el) { el.addEventListener('change', updateTransfer); });
+                updateTransfer();
+            }
+        })();
+    </script>
+</div>

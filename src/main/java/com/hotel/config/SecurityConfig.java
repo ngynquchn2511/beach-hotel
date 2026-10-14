@@ -86,7 +86,10 @@ public class SecurityConfig {
                         // Tao/xoa danh muc (loai phong, phong, combo) - chi ADMIN; STAFF chi xem/sua thong tin
                         .requestMatchers("/admin/room-types/new", "/admin/room-types/*/delete",
                                 "/admin/rooms/new", "/admin/rooms/*/delete",
-                                "/admin/combos/new", "/admin/combos/*/delete").hasRole("ADMIN")
+                                "/admin/combos/new", "/admin/combos/*/delete",
+                                "/admin/diving-tours/new", "/admin/diving-tours/*/delete").hasRole("ADMIN")
+                        // Bang gia xe dua don san bay - chi ADMIN duoc doi gia
+                        .requestMatchers("/admin/transfer-rates", "/admin/transfer-rates/**").hasRole("ADMIN")
                         // Ma giam gia: STAFF chi duoc xem danh sach, moi thao tac thay doi danh cho ADMIN
                         .requestMatchers(HttpMethod.POST, "/admin/discount-codes/**").hasRole("ADMIN")
                         .requestMatchers("/admin/discount-codes/new", "/admin/discount-codes/*/edit").hasRole("ADMIN")
@@ -124,7 +127,7 @@ public class SecurityConfig {
         http
                 .addFilterAfter(csrfTokenEagerLoadFilter(), CsrfFilter.class)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/home", "/about", "/rooms", "/rooms/**", "/login", "/register",
+                        .requestMatchers("/", "/home", "/about", "/services", "/rooms", "/rooms/**", "/login", "/register",
                                 "/forgot-password", "/reset-password",
                                 "/css/**", "/js/**", "/images/**", "/uploads/**", "/page-images/**").permitAll()
                         // Chatbot tu van - khach chua dang nhap cung phai hoi duoc
@@ -134,6 +137,10 @@ public class SecurityConfig {
                         .requestMatchers("/customer/rooms", "/customer/rooms/*",
                                 "/customer/bookings/new", "/customer/bookings/check-discount",
                                 "/customer/bookings/*").permitAll()
+                        // Dat / huy dich vu them (tour lan, xe dua don) tren trang don - khach vang lai dung ?token=
+                        // (kiem tra quyen trong BookingService.findForViewing giong trang xem don)
+                        .requestMatchers("/customer/bookings/*/tours", "/customer/bookings/*/tours/*/cancel",
+                                "/customer/bookings/*/transfers", "/customer/bookings/*/transfers/*/cancel").permitAll()
                         // Rieng lich su dat phong va sua/huy don van can dang nhap (de xac dinh dung chu don)
                         .requestMatchers("/customer/**").hasRole("CUSTOMER")
                         .anyRequest().authenticated()

@@ -64,7 +64,7 @@
                         <td class="text-muted" th:text="${c.description != null ? c.description : '-'}"></td>
                         <td class="text-end" th:text="${#numbers.formatDecimal(c.amount, 1, 0)} + ' VND'"></td>
                         <td class="text-end">
-                            <form th:unless="${paid}" th:action="@{/admin/bookings/{id}/charges/{cid}/delete(id=${booking.id}, cid=${c.id})}"
+                            <form th:unless="${paid or c.type.serviceCharge}" th:action="@{/admin/bookings/{id}/charges/{cid}/delete(id=${booking.id}, cid=${c.id})}"
                                   method="post" class="m-0" onsubmit="return confirm('Xóa phụ phí này?')">
                                 <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa"><i class="bi bi-x-lg"></i></button>
                             </form>

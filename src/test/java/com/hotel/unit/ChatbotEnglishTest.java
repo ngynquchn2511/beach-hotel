@@ -42,6 +42,8 @@ class ChatbotEnglishTest {
     @Mock private ComboRepository comboRepository;
     @Mock private DiscountCodeRepository discountCodeRepository;
     @Mock private PricingService pricingService;
+    @Mock private com.hotel.repository.DivingTourRepository divingTourRepository;
+    @Mock private com.hotel.repository.TransferRateRepository transferRateRepository;
     @InjectMocks private ChatbotService chatbotService;
 
     @BeforeEach
@@ -69,15 +71,15 @@ class ChatbotEnglishTest {
     @CsvSource(delimiter = '|', value = {
             "chat.sg.price      | Room prices at Sóng Xanh",
             "chat.sg.available  | Availability for the next 7 days",
-            "chat.sg.directions | **35 km**",
+            "chat.sg.directions | **150 km**",
             "chat.sg.deposit    | **30%** deposit within **24 hours**",
             "chat.sg.howToBook  | Booking at Sóng Xanh is easy",
             "chat.sg.payment    | **cash** or **bank transfer**",
             "chat.sg.cancel     | **Cancel booking**",
             "chat.sg.combo      | Food combos for an evening by the sea",
-            "chat.sg.explore    | **Tran Phu beach**",
-            "chat.sg.food       | fish-cake noodle soup",
-            "chat.sg.weather    | sunscreen"})
+            "chat.sg.explore    | **Sung Sot Cave**",
+            "chat.sg.food       | squid cakes",
+            "chat.sg.weather    | jacket"})
     void englishSuggestionChips_areUnderstood(String chipKey, String expected) {
         String answer = ask(Texts.get(Locale.ENGLISH, chipKey));
         assertThat(answer).contains(expected).doesNotContain("didn't quite get that");

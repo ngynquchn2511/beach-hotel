@@ -134,6 +134,9 @@ public class PaymentService {
         if (type == null) {
             throw new BusinessException("Vui lòng chọn loại phụ phí");
         }
+        if (type.isServiceCharge()) {
+            throw new BusinessException("Tiền tour lặn / đưa đón sân bay được tính tự động khi xác nhận dịch vụ, không thêm tay");
+        }
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new BusinessException("Số tiền phụ phí phải lớn hơn 0");
         }
@@ -158,6 +161,9 @@ public class PaymentService {
         BookingCharge charge = chargeRepository.findById(chargeId)
                 .filter(c -> c.getBooking().getId().equals(bookingId))
                 .orElseThrow(() -> new BusinessException("Không tìm thấy phụ phí"));
+        if (charge.getType().isServiceCharge()) {
+            throw new BusinessException("Muốn bỏ tiền dịch vụ này, hãy hủy dịch vụ ở mục Dịch vụ thêm của đơn");
+        }
         chargeRepository.delete(charge);
     }
 

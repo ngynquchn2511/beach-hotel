@@ -7,6 +7,9 @@ import com.hotel.entity.User;
 import com.hotel.exception.BusinessException;
 import com.hotel.security.CustomUserDetails;
 import com.hotel.service.BookingService;
+import com.hotel.service.DivingTourService;
+import com.hotel.service.ServiceOrderService;
+import com.hotel.service.TransferRateService;
 import com.hotel.service.ComboService;
 import com.hotel.service.CustomerManagementService;
 import com.hotel.service.DiscountCodeService;
@@ -53,13 +56,21 @@ public class CustomerBookingController {
     private final ReviewService reviewService;
     private final PricingService pricingService;
     private final UserMessages userMessages;
+    private final ServiceOrderService serviceOrderService;
+    private final DivingTourService divingTourService;
+    private final TransferRateService transferRateService;
 
     public CustomerBookingController(BookingService bookingService, RoomService roomService,
                                       ComboService comboService, DiscountCodeService discountCodeService,
                                       CustomerManagementService customerManagementService,
                                       PaymentService paymentService, ReviewService reviewService,
-                                      PricingService pricingService, UserMessages userMessages) {
+                                      PricingService pricingService, UserMessages userMessages,
+                                      ServiceOrderService serviceOrderService, DivingTourService divingTourService,
+                                      TransferRateService transferRateService) {
         this.userMessages = userMessages;
+        this.serviceOrderService = serviceOrderService;
+        this.divingTourService = divingTourService;
+        this.transferRateService = transferRateService;
         this.bookingService = bookingService;
         this.roomService = roomService;
         this.comboService = comboService;
@@ -228,6 +239,18 @@ public class CustomerBookingController {
         }
         model.addAttribute("timeOptions", generateTimeOptions());
         model.addAttribute("combos", comboService.findActive());
+        // Dich vu them: tour lan + xe dua don san bay (form dat giu lai ?token= cho khach vang lai)
+        model.addAttribute("accessToken", token);
+        model.addAttribute("tourOrders", serviceOrderService.toursOf(id));
+        model.addAttribute("transferOrders", serviceOrderService.transfersOf(id));
+        model.addAttribute("canOrderServices", serviceOrderService.canOrderServices(booking));
+        model.addAttribute("activeTours", divingTourService.findActive());
+        model.addAttribute("transferRates", transferRateService.priceTable());
+        model.addAttribute("airports", com.hotel.entity.Airport.values());
+        model.addAttribute("vehicles", com.hotel.entity.VehicleType.values());
+        model.addAttribute("tourLeadHours", ServiceOrderService.TOUR_LEAD_HOURS);
+        model.addAttribute("transferLeadHours", ServiceOrderService.TRANSFER_LEAD_HOURS);
+        model.addAttribute("cancelHours", ServiceOrderService.CUSTOMER_CANCEL_HOURS);
         return "customer/booking-success";
     }
 

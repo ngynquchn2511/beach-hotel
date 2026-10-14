@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>Giá đưa đón sân bay</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+</head>
+<body class="eaut eaut-admin">
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="container py-5">
+    <div class="row g-4">
+        <div class="col-md-3">
+            <div th:replace="~{fragments/admin-sidebar :: sidebar}"></div>
+        </div>
+
+        <div class="col-md-9">
+            <h3 class="fw-bold mb-1">Giá đưa đón sân bay</h3>
+            <p class="text-muted">Giá trọn gói <b>một chiều</b> (đã gồm phí cầu đường). Giá mới chỉ áp dụng cho yêu cầu đặt sau khi lưu; yêu cầu cũ giữ nguyên giá lúc đặt.</p>
+
+            <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+            <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+
+            <form method="post" th:action="@{/admin/transfer-rates}" class="bg-white p-4 rounded shadow-sm">
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead>
+                        <tr>
+                            <th>Sân bay</th>
+                            <th th:each="v : ${vehicles}" th:text="${v.vietnameseLabel} + ' (≤ ' + ${v.maxPassengers} + ' khách)'"></th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="a : ${airports}">
+                            <td class="fw-semibold text-nowrap" th:text="${a.vietnameseLabel}"></td>
+                            <td th:each="v : ${vehicles}">
+                                <div class="input-group">
+                                    <input type="number" step="1000" min="1000" class="form-control" required
+                                           th:name="|price_${a.name()}_${v.name()}|"
+                                           th:value="${rates.get(a) != null and rates.get(a).get(v) != null ? rates.get(a).get(v).intValue() : ''}">
+                                    <span class="input-group-text">đ</span>
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <button type="submit" class="btn btn-primary">Lưu bảng giá</button>
+            </form>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+</body>
+</html>

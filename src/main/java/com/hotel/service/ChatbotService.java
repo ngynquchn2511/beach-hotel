@@ -1,13 +1,19 @@
 package com.hotel.service;
 
+import com.hotel.entity.Airport;
 import com.hotel.entity.Combo;
 import com.hotel.entity.CustomerType;
 import com.hotel.entity.DiscountCode;
 import com.hotel.entity.DiscountType;
+import com.hotel.entity.DivingTour;
 import com.hotel.entity.PricingSettings;
 import com.hotel.entity.Room;
 import com.hotel.entity.RoomType;
+import com.hotel.entity.TransferRate;
+import com.hotel.entity.VehicleType;
 import com.hotel.repository.ComboRepository;
+import com.hotel.repository.DivingTourRepository;
+import com.hotel.repository.TransferRateRepository;
 import com.hotel.repository.DiscountCodeRepository;
 import com.hotel.repository.RoomRepository;
 import com.hotel.repository.RoomTypeRepository;
@@ -20,9 +26,11 @@ import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 // Chatbot "Sóng" tu van cho khach tren cac trang khach hang.
@@ -44,7 +52,7 @@ public class ChatbotService {
     private static final String HOTEL_EMAIL = "songxanhresort@gmail.com";
     private static final String CHECK_IN_TIME = "14:00";
     private static final String CHECK_OUT_TIME = "12:00";
-    private static final String DIRECTIONS_URL = "https://www.google.com/maps/dir/?api=1&destination=Tran+Phu,+Nha+Trang,+Khanh+Hoa";
+    private static final String DIRECTIONS_URL = "https://www.google.com/maps/dir/?api=1&destination=Bai+Chay,+Ha+Long,+Quang+Ninh";
 
     // Nut hanh dong hien duoi cau tra loi (link noi bo hoac ben ngoai)
     public record Action(String label, String url) {
@@ -59,15 +67,20 @@ public class ChatbotService {
     private final ComboRepository comboRepository;
     private final DiscountCodeRepository discountCodeRepository;
     private final PricingService pricingService;
+    private final DivingTourRepository divingTourRepository;
+    private final TransferRateRepository transferRateRepository;
 
     public ChatbotService(RoomTypeRepository roomTypeRepository, RoomRepository roomRepository,
                           ComboRepository comboRepository, DiscountCodeRepository discountCodeRepository,
-                          PricingService pricingService) {
+                          PricingService pricingService, DivingTourRepository divingTourRepository,
+                          TransferRateRepository transferRateRepository) {
         this.roomTypeRepository = roomTypeRepository;
         this.roomRepository = roomRepository;
         this.comboRepository = comboRepository;
         this.discountCodeRepository = discountCodeRepository;
         this.pricingService = pricingService;
+        this.divingTourRepository = divingTourRepository;
+        this.transferRateRepository = transferRateRepository;
     }
 
     public String answer(String rawMessage) {
@@ -151,17 +164,17 @@ public class ChatbotService {
             boolean askPayment = containsAny(q, "thanh toan", "tra tien", "chuyen khoan", "tien mat", "quet qr",
                     "payment", "how can i pay", "how do i pay", "pay by", "cash", "bank transfer", "credit card");
             boolean askFacilities = containsAny(q, "dich vu", "tien ich", "co so vat chat", "tien nghi",
-                    "bbq", "ban cong", "ho boi", "be boi", "bai bien", "ghe nam", "lan bien", "san ho", "tour dao", "dua don", "san bay", "bep", "nau an", "thue xe", "xe may", "wifi", "wi fi",
+                    "bbq", "ban cong", "ho boi", "be boi", "bai bien", "ghe nam", "bep", "nau an", "thue xe", "xe may", "wifi", "wi fi",
                     "bai do xe", "do xe", "khach san co gi", "khach san phuc vu", "resort co gi", "resort phuc vu", "homestay co gi",
-                    "amenit", "facilit", "balcon", "pool", "beach", "snorkel", "diving", "island tour", "airport", "shuttle", "kitchen", "cook", "motorbike", "scooter", "parking",
+                    "amenit", "facilit", "balcon", "pool", "beach", "kitchen", "cook", "motorbike", "scooter", "parking",
                     "services");
             boolean askCombo = containsAny(q, "combo", "do an", "an uong", "buffet", "an lau", "mon lau", "nuong",
                     "food", "meal", "hotpot", "barbecue", "dinner", "lau hai san");
             boolean askPromotion = containsAny(q, "uu dai", "khuyen mai", "giam gia", "ma giam", "voucher", "discount",
                     "promo", "coupon", " offer", " deal");
             boolean askDirections = containsAny(q, "chi duong", "duong di", "duong toi", "duong den", "duong len", "di nhu the nao", "di the nao",
-                    "tu ha noi", "tu sai gon", "tu hcm", "cam ranh", "tu san bay", "bao xa", "bao lau", "xe khach", "di xe gi",
-                    "direction", "get to", "get there", "how far", "from hanoi", "from saigon", "from ho chi minh", "airport", "route", " bus", "how long");
+                    "tu ha noi", "tu sai gon", "tu hcm", "cao toc", "bao xa", "bao lau", "xe khach", "di xe gi",
+                    "direction", "get to", "get there", "how far", "from hanoi", "from saigon", "from ho chi minh", "expressway", "route", " bus", "how long");
             boolean askAddress = !askDirections && containsAny(q, "dia chi", "o dau", "vi tri", "khach san o", "resort o", "homestay o",
                     "ban do", "address", "where is", "where are", "location", " map");
             boolean askContact = containsAny(q, "so dien thoai", "hotline", "lien he", " sdt ", "dien thoai", "email", "zalo",
@@ -171,10 +184,16 @@ public class ChatbotService {
             boolean askWeather = containsAny(q, "thoi tiet", "nang khong", "co bao", "mua mua", "lanh khong", "nhiet do", "mua khong", "suong mu", "mang ao", "tam bien duoc",
                     "weather", " cold", "temperature", " rain", " fog", " storm", " sunny", "swim season", "what to wear", "what to pack");
             boolean askExplore = containsAny(q, "di choi", "tham quan", "dia diem", "song ao", "chup anh",
-                    "thap ba", "ponagar", "hon mun", "hon chong", "ra dao", "di dao", "hon tam", "vinpearl", "vinwonders", "lan ngam", "co gi choi", "choi gi",
-                    "to do", "nearby", "sightseeing", "visit", "attraction", "island", "tower", "coral", "temple", "what to see");
-            boolean askFood = containsAny(q, "dac san", "an gi", "mon ngon", "quan an", "hai san", "bun cha ca", "nem nuong", "banh can",
+                    "sung sot", "ti top", "titop", "trong mai", "du thuyen", "bai chay", "sun world", "ra dao", "di dao", "co gi choi", "choi gi",
+                    "to do", "nearby", "sightseeing", "visit", "attraction", "island", "cruise", "cave", "what to see");
+            boolean askFood = containsAny(q, "dac san", "an gi", "mon ngon", "quan an", "hai san", "cha muc", "sa sung", "ngan",
                     " eat", "local food", "seafood", "speciality", "specialty", "dish", "restaurant");
+            // Dich vu them: tour lan bien va xe dua don san bay (tra loi bang du lieu that trong DB)
+            boolean askTour = containsAny(q, "tour lan", "lan bien", "lan ong tho", "lan binh", "lan ngam", "san ho", "kayak",
+                    "snorkel", "diving", "dive", "scuba", "coral");
+            boolean askTransfer = containsAny(q, "dua don", "don san bay", "tien san bay", "xe san bay", "ra san bay",
+                    "tu san bay", "xe don", "van don", "noi bai", "cat bi",
+                    "airport", "transfer", "shuttle", "pick up", "pickup", "drop off", "dropoff");
             boolean askHowToBook = containsAny(q, "cach dat", "dat phong nhu the nao", "dat phong the nao", "lam sao dat",
                     "huong dan dat", "dat the nao", "muon dat phong",
                     "how to book", "how do i book", "how can i book", "make a booking", "want to book", "booking process");
@@ -252,6 +271,16 @@ public class ChatbotService {
             if (askFood) {
                 sections.add(t("chat.food"));
                 suggestions.add(t("chat.sg.combo"));
+            }
+            if (askTour) {
+                sections.add(buildTourAnswer());
+                actions.add(action("chat.act.services", "/services#tour-lan"));
+                suggestions.add(t("chat.sg.transfer"));
+            }
+            if (askTransfer) {
+                sections.add(buildTransferAnswer());
+                actions.add(action("chat.act.services", "/services#dua-don"));
+                suggestions.add(t("chat.sg.tour"));
             }
             if (askHowToBook) {
                 sections.add(lines("chat.book.intro", "chat.book.1", "chat.book.2", "chat.book.3", "chat.book.4",
@@ -361,6 +390,41 @@ public class ChatbotService {
                     sb.append("\n").append(t("chat.fac.room", pick(rt.getName(), rt.getNameEn()), amenities));
                 }
             }
+            return sb.toString();
+        }
+
+        private String buildTourAnswer() {
+            List<DivingTour> tours = divingTourRepository.findByActiveTrueOrderByPricePerPersonAsc();
+            if (tours.isEmpty()) {
+                return t("chat.tour.none");
+            }
+            StringBuilder sb = new StringBuilder(t("chat.tour.title"));
+            for (DivingTour tour : tours) {
+                sb.append("\n").append(t("chat.tour.line", pick(tour.getName(), tour.getNameEn()),
+                        money(tour.getPricePerPerson()), tour.getDepartureTime().toString(), tour.getDurationHours()));
+            }
+            sb.append("\n").append(t("chat.tour.how", ServiceOrderService.TOUR_LEAD_HOURS));
+            return sb.toString();
+        }
+
+        // Moi san bay 1 dong: gia 4 cho / 7 cho / 16 cho (bo qua san bay chua du gia)
+        private String buildTransferAnswer() {
+            Map<Airport, Map<VehicleType, BigDecimal>> table = new EnumMap<>(Airport.class);
+            for (TransferRate rate : transferRateRepository.findAll()) {
+                table.computeIfAbsent(rate.getAirport(), a -> new EnumMap<>(VehicleType.class))
+                        .put(rate.getVehicleType(), rate.getPrice());
+            }
+            StringBuilder sb = new StringBuilder(t("chat.transfer.title"));
+            for (Airport airport : Airport.values()) {
+                Map<VehicleType, BigDecimal> prices = table.getOrDefault(airport, Map.of());
+                if (prices.size() < VehicleType.values().length) {
+                    continue;
+                }
+                sb.append("\n").append(t("chat.transfer.line", t("airport." + airport.name()),
+                        money(prices.get(VehicleType.CAR_4)), money(prices.get(VehicleType.CAR_7)),
+                        money(prices.get(VehicleType.VAN_16))));
+            }
+            sb.append("\n").append(t("chat.transfer.how", ServiceOrderService.TRANSFER_LEAD_HOURS));
             return sb.toString();
         }
 

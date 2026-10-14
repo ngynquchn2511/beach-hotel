@@ -8,6 +8,8 @@ import com.hotel.entity.IdDocumentType;
 import com.hotel.entity.PaymentMethod;
 import com.hotel.exception.BusinessException;
 import com.hotel.service.BookingService;
+import com.hotel.service.DivingTourService;
+import com.hotel.service.ServiceOrderService;
 import com.hotel.service.GuestRegistrationService;
 import com.hotel.service.PaymentService;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -29,12 +31,17 @@ public class AdminBookingController {
     private final BookingService bookingService;
     private final PaymentService paymentService;
     private final GuestRegistrationService guestRegistrationService;
+    private final ServiceOrderService serviceOrderService;
+    private final DivingTourService divingTourService;
 
     public AdminBookingController(BookingService bookingService, PaymentService paymentService,
-                                  GuestRegistrationService guestRegistrationService) {
+                                  GuestRegistrationService guestRegistrationService,
+                                  ServiceOrderService serviceOrderService, DivingTourService divingTourService) {
         this.bookingService = bookingService;
         this.paymentService = paymentService;
         this.guestRegistrationService = guestRegistrationService;
+        this.serviceOrderService = serviceOrderService;
+        this.divingTourService = divingTourService;
     }
 
     // Danh sach toan bo booking - dung lam "lich su dat phong" va man hinh check-in/check-out cho STAFF/ADMIN
@@ -69,6 +76,14 @@ public class AdminBookingController {
         if (booking.isAwaitingDeposit()) {
             model.addAttribute("depositTransferContent", paymentService.depositTransferContent(booking));
         }
+        // Dich vu them (tour lan / xe dua don) cua don + form le tan dat ho khach
+        model.addAttribute("tourOrders", serviceOrderService.toursOf(id));
+        model.addAttribute("transferOrders", serviceOrderService.transfersOf(id));
+        model.addAttribute("canOrderServices", serviceOrderService.canOrderServices(booking));
+        model.addAttribute("activeTours", divingTourService.findActive());
+        model.addAttribute("airports", com.hotel.entity.Airport.values());
+        model.addAttribute("vehicles", com.hotel.entity.VehicleType.values());
+        model.addAttribute("directions", com.hotel.entity.TransferDirection.values());
         return "admin/bookings/detail";
     }
 
@@ -156,7 +171,7 @@ public class AdminBookingController {
         model.addAttribute("grandTotal", paymentService.grandTotal(booking));
         model.addAttribute("depositPaid", booking.getDepositPaidAmount());
         model.addAttribute("amountDue", paymentService.amountDue(booking));
-        model.addAttribute("chargeTypes", ChargeType.values());
+        model.addAttribute("chargeTypes", ChargeType.manualTypes());
         return "admin/bookings/checkout";
     }
 

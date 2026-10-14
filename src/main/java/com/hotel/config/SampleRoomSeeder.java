@@ -1,11 +1,13 @@
 package com.hotel.config;
 
 import com.hotel.entity.Combo;
+import com.hotel.entity.DivingTour;
 import com.hotel.entity.Room;
 import com.hotel.entity.RoomImage;
 import com.hotel.entity.RoomStatus;
 import com.hotel.entity.RoomType;
 import com.hotel.repository.ComboRepository;
+import com.hotel.repository.DivingTourRepository;
 import com.hotel.repository.RoomRepository;
 import com.hotel.repository.RoomTypeRepository;
 import org.slf4j.Logger;
@@ -17,8 +19,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalTime;
 
-// Tao san hang phong, phong va combo hai san cua resort bien de chay thu ngay sau khi clone.
+// Tao san hang phong, phong, combo hai san va tour lan cua resort bien de chay thu ngay sau khi clone.
 // Chi chay khi DB chua co hang phong nao (lan dau) va app.seed-sample-rooms=true (may dev).
 // Chay truoc TestDataSeeder (@Order(1)) de TestDataSeeder co phong ma sinh don gia lap.
 @Component
@@ -31,17 +34,20 @@ public class SampleRoomSeeder implements CommandLineRunner {
     private final RoomTypeRepository roomTypeRepository;
     private final RoomRepository roomRepository;
     private final ComboRepository comboRepository;
+    private final DivingTourRepository divingTourRepository;
 
     public SampleRoomSeeder(RoomTypeRepository roomTypeRepository, RoomRepository roomRepository,
-                            ComboRepository comboRepository) {
+                            ComboRepository comboRepository, DivingTourRepository divingTourRepository) {
         this.roomTypeRepository = roomTypeRepository;
         this.roomRepository = roomRepository;
         this.comboRepository = comboRepository;
+        this.divingTourRepository = divingTourRepository;
     }
 
     @Override
     @Transactional
     public void run(String... args) {
+        seedDivingTours();
         if (roomTypeRepository.count() > 0) {
             return;
         }
@@ -49,16 +55,16 @@ public class SampleRoomSeeder implements CommandLineRunner {
         RoomType standard = roomTypeRepository.save(RoomType.builder()
                 .name("Phòng Tiêu chuẩn hướng phố").nameEn("Standard City View")
                 .basePrice(BigDecimal.valueOf(650000)).maxGuests(2).area(BigDecimal.valueOf(25))
-                .description("Phòng ấm cúng hướng phố, cách bãi biển Trần Phú chỉ vài bước chân.")
-                .descriptionEn("A cosy city-view room just steps from Tran Phu beach.")
+                .description("Phòng ấm cúng hướng phố, cách bãi biển Bãi Cháy chỉ vài bước chân.")
+                .descriptionEn("A cosy city-view room just steps from Bai Chay beach.")
                 .amenities("Giường đôi, điều hòa, Wi-Fi, TV, tủ lạnh mini")
                 .amenitiesEn("Double bed, air conditioning, Wi-Fi, TV, mini fridge")
                 .build());
         RoomType deluxe = roomTypeRepository.save(RoomType.builder()
                 .name("Phòng Deluxe view biển").nameEn("Deluxe Sea View")
                 .basePrice(BigDecimal.valueOf(1100000)).maxGuests(2).area(BigDecimal.valueOf(32))
-                .description("Ban công riêng nhìn thẳng ra vịnh Nha Trang, đón bình minh trên biển mỗi sáng.")
-                .descriptionEn("A private balcony facing Nha Trang Bay — watch the sunrise over the sea every morning.")
+                .description("Ban công riêng nhìn thẳng ra vịnh Hạ Long, đón bình minh giữa các đảo đá mỗi sáng.")
+                .descriptionEn("A private balcony facing Ha Long Bay — watch the sunrise among the islands every morning.")
                 .amenities("Ban công hướng biển, bồn tắm, điều hòa, Wi-Fi, minibar")
                 .amenitiesEn("Sea-view balcony, bathtub, air conditioning, Wi-Fi, minibar")
                 .build());
@@ -98,6 +104,38 @@ public class SampleRoomSeeder implements CommandLineRunner {
                 180000, 1, null);
 
         log.info("Da tao du lieu mau: 4 hang phong, 10 phong, 3 combo hai san");
+    }
+
+    // Tour lan mau (chi tao khi chua co tour nao) - admin sua gia / lich o trang "Tour lặn biển"
+    private void seedDivingTours() {
+        if (divingTourRepository.count() > 0) {
+            return;
+        }
+        addTour("Lặn ống thở & chèo kayak Hang Luồn", "Snorkelling & kayaking at Luon Cave",
+                "Chèo kayak xuyên Hang Luồn, lặn ống thở ngắm cá và san hô ven đảo. Có áo phao, kính lặn và hướng dẫn viên.",
+                "Kayak through Luon Cave and snorkel among fish and coral near the islands. Life jackets, masks and a guide included.",
+                650000, LocalTime.of(8, 0), 4, 20, 8, "/page-images/beach-tour-dao.jpg");
+        addTour("Lặn bình cho người mới (Discover Scuba)", "Discover Scuba for beginners",
+                "Học lặn bình dưỡng khí cùng huấn luyện viên có chứng chỉ PADI, lặn tối đa 12 m. Không cần kinh nghiệm.",
+                "Try scuba diving with a PADI-certified instructor, down to 12 m. No experience needed.",
+                1900000, LocalTime.of(7, 30), 6, 8, 12, "/page-images/beach-hon-mun.jpg");
+        addTour("Lặn ngắm san hô & tắm biển đảo Ti Tốp", "Coral snorkelling & Ti Top Island beach",
+                "Du thuyền ra vịnh, lặn ngắm rạn san hô, leo đỉnh Ti Tốp và tắm biển. Bao gồm bữa trưa hải sản trên tàu.",
+                "Cruise the bay, snorkel over the coral reef, climb Ti Top peak and swim. Seafood lunch on board included.",
+                1250000, LocalTime.of(8, 30), 8, 15, 6, "/page-images/beach-toan-canh.jpg");
+    }
+
+    private void addTour(String name, String nameEn, String description, String descriptionEn, long price,
+                         LocalTime departure, int hours, int maxParticipants, Integer minAge, String imageUrl) {
+        divingTourRepository.save(DivingTour.builder()
+                .name(name).nameEn(nameEn)
+                .description(description).descriptionEn(descriptionEn)
+                .pricePerPerson(BigDecimal.valueOf(price))
+                .departureTime(departure).durationHours(hours)
+                .meetingPoint("Cảng tàu khách quốc tế Tuần Châu")
+                .maxParticipants(maxParticipants).minAge(minAge)
+                .imageUrl(imageUrl).active(true)
+                .build());
     }
 
     private void addRooms(RoomType type, String imageUrl, String... numbers) {

@@ -6,6 +6,7 @@
         <div class="ms-auto d-flex align-items-center gap-3 flex-wrap justify-content-end">
             <a th:href="@{/about}" class="text-decoration-none text-dark" sec:authorize="!hasAnyRole('ADMIN','STAFF')" th:text="#{nav.about}">Giới thiệu</a>
             <a th:href="@{/rooms}" class="text-decoration-none text-dark" sec:authorize="!hasAnyRole('ADMIN','STAFF')" th:text="#{nav.rooms}">Danh sách phòng</a>
+            <a th:href="@{/services}" class="text-decoration-none text-dark" sec:authorize="!hasAnyRole('ADMIN','STAFF')" th:text="#{nav.services}">Dịch vụ</a>
             <a th:href="@{/admin/rooms}" class="text-decoration-none text-dark" sec:authorize="hasAnyRole('ADMIN','STAFF')">Danh sách phòng</a>
             <a th:href="@{/customer/bookings}" class="text-decoration-none text-dark" sec:authorize="hasRole('CUSTOMER')" th:text="#{nav.history}">Lịch sử đặt phòng</a>
             <a th:href="@{/customer/account}" class="text-decoration-none text-dark" sec:authorize="hasRole('CUSTOMER')" th:text="#{nav.account}">Tài khoản</a>

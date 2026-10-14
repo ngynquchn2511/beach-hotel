@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${isEdit} ? 'Sửa tour lặn' : 'Thêm tour lặn'">Tour lặn</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+</head>
+<body class="eaut eaut-admin">
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="container py-5">
+    <div class="row g-4">
+        <div class="col-md-3">
+            <div th:replace="~{fragments/admin-sidebar :: sidebar}"></div>
+        </div>
+
+        <div class="col-md-9">
+            <h3 class="fw-bold mb-4" th:text="${isEdit} ? 'Sửa tour lặn' : 'Thêm tour lặn'"></h3>
+
+            <div class="bg-white p-4 rounded shadow-sm" style="max-width: 720px;">
+                <form th:action="${isEdit} ? @{/admin/diving-tours/{id}/edit(id=${tourId})} : @{/admin/diving-tours/new}"
+                      th:object="${tourRequest}" method="post" enctype="multipart/form-data">
+
+                    <div class="mb-3">
+                        <label class="form-label">Tên tour</label>
+                        <input type="text" th:field="*{name}" class="form-control" maxlength="150" placeholder="VD: Lặn ống thở & chèo kayak Hang Luồn">
+                        <div class="text-danger small" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Tên tour <span class="badge bg-info text-dark">EN</span> <span class="text-muted small">(không bắt buộc)</span></label>
+                        <input type="text" th:field="*{nameEn}" class="form-control" maxlength="150" placeholder="VD: Snorkelling & kayaking">
+                        <div class="text-danger small" th:if="${#fields.hasErrors('nameEn')}" th:errors="*{nameEn}"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Mô tả</label>
+                        <textarea th:field="*{description}" class="form-control" rows="3" maxlength="1000" placeholder="Lịch trình, đồ được cung cấp, yêu cầu sức khỏe..."></textarea>
+                        <div class="text-danger small" th:if="${#fields.hasErrors('description')}" th:errors="*{description}"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Mô tả <span class="badge bg-info text-dark">EN</span> <span class="text-muted small">(không bắt buộc)</span></label>
+                        <textarea th:field="*{descriptionEn}" class="form-control" rows="3" maxlength="1000"></textarea>
+                        <div class="text-danger small" th:if="${#fields.hasErrors('descriptionEn')}" th:errors="*{descriptionEn}"></div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Giá mỗi người (VND)</label>
+                            <input type="number" step="1000" min="1000" th:field="*{pricePerPerson}" class="form-control"
+                                   th:readonly="${!#authorization.expression('hasRole(''ADMIN'')')}">
+                            <div class="text-danger small" th:if="${#fields.hasErrors('pricePerPerson')}" th:errors="*{pricePerPerson}"></div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Giờ khởi hành</label>
+                            <input type="time" th:field="*{departureTime}" class="form-control">
+                            <div class="text-danger small" th:if="${#fields.hasErrors('departureTime')}" th:errors="*{departureTime}"></div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Thời lượng (tiếng)</label>
+                            <input type="number" min="1" max="24" th:field="*{durationHours}" class="form-control">
+                            <div class="text-danger small" th:if="${#fields.hasErrors('durationHours')}" th:errors="*{durationHours}"></div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Số chỗ mỗi chuyến</label>
+                            <input type="number" min="1" max="200" th:field="*{maxParticipants}" class="form-control"
+                                   th:readonly="${!#authorization.expression('hasRole(''ADMIN'')')}">
+                            <div class="text-danger small" th:if="${#fields.hasErrors('maxParticipants')}" th:errors="*{maxParticipants}"></div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Tuổi tối thiểu</label>
+                            <input type="number" min="1" max="99" th:field="*{minAge}" class="form-control" placeholder="Không giới hạn">
+                            <div class="text-danger small" th:if="${#fields.hasErrors('minAge')}" th:errors="*{minAge}"></div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Điểm hẹn</label>
+                            <input type="text" th:field="*{meetingPoint}" class="form-control" maxlength="200" placeholder="VD: Cảng Tuần Châu">
+                            <div class="text-danger small" th:if="${#fields.hasErrors('meetingPoint')}" th:errors="*{meetingPoint}"></div>
+                        </div>
+                    </div>
+                    <div class="text-muted small mb-3" sec:authorize="!hasRole('ADMIN')">Chỉ quản trị viên được thay đổi giá và số chỗ.</div>
+                    <div class="text-muted small mb-3">Mỗi ngày 1 chuyến; hệ thống cộng số khách của mọi đơn chưa hủy trong ngày và không cho đặt vượt số chỗ.</div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Ảnh tour</label>
+                        <div th:if="${currentImageUrl}" class="mb-2">
+                            <img th:src="${currentImageUrl}" style="max-width: 200px;" class="rounded border d-block mb-1" alt="Ảnh tour hiện tại">
+                            <span class="text-muted small">Ảnh hiện tại — chọn file mới nếu muốn thay đổi</span>
+                        </div>
+                        <input type="file" name="imageFile" accept=".jpg,.jpeg,.png,.webp" class="form-control">
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Lưu</button>
+                        <a th:href="@{/admin/diving-tours}" class="btn btn-outline-secondary">Hủy</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+</body>
+</html>

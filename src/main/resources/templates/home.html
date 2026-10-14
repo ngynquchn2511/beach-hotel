@@ -30,7 +30,7 @@
         .quick .ic { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 10px; font-size: 1.3rem; margin: .4rem 0 .9rem;
             background: var(--baby); color: var(--ink); border: var(--line); }
         .quick .t { font-family: var(--display); font-weight: 700; font-size: 1.3rem; }
-        /* Day anh polaroid Nha Trang */
+        /* Day anh polaroid Ha Long */
         .postcards { padding: 3.5rem 0 1rem; }
         .polaroid { display: block; padding: 10px 10px 0; background: var(--paper); border: var(--line); border-radius: 6px;
             box-shadow: var(--pop); transition: transform .2s, box-shadow .2s; color: var(--ink) !important; text-decoration: none; }
@@ -89,21 +89,21 @@
         </div>
     </section>
 
-    <!-- Anh minh hoa Nha Trang (static/page-images/beach-*.jpg) -->
+    <!-- Anh minh hoa Ha Long (static/page-images/beach-*.jpg) -->
     <section class="postcards">
         <div class="text-center mb-4">
-            <h2 class="fw-bold mb-1" th:text="#{home.postcards.title}">Nha Trang — thành phố biển</h2>
-            <p class="text-muted mb-0" th:text="#{home.postcards.sub}">Đường Trần Phú, Nha Trang, Khánh Hòa · nắng vàng biển xanh quanh năm</p>
+            <h2 class="fw-bold mb-1" th:text="#{home.postcards.title}">Hạ Long — kỳ quan thiên nhiên thế giới</h2>
+            <p class="text-muted mb-0" th:text="#{home.postcards.sub}">Bãi Cháy, Hạ Long, Quảng Ninh · gần 2.000 đảo đá vôi giữa biển xanh</p>
         </div>
         <div class="row g-4">
             <div class="col-md-4">
-                <a th:href="@{/about#kham-pha}" class="polaroid"><img src="/page-images/beach-bo-bien.jpg" th:alt="#{home.pc1}" loading="lazy"><div class="cap" th:text="#{home.pc1}">Bờ biển Trần Phú</div></a>
+                <a th:href="@{/about#kham-pha}" class="polaroid"><img src="/page-images/beach-bo-bien.jpg" th:alt="#{home.pc1}" loading="lazy"><div class="cap" th:text="#{home.pc1}">Vịnh Hạ Long</div></a>
             </div>
             <div class="col-md-4">
-                <a th:href="@{/about#kham-pha}" class="polaroid"><img src="/page-images/beach-thap-ba.jpg" th:alt="#{home.pc2}" loading="lazy"><div class="cap" th:text="#{home.pc2}">Tháp Bà Ponagar</div></a>
+                <a th:href="@{/about#kham-pha}" class="polaroid"><img src="/page-images/beach-thap-ba.jpg" th:alt="#{home.pc2}" loading="lazy"><div class="cap" th:text="#{home.pc2}">Hang Sửng Sốt</div></a>
             </div>
             <div class="col-md-4">
-                <a th:href="@{/about#kham-pha}" class="polaroid"><img src="/page-images/beach-tran-phu.jpg" th:alt="#{home.pc3}" loading="lazy"><div class="cap" th:text="#{home.pc3}">Lặn ngắm san hô Hòn Mun</div></a>
+                <a th:href="@{/about#kham-pha}" class="polaroid"><img src="/page-images/beach-tran-phu.jpg" th:alt="#{home.pc3}" loading="lazy"><div class="cap" th:text="#{home.pc3}">Lặn ngắm san hô</div></a>
             </div>
         </div>
     </section>

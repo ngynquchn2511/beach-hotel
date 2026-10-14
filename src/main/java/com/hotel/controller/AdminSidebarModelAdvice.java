@@ -1,6 +1,7 @@
 package com.hotel.controller;
 
 import com.hotel.service.BookingService;
+import com.hotel.service.ServiceOrderService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -21,14 +22,24 @@ import org.springframework.web.bind.annotation.ModelAttribute;
         AdminAuditLogController.class,
         AdminReviewController.class,
         AdminPricingController.class,
-        AdminGuestRegistrationController.class
+        AdminGuestRegistrationController.class,
+        AdminDivingTourController.class,
+        AdminServiceOrderController.class
 })
 public class AdminSidebarModelAdvice {
 
     private final BookingService bookingService;
+    private final ServiceOrderService serviceOrderService;
 
-    public AdminSidebarModelAdvice(BookingService bookingService) {
+    public AdminSidebarModelAdvice(BookingService bookingService, ServiceOrderService serviceOrderService) {
         this.bookingService = bookingService;
+        this.serviceOrderService = serviceOrderService;
+    }
+
+    // So dich vu them (tour lan / xe dua don) dang cho le tan xac nhan - hien so o muc "Dich vu them"
+    @ModelAttribute("pendingServiceCount")
+    public long pendingServiceCount() {
+        return serviceOrderService.countPending();
     }
 
     @ModelAttribute("newBookingCount")

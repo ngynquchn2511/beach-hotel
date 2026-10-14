@@ -19,7 +19,11 @@ public final class AuditLabels {
             Map.entry("PricingSettings", "Cài đặt giá & đặt cọc"),
             Map.entry("SpecialRate", "Giá ngày lễ"),
             Map.entry("BookingGuest", "Khách lưu trú"),
-            Map.entry("ReviewMedia", "Ảnh / video đánh giá")
+            Map.entry("ReviewMedia", "Ảnh / video đánh giá"),
+            Map.entry("DivingTour", "Tour lặn biển"),
+            Map.entry("TourBooking", "Đặt tour lặn"),
+            Map.entry("AirportTransfer", "Đưa đón sân bay"),
+            Map.entry("TransferRate", "Giá đưa đón")
     );
 
     private static final Map<String, String> FIELD_LABELS = Map.ofEntries(

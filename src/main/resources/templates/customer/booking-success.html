@@ -157,6 +157,8 @@
         </form>
     </div>
 
+    <div th:replace="~{fragments/booking-services :: section}"></div>
+
     <div sec:authorize="isAuthenticated()">
         <div class="bg-white p-4 rounded shadow-sm mb-4" th:if="${canModify}">
             <h5 class="fw-bold mb-3" th:text="#{success.editTimes}">Sửa giờ nhận / trả phòng</h5>
