@@ -55,6 +55,17 @@ public class User {
     @Column(name = "locked")
     private Boolean locked;
 
+    // Xac thuc email: false = chua kich hoat (tu dang ky chua bam link, hoac tai khoan tu tao khi dat phong
+    // khong dang nhap) -> chua dang nhap duoc. null = tai khoan cu / admin / nhan vien -> coi nhu da xac thuc
+    @Column(name = "email_verified")
+    private Boolean emailVerified;
+
+    @Column(name = "email_verify_token", length = 64)
+    private String emailVerifyToken;
+
+    @Column(name = "email_verify_expiry")
+    private LocalDateTime emailVerifyExpiry;
+
     // Chong do mat khau (LoginAttemptService): so lan sai lien tiep va thoi diem het khoa tam.
     // Cho phep null (tai khoan cu) = chua sai lan nao / khong bi khoa tam
     @Column(name = "failed_login_attempts")
@@ -76,6 +87,17 @@ public class User {
 
     public boolean isLocked() {
         return Boolean.TRUE.equals(locked);
+    }
+
+    public boolean isEmailVerified() {
+        return !Boolean.FALSE.equals(emailVerified);
+    }
+
+    // Chu email da chung minh so huu (bam link kich hoat / dat lai mat khau qua email)
+    public void markEmailVerified() {
+        emailVerified = true;
+        emailVerifyToken = null;
+        emailVerifyExpiry = null;
     }
 
     // Dang bi khoa tam vi nhap sai mat khau nhieu lan (tu mo khi het han)

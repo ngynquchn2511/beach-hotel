@@ -70,7 +70,7 @@
                     </div>
 
                     <div th:if="${errorMessage}" class="alert alert-danger border-0 rounded-3 small d-flex gap-2">
-                        <i class="bi bi-exclamation-circle-fill"></i><span th:text="${errorMessage}"></span>
+                        <i class="bi bi-exclamation-circle-fill"></i><span><span th:text="${errorMessage}"></span><span th:if="${emailTaken}" th:utext="| #{auth.register.forgotHint(@{/forgot-password})}|"></span></span>
                     </div>
 
                     <form th:action="@{/register}" th:object="${registerRequest}" method="post" novalidate>

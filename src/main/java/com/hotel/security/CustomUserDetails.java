@@ -58,6 +58,7 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        // Chua xac thuc email (chua bam link kich hoat / chua dat mat khau qua email) -> chua dang nhap duoc
+        return user.isEmailVerified();
     }
 }

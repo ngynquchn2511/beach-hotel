@@ -12,6 +12,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -68,13 +69,14 @@ public class SecurityConfig {
     }
 
     // Dang khoa tam vi sai mat khau nhieu lan (ke ca lan sai vua cham nguong) -> "?locked=temp&minutes=N";
-    // bi admin khoa -> "?locked=true"; con lai (sai email/mat khau) -> "?error=true"
+    // bi admin khoa -> "?locked=true"; chua kich hoat email -> "?unverified=true"; con lai (sai email/mat khau) -> "?error=true"
     private AuthenticationFailureHandler loginFailureHandler(String loginPage) {
         return (request, response, exception) -> {
             String query = loginAttemptService.temporaryLockUntil(request.getParameter("username"))
                     .map(until -> "?locked=temp&minutes="
                             + Math.max(1, (Duration.between(LocalDateTime.now(), until).toSeconds() + 59) / 60))
-                    .orElse(exception instanceof LockedException ? "?locked=true" : "?error=true");
+                    .orElse(exception instanceof LockedException ? "?locked=true"
+                            : exception instanceof DisabledException ? "?unverified=true" : "?error=true");
             response.sendRedirect(request.getContextPath() + loginPage + query);
         };
     }
@@ -139,7 +141,7 @@ public class SecurityConfig {
                 .addFilterAfter(csrfTokenEagerLoadFilter(), CsrfFilter.class)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/", "/home", "/about", "/services", "/rooms", "/rooms/**", "/login", "/register",
-                                "/forgot-password", "/reset-password",
+                                "/forgot-password", "/reset-password", "/verify-email", "/resend-verification",
                                 "/css/**", "/js/**", "/images/**", "/uploads/**", "/page-images/**").permitAll()
                         // Chatbot tu van - khach chua dang nhap cung phai hoi duoc
                         .requestMatchers("/api/chatbot/**").permitAll()

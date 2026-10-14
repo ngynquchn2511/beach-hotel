@@ -58,14 +58,50 @@ public class AuthController {
             return "auth/register";
         }
 
+        // Email da co tai khoan chua kich hoat (VD tu tao khi dat phong khong dang nhap): KHONG nhan mat khau tu form,
+        // gui link toi chinh email do (dat mat khau / kich hoat) - tranh nguoi khac chiem tai khoan co don cua khach
+        var pending = userService.renewPendingLink(request.getEmail());
+        if (pending.isPresent()) {
+            sendPendingLink(pending.get());
+            return "redirect:/login?pending=true";
+        }
+
         try {
-            userService.registerCustomer(request);
+            var user = userService.registerCustomer(request);
+            emailService.sendEmailVerification(user, link("/verify-email", user.getEmailVerifyToken()));
         } catch (BusinessException ex) {
             model.addAttribute("errorMessage", userMessages.of(ex));
+            // Email da dang ky va dang dung -> goi y Quen mat khau
+            model.addAttribute("emailTaken", true);
             return "auth/register";
         }
 
         return "redirect:/login?registered=true";
+    }
+
+    // Link kich hoat trong email dang ky
+    @GetMapping("/verify-email")
+    public String verifyEmail(@RequestParam(value = "token", required = false) String token) {
+        return userService.verifyEmail(token) ? "redirect:/login?verified=true" : "redirect:/login?verifyInvalid=true";
+    }
+
+    // Gui lai link kich hoat / dat mat khau. Luon tra cung 1 thong bao (khong lo email co tai khoan hay khong)
+    @PostMapping("/resend-verification")
+    public String resendVerification(@RequestParam(value = "email", required = false) String email) {
+        userService.renewPendingLink(email).ifPresent(this::sendPendingLink);
+        return "redirect:/login?resent=true";
+    }
+
+    private void sendPendingLink(UserService.PendingLink pending) {
+        if (pending.setupPassword()) {
+            emailService.sendAccountSetup(pending.user(), link("/reset-password", pending.user().getResetToken()));
+        } else {
+            emailService.sendEmailVerification(pending.user(), link("/verify-email", pending.user().getEmailVerifyToken()));
+        }
+    }
+
+    private static String link(String path, String token) {
+        return ServletUriComponentsBuilder.fromCurrentContextPath().path(path).queryParam("token", token).toUriString();
     }
 
     @GetMapping("/forgot-password")

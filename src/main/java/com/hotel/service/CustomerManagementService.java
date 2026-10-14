@@ -82,6 +82,8 @@ public class CustomerManagementService {
                             .email(email)
                             .phoneNumber(phoneNumber)
                             .password(passwordEncoder.encode(UUID.randomUUID().toString()))
+                            // Khach chua tung dat mat khau - muon dung tai khoan thi dat mat khau qua link gui toi email
+                            .emailVerified(false)
                             .role(UserRole.CUSTOMER)
                             .customerType(CustomerType.NEW)
                             .build();

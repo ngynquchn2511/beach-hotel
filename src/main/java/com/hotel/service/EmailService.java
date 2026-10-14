@@ -307,6 +307,47 @@ public class EmailService {
         }
     }
 
+    // Link kich hoat tai khoan vua dang ky (xac thuc email). Chua cau hinh mail thi ghi link ra log de van thu duoc
+    public void sendEmailVerification(User user, String link) {
+        sendAccountMail(user, link, "Sóng Xanh Resort - Kích hoạt tài khoản",
+                "Cảm ơn bạn đã đăng ký tài khoản tại Sóng Xanh Resort.\n"
+                        + "Nhấn vào liên kết dưới đây để kích hoạt tài khoản (có hiệu lực trong "
+                        + UserService.VERIFY_TOKEN_VALID_HOURS + " giờ):",
+                "Nếu bạn không đăng ký, hãy bỏ qua email này - tài khoản sẽ không được kích hoạt.");
+    }
+
+    // Email da co tai khoan tu tao khi dat phong (chua co mat khau) ma co nguoi dang ky lai bang email nay:
+    // gui link DAT MAT KHAU toi chinh email do - mat khau chi do chu email dat
+    public void sendAccountSetup(User user, String link) {
+        sendAccountMail(user, link, "Sóng Xanh Resort - Đặt mật khẩu cho tài khoản",
+                "Email này đã được dùng để đặt phòng tại Sóng Xanh Resort, nên đã có sẵn tài khoản kèm các đơn của bạn.\n"
+                        + "Nhấn vào liên kết dưới đây để đặt mật khẩu và bắt đầu dùng tài khoản (có hiệu lực trong "
+                        + UserService.RESET_TOKEN_VALID_MINUTES + " phút):",
+                "Nếu bạn không yêu cầu, hãy bỏ qua email này. Tài khoản của bạn vẫn an toàn.");
+    }
+
+    private void sendAccountMail(User user, String link, String subject, String intro, String outro) {
+        if (senderEmail == null || senderEmail.isBlank() || senderPassword == null || senderPassword.isBlank()) {
+            log.warn("Chua dat MAIL_USERNAME va MAIL_PASSWORD - lien ket cho {} ({}): {}", user.getEmail(), subject, link);
+            return;
+        }
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom("Sóng Xanh Resort <" + senderEmail + ">");
+        message.setTo(user.getEmail());
+        message.setSubject(subject);
+        message.setText("Xin chào " + user.getFullName() + ",\n\n" + intro + "\n\n" + link + "\n\n" + outro
+                + "\n\nTrân trọng,\nSóng Xanh Resort");
+        String to = user.getEmail();
+        deliverAfterCommit(() -> {
+            try {
+                mailSender.send(message);
+                log.info("Da gui email '{}' toi {}", subject, to);
+            } catch (Exception ex) {
+                log.error("Gui email '{}' that bai toi {}", subject, to, ex);
+            }
+        });
+    }
+
     // Gui hoa don thanh toan (HTML) sau khi check-out. Tra ve true neu gui thanh cong.
     // Gui that bai chi ghi log, khong lam hong luong check-out.
     public boolean sendInvoice(Booking booking, Payment payment, List<BookingCharge> charges) {

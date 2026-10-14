@@ -105,7 +105,7 @@ class SystemParamST extends StBase {
 
     // ===================== Đăng ký =====================
 
-    @TcSteps("Mở /register lấy CSRF, gửi form đăng ký thật, sau đó thử đăng nhập bằng tài khoản vừa tạo")
+    @TcSteps("Mở /register lấy CSRF, gửi form đăng ký thật, thử đăng nhập (chưa kích hoạt), bấm link kích hoạt trong email, đăng nhập lại")
     @ParameterizedTest(name = "Đăng ký tài khoản - {0} ¦ phone=\"{1}\", password=\"{2}\", confirm=\"{3}\" ¦ Thành công = {4}")
     @CsvSource({"dữ liệu hợp lệ,0912000001,matkhau123,matkhau123,true", "mật khẩu xác nhận khác,0912000002,matkhau123,khac123,false",
             "mật khẩu 5 ký tự,0912000003,abcde,abcde,false", "SĐT 9 số,091200000,matkhau123,matkhau123,false",
@@ -117,16 +117,23 @@ class SystemParamST extends StBase {
         Res r = b.post("/register", form("fullName", "Người Đăng Ký", "email", email, "phoneNumber", phone, "password", pw, "confirmPassword", confirm));
         if (ok) {
             assertThat(r.location()).isEqualTo("/login?registered=true");
+            // Chua bam link kich hoat -> chua dang nhap duoc
             Browser b2 = new Browser();
             b2.get("/login");
-            assertThat(b2.post("/login", form("username", email, "password", pw)).location()).isEqualTo("/customer/rooms");
+            assertThat(b2.post("/login", form("username", email, "password", pw)).location()).isEqualTo("/login?unverified=true");
+            // Bam link kich hoat (ma trong email) -> dang nhap duoc
+            String token = userRepository.findByEmail(email).orElseThrow().getEmailVerifyToken();
+            assertThat(new Browser().get("/verify-email?token=" + token).location()).isEqualTo("/login?verified=true");
+            Browser b3 = new Browser();
+            b3.get("/login");
+            assertThat(b3.post("/login", form("username", email, "password", pw)).location()).isEqualTo("/customer/rooms");
         } else {
             assertThat(r.status()).isEqualTo(200);
             assertThat(userRepository.findByEmail(email)).isEmpty();
         }
     }
 
-    @TcSteps("Đăng ký 2 lần cùng một email qua form thật")
+    @TcSteps("Đăng ký 2 lần cùng một email qua form thật (lần 1 đã bấm link kích hoạt)")
     @ParameterizedTest(name = "Đăng ký trùng email (viết {0}) ¦ email lần 2 viết {0} ¦ Lần 2 bị từ chối, chỉ có 1 tài khoản")
     @ValueSource(strings = {"giống hệt"})
     void registerDuplicate(String variant) {
@@ -136,6 +143,10 @@ class SystemParamST extends StBase {
             b.get("/register");
             Res r = b.post("/register", form("fullName", "Trùng", "email", email, "phoneNumber", "0913000000", "password", "matkhau123",
                     "confirmPassword", "matkhau123"));
+            if (i == 0) {
+                String token = userRepository.findByEmail(email).orElseThrow().getEmailVerifyToken();
+                new Browser().get("/verify-email?token=" + token);
+            }
             if (i == 1) {
                 assertThat(r.status()).isEqualTo(200);
                 assertThat(r.body()).contains("đã được đăng ký");

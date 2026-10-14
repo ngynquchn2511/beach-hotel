@@ -21,6 +21,8 @@ public class UserService {
 
     // Lien ket dat lai mat khau chi co hieu luc trong 30 phut
     public static final int RESET_TOKEN_VALID_MINUTES = 30;
+    // Link kich hoat tai khoan (xac thuc email) co hieu luc 48 gio
+    public static final int VERIFY_TOKEN_VALID_HOURS = 48;
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private final UserRepository userRepository;
@@ -49,9 +51,61 @@ public class UserService {
                 .phoneNumber(request.getPhoneNumber())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(UserRole.CUSTOMER)
+                // Chua dang nhap duoc cho toi khi bam link kich hoat gui toi email nay
+                .emailVerified(false)
+                .emailVerifyToken(newToken())
+                .emailVerifyExpiry(LocalDateTime.now().plusHours(VERIFY_TOKEN_VALID_HOURS))
                 .build();
 
         return userRepository.save(user);
+    }
+
+    private static String newToken() {
+        byte[] bytes = new byte[32];
+        RANDOM.nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    }
+
+    // Link gui cho tai khoan khach CHUA KICH HOAT co email nay:
+    // - tu dang ky ma chua bam link (co emailVerifyToken) -> link kich hoat moi (setupPassword = false)
+    // - tu tao khi dat phong khong dang nhap (chua tung dat mat khau) -> link DAT MAT KHAU (setupPassword = true).
+    //   Khong bao gio nhan mat khau tu form dang ky cho tai khoan da co: mat khau chi do chu email dat qua link.
+    public record PendingLink(User user, boolean setupPassword) {
+    }
+
+    @Transactional
+    public Optional<PendingLink> renewPendingLink(String email) {
+        if (email == null || email.isBlank()) {
+            return Optional.empty();
+        }
+        return userRepository.findByEmail(email.trim())
+                .filter(u -> u.getRole() == UserRole.CUSTOMER && !u.isEmailVerified())
+                .map(u -> {
+                    if (u.getEmailVerifyToken() != null) {
+                        u.setEmailVerifyToken(newToken());
+                        u.setEmailVerifyExpiry(LocalDateTime.now().plusHours(VERIFY_TOKEN_VALID_HOURS));
+                        return new PendingLink(userRepository.save(u), false);
+                    }
+                    u.setResetToken(newToken());
+                    u.setResetTokenExpiry(LocalDateTime.now().plusMinutes(RESET_TOKEN_VALID_MINUTES));
+                    return new PendingLink(userRepository.save(u), true);
+                });
+    }
+
+    // Bam link kich hoat: dung token va con han -> tai khoan dung duoc. Tra ve false neu link sai / het han
+    @Transactional
+    public boolean verifyEmail(String token) {
+        if (token == null || token.isBlank()) {
+            return false;
+        }
+        return userRepository.findByEmailVerifyToken(token)
+                .filter(u -> u.getEmailVerifyExpiry() != null && u.getEmailVerifyExpiry().isAfter(LocalDateTime.now()))
+                .map(u -> {
+                    u.markEmailVerified();
+                    userRepository.save(u);
+                    return true;
+                })
+                .orElse(false);
     }
 
     // Tao token dat lai mat khau cho tai khoan khach hang co email nay.
@@ -89,8 +143,10 @@ public class UserService {
         // Token chi dung duoc 1 lan
         user.setResetToken(null);
         user.setResetTokenExpiry(null);
-        // Chu email da xac minh qua link -> mo khoa tam do sai mat khau (khoa cua admin van giu)
+        // Chu email da xac minh qua link -> mo khoa tam do sai mat khau (khoa cua admin van giu),
+        // tai khoan chua kich hoat (tu dang ky / tu tao khi dat phong) cung duoc kich hoat luon
         user.clearLoginFailures();
+        user.markEmailVerified();
         userRepository.save(user);
     }
 
