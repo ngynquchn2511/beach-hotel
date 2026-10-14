@@ -220,6 +220,7 @@ public class BookingService {
         Booking booking = buildBooking(customer, roomId, checkInDate, checkOutDate, checkInTime, checkOutTime,
                 guests, comboId, discountCodeStr, guestName, guestPhone, guestEmail);
 
+        booking.setChannel(BookingChannel.ONLINE);
         BigDecimal deposit = pricingService.depositFor(booking.getTotalAmount());
         booking.setDepositAmount(deposit);
         if (deposit.signum() > 0) {
@@ -717,6 +718,7 @@ public class BookingService {
                 guests, comboId, null, guestName, guestPhone, guestEmail);
         // Khach o ngay tai quay -> khong can dat coc, xac nhan luon
         booking.setStatus(BookingStatus.CONFIRMED);
+        booking.setChannel(BookingChannel.WALK_IN);
         // Nhan vien tu tay tao don nay nen khong can bao "don moi"
         booking.setNewBooking(false);
         Booking savedBooking = bookingRepository.save(booking);

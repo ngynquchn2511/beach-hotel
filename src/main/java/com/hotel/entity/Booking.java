@@ -143,10 +143,24 @@ public class Booking {
     @Builder.Default
     private boolean checkInTimeChanged = false;
 
+    // Kenh dat: online (khach tu dat tren web) / tai quay (le tan dat ho). null = don cu, xem getEffectiveChannel
+    @Enumerated(EnumType.STRING)
+    @Column(name = "channel", length = 20)
+    private BookingChannel channel;
+
     // Danh dau khach vua tu doi ngay nhan/tra phong - hien canh bao rieng cho staff, tat khi staff mo xem chi tiet
     @Column(name = "dates_changed", nullable = false)
     @Builder.Default
     private boolean datesChanged = false;
+
+    // Don cu chua ghi kenh: khach co email tam "@khachvanglai.local" (tai khoan le tan tao) -> tai quay, con lai online
+    public BookingChannel getEffectiveChannel() {
+        if (channel != null) {
+            return channel;
+        }
+        String email = customer != null ? customer.getEmail() : null;
+        return email != null && email.endsWith("@khachvanglai.local") ? BookingChannel.WALK_IN : BookingChannel.ONLINE;
+    }
 
     public long getNights() {
         return java.time.temporal.ChronoUnit.DAYS.between(checkInDate, checkOutDate);

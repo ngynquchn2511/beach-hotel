@@ -33,9 +33,11 @@ public class AdminController {
     private final BookingService bookingService;
     private final PaymentService paymentService;
     private final RevenueExportService revenueExportService;
+    private final com.hotel.service.ReportService reportService;
 
     public AdminController(RoomService roomService, BookingService bookingService, PaymentService paymentService,
-                           RevenueExportService revenueExportService) {
+                           RevenueExportService revenueExportService, com.hotel.service.ReportService reportService) {
+        this.reportService = reportService;
         this.roomService = roomService;
         this.bookingService = bookingService;
         this.paymentService = paymentService;
@@ -95,6 +97,9 @@ public class AdminController {
         // Huy don & hoan coc: so don cho hoan (hien tai) va tien coc giu lai trong khoang ngay
         model.addAttribute("pendingRefunds", bookingService.countPendingRefunds());
         model.addAttribute("forfeitedDeposits", bookingService.getForfeitedDeposits(fromDate, toDate));
+
+        // Bao cao chi tiet: kenh dat, ma giam gia, huy don, dich vu them (theo ngay tao don)
+        model.addAttribute("report", reportService.build(fromDate, toDate));
 
         // Chi so khach san: cong suat phong, ADR, RevPAR (theo ngay khach o)
         model.addAttribute("kpi", bookingService.getHotelKpi(fromDate, toDate));

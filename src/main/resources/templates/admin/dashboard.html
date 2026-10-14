@@ -164,6 +164,79 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Bao cao chi tiet (don tao trong khoang ngay, bo don huy; doanh thu gom phu phi) -->
+            <h5 class="fw-bold mt-5 mb-1">Báo cáo chi tiết</h5>
+            <p class="text-muted small mb-3">Theo ngày tạo đơn trong khoảng đã chọn, không tính đơn đã hủy; doanh thu gồm phụ phí và dịch vụ thêm.</p>
+            <div class="row g-3">
+                <div class="col-lg-6">
+                    <div class="bg-white p-3 rounded shadow-sm h-100">
+                        <div class="fw-semibold mb-2">Doanh thu theo kênh đặt</div>
+                        <table class="table table-sm mb-0">
+                            <thead><tr><th>Kênh</th><th class="text-end">Số đơn</th><th class="text-end">Doanh thu</th><th class="text-end">Tỷ trọng</th></tr></thead>
+                            <tbody>
+                            <tr th:each="c : ${report.channels}">
+                                <td th:text="${c.label()}"></td>
+                                <td class="text-end" th:text="${c.bookings}"></td>
+                                <td class="text-end" th:text="${#numbers.formatDecimal(c.revenue, 1, 'POINT', 0, 'COMMA')} + ' VND'"></td>
+                                <td class="text-end" th:text="${#numbers.formatDecimal(c.share, 1, 1)} + '%'"></td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="bg-white p-3 rounded shadow-sm h-100">
+                        <div class="fw-semibold mb-2">Hủy đơn</div>
+                        <div class="row text-center g-2">
+                            <div class="col-4"><div class="text-muted small">Tỷ lệ hủy</div>
+                                <div class="fs-4 fw-bold" th:classappend="${report.cancellations.cancelRate >= 20} ? 'text-danger'"
+                                     th:text="${#numbers.formatDecimal(report.cancellations.cancelRate, 1, 1)} + '%'"></div>
+                                <div class="small text-muted" th:text="${report.cancellations.cancelled} + ' / ' + ${report.cancellations.created} + ' đơn'"></div></div>
+                            <div class="col-4"><div class="text-muted small">Đã hoàn / cần hoàn cọc</div>
+                                <div class="fs-5 fw-bold" th:text="${#numbers.formatDecimal(report.cancellations.refunded, 1, 'POINT', 0, 'COMMA')}"></div>
+                                <div class="small text-muted" th:text="${report.cancellations.withDepositPaid} + ' đơn đã cọc'"></div></div>
+                            <div class="col-4"><div class="text-muted small">Cọc giữ lại</div>
+                                <div class="fs-5 fw-bold" th:text="${#numbers.formatDecimal(report.cancellations.forfeited, 1, 'POINT', 0, 'COMMA')}"></div>
+                                <div class="small text-muted">VND</div></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="bg-white p-3 rounded shadow-sm h-100">
+                        <div class="fw-semibold mb-2">Mã giảm giá được dùng</div>
+                        <p th:if="${#lists.isEmpty(report.discounts)}" class="text-muted small mb-0">Không có đơn nào dùng mã giảm giá.</p>
+                        <table class="table table-sm mb-0" th:unless="${#lists.isEmpty(report.discounts)}">
+                            <thead><tr><th>Mã</th><th class="text-end">Lượt dùng</th><th class="text-end">Đã giảm</th><th class="text-end">Doanh thu đơn</th></tr></thead>
+                            <tbody>
+                            <tr th:each="d : ${report.discounts}">
+                                <td class="fw-semibold" th:text="${d.code}"></td>
+                                <td class="text-end" th:text="${d.uses}"></td>
+                                <td class="text-end text-danger" th:text="'-' + ${#numbers.formatDecimal(d.discountTotal, 1, 'POINT', 0, 'COMMA')}"></td>
+                                <td class="text-end" th:text="${#numbers.formatDecimal(d.revenue, 1, 'POINT', 0, 'COMMA')}"></td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="bg-white p-3 rounded shadow-sm h-100">
+                        <div class="fw-semibold mb-2">Dịch vụ thêm &amp; phụ phí
+                            <span class="text-muted fw-normal small" th:text="'· ' + ${#numbers.formatDecimal(report.servicesTotal(), 1, 'POINT', 0, 'COMMA')} + ' VND'"></span></div>
+                        <p th:if="${#lists.isEmpty(report.services)}" class="text-muted small mb-0">Chưa có dịch vụ thêm / phụ phí.</p>
+                        <table class="table table-sm mb-0" th:unless="${#lists.isEmpty(report.services)}">
+                            <thead><tr><th>Loại</th><th class="text-end">Số lần</th><th class="text-end">Doanh thu</th></tr></thead>
+                            <tbody>
+                            <tr th:each="sv : ${report.services}">
+                                <td th:text="${sv.label()}"></td>
+                                <td class="text-end" th:text="${sv.count}"></td>
+                                <td class="text-end" th:text="${#numbers.formatDecimal(sv.amount, 1, 'POINT', 0, 'COMMA')} + ' VND'"></td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </main>

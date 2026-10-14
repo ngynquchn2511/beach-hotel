@@ -36,9 +36,11 @@ public class RevenueExportService {
     private final BookingService bookingService;
     private final PaymentService paymentService;
     private final PaymentRepository paymentRepository;
+    private final ReportService reportService;
 
     public RevenueExportService(BookingService bookingService, PaymentService paymentService,
-                                PaymentRepository paymentRepository) {
+                                PaymentRepository paymentRepository, ReportService reportService) {
+        this.reportService = reportService;
         this.bookingService = bookingService;
         this.paymentService = paymentService;
         this.paymentRepository = paymentRepository;
@@ -50,6 +52,7 @@ public class RevenueExportService {
         try (Workbook wb = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             Styles styles = new Styles(wb);
             writeSummarySheet(wb, styles, fromDate, toDate);
+            writeReportSheet(wb, styles, fromDate, toDate);
             writeBookingSheet(wb, styles, fromDate, toDate);
             wb.write(out);
             return out.toByteArray();
@@ -107,6 +110,77 @@ public class RevenueExportService {
                 "- Doanh thu theo loại phòng bỏ qua đơn đã hủy.")) {
             sheet.createRow(r++).createCell(0).setCellValue(note);
         }
+    }
+
+    // Bao cao chi tiet: kenh dat, huy don, ma giam gia, dich vu them (cung so lieu voi dashboard)
+    private void writeReportSheet(Workbook wb, Styles styles, LocalDate fromDate, LocalDate toDate) {
+        ReportService.Report report = reportService.build(fromDate, toDate);
+        Sheet sheet = wb.createSheet("Báo cáo chi tiết");
+        sheet.setColumnWidth(0, 34 * 256);
+        for (int col = 1; col <= 3; col++) {
+            sheet.setColumnWidth(col, 18 * 256);
+        }
+        int r = 0;
+        Cell title = sheet.createRow(r++).createCell(0);
+        title.setCellValue("BÁO CÁO CHI TIẾT");
+        title.setCellStyle(styles.title);
+        sheet.createRow(r++).createCell(0).setCellValue("Đơn tạo từ " + fromDate.format(DATE) + " đến " + toDate.format(DATE)
+                + " (không tính đơn hủy; doanh thu gồm phụ phí)");
+        r++;
+
+        r = sectionHeader(sheet, styles, r, "Doanh thu theo kênh đặt");
+        r = tableHeader(sheet, styles, r, "Kênh", "Số đơn", "Doanh thu (VND)", "Tỷ trọng (%)");
+        for (ReportService.ChannelRow c : report.channels()) {
+            Row row = sheet.createRow(r++);
+            row.createCell(0).setCellValue(c.label());
+            numberCell(row, 1, c.bookings(), styles.integer);
+            numberCell(row, 2, c.revenue(), styles.money);
+            numberCell(row, 3, c.share(), styles.percent);
+        }
+        r++;
+
+        ReportService.CancellationStats cs = report.cancellations();
+        r = sectionHeader(sheet, styles, r, "Hủy đơn");
+        r = labelValue(sheet, r, "Số đơn tạo", cs.created(), styles.integer);
+        r = labelValue(sheet, r, "Số đơn đã hủy", cs.cancelled(), styles.integer);
+        r = labelValue(sheet, r, "Tỷ lệ hủy (%)", cs.cancelRate(), styles.percent);
+        r = labelValue(sheet, r, "Đơn hủy đã cọc", cs.withDepositPaid(), styles.integer);
+        r = labelValue(sheet, r, "Tiền cọc đã / cần hoàn (VND)", cs.refunded(), styles.money);
+        r = labelValue(sheet, r, "Tiền cọc giữ lại (VND)", cs.forfeited(), styles.money);
+        r++;
+
+        r = sectionHeader(sheet, styles, r, "Mã giảm giá được dùng");
+        r = tableHeader(sheet, styles, r, "Mã", "Lượt dùng", "Đã giảm (VND)", "Doanh thu đơn (VND)");
+        for (ReportService.DiscountRow d : report.discounts()) {
+            Row row = sheet.createRow(r++);
+            row.createCell(0).setCellValue(d.code());
+            numberCell(row, 1, d.uses(), styles.integer);
+            numberCell(row, 2, d.discountTotal(), styles.money);
+            numberCell(row, 3, d.revenue(), styles.money);
+        }
+        r++;
+
+        r = sectionHeader(sheet, styles, r, "Dịch vụ thêm & phụ phí");
+        r = tableHeader(sheet, styles, r, "Loại", "Số lần", "Doanh thu (VND)");
+        for (ReportService.ServiceRow sv : report.services()) {
+            Row row = sheet.createRow(r++);
+            row.createCell(0).setCellValue(sv.label());
+            numberCell(row, 1, sv.count(), styles.integer);
+            numberCell(row, 2, sv.amount(), styles.money);
+        }
+        Row total = sheet.createRow(r);
+        total.createCell(0).setCellValue("Tổng cộng");
+        numberCell(total, 2, report.servicesTotal(), styles.moneyBold);
+    }
+
+    private int tableHeader(Sheet sheet, Styles styles, int r, String... titles) {
+        Row row = sheet.createRow(r);
+        for (int i = 0; i < titles.length; i++) {
+            Cell c = row.createCell(i);
+            c.setCellValue(titles[i]);
+            c.setCellStyle(styles.header);
+        }
+        return r + 1;
     }
 
     private void writeBookingSheet(Workbook wb, Styles styles, LocalDate fromDate, LocalDate toDate) {
