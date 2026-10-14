@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Khai báo lưu trú</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+</head>
+<body class="eaut eaut-admin">
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="container py-5">
+    <div class="row g-4">
+        <div class="col-md-3">
+            <div th:replace="~{fragments/admin-sidebar :: sidebar}"></div>
+        </div>
+
+        <div class="col-md-9">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <h3 class="fw-bold m-0">Khai báo lưu trú</h3>
+                <a th:href="@{/admin/guest-registrations/export(from=${from}, to=${to})}" class="btn btn-primary">
+                    <i class="bi bi-file-earmark-excel me-1"></i>Xuất Excel</a>
+            </div>
+            <p class="text-muted small">Danh sách khách đã nhận phòng có thời gian ở trong khoảng ngày đã chọn — dùng để khai báo
+                lưu trú với công an (ứng dụng ASM / Cổng dịch vụ công). Giấy tờ khách được nhập ở trang chi tiết từng đơn.</p>
+
+            <form method="get" th:action="@{/admin/guest-registrations}" class="row g-2 align-items-end bg-white p-3 rounded shadow-sm mb-4">
+                <div class="col-sm-4">
+                    <label class="form-label small">Từ ngày</label>
+                    <input type="date" name="from" class="form-control" th:value="${from}">
+                </div>
+                <div class="col-sm-4">
+                    <label class="form-label small">Đến ngày</label>
+                    <input type="date" name="to" class="form-control" th:value="${to}">
+                </div>
+                <div class="col-sm-4">
+                    <button type="submit" class="btn btn-outline-primary w-100"><i class="bi bi-funnel me-1"></i>Lọc</button>
+                </div>
+            </form>
+
+            <div th:if="${#lists.isEmpty(guests)}" class="alert alert-info">Không có khách lưu trú nào trong khoảng ngày này.</div>
+
+            <div class="table-responsive" th:unless="${#lists.isEmpty(guests)}">
+                <table class="table table-striped bg-white align-middle">
+                    <thead>
+                    <tr><th>#</th><th>Họ tên</th><th>Ngày sinh</th><th>Giới tính</th><th>Giấy tờ</th><th>Quốc tịch</th>
+                        <th>Phòng</th><th>Đến – Đi</th></tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="g, st : ${guests}">
+                        <td th:text="${st.count}"></td>
+                        <td class="fw-semibold" th:text="${g.fullName}"></td>
+                        <td th:text="${#temporals.format(g.dateOfBirth, 'dd/MM/yyyy')}"></td>
+                        <td th:text="${g.gender.vietnameseLabel}"></td>
+                        <td><span class="small text-muted" th:text="${g.idType.vietnameseLabel}"></span><br><span th:text="${g.idNumber}"></span></td>
+                        <td th:text="${g.nationality}"></td>
+                        <td><a th:href="@{/admin/bookings/{id}(id=${g.booking.id})}"
+                               th:text="${g.booking.room.roomNumber} + ' · #' + ${g.booking.id}"></a></td>
+                        <td class="small" th:text="${#temporals.format(g.booking.checkInDate, 'dd/MM')} + ' – ' + ${#temporals.format(g.booking.checkOutDate, 'dd/MM')}"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="small text-muted" th:unless="${#lists.isEmpty(guests)}" th:text="'Tổng: ' + ${#lists.size(guests)} + ' khách'"></p>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+</body>
+</html>

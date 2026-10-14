@@ -1,0 +1,12 @@
+target/
+uploads/
+.idea/
+.vscode/
+.git/
+.claude/
+*.iml
+*.log
+*.docx
+*.pdf
+*.xlsx
+sql/

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="'Hóa đơn ' + ${invoiceNo}">Hóa đơn</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #f1f3f5; }
+        .invoice { max-width: 800px; background: #fff; }
+        @media print {
+            body { background: #fff; }
+            .no-print { display: none !important; }
+            .invoice { box-shadow: none !important; margin: 0 !important; max-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container py-4 no-print" style="max-width: 800px;">
+    <div class="d-flex justify-content-between">
+        <a th:href="@{${backUrl}}" class="btn btn-outline-secondary btn-sm">&laquo; Quay lại</a>
+        <button type="button" class="btn btn-primary btn-sm" onclick="window.print()">In / Lưu PDF</button>
+    </div>
+</div>
+
+<div class="invoice container p-5 mb-5 rounded shadow-sm">
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h3 class="fw-bold mb-1">Sóng Xanh Resort</h3>
+            <div class="text-muted small">Đường Trần Phú, Lộc Thọ, Nha Trang, Khánh Hòa</div>
+        </div>
+        <div class="text-end">
+            <h4 class="fw-bold mb-1">HÓA ĐƠN THANH TOÁN</h4>
+            <div>Số: <strong th:text="${invoiceNo}"></strong></div>
+            <div>Ngày: <span th:text="${#temporals.format(payment.paymentDate, 'dd/MM/yyyy HH:mm')}"></span></div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-sm-6">
+            <h6 class="fw-bold">Khách hàng</h6>
+            <div th:text="${booking.guestName != null} ? ${booking.guestName} : ${booking.customer.fullName}"></div>
+            <div th:text="${booking.guestPhone != null} ? ${booking.guestPhone} : ${booking.customer.phoneNumber}"></div>
+            <div th:text="${booking.guestEmail != null} ? ${booking.guestEmail} : ${booking.customer.email}"></div>
+        </div>
+        <div class="col-sm-6 text-sm-end">
+            <h6 class="fw-bold">Đơn đặt phòng #<span th:text="${booking.id}"></span></h6>
+            <div th:text="'Phòng ' + ${booking.room.roomNumber} + ' - ' + ${booking.room.roomType.name}"></div>
+            <div>Nhận phòng: <span th:text="${#temporals.format(booking.checkInDate, 'dd/MM/yyyy')} + ' ' + ${booking.checkInTime}"></span></div>
+            <div>Trả phòng: <span th:text="${#temporals.format(booking.checkOutDate, 'dd/MM/yyyy')} + ' ' + ${booking.checkOutTime}"></span></div>
+        </div>
+    </div>
+
+    <table class="table">
+        <thead class="table-light">
+        <tr>
+            <th>Nội dung</th>
+            <th class="text-end">Đơn giá</th>
+            <th class="text-end">SL</th>
+            <th class="text-end">Thành tiền</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td th:text="'Tiền phòng ' + ${booking.room.roomNumber} + ' (' + ${booking.room.roomType.name} + ')'"></td>
+            <!-- Gia moi dem co the khac nhau (cuoi tuan / ngay le) -> hien gia trung binh -->
+            <td class="text-end" th:text="${#numbers.formatDecimal(roomUnitPrice, 1, 0)}"></td>
+            <td class="text-end" th:text="${nights} + ' đêm'"></td>
+            <td class="text-end" th:text="${#numbers.formatDecimal(roomAmount, 1, 0)}"></td>
+        </tr>
+        <tr th:if="${booking.combo != null}">
+            <td th:text="'Combo: ' + ${booking.combo.name}"></td>
+            <td class="text-end" th:text="${#numbers.formatDecimal(booking.combo.price, 1, 0)}"></td>
+            <td class="text-end">1</td>
+            <td class="text-end" th:text="${#numbers.formatDecimal(booking.combo.price, 1, 0)}"></td>
+        </tr>
+        <tr th:if="${booking.discountCode != null and booking.discountAmount != null}">
+            <td colspan="3" th:text="'Giảm giá (mã ' + ${booking.discountCode.code} + ')'"></td>
+            <td class="text-end" th:text="'-' + ${#numbers.formatDecimal(booking.discountAmount, 1, 0)}"></td>
+        </tr>
+        <tr th:each="c : ${charges}">
+            <td th:text="'Phụ phí: ' + ${c.label}"></td>
+            <td class="text-end" th:text="${#numbers.formatDecimal(c.amount, 1, 0)}"></td>
+            <td class="text-end">1</td>
+            <td class="text-end" th:text="${#numbers.formatDecimal(c.amount, 1, 0)}"></td>
+        </tr>
+        </tbody>
+        <tfoot>
+        <th:block th:if="${depositPaid.signum() > 0}">
+        <tr>
+            <td colspan="3" class="text-end">Tổng giá trị đơn</td>
+            <td class="text-end" th:text="${#numbers.formatDecimal(grandTotal, 1, 0)}"></td>
+        </tr>
+        <tr>
+            <td colspan="3" class="text-end">Đã đặt cọc</td>
+            <td class="text-end" th:text="'-' + ${#numbers.formatDecimal(depositPaid, 1, 0)}"></td>
+        </tr>
+        </th:block>
+        <tr class="fw-bold fs-5">
+            <td colspan="3" class="text-end" th:text="${depositPaid.signum() > 0} ? 'Thanh toán khi trả phòng' : 'Tổng thanh toán'">Tổng thanh toán</td>
+            <td class="text-end" th:text="${#numbers.formatDecimal(payment.amount, 1, 0)} + ' VND'"></td>
+        </tr>
+        </tfoot>
+    </table>
+
+    <div class="row mt-4">
+        <div class="col-sm-6">
+            <div>Phương thức: <strong th:text="${payment.paymentMethod.vietnameseLabel}"></strong></div>
+            <div>Trạng thái: <strong class="text-success" th:text="${payment.status.vietnameseLabel}"></strong></div>
+        </div>
+        <div class="col-sm-6 text-sm-end mt-4 mt-sm-0">
+            <div class="fw-bold">Nhân viên thu ngân</div>
+            <div class="text-muted small">(Ký, ghi rõ họ tên)</div>
+        </div>
+    </div>
+
+    <p class="text-center text-muted small mt-5 mb-0">Cảm ơn quý khách đã sử dụng dịch vụ!</p>
+</div>
+
+</body>
+</html>

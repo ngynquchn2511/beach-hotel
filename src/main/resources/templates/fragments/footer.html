@@ -1,0 +1,41 @@
+<footer th:fragment="footer" class="bg-dark text-white-50 mt-5">
+    <div class="container py-4">
+        <div class="row gy-3 align-items-center">
+            <div class="col-md-4">
+                <span class="fw-bold text-white fs-5">Sóng Xanh Resort</span>
+                <p class="small mb-0 mt-1" th:text="#{footer.tagline}">Đặt phòng nghỉ dưỡng bên bờ biển Nha Trang nhanh chóng, tiện lợi.</p>
+            </div>
+            <div class="col-md-4 text-md-center">
+                <!-- Nhan vien/admin: lien ket o lai khu quan tri, khong day sang giao dien khach hang -->
+                <ul class="list-inline mb-0 small" sec:authorize="hasAnyRole('ADMIN','STAFF')">
+                    <li class="list-inline-item mx-2">
+                        <a th:href="@{/admin/dashboard}" class="link-light link-opacity-75 link-opacity-100-hover text-decoration-none">Tổng quan</a>
+                    </li>
+                    <li class="list-inline-item mx-2">
+                        <a th:href="@{/admin/bookings}" class="link-light link-opacity-75 link-opacity-100-hover text-decoration-none">Đặt phòng</a>
+                    </li>
+                    <li class="list-inline-item mx-2">
+                        <a th:href="@{/admin/rooms}" class="link-light link-opacity-75 link-opacity-100-hover text-decoration-none">Phòng</a>
+                    </li>
+                </ul>
+                <ul class="list-inline mb-0 small" sec:authorize="!hasAnyRole('ADMIN','STAFF')">
+                    <li class="list-inline-item mx-2">
+                        <a th:href="@{/}" class="link-light link-opacity-75 link-opacity-100-hover text-decoration-none" th:text="#{nav.home}">Trang chủ</a>
+                    </li>
+                    <li class="list-inline-item mx-2">
+                        <a th:href="@{/about}" class="link-light link-opacity-75 link-opacity-100-hover text-decoration-none" th:text="#{nav.about}">Giới thiệu</a>
+                    </li>
+                    <li class="list-inline-item mx-2">
+                        <a th:href="@{/rooms}" class="link-light link-opacity-75 link-opacity-100-hover text-decoration-none" th:text="#{nav.rooms}">Danh sách phòng</a>
+                    </li>
+                    <li class="list-inline-item mx-2" sec:authorize="hasRole('CUSTOMER')">
+                        <a th:href="@{/customer/bookings}" class="link-light link-opacity-75 link-opacity-100-hover text-decoration-none" th:text="#{nav.history}">Lịch sử đặt phòng</a>
+                    </li>
+                </ul>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <span class="small">&copy; <span th:text="${#dates.year(#dates.createNow())}">2026</span> Sóng Xanh Resort. All Rights Reserved.</span>
+            </div>
+        </div>
+    </div>
+</footer>

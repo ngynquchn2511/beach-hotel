@@ -1,0 +1,16 @@
+<!-- Nut doi ngon ngu VI/EN cho trang khach - giu nguyen trang + tham so dang xem, chi doi ?lang=
+     (khong co JS thi link ?lang=xx van chay, chi mat cac tham so khac tren URL) -->
+<div th:fragment="switch" class="btn-group btn-group-sm lang-switch" role="group"
+     th:with="en=${#locale.language == 'en'}" th:aria-label="#{nav.language}">
+    <a href="?lang=vi" data-lang="vi" class="btn" th:classappend="${en} ? 'btn-outline-secondary' : 'btn-primary active'"
+       title="Tiếng Việt" lang="vi">VI</a>
+    <a href="?lang=en" data-lang="en" class="btn" th:classappend="${en} ? 'btn-primary active' : 'btn-outline-secondary'"
+       title="English" lang="en">EN</a>
+    <script>
+        document.querySelectorAll('.lang-switch a[data-lang]').forEach(function (a) {
+            var url = new URL(window.location.href);
+            url.searchParams.set('lang', a.dataset.lang);
+            a.href = url.pathname + url.search + url.hash;
+        });
+    </script>
+</div>

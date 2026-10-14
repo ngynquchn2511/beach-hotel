@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>Trang quản trị Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+</head>
+<body class="eaut eaut-admin">
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="container py-5">
+    <div class="row g-4">
+        <div class="col-md-3">
+            <div th:replace="~{fragments/admin-sidebar :: sidebar}"></div>
+        </div>
+        <div class="col-md-9">
+            <h3 class="fw-bold mb-4">Tổng quan hệ thống</h3>
+            <p class="text-muted" sec:authorize="hasRole('ADMIN')">Đăng nhập thành công với quyền Quản trị viên. Bạn có thể quản lý loại phòng, phòng, combo, mã giảm giá, tài khoản nhân viên và xem nhật ký thao tác ở menu bên trái.</p>
+            <p class="text-muted" sec:authorize="hasRole('STAFF') and not hasRole('ADMIN')">Đăng nhập thành công với quyền Nhân viên. Bạn có thể xử lý đơn đặt phòng, đặt phòng tại quầy, check-in/check-out, cập nhật trạng thái và thông tin phòng. Việc tạo/xóa danh mục, thay đổi giá, mã giảm giá và loại khách hàng do quản trị viên thực hiện.</p>
+
+            <div class="row g-3 mt-2">
+                <div class="col-md-4">
+                    <div class="bg-white p-3 rounded shadow-sm text-center">
+                        <div class="text-muted small">Tổng số phòng</div>
+                        <div class="fs-3 fw-bold" th:text="${totalRooms}"></div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="bg-white p-3 rounded shadow-sm text-center">
+                        <div class="text-muted small">Phòng còn trống</div>
+                        <div class="fs-3 fw-bold text-success" th:text="${availableRooms}"></div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="bg-white p-3 rounded shadow-sm text-center">
+                        <div class="text-muted small">Phòng đang sử dụng</div>
+                        <div class="fs-3 fw-bold" th:text="${occupiedRooms}"></div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="bg-white p-3 rounded shadow-sm text-center">
+                        <div class="text-muted small">Chưa sẵn sàng (chờ dọn dẹp)</div>
+                        <div class="fs-3 fw-bold text-warning" th:text="${notReadyRooms}"></div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="bg-white p-3 rounded shadow-sm text-center">
+                        <div class="text-muted small">Đang bảo trì</div>
+                        <div class="fs-3 fw-bold text-danger" th:text="${maintenanceRooms}"></div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="bg-white p-3 rounded shadow-sm text-center">
+                        <div class="text-muted small">Đơn chờ xác nhận</div>
+                        <div class="fs-3 fw-bold text-primary" th:text="${pendingBookings}"></div>
+                    </div>
+                </div>
+            </div>
+
+            <form method="get" th:action="@{/admin/dashboard}" class="d-flex flex-wrap align-items-end gap-2 bg-white p-3 rounded shadow-sm mt-4">
+                <div>
+                    <label class="form-label small text-muted mb-1" for="fromDate">Từ ngày</label>
+                    <input type="date" id="fromDate" name="fromDate" class="form-control form-control-sm" th:value="${fromDate}">
+                </div>
+                <div>
+                    <label class="form-label small text-muted mb-1" for="toDate">Đến ngày</label>
+                    <input type="date" id="toDate" name="toDate" class="form-control form-control-sm" th:value="${toDate}">
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm">Xem thống kê</button>
+                <button type="submit" class="btn btn-outline-success btn-sm" th:formaction="@{/admin/dashboard/export}">Xuất Excel</button>
+            </form>
+
+            <div class="row g-3 mt-2">
+                <div class="col-md-4">
+                    <div class="bg-white p-3 rounded shadow-sm text-center h-100">
+                        <div class="text-muted small">Tiền đã thu (theo ngày thanh toán)</div>
+                        <div class="fs-3 fw-bold text-success" th:text="${#numbers.formatDecimal(paidTotal, 1, 'POINT', 0, 'COMMA')} + ' VND'"></div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="bg-white p-3 rounded shadow-sm text-center h-100">
+                        <div class="text-muted small">Thu bằng tiền mặt</div>
+                        <div class="fs-4 fw-bold" th:text="${#numbers.formatDecimal(paidCash, 1, 'POINT', 0, 'COMMA')} + ' VND'"></div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="bg-white p-3 rounded shadow-sm text-center h-100">
+                        <div class="text-muted small">Thu bằng chuyển khoản</div>
+                        <div class="fs-4 fw-bold text-primary" th:text="${#numbers.formatDecimal(paidTransfer, 1, 'POINT', 0, 'COMMA')} + ' VND'"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3 mt-2">
+                <div class="col-md-4">
+                    <div class="bg-white p-3 rounded shadow-sm text-center h-100"
+                         title="Số đêm-phòng đã bán / (số phòng x số ngày). Tính theo ngày khách ở, gồm đơn đã xác nhận, đang ở, đã trả phòng.">
+                        <div class="text-muted small">Công suất phòng</div>
+                        <div class="fs-3 fw-bold" th:text="${#numbers.formatDecimal(kpi.occupancyRate, 1, 1)} + '%'"></div>
+                        <div class="progress mt-1" style="height: 6px;">
+                            <div class="progress-bar bg-success" th:style="'width:' + ${kpi.occupancyRate > 100 ? 100 : kpi.occupancyRate} + '%'"></div>
+                        </div>
+                        <div class="text-muted small mt-1" th:text="${kpi.soldRoomNights} + ' / ' + ${kpi.availableRoomNights} + ' đêm-phòng'"></div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="bg-white p-3 rounded shadow-sm text-center h-100"
+                         title="Tiền đơn (phòng + combo - giảm giá, không gồm phụ phí) / số đêm-phòng đã bán.">
+                        <div class="text-muted small">Giá trung bình mỗi đêm (ADR)</div>
+                        <div class="fs-4 fw-bold" th:text="${#numbers.formatDecimal(kpi.adr, 1, 'POINT', 0, 'COMMA')} + ' VND'"></div>
+                        <div class="text-muted small mt-1">trên mỗi đêm-phòng đã bán</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="bg-white p-3 rounded shadow-sm text-center h-100"
+                         title="Tiền đơn / tổng số đêm-phòng có thể bán (= ADR x công suất phòng).">
+                        <div class="text-muted small">Doanh thu mỗi phòng (RevPAR)</div>
+                        <div class="fs-4 fw-bold text-primary" th:text="${#numbers.formatDecimal(kpi.revPar, 1, 'POINT', 0, 'COMMA')} + ' VND'"></div>
+                        <div class="text-muted small mt-1">trên mỗi đêm-phòng có thể bán</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3 mt-2">
+                <div class="col-md-4">
+                    <div class="bg-white p-3 rounded shadow-sm">
+                        <div class="fw-semibold mb-2">Tỷ lệ đơn theo trạng thái</div>
+                        <canvas id="statusPieChart" height="220"></canvas>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="bg-white p-3 rounded shadow-sm">
+                        <div class="fw-semibold mb-2">Doanh thu theo loại phòng</div>
+                        <canvas id="roomTypeBarChart" height="220"></canvas>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="bg-white p-3 rounded shadow-sm">
+                        <div class="fw-semibold mb-2">Doanh thu theo thời gian</div>
+                        <canvas id="trendLineChart" height="220"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    const bookingStatusLabels = /*[[${bookingStatusLabels}]]*/ [];
+    const bookingStatusData = /*[[${bookingStatusData}]]*/ [];
+    const roomTypeLabels = /*[[${roomTypeLabels}]]*/ [];
+    const roomTypeRevenueData = /*[[${roomTypeRevenueData}]]*/ [];
+    const trendLabels = /*[[${trendLabels}]]*/ [];
+    const trendData = /*[[${trendData}]]*/ [];
+    /*]]>*/
+
+    // Cung bang mau voi theme: muc navy, xanh baby, vang tem, nhan trang thai giong badge
+    const INK = '#0e3a52', BABY = '#8fdcd6', BABY_DEEP = '#1fa9a3';
+    Chart.defaults.font.family = "'Be Vietnam Pro', system-ui, sans-serif";
+    Chart.defaults.color = INK;
+    Chart.defaults.borderColor = '#d4f1ef';
+    // Truc tien: rut gon 1.500.000 -> 1,5tr de nhan khong bi cat trong khung hep
+    const moneyTick = v => v >= 1e6 ? (v / 1e6).toLocaleString('vi-VN') + 'tr'
+        : v >= 1e3 ? (v / 1e3).toLocaleString('vi-VN') + 'k' : v;
+    const moneyTooltip = { callbacks: { label: c => ' ' + Number(c.parsed.y).toLocaleString('vi-VN') + ' VND' } };
+
+    new Chart(document.getElementById('statusPieChart'), {
+        type: 'pie',
+        data: {
+            labels: bookingStatusLabels,
+            datasets: [{
+                data: bookingStatusData,
+                backgroundColor: ['#ffcf73', BABY, '#bdeccf', '#e2f7f5', '#ffd4dc'],
+                borderColor: INK,
+                borderWidth: 1.5
+            }]
+        },
+        options: {
+            plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 8, font: { size: 11 } } } }
+        }
+    });
+
+    new Chart(document.getElementById('roomTypeBarChart'), {
+        type: 'bar',
+        data: {
+            labels: roomTypeLabels,
+            datasets: [{
+                label: 'Doanh thu (VNĐ)',
+                data: roomTypeRevenueData,
+                backgroundColor: BABY,
+                borderColor: INK,
+                borderWidth: 1.5,
+                borderRadius: 6,
+                hoverBackgroundColor: BABY_DEEP
+            }]
+        },
+        options: {
+            plugins: { legend: { display: false }, tooltip: moneyTooltip },
+            scales: { y: { beginAtZero: true, ticks: { callback: moneyTick } } }
+        }
+    });
+
+    new Chart(document.getElementById('trendLineChart'), {
+        type: 'line',
+        data: {
+            labels: trendLabels,
+            datasets: [{
+                label: 'Doanh thu (VNĐ)',
+                data: trendData,
+                borderColor: INK,
+                borderWidth: 2,
+                backgroundColor: 'rgba(159, 216, 245, 0.45)',
+                pointBackgroundColor: '#ffcf73',
+                pointBorderColor: INK,
+                tension: 0.3,
+                fill: true
+            }]
+        },
+        options: {
+            plugins: { legend: { display: false }, tooltip: moneyTooltip },
+            scales: { y: { beginAtZero: true, ticks: { callback: moneyTick } } }
+        }
+    });
+</script>
+
+</body>
+</html>

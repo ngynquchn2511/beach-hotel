@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="vi" th:lang="${#locale.language}" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{confirm.title}">Xác nhận đặt phòng</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+</head>
+<body class="eaut" th:style="'--page-bg: url(' + @{/page-images/xacnhandatphong.jpg} + ')'">
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="container py-5 flex-grow-1" style="max-width: 720px;">
+    <div class="eaut-head">
+        <div class="eyebrow" th:text="#{confirm.eyebrow}">Bước cuối cùng</div>
+        <h1 th:utext="#{confirm.heading}">Xác nhận <span class="gradient-text">đặt phòng</span></h1>
+        <div class="divider"></div>
+    </div>
+
+    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+    <!-- Bao truoc khi khach dien form: phong da co khach / bao tri trong khoang ngay nay -->
+    <div th:if="${errorMessage == null and availability != null and !availability.available}" class="alert alert-warning">
+        <span th:text="${availabilityMessage}"></span>
+        <a th:href="@{/customer/rooms/{id}(id=${room.id})}" class="d-block mt-1" th:text="#{confirm.pickOther}">Chọn lại ngày khác</a>
+    </div>
+    <div th:if="${availability != null and availability.available and (availability.earliestCheckIn != null or availability.latestCheckOut != null)}"
+         class="alert alert-info small">
+        <i class="bi bi-clock me-1"></i>
+        <span th:if="${availability.earliestCheckIn != null}"
+              th:text="#{confirm.earliest(${#temporals.format(checkIn, 'dd/MM')}, ${#temporals.format(availability.earliestCheckIn, 'HH:mm')})}"></span>
+        <span th:if="${availability.latestCheckOut != null}"
+              th:text="#{confirm.latest(${#temporals.format(checkOut, 'dd/MM')}, ${#temporals.format(availability.latestCheckOut, 'HH:mm')})}"></span>
+    </div>
+
+    <div class="bg-white p-4 rounded shadow-sm mb-4 ticket">
+        <h5 class="fw-bold" th:text="#{confirm.roomLine(${room.roomNumber}, ${room.roomType.localizedName})}"></h5>
+        <p class="mb-1"><span th:text="#{detail.checkIn}">Ngày nhận phòng:</span> <span th:text="${#temporals.format(checkIn, 'dd/MM/yyyy')}"></span></p>
+        <p class="mb-1"><span th:text="#{detail.checkOut}">Ngày trả phòng:</span> <span th:text="${#temporals.format(checkOut, 'dd/MM/yyyy')}"></span></p>
+        <p class="mb-1" th:if="${guests != null}"><span th:text="#{confirm.guests}">Số khách:</span> <span th:text="${guests}"></span></p>
+        <p class="mb-1"><span th:text="#{detail.nights}">Số đêm:</span> <span th:text="${nights}"></span></p>
+
+        <!-- Gia tung dem: ngay thuong / cuoi tuan / ngay le -->
+        <table class="table table-sm mt-2 mb-2" th:if="${!#lists.isEmpty(nightlyPrices)}">
+            <tbody>
+            <tr th:each="n : ${nightlyPrices}">
+                <td class="text-muted small" th:text="#{confirm.night(${#temporals.format(n.night, 'dd/MM')}, ${#temporals.format(n.night, 'EEEE')})}"></td>
+                <td class="small" th:text="${n.specialName != null} ? #{pricing.special(${n.specialName}, ${n.surchargePercent})}
+                        : (${n.surchargePercent > 0} ? #{pricing.weekend(${n.surchargePercent})} : #{pricing.weekday})"></td>
+                <td class="text-end small" th:text="${#numbers.formatDecimal(n.price, 1, 0)} + ' VND'"></td>
+            </tr>
+            </tbody>
+        </table>
+        <p class="mb-1 fw-bold"><span th:text="#{detail.roomAmount}">Tiền phòng:</span> <span th:text="${#numbers.formatDecimal(roomAmount, 1, 0)} + ' VND'"></span></p>
+        <p class="mb-1" th:if="${combo != null}"><span th:text="#{confirm.comboChosen}">Combo đã chọn:</span> <span th:text="${combo.localizedName}"></span> (+<span th:text="${#numbers.formatDecimal(combo.price, 1, 0)}"></span> VND)</p>
+
+        <div class="alert alert-warning small mt-3 mb-0" th:if="${estimatedDeposit != null and estimatedDeposit.signum() > 0}">
+            <i class="bi bi-shield-check me-1"></i>
+            <span th:utext="#{confirm.deposit(${depositPercent}, ${#numbers.formatDecimal(estimatedDeposit, 1, 0)}, ${depositDeadlineHours})}"></span>
+        </div>
+    </div>
+
+    <div class="bg-white p-4 rounded shadow-sm">
+        <form th:action="@{/customer/bookings/new}" th:object="${bookingConfirmRequest}" method="post">
+            <input type="hidden" name="roomId" th:value="${room.id}">
+            <input type="hidden" name="checkIn" th:value="${checkIn}">
+            <input type="hidden" name="checkOut" th:value="${checkOut}">
+            <input type="hidden" th:if="${guests != null}" name="guests" th:value="${guests}">
+            <input type="hidden" th:if="${comboId != null}" name="comboId" th:value="${comboId}">
+
+            <h5 class="fw-bold mb-3" th:text="#{confirm.guestInfo}">Thông tin người nhận phòng</h5>
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label" th:text="#{confirm.fullName}">Họ tên</label>
+                    <input type="text" th:field="*{guestName}" class="form-control">
+                    <div class="text-danger small" th:if="${#fields.hasErrors('guestName')}" th:errors="*{guestName}"></div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" th:text="#{confirm.email}">Email</label>
+                    <input type="email" th:field="*{guestEmail}" class="form-control">
+                    <div class="text-danger small" th:if="${#fields.hasErrors('guestEmail')}" th:errors="*{guestEmail}"></div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" th:text="#{confirm.phone}">Số điện thoại</label>
+                    <input type="text" th:field="*{guestPhone}" class="form-control">
+                    <div class="text-danger small" th:if="${#fields.hasErrors('guestPhone')}" th:errors="*{guestPhone}"></div>
+                </div>
+                <div class="text-muted small mt-1" th:text="#{confirm.noLogin}">Không cần đăng nhập — chỉ cần điền đúng thông tin để nhân viên liên hệ khi cần</div>
+            </div>
+
+            <h5 class="fw-bold mb-3 mt-2" th:text="#{confirm.times}">Thời gian nhận / trả phòng</h5>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label"><span th:text="#{confirm.checkInTime}">Giờ nhận phòng</span> <span class="text-muted fw-normal" th:text="#{confirm.onDay(${#temporals.format(checkIn, 'dd/MM/yyyy')})}"></span></label>
+                    <select th:field="*{checkInTime}" class="form-select">
+                        <option th:each="t : ${timeOptions}" th:value="${t}" th:text="${t}"></option>
+                    </select>
+                    <div class="text-danger small" th:if="${#fields.hasErrors('checkInTime')}" th:errors="*{checkInTime}"></div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label"><span th:text="#{confirm.checkOutTime}">Giờ trả phòng</span> <span class="text-muted fw-normal" th:text="#{confirm.onDay(${#temporals.format(checkOut, 'dd/MM/yyyy')})}"></span></label>
+                    <select th:field="*{checkOutTime}" class="form-select">
+                        <option th:each="t : ${timeOptions}" th:value="${t}" th:text="${t}"></option>
+                    </select>
+                    <div class="text-danger small" th:if="${#fields.hasErrors('checkOutTime')}" th:errors="*{checkOutTime}"></div>
+                </div>
+                <div class="text-muted small mt-1" th:text="#{confirm.timesHint}">Giờ mặc định theo thông lệ của resort — chọn lại trong danh sách nếu muốn đổi</div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label" th:text="#{confirm.discount}">Mã giảm giá (nếu có)</label>
+                <div class="d-flex gap-2">
+                    <input type="text" th:field="*{discountCode}" id="discountCodeInput" class="form-control" th:placeholder="#{confirm.discountPlaceholder}">
+                    <button type="button" id="checkDiscountBtn" class="btn btn-outline-primary text-nowrap" th:text="#{confirm.checkCode}">Kiểm tra mã</button>
+                </div>
+                <div id="discountCheckResult" class="small mt-1"></div>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100" th:text="#{confirm.submit}">Xác nhận đặt phòng</button>
+            <a th:href="@{/customer/rooms/{id}(id=${room.id}, checkIn=${checkIn}, checkOut=${checkOut}, guests=${guests})}"
+               class="btn btn-outline-secondary w-100 mt-2" th:text="#{confirm.back}">Quay lại</a>
+        </form>
+    </div>
+</main>
+
+<script th:inline="javascript">
+    document.getElementById('checkDiscountBtn').addEventListener('click', function () {
+        const code = document.getElementById('discountCodeInput').value.trim();
+        const resultBox = document.getElementById('discountCheckResult');
+
+        if (!code) {
+            resultBox.className = 'small mt-1 text-danger';
+            resultBox.textContent = /*[[#{confirm.js.enterCode}]]*/ '';
+            return;
+        }
+
+        const params = new URLSearchParams({
+            code: code,
+            roomId: /*[[${room.id}]]*/ '',
+            checkIn: /*[[${checkIn}]]*/ '',
+            checkOut: /*[[${checkOut}]]*/ ''
+        });
+        const comboId = /*[[${comboId}]]*/ null;
+        if (comboId) {
+            params.append('comboId', comboId);
+        }
+
+        resultBox.className = 'small mt-1 text-muted';
+        resultBox.textContent = /*[[#{confirm.js.checking}]]*/ '';
+
+        fetch('/customer/bookings/check-discount?' + params.toString())
+            .then(res => res.json())
+            .then(data => {
+                resultBox.className = 'small mt-1 ' + (data.valid ? 'text-success' : 'text-danger');
+                resultBox.textContent = data.message;
+            })
+            .catch(() => {
+                resultBox.className = 'small mt-1 text-danger';
+                resultBox.textContent = /*[[#{confirm.js.failed}]]*/ '';
+            });
+    });
+</script>
+
+<div th:replace="~{fragments/chatbot-widget :: widget}"></div>
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+</body>
+</html>

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="vi" th:lang="${#locale.language}" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{home.title}">Sóng Xanh Resort - Trang chủ</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+    <style>
+        .home-hero { min-height: calc(100vh - 240px); display: grid; place-items: center; text-align: center; }
+        .badge-soft { display: inline-flex; align-items: center; gap: .5rem; padding: .45rem 1rem; border-radius: 8px;
+            background: var(--paper); border: var(--line); color: var(--ink); font-size: .8rem; font-weight: 700; letter-spacing: .08em;
+            box-shadow: 3px 3px 0 var(--baby); transform: rotate(-1.5deg); }
+        .badge-soft .bi-star-fill { color: #f2b705; }
+        .home-title { font-size: clamp(2.4rem, 6.2vw, 4.6rem); line-height: 1.08; letter-spacing: -.02em; }
+        .btn-soft { background: var(--paper); color: var(--ink) !important; padding: .9rem 1.8rem; box-shadow: 4px 4px 0 var(--baby); }
+        .btn-soft:hover { background: var(--baby-soft); transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--baby-deep); }
+        /* The nhanh = the chia khoa phong: lo treo + so thu tu */
+        .quick { position: relative; border-radius: 14px 14px 14px 40px; padding: 1.6rem 1.3rem 1.4rem; height: 100%; text-align: left;
+            background: var(--paper); border: var(--line); box-shadow: var(--pop); transition: transform .2s, box-shadow .2s;
+            color: var(--ink) !important; display: block; text-decoration: none; }
+        .row > div:nth-child(1) .quick { transform: rotate(-1.2deg); }
+        .row > div:nth-child(3) .quick { transform: rotate(1.2deg); }
+        .quick:hover { transform: rotate(0) translate(-3px, -3px) !important; box-shadow: var(--pop-hover); }
+        .quick::before { content: ''; position: absolute; top: 16px; right: 16px; width: 14px; height: 14px; border-radius: 50%;
+            border: var(--line); background: var(--baby-soft); }
+        .quick .no { font-family: var(--display); font-style: italic; font-size: .85rem; color: var(--ink-soft); }
+        .quick .ic { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 10px; font-size: 1.3rem; margin: .4rem 0 .9rem;
+            background: var(--baby); color: var(--ink); border: var(--line); }
+        .quick .t { font-family: var(--display); font-weight: 700; font-size: 1.3rem; }
+        /* Day anh polaroid Nha Trang */
+        .postcards { padding: 3.5rem 0 1rem; }
+        .polaroid { display: block; padding: 10px 10px 0; background: var(--paper); border: var(--line); border-radius: 6px;
+            box-shadow: var(--pop); transition: transform .2s, box-shadow .2s; color: var(--ink) !important; text-decoration: none; }
+        .postcards .col-md-4:nth-child(1) .polaroid { transform: rotate(-2deg); }
+        .postcards .col-md-4:nth-child(2) .polaroid { transform: rotate(1deg) translateY(14px); }
+        .postcards .col-md-4:nth-child(3) .polaroid { transform: rotate(2.2deg); }
+        .polaroid:hover { transform: rotate(0) translate(-3px, -3px) !important; box-shadow: var(--pop-hover); }
+        .polaroid img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; border-radius: 3px; border: var(--line); }
+        .polaroid .cap { font-family: var(--display); font-style: italic; font-size: 1.05rem; text-align: center; padding: .7rem 0 .9rem; }
+    </style>
+</head>
+<body class="eaut" th:style="'--page-bg: url(' + @{/page-images/trangchu.jpg} + ')'">
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="container py-5 flex-grow-1">
+    <section class="home-hero">
+        <div>
+            <div class="badge-soft mb-4">
+                <span><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i></span>
+                <span th:text="#{home.badge}">HỆ THỐNG ĐẶT PHÒNG TRỰC TUYẾN</span>
+            </div>
+            <h1 class="home-title mb-3"><span class="gradient-text"> Sóng Xanh Resort</span></h1>
+            <p class="fs-5 text-muted mb-5" th:text="#{home.lead}">Tìm phòng, xem thông tin và đặt phòng trực tuyến nhanh chóng</p>
+            <div class="d-flex flex-wrap gap-3 justify-content-center mb-5">
+                <a th:href="@{/rooms}" class="btn btn-primary btn-lg px-4 py-3"><i class="bi bi-calendar2-heart me-2"></i><span th:text="#{home.cta.rooms}">Xem danh sách phòng</span></a>
+                <a th:href="@{/about}" class="btn btn-soft btn-lg"><i class="bi bi-play-circle me-2"></i><span th:text="#{home.cta.about}">Giới thiệu resort</span></a>
+            </div>
+
+            <div class="row g-3 text-start">
+                <div class="col-md-4">
+                    <a th:href="@{/customer/rooms}" class="quick">
+                        <div class="no" th:text="#{home.card.no('01')}">Phòng số 01</div>
+                        <div class="ic"><i class="bi bi-search"></i></div>
+                        <div class="t" th:text="#{home.card1.title}">Tìm phòng trống</div>
+                        <div class="small text-muted" th:text="#{home.card1.text}">Chọn ngày lưu trú để xem phòng còn trống.</div>
+                    </a>
+                </div>
+                <div class="col-md-4">
+                    <a th:href="@{/rooms}" class="quick">
+                        <div class="no" th:text="#{home.card.no('02')}">Phòng số 02</div>
+                        <div class="ic"><i class="bi bi-door-open"></i></div>
+                        <div class="t" th:text="#{home.card2.title}">Đa dạng hạng phòng</div>
+                        <div class="small text-muted" th:text="#{home.card2.text}">Từ phòng tiêu chuẩn đến phòng cao cấp.</div>
+                    </a>
+                </div>
+                <div class="col-md-4">
+                    <a th:href="@{/customer/bookings}" class="quick">
+                        <div class="no" th:text="#{home.card.no('03')}">Phòng số 03</div>
+                        <div class="ic"><i class="bi bi-clock-history"></i></div>
+                        <div class="t" th:text="#{home.card3.title}">Quản lý đặt phòng</div>
+                        <div class="small text-muted" th:text="#{home.card3.text}">Xem lịch sử, sửa giờ hoặc hủy đơn dễ dàng.</div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Anh minh hoa Nha Trang (static/page-images/beach-*.jpg) -->
+    <section class="postcards">
+        <div class="text-center mb-4">
+            <h2 class="fw-bold mb-1" th:text="#{home.postcards.title}">Nha Trang — thành phố biển</h2>
+            <p class="text-muted mb-0" th:text="#{home.postcards.sub}">Đường Trần Phú, Nha Trang, Khánh Hòa · nắng vàng biển xanh quanh năm</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <a th:href="@{/about#kham-pha}" class="polaroid"><img src="/page-images/beach-bo-bien.jpg" th:alt="#{home.pc1}" loading="lazy"><div class="cap" th:text="#{home.pc1}">Bờ biển Trần Phú</div></a>
+            </div>
+            <div class="col-md-4">
+                <a th:href="@{/about#kham-pha}" class="polaroid"><img src="/page-images/beach-thap-ba.jpg" th:alt="#{home.pc2}" loading="lazy"><div class="cap" th:text="#{home.pc2}">Tháp Bà Ponagar</div></a>
+            </div>
+            <div class="col-md-4">
+                <a th:href="@{/about#kham-pha}" class="polaroid"><img src="/page-images/beach-tran-phu.jpg" th:alt="#{home.pc3}" loading="lazy"><div class="cap" th:text="#{home.pc3}">Lặn ngắm san hô Hòn Mun</div></a>
+            </div>
+        </div>
+    </section>
+</main>
+
+<div th:replace="~{fragments/chatbot-widget :: widget}"></div>
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+</body>
+</html>

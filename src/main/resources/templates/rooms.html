@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="vi" th:lang="${#locale.language}" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{rooms.title}">Danh sách phòng</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+    <style>
+        .room-card { cursor: pointer; }
+        .room-card .card-img-top { border-radius: 0; }
+    </style>
+</head>
+<body class="eaut" th:style="'--page-bg: url(' + @{/page-images/danhsachphong.jpg} + ')'">
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="container py-5 flex-grow-1">
+    <div class="eaut-head">
+        <div class="eyebrow">Sóng Xanh Resort</div>
+        <h1 th:utext="#{rooms.heading}">Danh sách <span class="gradient-text">phòng</span></h1>
+        <div class="divider"></div>
+        <p th:text="#{rooms.lead}">Không gian nghỉ dưỡng cho mọi nhu cầu — chọn phòng phù hợp với bạn.</p>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-md-9">
+            <div class="bg-white p-3 rounded shadow-sm mb-4">
+                <form th:action="@{/rooms}" method="get" class="d-flex gap-2 align-items-end">
+                    <div>
+                        <label class="form-label mb-1" th:text="#{common.roomType}">Loại phòng</label>
+                        <select name="roomTypeId" class="form-select" onchange="this.form.submit()">
+                            <option value="" th:text="#{common.all}">Tất cả</option>
+                            <option th:each="rt : ${roomTypes}" th:value="${rt.id}" th:text="${rt.localizedName}"
+                                    th:selected="${rt.id == roomTypeId}"></option>
+                        </select>
+                    </div>
+                    <a th:if="${roomTypeId != null}" th:href="@{/rooms}" class="btn btn-outline-secondary" th:text="#{common.clearFilter}">Bỏ lọc</a>
+                </form>
+            </div>
+
+            <div th:if="${#lists.isEmpty(rooms)}" class="alert alert-info" th:text="#{rooms.empty}">
+                Không có phòng nào phù hợp.
+            </div>
+
+            <div class="row g-4" id="roomsGrid">
+                <div class="col-md-4" th:each="room : ${rooms}" th:attr="data-price=${room.price}">
+                    <div class="card h-100 room-card" th:attr="data-detail-url=@{/customer/rooms/{id}(id=${room.id})}">
+                        <img th:if="${room.coverImageUrl}" th:src="${room.coverImageUrl}" class="card-img-top" style="height: 180px; object-fit: cover;" th:alt="#{common.roomPhoto}">
+                        <div class="card-body">
+                            <h5 class="card-title" th:text="#{common.room(${room.roomNumber})}"></h5>
+                            <p class="card-text text-muted" th:text="${room.roomType.localizedName}"></p>
+                            <p class="card-text"><span class="price-tag" th:text="#{common.pricePerNight(${#numbers.formatDecimal(room.price, 1, 0)})}"></span></p>
+                            <span class="badge bg-secondary mb-2" th:text="#{'enum.RoomStatus.' + ${room.status}}"></span>
+                            <a th:href="@{/customer/rooms/{id}(id=${room.id})}" class="btn btn-primary btn-sm w-100" th:text="#{rooms.detailAndBook}">Xem chi tiết &amp; đặt phòng</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="bg-white p-3 rounded shadow-sm">
+                <h6 class="fw-bold mb-3" th:text="#{price.title}">Tìm theo giá</h6>
+                <div class="form-check">
+                    <input class="form-check-input price-filter" type="radio" name="priceRange" value="0-0" id="priceAll" checked>
+                    <label class="form-check-label" for="priceAll" th:text="#{common.all}">Tất cả</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input price-filter" type="radio" name="priceRange" value="100000-200000" id="price1">
+                    <label class="form-check-label" for="price1" th:text="#{price.r1}">100.000 - 200.000 VND</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input price-filter" type="radio" name="priceRange" value="250000-400000" id="price2">
+                    <label class="form-check-label" for="price2" th:text="#{price.r2}">250.000 - 400.000 VND</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input price-filter" type="radio" name="priceRange" value="450000-700000" id="price3">
+                    <label class="form-check-label" for="price3" th:text="#{price.r3}">450.000 - 700.000 VND</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input price-filter" type="radio" name="priceRange" value="750000-1200000" id="price4">
+                    <label class="form-check-label" for="price4" th:text="#{price.r4}">750.000 - 1.200.000 VND</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input price-filter" type="radio" name="priceRange" value="1300000-999999999" id="price5">
+                    <label class="form-check-label" for="price5" th:text="#{price.r5}">Từ 1.300.000 VND</label>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+    // Bam vao bat ky cho nao tren the phong (tru nut) de xem chi tiet
+    document.querySelectorAll('.room-card[data-detail-url]').forEach(function (card) {
+        card.addEventListener('click', function (event) {
+            if (event.target.closest('a, button')) return;
+            window.location.href = card.getAttribute('data-detail-url');
+        });
+    });
+
+    // Loc theo khoang gia ngay tren trinh duyet, khong can goi lai server
+    document.querySelectorAll('.price-filter').forEach(function (radio) {
+        radio.addEventListener('change', function () {
+            const parts = this.value.split('-').map(Number);
+            const min = parts[0];
+            const max = parts[1];
+            document.querySelectorAll('#roomsGrid > [data-price]').forEach(function (col) {
+                const price = Number(col.getAttribute('data-price'));
+                const match = (min === 0 && max === 0) || (price >= min && price <= max);
+                col.style.display = match ? '' : 'none';
+            });
+        });
+    });
+</script>
+
+<div th:replace="~{fragments/chatbot-widget :: widget}"></div>
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+</body>
+</html>

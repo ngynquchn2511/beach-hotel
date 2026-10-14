@@ -1,0 +1,17 @@
+<nav th:fragment="pagination(basePath, currentPage, totalPages, pageNumbers, statusFilter, searchQuery)"
+     th:if="${totalPages != null and totalPages > 1}" aria-label="Phân trang" xmlns:th="http://www.thymeleaf.org">
+    <ul class="pagination justify-content-center mt-3 mb-0">
+        <li class="page-item" th:classappend="${currentPage <= 1} ? 'disabled'">
+            <a class="page-link" th:href="@{${basePath}(page=${currentPage - 1}, status=${statusFilter}, q=${searchQuery})}">&laquo;</a>
+        </li>
+        <li th:each="p : ${pageNumbers}" class="page-item"
+            th:classappend="${p == 0} ? 'disabled' : (${p == currentPage} ? 'active')">
+            <span th:if="${p == 0}" class="page-link">&hellip;</span>
+            <a th:unless="${p == 0}" class="page-link"
+               th:href="@{${basePath}(page=${p}, status=${statusFilter}, q=${searchQuery})}" th:text="${p}"></a>
+        </li>
+        <li class="page-item" th:classappend="${currentPage >= totalPages} ? 'disabled'">
+            <a class="page-link" th:href="@{${basePath}(page=${currentPage + 1}, status=${statusFilter}, q=${searchQuery})}">&raquo;</a>
+        </li>
+    </ul>
+</nav>

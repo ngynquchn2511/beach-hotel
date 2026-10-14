@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>Check-out &amp; thanh toán</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        .method-option { cursor: pointer; transition: border-color .15s, background-color .15s; }
+        .method-option:has(input:checked) { border-color: var(--bs-primary) !important; background-color: rgba(13, 110, 253, .06); }
+        .method-option .bi { font-size: 1.6rem; }
+        .qr-box img { width: 260px; max-width: 100%; }
+        .section-anchor { scroll-margin-top: 90px; }
+    </style>
+</head>
+<body class="eaut eaut-admin">
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="container py-5" style="max-width: 960px;">
+    <div class="row g-4">
+        <div class="col-md-3 d-none d-md-block">
+            <div th:replace="~{fragments/admin-sidebar :: sidebar}"></div>
+        </div>
+
+        <div class="col-md-9">
+            <a th:href="@{/admin/bookings/{id}(id=${booking.id})}" class="d-inline-block mb-3">&laquo; Quay lại chi tiết đơn</a>
+
+            <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+            <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+
+            <div class="bg-white p-4 rounded shadow-sm mb-4">
+                <h4 class="fw-bold mb-3" th:text="'Check-out đơn #' + ${booking.id}"></h4>
+                <p class="mb-1">Khách: <span class="fw-semibold" th:text="${booking.guestName != null} ? ${booking.guestName} : ${booking.customer.fullName}"></span></p>
+                <p class="mb-1" th:text="'Phòng ' + ${booking.room.roomNumber} + ' - ' + ${booking.room.roomType.name} + ' (' + ${nights} + ' đêm)'"></p>
+                <p class="mb-1">Từ <span th:text="${#temporals.format(booking.checkInDate, 'dd/MM/yyyy')}"></span>
+                    đến <span th:text="${#temporals.format(booking.checkOutDate, 'dd/MM/yyyy')}"></span>
+                    — giờ trả dự kiến <span th:text="${booking.checkOutTime}"></span></p>
+
+                <table class="table table-sm mt-3 mb-0">
+                    <tr><td>Tiền đơn (phòng + combo − giảm giá)</td>
+                        <td class="text-end" th:text="${#numbers.formatDecimal(booking.totalAmount, 1, 0)} + ' VND'"></td></tr>
+                    <tr><td>Phụ phí phát sinh</td>
+                        <td class="text-end" th:text="${#numbers.formatDecimal(chargesTotal, 1, 0)} + ' VND'"></td></tr>
+                    <tr th:if="${depositPaid.signum() > 0}"><td>Đã đặt cọc</td>
+                        <td class="text-end text-success" th:text="'-' + ${#numbers.formatDecimal(depositPaid, 1, 0)} + ' VND'"></td></tr>
+                    <tr class="fw-bold fs-5"><td class="border-0">Số tiền cần thanh toán</td>
+                        <td class="text-end text-danger border-0" th:text="${#numbers.formatDecimal(amountDue, 1, 0)} + ' VND'"></td></tr>
+                </table>
+            </div>
+
+            <!-- Phu phi phat sinh: chi them/xoa khi chua thanh toan -->
+            <div class="bg-white p-4 rounded shadow-sm mb-4 section-anchor" id="phu-phi">
+                <h6 class="fw-bold mb-3">Phụ phí phát sinh</h6>
+
+                <p th:if="${#lists.isEmpty(charges)}" class="text-muted small">Chưa có phụ phí nào.</p>
+                <table th:unless="${#lists.isEmpty(charges)}" class="table table-sm align-middle">
+                    <thead><tr><th>Loại</th><th>Ghi chú</th><th class="text-end">Số tiền</th><th style="width: 60px;"></th></tr></thead>
+                    <tbody>
+                    <tr th:each="c : ${charges}">
+                        <td th:text="${c.type.vietnameseLabel}"></td>
+                        <td class="text-muted" th:text="${c.description != null ? c.description : '-'}"></td>
+                        <td class="text-end" th:text="${#numbers.formatDecimal(c.amount, 1, 0)} + ' VND'"></td>
+                        <td class="text-end">
+                            <form th:unless="${paid}" th:action="@{/admin/bookings/{id}/charges/{cid}/delete(id=${booking.id}, cid=${c.id})}"
+                                  method="post" class="m-0" onsubmit="return confirm('Xóa phụ phí này?')">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa"><i class="bi bi-x-lg"></i></button>
+                            </form>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+
+                <form th:unless="${paid}" th:action="@{/admin/bookings/{id}/charges(id=${booking.id})}" method="post" class="row g-2 align-items-end">
+                    <div class="col-sm-3">
+                        <label class="form-label small mb-1" for="chargeType">Loại</label>
+                        <select id="chargeType" name="type" class="form-select form-select-sm" required>
+                            <option th:each="t : ${chargeTypes}" th:value="${t}" th:text="${t.vietnameseLabel}"></option>
+                        </select>
+                    </div>
+                    <div class="col-sm-4">
+                        <label class="form-label small mb-1" for="chargeDesc">Ghi chú</label>
+                        <input id="chargeDesc" type="text" name="description" maxlength="200" class="form-control form-control-sm" placeholder="VD: 2 lon nước ngọt">
+                    </div>
+                    <div class="col-sm-3">
+                        <label class="form-label small mb-1" for="chargeAmount">Số tiền (VND)</label>
+                        <input id="chargeAmount" type="number" name="amount" min="1000" step="1000" class="form-control form-control-sm" required>
+                    </div>
+                    <div class="col-sm-2">
+                        <button type="submit" class="btn btn-sm btn-outline-primary w-100"><i class="bi bi-plus-lg me-1"></i>Thêm</button>
+                    </div>
+                    <div class="col-12 d-flex flex-wrap align-items-center gap-1 mt-2">
+                        <span class="small text-muted me-1">Gợi ý trả phòng muộn:</span>
+                        <button type="button" class="btn btn-sm btn-light border quick-late" data-percent="30">+30% giá phòng (đến 15h)</button>
+                        <button type="button" class="btn btn-sm btn-light border quick-late" data-percent="50">+50% (đến 18h)</button>
+                        <button type="button" class="btn btn-sm btn-light border quick-late" data-percent="100">+100% (sau 18h)</button>
+                    </div>
+                </form>
+                <p th:if="${paid}" class="small text-muted mb-0"><i class="bi bi-lock me-1"></i>Đơn đã thanh toán nên không thể thay đổi phụ phí.</p>
+            </div>
+
+            <form th:action="@{/admin/bookings/{id}/check-out(id=${booking.id})}" method="post" id="checkoutForm"
+                  class="bg-white p-4 rounded shadow-sm">
+                <h6 class="fw-bold mb-3">Phương thức thanh toán</h6>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-sm-4">
+                        <label class="method-option border rounded p-3 d-block h-100">
+                            <input class="form-check-input me-2" type="radio" name="paymentMethod" value="CASH">
+                            <i class="bi bi-cash-coin text-success d-block my-1"></i>
+                            <span class="fw-semibold">Tiền mặt</span>
+                            <small class="text-muted d-block">Thu tại quầy</small>
+                        </label>
+                    </div>
+                    <div class="col-sm-4">
+                        <label class="method-option border rounded p-3 d-block h-100">
+                            <input class="form-check-input me-2" type="radio" name="paymentMethod" value="BANK_TRANSFER">
+                            <i class="bi bi-qr-code-scan text-primary d-block my-1"></i>
+                            <span class="fw-semibold">Chuyển khoản</span>
+                            <small class="text-muted d-block">Quét mã QR</small>
+                        </label>
+                    </div>
+                    <div class="col-sm-4">
+                        <label class="method-option border rounded p-3 d-block h-100">
+                            <input class="form-check-input me-2" type="radio" name="paymentMethod" value="CARD">
+                            <i class="bi bi-credit-card text-secondary d-block my-1"></i>
+                            <span class="fw-semibold">Thẻ</span>
+                            <span class="badge bg-secondary ms-1">Chưa hỗ trợ</span>
+                            <small class="text-muted d-block">Visa / Master / ATM</small>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Tien mat -->
+                <div class="method-panel d-none" data-method="CASH">
+                    <div class="alert alert-light border">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Thu đủ <strong th:text="${#numbers.formatDecimal(amountDue, 1, 0)} + ' VND'"></strong>
+                        tiền mặt từ khách rồi bấm <strong>Hoàn tất check-out</strong>.
+                    </div>
+                </div>
+
+                <!-- Chuyen khoan: QR -> tu chuyen sang "thanh cong" khi nhan duoc tien -->
+                <div class="method-panel d-none" data-method="BANK_TRANSFER">
+                    <div id="qrPending" class="qr-box text-center border rounded p-4 mb-3" th:classappend="${paid} ? 'd-none'">
+                        <img th:src="${qrUrl}" alt="Mã QR chuyển khoản" class="mb-3">
+                        <p class="mb-1">Ngân hàng: <strong th:text="${bankId}"></strong> — STK: <strong th:text="${accountNo}"></strong></p>
+                        <p class="mb-1">Chủ tài khoản: <strong th:text="${accountName}"></strong></p>
+                        <p class="mb-1">Số tiền: <strong th:text="${#numbers.formatDecimal(amountDue, 1, 0)} + ' VND'"></strong></p>
+                        <p class="mb-3">Nội dung CK: <strong class="text-primary" th:text="${transferContent}"></strong></p>
+                        <p class="text-muted small mb-0">
+                            Khách quét mã, app ngân hàng sẽ tự điền đúng số tiền và nội dung.
+                            Kiểm tra tiền đã vào tài khoản rồi bấm nút xác nhận bên dưới.
+                        </p>
+                    </div>
+
+                    <div id="qrSuccess" class="text-center border border-success rounded p-4 mb-3 bg-success-subtle"
+                         th:classappend="${paid} ? '' : 'd-none'">
+                        <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>
+                        <h5 class="fw-bold text-success mt-2 mb-1">Thanh toán thành công</h5>
+                        <p class="mb-0">Đã nhận <strong th:text="${#numbers.formatDecimal(amountDue, 1, 0)} + ' VND'"></strong> chuyển khoản.</p>
+                    </div>
+                </div>
+
+                <!-- The: chua ho tro -->
+                <div class="method-panel d-none" data-method="CARD">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        Thanh toán bằng thẻ hiện <strong>chưa được hỗ trợ</strong>. Vui lòng chọn tiền mặt hoặc chuyển khoản.
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 flex-wrap">
+                    <button type="submit" id="submitBtn" class="btn btn-warning" disabled>
+                        <i class="bi bi-box-arrow-right me-1"></i>Hoàn tất check-out
+                    </button>
+                    <a th:href="@{/admin/bookings/{id}(id=${booking.id})}" class="btn btn-outline-secondary">Hủy</a>
+                </div>
+            </form>
+
+            <!-- Nhan vien kiem tra app ngan hang thay tien da vao -> xac nhan, QR chuyen sang "Thanh toan thanh cong" -->
+            <form id="confirmTransferForm" th:action="@{/admin/bookings/{id}/confirm-transfer(id=${booking.id})}" method="post"
+                  class="mt-3 d-none"
+                  th:attr="onsubmit=|return confirm('Xác nhận đã nhận đủ ${#numbers.formatDecimal(amountDue, 1, 0)} VND chuyển khoản?')|">
+                <button type="submit" class="btn btn-success">
+                    <i class="bi bi-check2-square me-1"></i>Đã nhận được tiền chuyển khoản
+                </button>
+            </form>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<script th:inline="javascript">
+    (function () {
+        const paid = /*[[${paid}]]*/ false;
+        const radios = document.querySelectorAll('input[name="paymentMethod"]');
+        const panels = document.querySelectorAll('.method-panel');
+        const submitBtn = document.getElementById('submitBtn');
+        const confirmForm = document.getElementById('confirmTransferForm');
+
+        function selected() {
+            const r = document.querySelector('input[name="paymentMethod"]:checked');
+            return r ? r.value : null;
+        }
+
+        function refresh() {
+            const method = selected();
+            panels.forEach(p => p.classList.toggle('d-none', p.dataset.method !== method));
+            submitBtn.disabled = !(method === 'CASH' || (method === 'BANK_TRANSFER' && paid));
+            confirmForm.classList.toggle('d-none', !(method === 'BANK_TRANSFER' && !paid));
+        }
+
+        radios.forEach(r => r.addEventListener('change', refresh));
+
+        // Nut goi y phu phi tra phong muon: dien san loai, ghi chu va so tien theo % gia phong 1 dem
+        const roomPrice = /*[[${booking.room.price}]]*/ 0;
+        document.querySelectorAll('.quick-late').forEach(btn => btn.addEventListener('click', () => {
+            const amount = Math.round(roomPrice * Number(btn.dataset.percent) / 100 / 1000) * 1000;
+            document.getElementById('chargeType').value = 'LATE_CHECKOUT';
+            document.getElementById('chargeAmount').value = amount;
+            document.getElementById('chargeDesc').value = btn.textContent.trim();
+        }));
+
+        // Quay lai sau khi xac nhan chuyen khoan (?method=BANK_TRANSFER) hoac da thanh toan -> chon san chuyen khoan
+        const preset = paid ? 'BANK_TRANSFER' : new URLSearchParams(location.search).get('method');
+        const presetRadio = preset && document.querySelector('input[name="paymentMethod"][value="' + preset + '"]');
+        if (presetRadio) presetRadio.checked = true;
+        refresh();
+    })();
+</script>
+
+</body>
+</html>

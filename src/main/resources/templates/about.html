@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="vi" th:lang="${#locale.language}" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{about.title}">Giới thiệu | Sóng Xanh Resort</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+    <style>
+        /* Phong cach "do van phong pham khach san" - dung chung bien mau voi /css/eaut-theme.css */
+        body { font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: var(--ink); overflow-x: hidden;
+            background-color: var(--paper); background-image: radial-gradient(var(--dot) 1.3px, transparent 1.3px); background-size: 22px 22px; }
+        h1, h2, h3, .serif { font-family: 'Fraunces', Georgia, serif; color: var(--ink); }
+        a { text-decoration: none; }
+
+        #scrollProgress { position: fixed; top: 0; left: 0; height: 4px; width: 0; z-index: 2000; background: var(--baby-deep); }
+
+        /* ================= HERO: tam buu thiep lon ================= */
+        .hero { position: relative; min-height: 86vh; margin: 1.5rem; display: grid; place-items: center; overflow: hidden; isolation: isolate;
+            border: var(--line); border-radius: 26px; box-shadow: 10px 10px 0 var(--baby); }
+        .hero-bg { position: absolute; inset: -5%; background: url('/page-images/beach-bo-bien.jpg') center 40%/cover; z-index: -3; }
+        .hero::before { content: ''; position: absolute; inset: 0; z-index: -2;
+            background: linear-gradient(180deg, rgba(255,255,255,.50), rgba(255,255,255,.74) 55%, rgba(227,244,253,.94)); }
+        /* Con dau buu dien goc tren ben phai */
+        .hero::after { content: 'MÂY · TAM ĐẢO · 2026'; position: absolute; top: 28px; right: 34px; width: 120px; height: 120px; border-radius: 50%;
+            display: grid; place-items: center; text-align: center; padding: 18px; font-size: .68rem; font-weight: 800; letter-spacing: .14em;
+            color: var(--baby-deep); border: 2.5px dashed var(--baby-deep); transform: rotate(14deg); opacity: .8; }
+        .blob, .sparkle, #sparkles { display: none; }
+
+        .badge-glass { display: inline-flex; align-items: center; gap: .5rem; padding: .45rem 1rem; border-radius: 8px;
+            background: var(--paper); border: var(--line); box-shadow: 3px 3px 0 var(--baby); font-size: .8rem; font-weight: 700; letter-spacing: .08em;
+            transform: rotate(-1.5deg); }
+        .stars i { color: #f2b705; animation: starPop .6s backwards; }
+        .hero-title { font-size: clamp(2.6rem, 7.5vw, 5.6rem); font-weight: 700; line-height: 1.05; letter-spacing: -.02em; }
+        .gradient-text { color: var(--ink); font-style: italic; padding: 0 .1em;
+            background: linear-gradient(transparent 58%, var(--baby) 58%, var(--baby) 92%, transparent 92%); }
+        .typing { color: var(--baby-deep); font-weight: 700; border-right: 3px solid var(--ink); padding-right: 4px; animation: caret .8s step-end infinite; white-space: nowrap; }
+
+        .btn-glow { border: var(--line); color: var(--ink); font-weight: 800; padding: .95rem 2rem; border-radius: 12px;
+            background: var(--baby); box-shadow: 5px 5px 0 var(--ink); transition: transform .12s, box-shadow .12s, background .15s; }
+        .btn-glow:hover { background: var(--baby-deep); color: var(--ink); transform: translate(-2px, -2px); box-shadow: 7px 7px 0 var(--ink); }
+        .btn-ghost { border: var(--line); color: var(--ink); font-weight: 700; padding: .95rem 2rem; border-radius: 12px; background: var(--paper);
+            box-shadow: 4px 4px 0 var(--baby); transition: transform .12s, box-shadow .12s, background .15s; }
+        .btn-ghost:hover { background: var(--baby-soft); color: var(--ink); transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--baby-deep); }
+        .btn-glow:active, .btn-ghost:active { transform: translate(3px, 3px); box-shadow: 0 0 0 transparent; }
+        .scroll-down { position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%); width: 28px; height: 46px; border: 2px solid var(--ink); border-radius: 20px; }
+        .scroll-down::after { content: ''; position: absolute; left: 50%; top: 8px; width: 4px; height: 8px; margin-left: -2px; border-radius: 4px; background: var(--ink); animation: wheel 1.8s infinite; }
+
+        /* ================= SECTION CHUNG ================= */
+        section.block { position: relative; padding: 6rem 0; }
+        .eyebrow { position: relative; display: inline-block; padding: .38rem 1rem .38rem 1.6rem; font-size: .76rem; font-weight: 700; letter-spacing: .12em;
+            text-transform: uppercase; color: var(--ink); background: var(--sun); border: var(--line);
+            clip-path: polygon(12px 0, 100% 0, 100% 100%, 12px 100%, 0 50%); transform: rotate(-2deg); }
+        .eyebrow::before { content: ''; position: absolute; left: 11px; top: 50%; width: 7px; height: 7px; margin-top: -3.5px;
+            border-radius: 50%; background: var(--paper); border: 1.5px solid var(--ink); }
+        .section-title { font-size: clamp(2rem, 4.5vw, 3.1rem); font-weight: 700; line-height: 1.12; }
+        .muted { color: var(--ink-soft); }
+        .divider { width: 140px; height: 14px;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='14' viewBox='0 0 140 14'%3E%3Cpath d='M2 8 C 20 2, 30 13, 48 7 S 78 2, 94 8 S 124 13, 138 5' fill='none' stroke='%235bb8e8' stroke-width='3.5' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat; }
+
+        .reveal { opacity: 0; transform: translateY(30px); transition: opacity .7s ease, transform .7s ease; }
+        .reveal.left { transform: translateX(-40px); }
+        .reveal.right { transform: translateX(40px); }
+        .reveal.zoom { transform: scale(.94); }
+        .reveal.in { opacity: 1; transform: none; }
+
+        /* ================= THONG KE: the chia khoa ================= */
+        .stats { margin-top: -70px; position: relative; z-index: 5; }
+        .stat-card { position: relative; border-radius: 14px 14px 14px 36px; padding: 1.6rem 1rem; text-align: center; background: var(--paper);
+            border: var(--line); box-shadow: var(--pop); transition: transform .2s, box-shadow .2s; }
+        .stat-card::before { content: ''; position: absolute; top: 12px; right: 12px; width: 12px; height: 12px; border-radius: 50%; border: var(--line); background: var(--baby-soft); }
+        .stat-card:hover { transform: translate(-3px, -3px); box-shadow: var(--pop-hover); }
+        .stat-num { font-family: 'Fraunces', serif; font-size: 2.7rem; font-weight: 700; }
+        .stat-icon { width: 50px; height: 50px; margin: 0 auto .6rem; display: grid; place-items: center; border-radius: 12px; font-size: 1.4rem;
+            background: var(--baby) !important; color: var(--ink); border: var(--line); }
+
+        /* ================= CAU CHUYEN: anh polaroid ================= */
+        .collage { position: relative; height: 520px; }
+        .collage img { position: absolute; object-fit: cover; border-radius: 6px; background: var(--paper); border: 12px solid var(--paper);
+            border-bottom-width: 42px; outline: 1.5px solid var(--ink); box-shadow: 8px 8px 0 var(--baby); }
+        .collage .c1 { width: 70%; height: 78%; top: 0; left: 0; rotate: -3deg; animation: bob 7s ease-in-out infinite; }
+        .collage .c2 { width: 52%; height: 52%; bottom: 0; right: 0; rotate: 4deg; animation: bob 7s ease-in-out infinite -3.5s; }
+        .collage .ring { position: absolute; width: 130px; height: 130px; border-radius: 50%; border: 2.5px dashed var(--baby-deep); right: 6%; top: 4%; animation: spin 18s linear infinite; }
+        .experience { position: absolute; left: 6%; bottom: 10%; padding: .9rem 1.2rem; border-radius: 10px; background: var(--sun); color: var(--ink);
+            border: var(--line); box-shadow: 4px 4px 0 var(--ink); rotate: -4deg; animation: bob 5s ease-in-out infinite -1s; }
+        .check-list li { list-style: none; margin-bottom: .8rem; display: flex; gap: .7rem; }
+        .check-list i { color: var(--baby-deep); }
+
+        /* ================= TIEN ICH ================= */
+        .facilities { background: var(--baby-soft); border-top: var(--line); border-bottom: var(--line); }
+        .feature { position: relative; height: 100%; padding: 2rem 1.6rem; border-radius: 14px; background: var(--paper);
+            border: var(--line); box-shadow: var(--pop); transition: transform .25s ease, box-shadow .25s; }
+        .feature:hover { box-shadow: var(--pop-hover); }
+        .feature .glow { display: none; }
+        .feature-icon { width: 58px; height: 58px; display: grid; place-items: center; border-radius: 14px; font-size: 1.6rem; margin-bottom: 1.2rem;
+            background: var(--baby) !important; color: var(--ink); border: var(--line); transition: transform .3s; }
+        .feature:hover .feature-icon { transform: rotate(-8deg) scale(1.08); }
+
+        /* ================= KHAM PHA NHA TRANG: buu thiep ================= */
+        .spot { position: relative; height: 100%; padding: 10px 10px 1.2rem; border-radius: 10px; background: var(--paper);
+            border: var(--line); box-shadow: var(--pop); transition: transform .25s, box-shadow .25s; }
+        .row > div:nth-child(3n+1) .spot { rotate: -1.2deg; }
+        .row > div:nth-child(3n) .spot { rotate: 1.2deg; }
+        .spot:hover { rotate: 0deg; transform: translate(-3px, -3px); box-shadow: var(--pop-hover); }
+        .spot .ph { position: relative; overflow: hidden; border-radius: 6px; border: var(--line); aspect-ratio: 4 / 3; }
+        .spot .ph img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .6s; }
+        .spot:hover .ph img { transform: scale(1.06); }
+        .spot .tag { position: absolute; left: 12px; bottom: 12px; padding: .2rem .65rem; font-size: .72rem; font-weight: 800; letter-spacing: .08em;
+            text-transform: uppercase; color: var(--ink); background: var(--sun); border: var(--line); border-radius: 4px; }
+        .spot h3 { font-family: 'Fraunces', serif; font-size: 1.3rem; font-weight: 700; margin: 1rem .4rem .35rem; }
+        .spot p { margin: 0 .4rem; }
+        .photo-credit { font-size: .74rem; line-height: 1.6; }
+        .photo-credit a { color: var(--ink-soft); }
+
+        /* ================= LOAI PHONG ================= */
+        .room-card { position: relative; border-radius: 14px; overflow: hidden; height: 100%; background: var(--paper);
+            border: var(--line); box-shadow: var(--pop); transition: transform .2s, box-shadow .2s; }
+        .room-card:hover { transform: translate(-3px, -3px); box-shadow: var(--pop-hover); }
+        .room-card > .overflow-hidden { margin: 10px 10px 0; border: var(--line); border-radius: 8px; }
+        .room-card .thumb { height: 220px; background-size: cover; background-position: center; transition: transform .6s; }
+        .room-card:hover .thumb { transform: scale(1.06); }
+        .room-card .price { position: absolute; top: 24px; right: 24px; padding: .3rem .9rem .3rem 1.1rem; font-weight: 800; color: var(--ink);
+            background: var(--sun); border: var(--line); border-radius: 4px;
+            -webkit-mask: radial-gradient(circle at 0 50%, transparent 6px, #000 6.5px); mask: radial-gradient(circle at 0 50%, transparent 6px, #000 6.5px); }
+        .chip { display: inline-flex; align-items: center; gap: .35rem; padding: .25rem .65rem; border-radius: 6px; font-size: .8rem; font-weight: 600;
+            background: var(--baby-soft); border: 1.5px solid var(--ink); }
+
+        /* ================= THU VIEN ANH: polaroid ghim tuong ================= */
+        .gallery { columns: 3 260px; column-gap: 22px; }
+        .g-item { position: relative; break-inside: avoid; margin-bottom: 22px; padding: 10px 10px 38px; background: var(--paper);
+            border: var(--line); border-radius: 6px; box-shadow: 5px 5px 0 var(--baby); cursor: zoom-in; transition: rotate .25s, box-shadow .25s; }
+        .g-item:nth-child(odd) { rotate: -1.5deg; }
+        .g-item:nth-child(even) { rotate: 1.5deg; }
+        .g-item:hover { rotate: 0deg; box-shadow: 8px 8px 0 var(--baby-deep); }
+        .g-item img { width: 100%; display: block; border-radius: 3px; }
+        .g-item::after { content: attr(data-caption); position: absolute; left: 0; right: 0; bottom: 8px; text-align: center;
+            font-family: 'Fraunces', serif; font-style: italic; font-size: .95rem; color: var(--ink); }
+        .lightbox { position: fixed; inset: 0; z-index: 3000; display: none; place-items: center; background: rgba(20, 54, 90, .88); }
+        .lightbox.open { display: grid; animation: fadeIn .3s; }
+        .lightbox img { max-width: 92vw; max-height: 86vh; border: 12px solid #fff; border-radius: 6px; animation: popIn .4s; }
+        .lightbox .close { position: absolute; top: 20px; right: 28px; font-size: 2rem; color: #fff; background: none; border: 0; }
+
+        /* ================= DANH GIA: giay ghi chu ================= */
+        .marquee { overflow: hidden; padding: 10px 0 18px; mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
+        .marquee-track { display: flex; gap: 22px; width: max-content; animation: marquee 40s linear infinite; }
+        .marquee:hover .marquee-track { animation-play-state: paused; }
+        .review { width: 330px; padding: 1.4rem; border-radius: 12px; background: var(--paper); border: var(--line); box-shadow: 5px 5px 0 var(--baby); }
+        .review:nth-child(3n+2) { background: #fffbea; }
+        .avatar { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; color: var(--ink);
+            background: var(--baby) !important; border: var(--line); }
+
+        /* ================= LIEN HE ================= */
+        .contact-card { border-radius: 16px; overflow: hidden; background: var(--paper); border: var(--line); box-shadow: 8px 8px 0 var(--baby); }
+        .contact-card .text-white { color: var(--ink) !important; }
+        .contact-line { display: flex; gap: 1rem; align-items: center; padding: 1rem 0; border-bottom: 1.5px dashed var(--baby-deep); }
+        .contact-line .ic { width: 46px; height: 46px; flex: 0 0 46px; display: grid; place-items: center; border-radius: 12px;
+            background: var(--baby); border: var(--line); font-size: 1.15rem; color: var(--ink); }
+        .map { width: 100%; height: 100%; min-height: 360px; border: 0; border-left: var(--line); }
+
+        /* ================= CTA: tam ve lon ================= */
+        .cta { position: relative; border-radius: 18px; padding: 4rem 2rem; text-align: center; overflow: hidden; color: var(--ink);
+            background-color: var(--baby); background-image: radial-gradient(rgba(20, 54, 90, .14) 1.3px, transparent 1.3px); background-size: 18px 18px;
+            border: var(--line); box-shadow: 10px 10px 0 var(--ink); }
+        .cta h2 { color: var(--ink); }
+        .cta .btn-light { background: var(--ink); color: var(--paper); border: var(--line); border-radius: 12px !important; box-shadow: 5px 5px 0 var(--paper); }
+        .cta .btn-light:hover { background: #0d2742; color: var(--paper); transform: translate(-2px, -2px); }
+        .cta .text-warning { color: var(--sun) !important; }
+
+        footer.bg-dark { margin-top: 2rem !important; }
+
+        /* ================= KEYFRAMES ================= */
+        @keyframes caret { 50% { border-color: transparent; } }
+        @keyframes wheel { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(16px); } }
+        @keyframes starPop { from { opacity: 0; transform: scale(0) rotate(-90deg); } }
+        @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes marquee { to { transform: translateX(-50%); } }
+        @keyframes fadeIn { from { opacity: 0; } }
+        @keyframes popIn { from { transform: scale(.85); opacity: 0; } }
+
+        @media (max-width: 991px) { .collage { height: 400px; margin-bottom: 2rem; } .stats { margin-top: -50px; } .hero { margin: .75rem; } .hero::after { display: none; } }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation: none !important; transition: none !important; }
+            .reveal { opacity: 1; transform: none; }
+        }
+    </style>
+</head>
+<body class="eaut-chrome">
+<div id="scrollProgress"></div>
+<div th:replace="~{fragments/header :: header}"></div>
+
+<!-- ================= HERO ================= -->
+<section class="hero">
+    <div class="hero-bg"></div>
+    <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
+    <div id="sparkles"></div>
+
+    <div class="container text-center py-5">
+        <div class="badge-glass mb-4 reveal">
+            <span class="stars"><i class="bi bi-star-fill" style="animation-delay:.1s"></i><i class="bi bi-star-fill" style="animation-delay:.2s"></i><i class="bi bi-star-fill" style="animation-delay:.3s"></i><i class="bi bi-star-fill" style="animation-delay:.4s"></i><i class="bi bi-star-fill" style="animation-delay:.5s"></i></span>
+            <span th:text="#{about.hero.badge}">RESORT NGHỈ DƯỠNG BÊN BỜ BIỂN NHA TRANG</span>
+        </div>
+        <h1 class="hero-title mb-3 reveal" th:utext="#{about.hero.title}">Chào mừng đến<br><span class="gradient-text">Sóng Xanh Resort</span></h1>
+        <p class="fs-4 mb-5 reveal" style="min-height:2.2em">
+            <span th:text="#{about.hero.lead}">Nơi mang đến cho bạn</span> <span class="typing" id="typing" th:text="${#strings.arraySplit(#messages.msg('about.hero.typing'), ';')[0]}">kỳ nghỉ trọn vẹn</span>
+        </p>
+        <div class="d-flex flex-wrap gap-3 justify-content-center reveal">
+            <a th:href="@{/rooms}" class="btn btn-glow btn-lg"><i class="bi bi-calendar2-heart me-2"></i><span th:text="#{about.cta.book}">Đặt phòng ngay</span></a>
+            <a href="#cau-chuyen" class="btn btn-ghost btn-lg"><i class="bi bi-play-circle me-2"></i><span th:text="#{about.cta.explore}">Khám phá</span></a>
+        </div>
+    </div>
+    <a href="#cau-chuyen" class="scroll-down" th:aria-label="#{about.scroll}"></a>
+</section>
+
+<!-- ================= THONG KE ================= -->
+<div class="container stats">
+    <div class="row g-3 g-md-4">
+        <div class="col-6 col-lg-3 reveal">
+            <div class="stat-card">
+                <div class="stat-icon" style="background:linear-gradient(135deg,#3b82f6,#22d3ee)"><i class="bi bi-door-open"></i></div>
+                <div class="stat-num gradient-text"><span class="counter" th:attr="data-to=${roomCount}">0</span>+</div>
+                <div class="muted small" th:text="#{about.stat.rooms}">Phòng nghỉ</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3 reveal">
+            <div class="stat-card">
+                <div class="stat-icon" style="background:linear-gradient(135deg,#8b5cf6,#ec4899)"><i class="bi bi-gem"></i></div>
+                <div class="stat-num gradient-text"><span class="counter" th:attr="data-to=${#lists.size(roomTypes)}">0</span></div>
+                <div class="muted small" th:text="#{about.stat.types}">Hạng phòng</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3 reveal">
+            <div class="stat-card">
+                <div class="stat-icon" style="background:linear-gradient(135deg,#f59e0b,#ef4444)"><i class="bi bi-cup-hot"></i></div>
+                <div class="stat-num gradient-text"><span class="counter" th:attr="data-to=${#lists.size(combos)}">0</span></div>
+                <div class="muted small" th:text="#{about.stat.combos}">Combo ẩm thực</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3 reveal">
+            <div class="stat-card">
+                <div class="stat-icon" style="background:linear-gradient(135deg,#10b981,#22d3ee)"><i class="bi bi-emoji-heart-eyes"></i></div>
+                <div class="stat-num gradient-text"><span class="counter" data-to="98">0</span>%</div>
+                <div class="muted small" th:text="#{about.stat.happy}">Khách hài lòng</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ================= CAU CHUYEN ================= -->
+<section class="block" id="cau-chuyen">
+    <div class="container">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-6 reveal left">
+                <div class="collage">
+                    <img class="c1" src="/page-images/anhphongVIP.jpg" th:alt="#{about.story.img1}">
+                    <img class="c2" src="/page-images/viewcuasogiuongdoi.jpg" th:alt="#{about.story.img2}">
+                    <div class="ring"></div>
+                    <div class="experience">
+                        <div class="serif fs-2 fw-bold lh-1">24/7</div>
+                        <div class="small" th:text="#{about.story.service}">Phục vụ tận tâm</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6 reveal right">
+                <div class="eyebrow mb-2" th:text="#{about.story.eyebrow}">Về chúng tôi</div>
+                <h2 class="section-title mb-3" th:utext="#{about.story.title}">Không chỉ là nơi nghỉ chân, mà là <span class="gradient-text">trải nghiệm</span></h2>
+                <div class="divider mb-4"></div>
+                <p class="muted fs-5" th:text="#{about.story.p1}">Sóng Xanh Resort nằm ngay trên đường Trần Phú, Nha Trang, Khánh Hòa — chỉ vài bước chân là ra tới bãi cát trắng, nắng ấm quanh năm, lý tưởng cho kỳ nghỉ biển cùng gia đình, nhóm bạn hay cặp đôi. Mỗi căn phòng được bài trí tươi sáng, đón gió biển mà vẫn đầy đủ tiện nghi.</p>
+                <p class="muted" th:text="#{about.story.p2}">Với hệ thống đặt phòng trực tuyến, bạn có thể tìm phòng trống, chọn combo ẩm thực, áp mã giảm giá và nhận xác nhận qua email chỉ trong vài phút.</p>
+                <ul class="check-list ps-0 mt-4">
+                    <li><i class="bi bi-patch-check-fill"></i><span th:text="#{about.story.check1}">Phòng sạch sẽ, được dọn dẹp và kiểm tra trước mỗi lượt khách</span></li>
+                    <li><i class="bi bi-patch-check-fill"></i><span th:text="#{about.story.check2}">Giá minh bạch, ưu đãi riêng cho khách quen và khách VIP</span></li>
+                    <li><i class="bi bi-patch-check-fill"></i><span th:text="#{about.story.check3}">Đội ngũ lễ tân hỗ trợ check-in, check-out nhanh chóng</span></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ================= TIEN ICH ================= -->
+<section class="block facilities" id="tien-ich">
+    <div class="container">
+        <div class="text-center mb-5 reveal">
+            <div class="eyebrow mb-2" th:text="#{about.fac.eyebrow}">Tiện ích</div>
+            <h2 class="section-title" th:utext="#{about.fac.title}">Chậm lại một chút, <span class="gradient-text">sống cùng biển</span></h2>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-4 reveal">
+                <div class="feature tilt"><span class="glow"></span>
+                    <div class="feature-icon"><i class="bi bi-fire"></i></div>
+                    <h3 class="h5 fw-bold" th:text="#{about.fac1.t}">Hồ bơi vô cực</h3><p class="muted mb-0" th:text="#{about.fac1.d}">Hồ bơi tầng thượng nhìn thẳng ra vịnh Nha Trang — ngắm hoàng hôn ngay khi đang bơi.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4 reveal">
+                <div class="feature tilt"><span class="glow"></span>
+                    <div class="feature-icon"><i class="bi bi-cloud-sun"></i></div>
+                    <h3 class="h5 fw-bold" th:text="#{about.fac2.t}">Ban công hướng biển</h3><p class="muted mb-0" th:text="#{about.fac2.d}">Phòng có ban công nhìn ra biển, sáng sớm mở cửa là thấy bình minh trên vịnh.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4 reveal">
+                <div class="feature tilt"><span class="glow"></span>
+                    <div class="feature-icon"><i class="bi bi-stars"></i></div>
+                    <h3 class="h5 fw-bold" th:text="#{about.fac3.t}">Bãi biển riêng</h3><p class="muted mb-0" th:text="#{about.fac3.d}">Ghế nằm, dù che nắng và khăn tắm miễn phí cho khách lưu trú tại bãi biển của resort.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4 reveal">
+                <div class="feature tilt"><span class="glow"></span>
+                    <div class="feature-icon"><i class="bi bi-cup-hot"></i></div>
+                    <h3 class="h5 fw-bold" th:text="#{about.fac4.t}">BBQ hải sản</h3><p class="muted mb-0" th:text="#{about.fac4.d}">Tối nướng hải sản tươi bên bờ biển, hoặc gọi combo lẩu, hải sản ngay tại resort.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4 reveal">
+                <div class="feature tilt"><span class="glow"></span>
+                    <div class="feature-icon"><i class="bi bi-scooter"></i></div>
+                    <h3 class="h5 fw-bold" th:text="#{about.fac5.t}">Tour đảo & lặn biển</h3><p class="muted mb-0" th:text="#{about.fac5.d}">Đặt tour cano 4 đảo, lặn ngắm san hô Hòn Mun và thuê xe máy ngay tại quầy lễ tân.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4 reveal">
+                <div class="feature tilt"><span class="glow"></span>
+                    <div class="feature-icon"><i class="bi bi-wifi"></i></div>
+                    <h3 class="h5 fw-bold" th:text="#{about.fac6.t}">Wi-Fi & đưa đón sân bay</h3><p class="muted mb-0" th:text="#{about.fac6.d}">Wi-Fi tốc độ cao khắp resort, chỗ đỗ xe miễn phí và dịch vụ đưa đón sân bay Cam Ranh.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ================= KHAM PHA NHA TRANG ================= -->
+<section class="block" id="kham-pha">
+    <div class="container">
+        <div class="text-center mb-5 reveal">
+            <div class="eyebrow mb-2" th:text="#{about.explore.eyebrow}">Quanh Sóng Xanh Resort</div>
+            <h2 class="section-title" th:utext="#{about.explore.title}">Khám phá <span class="gradient-text">Nha Trang</span></h2>
+            <p class="muted fs-5 mt-3 mb-0" th:text="#{about.explore.lead}">Thành phố biển nắng vàng quanh năm — từ resort, bạn dễ dàng ghé thăm mọi điểm đến nổi tiếng.</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-4 reveal">
+                <div class="spot">
+                    <div class="ph"><img src="/page-images/beach-tran-phu.jpg" th:alt="#{about.spot1.t}" loading="lazy"><span class="tag" th:text="#{about.spot1.tag}">Bãi biển</span></div>
+                    <h3 th:text="#{about.spot1.t}">Bãi biển Trần Phú</h3>
+                    <p class="muted small" th:text="#{about.spot1.d}">Bờ cát trắng trải dài hơn 6 km giữa lòng thành phố, ngay trước cửa Sóng Xanh Resort.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4 reveal">
+                <div class="spot">
+                    <div class="ph"><img src="/page-images/beach-thap-ba.jpg" th:alt="#{about.spot2.t}" loading="lazy"><span class="tag" th:text="#{about.spot2.tag}">Di tích</span></div>
+                    <h3 th:text="#{about.spot2.t}">Tháp Bà Ponagar</h3>
+                    <p class="muted small" th:text="#{about.spot2.d}">Quần thể tháp Chăm cổ hơn nghìn năm tuổi bên cửa sông Cái, góc check-in đậm chất văn hóa.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4 reveal">
+                <div class="spot">
+                    <div class="ph"><img src="/page-images/beach-hon-mun.jpg" th:alt="#{about.spot3.t}" loading="lazy"><span class="tag" th:text="#{about.spot3.tag}">Lặn biển</span></div>
+                    <h3 th:text="#{about.spot3.t}">Hòn Mun</h3>
+                    <p class="muted small" th:text="#{about.spot3.d}">Khu bảo tồn biển với rạn san hô rực rỡ, điểm lặn ngắm san hô đẹp nhất Nha Trang.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4 reveal">
+                <div class="spot">
+                    <div class="ph"><img src="/page-images/beach-hon-chong.jpg" th:alt="#{about.spot4.t}" loading="lazy"><span class="tag" th:text="#{about.spot4.tag}">Thiên nhiên</span></div>
+                    <h3 th:text="#{about.spot4.t}">Hòn Chồng</h3>
+                    <p class="muted small" th:text="#{about.spot4.d}">Những khối đá chồng lên nhau vươn ra biển, nơi ngắm bình minh và sóng vỗ tuyệt đẹp.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4 reveal">
+                <div class="spot">
+                    <div class="ph"><img src="/page-images/beach-tour-dao.jpg" th:alt="#{about.spot5.t}" loading="lazy"><span class="tag" th:text="#{about.spot5.tag}">Đảo</span></div>
+                    <h3 th:text="#{about.spot5.t}">Tour 4 đảo vịnh Nha Trang</h3>
+                    <p class="muted small" th:text="#{about.spot5.d}">Đi cano qua Hòn Tằm, Hòn Một, Bãi Tranh — tắm biển, chèo kayak và ăn trưa hải sản trên đảo.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4 reveal">
+                <div class="spot">
+                    <div class="ph"><img src="/page-images/beach-cho-dam.jpg" th:alt="#{about.spot6.t}" loading="lazy"><span class="tag" th:text="#{about.spot6.tag}">Ẩm thực</span></div>
+                    <h3 th:text="#{about.spot6.t}">Chợ Đầm & hải sản</h3>
+                    <p class="muted small" th:text="#{about.spot6.d}">Khu chợ lâu đời với hải sản tươi, bún chả cá, nem nướng — đặc sản nhất định phải thử.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ================= LOAI PHONG (du lieu that) ================= -->
+<section class="block" id="hang-phong" th:if="${!#lists.isEmpty(roomTypes)}">
+    <div class="container">
+        <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-5 reveal">
+            <div>
+                <div class="eyebrow mb-2" th:text="#{about.types.eyebrow}">Hạng phòng</div>
+                <h2 class="section-title mb-0" th:utext="#{about.types.title}">Chọn không gian <span class="gradient-text">của riêng bạn</span></h2>
+            </div>
+            <a th:href="@{/rooms}" class="btn btn-ghost"><span th:text="#{about.types.all}">Xem tất cả phòng</span> <i class="bi bi-arrow-right ms-1"></i></a>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-4 reveal zoom" th:each="rt, st : ${roomTypes}" th:if="${st.index < 6}">
+                <div class="room-card">
+                    <div class="overflow-hidden">
+                        <div class="thumb" th:style="'background-image:url(/page-images/' + ${ {'anhphonggiuongdoi.jpg','anhphongVIP.jpg','phongProMax.jpg','phongpromax2.jpg','anhphonggiuongdoi2.jpg','danhsachphong.jpg'}[st.index % 6] } + ')'"></div>
+                    </div>
+                    <div class="price"><span th:text="${#numbers.formatDecimal(rt.basePrice, 1, 'POINT', 0, 'COMMA')}">0</span> đ</div>
+                    <div class="p-4">
+                        <h3 class="h4 fw-bold mb-2" th:text="${rt.localizedName}">Loại phòng</h3>
+                        <p class="muted small mb-3" th:text="${rt.localizedDescription != null and !#strings.isEmpty(rt.localizedDescription)} ? ${#strings.abbreviate(rt.localizedDescription, 110)} : #{about.types.defaultDesc}">Mô tả</p>
+                        <div class="d-flex flex-wrap gap-2">
+                            <span class="chip" th:if="${rt.maxGuests != null}"><i class="bi bi-people"></i><span th:text="#{common.guests(${rt.maxGuests})}">2 khách</span></span>
+                            <span class="chip" th:if="${rt.area != null}"><i class="bi bi-arrows-fullscreen"></i><span th:text="${#numbers.formatDecimal(rt.area, 1, 0)} + ' m²'">30 m²</span></span>
+                            <span class="chip"><i class="bi bi-moon-stars"></i><span th:text="#{common.perNight}">/ đêm</span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ================= THU VIEN ANH ================= -->
+<section class="block pt-0">
+    <div class="container">
+        <div class="text-center mb-5 reveal">
+            <div class="eyebrow mb-2" th:text="#{about.gallery.eyebrow}">Thư viện ảnh</div>
+            <h2 class="section-title" th:utext="#{about.gallery.title}">Khoảnh khắc tại <span class="gradient-text">Sóng Xanh</span></h2>
+        </div>
+        <div class="gallery">
+            <div class="g-item reveal" th:attr="data-caption=#{about.g1}"><img src="/page-images/beach-toan-canh.jpg" th:alt="#{about.g1}" loading="lazy"></div>
+            <div class="g-item reveal" th:attr="data-caption=#{about.g2}"><img src="/page-images/phongProMax.jpg" th:alt="#{about.g2}" loading="lazy"></div>
+            <div class="g-item reveal" th:attr="data-caption=#{about.g3}"><img src="/page-images/donuong.jpg" th:alt="#{about.g3}" loading="lazy"></div>
+            <div class="g-item reveal" th:attr="data-caption=#{about.g4}"><img src="/page-images/anhphonggiuongdoi.jpg" th:alt="#{about.g4}" loading="lazy"></div>
+            <div class="g-item reveal" th:attr="data-caption=#{about.g5}"><img src="/page-images/wcpromax.jpg" th:alt="#{about.g5}" loading="lazy"></div>
+            <div class="g-item reveal" th:attr="data-caption=#{about.g6}"><img src="/page-images/beach-hoang-hon.jpg" th:alt="#{about.g6}" loading="lazy"></div>
+        </div>
+    </div>
+</section>
+
+<!-- ================= DANH GIA ================= -->
+<section class="block pt-0">
+    <div class="container text-center mb-5 reveal">
+        <div class="eyebrow mb-2" th:text="#{about.reviews.eyebrow}">Khách hàng nói gì</div>
+        <h2 class="section-title" th:utext="#{about.reviews.title}">Những lời <span class="gradient-text">yêu thương</span></h2>
+    </div>
+    <div class="marquee">
+        <div class="marquee-track" id="marqueeTrack">
+            <!-- Danh gia that cua khach da tra phong -->
+            <div class="review" th:each="rv : ${reviews}">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="avatar" th:text="${#strings.substring(rv.displayName, 0, 1)}">K</div>
+                    <div class="text-start">
+                        <div class="fw-semibold" th:text="${rv.displayName}">Khách hàng</div>
+                        <div class="stars small"><i th:each="n : ${#numbers.sequence(1, 5)}" th:class="${n <= rv.rating} ? 'bi bi-star-fill' : 'bi bi-star'"></i></div>
+                    </div>
+                </div>
+                <p class="muted mb-0 text-start" th:text="'“' + ${rv.comment} + '”'">Nhận xét</p>
+            </div>
+            <!-- Chua co danh gia that thi hien nhan xet mau -->
+            <th:block th:if="${#lists.isEmpty(reviews)}">
+            <div class="review"><div class="d-flex align-items-center gap-3 mb-3"><div class="avatar" style="background:linear-gradient(135deg,#ec4899,#8b5cf6)">L</div><div class="text-start"><div class="fw-semibold">Lan Anh</div><div class="stars small"><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i></div></div></div><p class="muted mb-0 text-start" th:text="|“#{about.review1}”|">“Phòng sạch, view đẹp, nhân viên cực kỳ thân thiện. Nhất định sẽ quay lại!”</p></div>
+            <div class="review"><div class="d-flex align-items-center gap-3 mb-3"><div class="avatar" style="background:linear-gradient(135deg,#3b82f6,#22d3ee)">M</div><div class="text-start"><div class="fw-semibold">Minh Đức</div><div class="stars small"><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i></div></div></div><p class="muted mb-0 text-start" th:text="|“#{about.review2}”|">“Đặt phòng online rất nhanh, có email xác nhận ngay. Combo lẩu ngon xuất sắc.”</p></div>
+            <div class="review"><div class="d-flex align-items-center gap-3 mb-3"><div class="avatar" style="background:linear-gradient(135deg,#f59e0b,#ef4444)">H</div><div class="text-start"><div class="fw-semibold">Thu Hà</div><div class="stars small"><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-half"></i></div></div></div><p class="muted mb-0 text-start" th:text="|“#{about.review3}”|">“Tối nướng BBQ, đốt lửa trại giữa trời se lạnh — cả nhà mình mê luôn.”</p></div>
+            <div class="review"><div class="d-flex align-items-center gap-3 mb-3"><div class="avatar" style="background:linear-gradient(135deg,#10b981,#06b6d4)">T</div><div class="text-start"><div class="fw-semibold">Quốc Tuấn</div><div class="stars small"><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i></div></div></div><p class="muted mb-0 text-start" th:text="|“#{about.review4}”|">“Sáng dậy mở cửa ban công là thấy bình minh trên biển, check-in nhanh, giá hợp lý.”</p></div>
+            <div class="review"><div class="d-flex align-items-center gap-3 mb-3"><div class="avatar" style="background:linear-gradient(135deg,#8b5cf6,#3b82f6)">N</div><div class="text-start"><div class="fw-semibold">Bảo Ngọc</div><div class="stars small"><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i></div></div></div><p class="muted mb-0 text-start" th:text="|“#{about.review5}”|">“Phòng VIP xứng đáng từng đồng. Giường êm, phòng tắm cực xịn.”</p></div>
+            </th:block>
+        </div>
+    </div>
+</section>
+
+<!-- ================= LIEN HE ================= -->
+<section class="block pt-0">
+    <div class="container">
+        <div class="contact-card reveal zoom">
+            <div class="row g-0">
+                <div class="col-lg-5 p-4 p-md-5">
+                    <div class="eyebrow mb-2" th:text="#{about.contact.eyebrow}">Liên hệ</div>
+                    <h2 class="section-title h1 mb-4" th:utext="#{about.contact.title}">Ghé thăm <span class="gradient-text">chúng tôi</span></h2>
+                    <div class="contact-line"><div class="ic"><i class="bi bi-geo-alt"></i></div><div><div class="small muted" th:text="#{about.contact.address}">Địa chỉ</div><div class="fw-semibold" th:text="#{about.contact.addressValue}">Đường Trần Phú, phường Lộc Thọ, Nha Trang, Khánh Hòa</div></div></div>
+                    <div class="contact-line"><div class="ic"><i class="bi bi-telephone"></i></div><div><div class="small muted">Hotline</div><a href="tel:0338932368" class="fw-semibold text-white">0338 932 368</a></div></div>
+                    <div class="contact-line"><div class="ic"><i class="bi bi-chat-dots"></i></div><div><div class="small muted">Zalo</div><a href="https://zalo.me/0337196258" target="_blank" rel="noopener" class="fw-semibold text-white">0337 196 258</a></div></div>
+                    <div class="contact-line"><div class="ic"><i class="bi bi-envelope"></i></div><div><div class="small muted">Email</div><a href="mailto:songxanhresort@gmail.com" class="fw-semibold text-white">songxanhresort@gmail.com</a></div></div>
+                    <div class="contact-line border-0"><div class="ic"><i class="bi bi-clock"></i></div><div><div class="small muted" th:text="#{about.contact.hours}">Nhận / trả phòng</div><div class="fw-semibold" th:text="#{about.contact.hoursValue}">Nhận từ 14:00 · Trả trước 12:00</div></div></div>
+                    <!-- Khong truyen origin -> Google Maps tu lay vi tri hien tai cua nguoi dung lam diem xuat phat -->
+                    <a href="https://www.google.com/maps/dir/?api=1&destination=21.454468,105.6393101"
+                       target="_blank" rel="noopener" class="btn btn-glow mt-4"><i class="bi bi-sign-turn-right me-2"></i><span th:text="#{about.contact.directions}">Chỉ đường</span></a>
+                </div>
+                <div class="col-lg-7">
+                    <iframe class="map" loading="lazy" th:title="#{about.contact.map}"
+                            src="https://maps.google.com/maps?q=21.454468,105.6393101&z=16&output=embed"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ================= CTA ================= -->
+<section class="block pt-0">
+    <div class="container">
+        <div class="cta reveal zoom">
+            <div class="position-relative">
+                <h2 class="display-5 fw-bold mb-3" th:text="#{about.final.title}">Sẵn sàng cho kỳ nghỉ tiếp theo?</h2>
+                <p class="fs-5 mb-4 opacity-75" th:text="#{about.final.text}">Đặt phòng ngay hôm nay để nhận ưu đãi dành cho khách mới.</p>
+                <a th:href="@{/rooms}" class="btn btn-light btn-lg rounded-pill px-5 fw-bold"><i class="bi bi-lightning-charge-fill text-warning me-2"></i><span th:text="#{about.cta.book}">Đặt phòng ngay</span></a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Anh minh hoa: thay bang anh that cua resort trong static/page-images (giu nguyen ten file) -->
+<div class="container"><p class="photo-credit muted text-center mb-0"><span th:text="#{about.credit}">Ảnh minh hoạ — thay bằng ảnh thật của resort trong thư mục static/page-images.</span></p></div>
+
+<div class="lightbox" id="lightbox"><button class="close" th:aria-label="#{common.close}">&times;</button><img alt=""></div>
+
+<div th:replace="~{fragments/chatbot-widget :: widget}"></div>
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<script th:inline="javascript">
+(function () {
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // Hieu ung hien dan khi cuon toi
+    var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e, i) {
+            if (e.isIntersecting) {
+                setTimeout(function () { e.target.classList.add('in'); }, (i % 6) * 90);
+                io.unobserve(e.target);
+            }
+        });
+    }, { threshold: .15 });
+    document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+
+    // Dem so tang dan
+    var cio = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+            if (!e.isIntersecting) return;
+            var el = e.target, to = parseInt(el.dataset.to || '0', 10), start = null;
+            function step(ts) {
+                if (!start) start = ts;
+                var p = Math.min((ts - start) / 1800, 1);
+                el.textContent = Math.round(to * (1 - Math.pow(1 - p, 3)));
+                if (p < 1) requestAnimationFrame(step);
+            }
+            reduce ? el.textContent = to : requestAnimationFrame(step);
+            cio.unobserve(el);
+        });
+    }, { threshold: .5 });
+    document.querySelectorAll('.counter').forEach(function (el) { cio.observe(el); });
+
+    // Chu chay o hero
+    // Moi gia tri inline de rieng 1 dong ket thuc bang '' - Thymeleaf nuot ca phan code dung sau gia tri mac dinh
+    var typingWords = /*[[#{about.hero.typing}]]*/ '';
+    var words = typingWords.split(';');
+    var typing = document.getElementById('typing'), wi = 0, ci = words[0].length, deleting = true;
+    function type() {
+        var w = words[wi];
+        typing.textContent = w.substring(0, ci);
+        if (deleting) {
+            ci--;
+            if (ci < 0) { deleting = false; wi = (wi + 1) % words.length; ci = 0; }
+            setTimeout(type, 45);
+        } else {
+            ci++;
+            if (ci > words[wi].length) { deleting = true; ci = words[wi].length; setTimeout(type, 1800); return; }
+            setTimeout(type, 85);
+        }
+    }
+    if (!reduce) setTimeout(type, 2200);
+
+    // Dom sao lap lanh
+    var sp = document.getElementById('sparkles');
+    for (var s = 0; s < 40; s++) {
+        var d = document.createElement('span');
+        d.className = 'sparkle';
+        d.style.left = Math.random() * 100 + '%';
+        d.style.top = Math.random() * 100 + '%';
+        d.style.animationDelay = (Math.random() * 3) + 's';
+        d.style.animationDuration = (2 + Math.random() * 3) + 's';
+        sp.appendChild(d);
+    }
+
+    // Thanh tien do + parallax hero
+    var bar = document.getElementById('scrollProgress'), heroBg = document.querySelector('.hero-bg');
+    window.addEventListener('scroll', function () {
+        var h = document.documentElement;
+        bar.style.width = (h.scrollTop / (h.scrollHeight - h.clientHeight) * 100) + '%';
+        if (!reduce && h.scrollTop < window.innerHeight) heroBg.style.translate = '0 ' + (h.scrollTop * 0.35) + 'px';
+    }, { passive: true });
+
+    // The tien ich nghieng 3D theo chuot + vet sang
+    if (!reduce) document.querySelectorAll('.tilt').forEach(function (card) {
+        var glow = card.querySelector('.glow');
+        card.addEventListener('mousemove', function (ev) {
+            var r = card.getBoundingClientRect(), x = ev.clientX - r.left, y = ev.clientY - r.top;
+            card.style.transform = 'perspective(800px) rotateY(' + ((x / r.width - .5) * 14) + 'deg) rotateX(' + ((.5 - y / r.height) * 14) + 'deg) translateY(-6px)';
+            glow.style.left = x + 'px'; glow.style.top = y + 'px';
+        });
+        card.addEventListener('mouseleave', function () { card.style.transform = ''; });
+    });
+
+    // Nhan doi danh gia de chay vong lien tuc
+    var track = document.getElementById('marqueeTrack');
+    track.innerHTML += track.innerHTML;
+
+    // Xem anh lon
+    var lb = document.getElementById('lightbox'), lbImg = lb.querySelector('img');
+    document.querySelectorAll('.g-item').forEach(function (item) {
+        item.addEventListener('click', function () {
+            var img = item.querySelector('img');
+            lbImg.src = img.src; lbImg.alt = img.alt; lb.classList.add('open');
+        });
+    });
+    lb.addEventListener('click', function () { lb.classList.remove('open'); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') lb.classList.remove('open'); });
+})();
+</script>
+</body>
+</html>

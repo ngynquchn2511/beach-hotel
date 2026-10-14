@@ -1,0 +1,10 @@
+<!-- Hero banner dau trang (kieu website khach san): anh nen full-width + lop phu toi + tieu de chu trang
+     Dat file anh vao thu muc D:/CongNgheJava/img (ngoai project). Chua co file thi hien mau nen xam trong. -->
+<div th:fragment="hero(imageName, title)" class="position-relative"
+     th:style="'width: 100%; height: 420px; background-color: #e9ecef; background-image: url(' + @{'/page-images/' + ${imageName}} + '); background-size: cover; background-position: center; background-repeat: no-repeat;'">
+    <div class="position-absolute top-0 start-0 w-100 h-100"
+         style="background: linear-gradient(to bottom, rgba(0,0,0,0.25), rgba(0,0,0,0.55));"></div>
+    <div class="position-absolute bottom-0 start-0 w-100 p-5 text-white">
+        <h1 class="fw-bold m-0" th:text="${title}"></h1>
+    </div>
+</div>

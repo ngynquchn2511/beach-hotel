@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="'Phòng ' + ${room.roomNumber}">Chi tiết phòng</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+    <style>
+        .main-image-box {
+            width: 100%;
+            height: 380px;
+            background: #f1f1f1;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .main-image-box img {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+        }
+        .calendar-month { min-width: 260px; }
+        .calendar-weekdays, .calendar-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: .25rem; }
+        .calendar-weekdays { font-size: .72rem; color: #6c757d; text-align: center; margin-bottom: .25rem; }
+        .calendar-day { height: 34px; border: 0; border-radius: .35rem; background: transparent; }
+        .calendar-day.available { color: #212529; }
+        .calendar-day.available:hover { background: #e9ecef; }
+        .calendar-day.unavailable, .calendar-day.past { color: #adb5bd; background: #e9ecef; cursor: not-allowed; }
+        .calendar-day.selected, .calendar-day.in-range { background: #0d6efd; color: white; }
+        .calendar-day.in-range { background: #cfe2ff; color: #212529; }
+    </style>
+</head>
+<body class="eaut eaut-admin">
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="container py-5">
+    <div class="row g-4">
+        <div class="col-md-3">
+            <div th:replace="~{fragments/admin-sidebar :: sidebar}"></div>
+        </div>
+
+        <div class="col-md-9">
+            <a th:href="@{/admin/rooms}" class="d-inline-block mb-3">&laquo; Quay lại danh sách phòng</a>
+
+            <div class="row g-4">
+                <div class="col-md-7">
+                    <div th:if="${not #lists.isEmpty(room.images)}">
+                        <div class="main-image-box shadow-sm mb-2">
+                            <img th:src="${room.images[0].imageUrl}" alt="Ảnh phòng" id="mainRoomImage">
+                        </div>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <img th:each="img : ${room.images}" th:src="${img.imageUrl}" th:attr="data-full=${img.imageUrl}"
+                                 style="width: 80px; height: 60px; object-fit: cover; cursor: pointer;"
+                                 class="rounded border room-thumb"
+                                 alt="Ảnh phòng thu nhỏ">
+                        </div>
+                    </div>
+                    <div th:if="${#lists.isEmpty(room.images)}" class="main-image-box shadow-sm mb-3 text-muted">
+                        Chưa có ảnh cho phòng này
+                    </div>
+
+                    <div class="bg-white p-4 rounded shadow-sm">
+                        <div class="d-flex gap-4 mb-3 text-muted">
+                            <span th:text="'Sức chứa: ' + ${room.roomType.maxGuests} + ' người'"></span>
+                            <span th:if="${room.roomType.area}" th:text="'Diện tích: ' + ${room.roomType.area} + ' m2'"></span>
+                        </div>
+
+                        <h5 class="fw-bold mb-2" th:text="${room.roomType.name}"></h5>
+                        <p th:if="${room.description}" th:text="${room.description}"></p>
+                        <p th:if="${room.roomType.description}" class="text-muted" th:text="${room.roomType.description}"></p>
+
+                        <div th:if="${room.roomType.amenities}">
+                            <h6 class="fw-bold mt-3">Tiện ích</h6>
+                            <ul class="mb-0">
+                                <li th:each="item : ${#strings.arraySplit(room.roomType.amenities, ',')}" th:text="${#strings.trim(item)}"></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-5">
+                    <div class="bg-white p-4 rounded shadow-sm" style="position: sticky; top: 1rem;">
+                        <h3 class="fw-bold" th:text="'Phòng ' + ${room.roomNumber}"></h3>
+                        <p class="text-muted mb-3" th:text="${room.roomType.name}"></p>
+                        <h4 class="fw-bold text-primary" th:text="${#numbers.formatDecimal(room.price, 1, 0)} + 'VND / đêm'"></h4>
+
+                        <hr>
+
+                        <section id="availabilityCalendar"
+                                 th:attr="data-room-url=@{/admin/rooms/{id}/view(id=${room.id})},data-check-in=${checkIn},data-check-out=${checkOut},data-combo-id=${selectedComboId}">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="fw-bold mb-0">Chọn ngày lưu trú</h6>
+                                <div class="btn-group btn-group-sm">
+                                    <button type="button" id="previousMonth" class="btn btn-outline-secondary" aria-label="Tháng trước">‹</button>
+                                    <button type="button" id="nextMonth" class="btn btn-outline-secondary" aria-label="Tháng sau">›</button>
+                                </div>
+                            </div>
+                            <p id="calendarInstruction" class="small text-muted mb-2">Chọn ngày nhận phòng, sau đó chọn ngày trả phòng.</p>
+                            <div id="calendarMessage" class="small mb-2" aria-live="polite"></div>
+                            <div id="calendarMonths" class="d-flex gap-3 overflow-auto pb-2"></div>
+                            <div class="d-flex gap-3 small mt-2">
+                                <span><i class="d-inline-block border rounded me-1" style="width: 12px; height: 12px; background: white;"></i> Có thể đặt</span>
+                                <span class="text-secondary"><i class="d-inline-block rounded me-1" style="width: 12px; height: 12px; background: #e9ecef;"></i> Đã có khách</span>
+                            </div>
+                        </section>
+
+                        <hr>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Chọn combo dịch vụ</label>
+                            <form method="get" th:action="@{/admin/rooms/{id}/view(id=${room.id})}">
+                                <input th:if="${checkIn != null}" type="hidden" name="checkIn" th:value="${checkIn}">
+                                <input th:if="${checkOut != null}" type="hidden" name="checkOut" th:value="${checkOut}">
+                                <select name="comboId" class="form-select" onchange="this.form.submit()">
+                                    <option value="">Phòng thường (không combo)</option>
+                                    <option th:each="c : ${combos}" th:value="${c.id}"
+                                            th:text="${c.name} + ' (+' + ${#numbers.formatDecimal(c.price, 1, 0)} + 'VND)'"
+                                            th:selected="${selectedComboId != null and c.id == selectedComboId}"></option>
+                                </select>
+                            </form>
+
+                            <div th:if="${selectedCombo != null}" class="mt-2 p-2 border rounded d-flex gap-2 align-items-center">
+                                <img th:if="${selectedCombo.imageUrl}" th:src="${selectedCombo.imageUrl}"
+                                     style="width: 60px; height: 45px; object-fit: cover;" class="rounded" alt="Ảnh combo">
+                                <div>
+                                    <div class="fw-bold small" th:text="${selectedCombo.name}"></div>
+                                    <div class="text-muted small" th:if="${selectedCombo.description}" th:text="${selectedCombo.description}"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+                        <div th:if="${checkIn != null and checkOut != null and errorMessage == null}">
+                            <p class="mb-1">Ngày nhận phòng: <span th:text="${checkIn}"></span></p>
+                            <p class="mb-1">Ngày trả phòng: <span th:text="${checkOut}"></span></p>
+                            <p class="mb-1">Số đêm: <span th:text="${nights}"></span></p>
+                            <p class="mb-1">Tiền phòng: <span th:text="${#numbers.formatDecimal(roomAmount, 1, 0)} + 'VND'"></span></p>
+                            <p class="mb-1" th:if="${selectedCombo != null}">Combo (<span th:text="${selectedCombo.name}"></span>): <span th:text="${#numbers.formatDecimal(comboAmount, 1, 0)} + 'VND'"></span></p>
+                            <p class="fw-bold mb-3">Tổng tiền: <span th:text="${#numbers.formatDecimal(totalAmount, 1, 0)} + 'VND'"></span></p>
+
+                            <div th:if="${available}" class="alert alert-success">Phòng còn trống trong khoảng ngày này</div>
+                            <div th:unless="${available}" class="alert alert-warning">Phòng đã được đặt trong khoảng ngày này, vui lòng chọn ngày khác</div>
+
+                            <a th:if="${available}"
+                               th:href="@{/admin/bookings/walk-in/new(roomId=${room.id}, checkIn=${checkIn}, checkOut=${checkOut}, comboId=${selectedComboId})}"
+                               class="btn btn-primary w-100">Đặt phòng cho khách</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+    document.querySelectorAll('.room-thumb').forEach(function (thumb) {
+        thumb.addEventListener('click', function () {
+            var mainImg = document.getElementById('mainRoomImage');
+            if (mainImg) {
+                mainImg.src = thumb.getAttribute('data-full');
+            }
+        });
+    });
+</script>
+
+<script th:inline="javascript">
+    document.addEventListener('DOMContentLoaded', () => {
+        const calendar = document.getElementById('availabilityCalendar');
+        if (!calendar) return;
+
+        const unavailableDates = new Set(/*[[${unavailableDates}]]*/ []);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        let selectedCheckIn = calendar.dataset.checkIn || null;
+        let selectedCheckOut = calendar.dataset.checkOut || null;
+        let visibleMonth = selectedCheckIn ? parseDate(selectedCheckIn) : new Date(today.getFullYear(), today.getMonth(), 1);
+        visibleMonth = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth(), 1);
+
+        const monthsContainer = document.getElementById('calendarMonths');
+        const message = document.getElementById('calendarMessage');
+        const weekdays = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+
+        function parseDate(value) {
+            const [year, month, day] = value.split('-').map(Number);
+            return new Date(year, month - 1, day);
+        }
+
+        function formatDate(date) {
+            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        }
+
+        function isInSelectedRange(dateValue) {
+            return selectedCheckIn && selectedCheckOut
+                && dateValue > selectedCheckIn && dateValue < selectedCheckOut;
+        }
+
+        function isRangeAvailable(start, end) {
+            const date = parseDate(start);
+            const endDate = parseDate(end);
+            while (date < endDate) {
+                if (unavailableDates.has(formatDate(date))) return false;
+                date.setDate(date.getDate() + 1);
+            }
+            return true;
+        }
+
+        function selectDate(dateValue) {
+            if (selectedCheckIn === dateValue && !selectedCheckOut) {
+                selectedCheckIn = null;
+                message.textContent = 'Đã hủy chọn ngày. Hãy chọn lại ngày nhận phòng.';
+                message.className = 'small mb-2 text-muted';
+                renderCalendar();
+                return;
+            }
+
+            if (!selectedCheckIn || selectedCheckOut || dateValue <= selectedCheckIn) {
+                selectedCheckIn = dateValue;
+                selectedCheckOut = null;
+                message.textContent = 'Đã chọn ngày nhận phòng. Hãy chọn ngày trả phòng.';
+                message.className = 'small mb-2 text-primary';
+                renderCalendar();
+                return;
+            }
+
+            if (!isRangeAvailable(selectedCheckIn, dateValue)) {
+                message.textContent = 'Khoảng ngày này có ngày đã được đặt. Vui lòng chọn ngày khác.';
+                message.className = 'small mb-2 text-danger';
+                return;
+            }
+
+            selectedCheckOut = dateValue;
+            const params = new URLSearchParams({ checkIn: selectedCheckIn, checkOut: selectedCheckOut });
+            if (calendar.dataset.comboId) params.set('comboId', calendar.dataset.comboId);
+            window.location.href = `${calendar.dataset.roomUrl}?${params.toString()}`;
+        }
+
+        function renderMonth(month) {
+            const section = document.createElement('div');
+            section.className = 'calendar-month flex-grow-1';
+
+            const title = document.createElement('div');
+            title.className = 'text-center fw-semibold mb-2';
+            title.textContent = month.toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' });
+            section.appendChild(title);
+
+            const weekdayRow = document.createElement('div');
+            weekdayRow.className = 'calendar-weekdays';
+            weekdays.forEach(day => {
+                const label = document.createElement('span');
+                label.textContent = day;
+                weekdayRow.appendChild(label);
+            });
+            section.appendChild(weekdayRow);
+
+            const days = document.createElement('div');
+            days.className = 'calendar-days';
+            const firstDay = new Date(month.getFullYear(), month.getMonth(), 1);
+            const daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+
+            for (let index = 0; index < firstDay.getDay(); index++) {
+                const blank = document.createElement('span');
+                blank.className = 'calendar-day';
+                days.appendChild(blank);
+            }
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(month.getFullYear(), month.getMonth(), day);
+                const dateValue = formatDate(date);
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'calendar-day';
+                button.textContent = day;
+
+                const isPast = date < today;
+                const isUnavailable = unavailableDates.has(dateValue);
+                if (isPast || isUnavailable) {
+                    button.classList.add(isPast ? 'past' : 'unavailable');
+                    button.disabled = true;
+                    button.title = isPast ? 'Ngày đã qua' : 'Phòng đã có khách';
+                } else {
+                    button.classList.add('available');
+                    button.addEventListener('click', () => selectDate(dateValue));
+                }
+
+                if (dateValue === selectedCheckIn || dateValue === selectedCheckOut) button.classList.add('selected');
+                if (isInSelectedRange(dateValue)) button.classList.add('in-range');
+                days.appendChild(button);
+            }
+            section.appendChild(days);
+            return section;
+        }
+
+        function renderCalendar() {
+            monthsContainer.replaceChildren(renderMonth(visibleMonth));
+        }
+
+        document.getElementById('previousMonth').addEventListener('click', () => {
+            const previous = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() - 1, 1);
+            const currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            if (previous >= currentMonth) visibleMonth = previous;
+            renderCalendar();
+        });
+        document.getElementById('nextMonth').addEventListener('click', () => {
+            visibleMonth = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + 1, 1);
+            renderCalendar();
+        });
+
+        renderCalendar();
+    });
+</script>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+</body>
+</html>

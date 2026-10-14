@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Giá &amp; đặt cọc</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+</head>
+<body class="eaut eaut-admin">
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="container py-5">
+    <div class="row g-4">
+        <div class="col-md-3">
+            <div th:replace="~{fragments/admin-sidebar :: sidebar}"></div>
+        </div>
+
+        <div class="col-md-9">
+            <h3 class="fw-bold mb-4">Giá &amp; đặt cọc</h3>
+
+            <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+            <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+
+            <!-- Cai dat chung -->
+            <div class="bg-white p-4 rounded shadow-sm mb-4">
+                <h5 class="fw-bold mb-1">Cài đặt chung</h5>
+                <p class="text-muted small mb-3">Áp dụng cho các đơn đặt <b>từ thời điểm lưu</b>. Đơn đã đặt giữ nguyên giá và tiền cọc lúc đặt.</p>
+                <form th:action="@{/admin/pricing/settings}" method="post" class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Phụ thu cuối tuần (%)</label>
+                        <input type="number" name="weekendSurchargePercent" class="form-control" min="0" max="300" required
+                               th:value="${settings.weekendSurchargePercent}">
+                        <div class="form-text">Áp dụng cho đêm thứ Sáu và thứ Bảy. 0 = không phụ thu.</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Tỷ lệ đặt cọc (%)</label>
+                        <input type="number" name="depositPercent" class="form-control" min="0" max="100" required
+                               th:value="${settings.depositPercent}">
+                        <div class="form-text">Trên tổng tiền đơn đặt online. 0 = không yêu cầu cọc.</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Hạn chuyển cọc (giờ)</label>
+                        <input type="number" name="depositDeadlineHours" class="form-control" min="1" max="168" required
+                               th:value="${settings.depositDeadlineHours}">
+                        <div class="form-text">Quá hạn chưa nhận cọc thì đơn tự hủy.</div>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i>Lưu cài đặt</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Gia ngay le -->
+            <div class="bg-white p-4 rounded shadow-sm" id="ngay-le">
+                <h5 class="fw-bold mb-1">Giá ngày lễ, Tết, cao điểm</h5>
+                <p class="text-muted small mb-3">Các đêm trong giai đoạn được phụ thu theo % riêng, ưu tiên hơn phụ thu cuối tuần.
+                    Nếu nhiều giai đoạn trùng nhau, lấy mức cao nhất.</p>
+
+                <form th:action="@{/admin/pricing/special-rates}" method="post" class="row g-2 align-items-end mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label small">Tên dịp</label>
+                        <input type="text" name="name" class="form-control" maxlength="100" required placeholder="VD: Lễ 30/4 – 1/5">
+                        <input type="text" name="nameEn" class="form-control form-control-sm mt-1" maxlength="100"
+                               placeholder="Tên tiếng Anh (không bắt buộc), VD: Reunification Day">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small">Từ đêm</label>
+                        <input type="date" name="startDate" class="form-control" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small">Đến đêm</label>
+                        <input type="date" name="endDate" class="form-control" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small">Phụ thu (%)</label>
+                        <input type="number" name="surchargePercent" class="form-control" min="1" max="300" required placeholder="50">
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Thêm giai đoạn</button>
+                    </div>
+                </form>
+
+                <div th:if="${#lists.isEmpty(specialRates)}" class="alert alert-info mb-0">Chưa có giai đoạn giá đặc biệt nào.</div>
+                <table class="table align-middle mb-0" th:unless="${#lists.isEmpty(specialRates)}">
+                    <thead><tr><th>Dịp</th><th>Từ đêm</th><th>Đến đêm</th><th>Phụ thu</th><th></th></tr></thead>
+                    <tbody>
+                    <tr th:each="r : ${specialRates}" th:classappend="${r.endDate.isBefore(today)} ? 'text-muted'">
+                        <td class="fw-semibold">
+                            <span th:text="${r.name}"></span>
+                            <span th:if="${r.nameEn != null}" class="text-muted small" th:text="'/ ' + ${r.nameEn}"></span>
+                            <span th:if="${r.endDate.isBefore(today)}" class="badge bg-secondary ms-1">Đã qua</span>
+                        </td>
+                        <td th:text="${#temporals.format(r.startDate, 'dd/MM/yyyy')}"></td>
+                        <td th:text="${#temporals.format(r.endDate, 'dd/MM/yyyy')}"></td>
+                        <td th:text="'+' + ${r.surchargePercent} + '%'"></td>
+                        <td class="text-end">
+                            <form th:action="@{/admin/pricing/special-rates/{id}/delete(id=${r.id})}" method="post"
+                                  onsubmit="return confirm('Xóa giai đoạn giá này? Đơn đã đặt không bị ảnh hưởng.')">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Xóa</button>
+                            </form>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+</body>
+</html>

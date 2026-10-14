@@ -1,0 +1,572 @@
+<div th:fragment="widget" xmlns:th="http://www.thymeleaf.org">
+    <style>
+        /* ===== Tro ly "May" - cung phong cach giay trang + muc navy + xanh baby voi website ===== */
+        #mayChat {
+            --may-ink: #0e3a52;
+            --may-ink-soft: #4a6e80;
+            --may-baby: #8fdcd6;
+            --may-baby-soft: #e2f7f5;
+            --may-baby-deep: #1fa9a3;
+            --may-sun: #ffcf73;
+            --may-paper: #ffffff;
+            --may-line: 1.5px solid var(--may-ink);
+            font-family: 'Be Vietnam Pro', system-ui, -apple-system, 'Segoe UI', sans-serif;
+            color: var(--may-ink);
+        }
+
+        /* --- Nut mo chat --- */
+        #chatbotBubble {
+            position: fixed; right: 20px; bottom: 20px; z-index: 1080;
+            display: flex; align-items: center; gap: 10px;
+            padding: 6px 18px 6px 6px; border-radius: 999px;
+            background: var(--may-baby); color: var(--may-ink);
+            border: var(--may-line); box-shadow: 4px 4px 0 var(--may-ink);
+            font: inherit; font-weight: 700; cursor: pointer;
+            transition: transform .15s, box-shadow .15s;
+            animation: mayFloat 4s ease-in-out infinite;
+        }
+        #chatbotBubble:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--may-ink); }
+        #chatbotBubble .may-avatar { width: 38px; height: 38px; }
+        #chatbotBubble .may-online {
+            position: absolute; left: 34px; top: 6px; width: 11px; height: 11px; border-radius: 50%;
+            background: #2fae69; border: 2px solid var(--may-paper);
+        }
+        body.chatbot-panel-open #chatbotBubble { display: none; }
+
+        /* --- Loi chao nho ben canh nut (hien 1 lan moi phien) --- */
+        #mayPeek {
+            position: fixed; right: 20px; bottom: 140px; z-index: 1080; max-width: 250px;
+            padding: 12px 34px 12px 14px; border-radius: 14px 14px 4px 14px;
+            background: var(--may-paper); border: var(--may-line); box-shadow: 4px 4px 0 var(--may-baby);
+            font-size: .9rem; line-height: 1.4; cursor: pointer; display: none;
+            animation: mayPop .35s ease both;
+        }
+        #mayPeek.show { display: block; }
+        #mayPeek button { position: absolute; top: 4px; right: 6px; border: 0; background: none; font-size: 18px; color: var(--may-ink-soft); cursor: pointer; }
+
+        /* --- Khung chat --- */
+        #chatbotPanel {
+            position: fixed; right: 20px; bottom: 20px; z-index: 1081;
+            width: 370px; max-width: calc(100vw - 32px);
+            height: 580px; max-height: calc(100vh - 40px);
+            display: none; flex-direction: column; overflow: hidden;
+            background: var(--may-paper); border: var(--may-line); border-radius: 22px;
+            box-shadow: 8px 8px 0 var(--may-baby);
+        }
+        #chatbotPanel.chatbot-open { display: flex; animation: mayOpen .28s cubic-bezier(.2, .9, .3, 1.2) both; }
+
+        .may-header {
+            position: relative; display: flex; align-items: center; gap: 12px; padding: 14px 14px 14px 16px; flex-shrink: 0;
+            background: linear-gradient(135deg, var(--may-baby) 0%, var(--may-baby-soft) 100%);
+            border-bottom: var(--may-line);
+        }
+        .may-header .may-avatar { width: 46px; height: 46px; flex-shrink: 0; }
+        .may-title { font-family: 'Fraunces', Georgia, serif; font-weight: 700; font-size: 1.15rem; line-height: 1.1; }
+        .may-status { font-size: .78rem; color: var(--may-ink-soft); display: flex; align-items: center; gap: 6px; margin-top: 3px; }
+        .may-status::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: #2fae69; box-shadow: 0 0 0 3px rgba(47, 174, 105, .2); }
+        .may-header-btn {
+            margin-left: auto; width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center;
+            background: var(--may-paper); border: var(--may-line); color: var(--may-ink); cursor: pointer; font-size: 15px;
+        }
+        .may-header-btn + .may-header-btn { margin-left: 6px; }
+        .may-header-btn:hover { background: var(--may-sun); }
+
+        #chatbotMessages {
+            flex: 1; overflow-y: auto; padding: 16px 14px 8px; display: flex; flex-direction: column; gap: 12px;
+            background-color: #fbfdff;
+            background-image: radial-gradient(#d4f1ef 1.2px, transparent 1.2px); background-size: 20px 20px;
+            scroll-behavior: smooth;
+        }
+        .may-row { display: flex; gap: 8px; align-items: flex-end; animation: mayRise .3s ease both; }
+        .may-row.user { justify-content: flex-end; }
+        .may-row .may-avatar { width: 30px; height: 30px; flex-shrink: 0; }
+        .may-col { display: flex; flex-direction: column; gap: 6px; max-width: 84%; }
+        .may-row.user .may-col { align-items: flex-end; }
+        .may-msg {
+            padding: 10px 13px; font-size: .92rem; line-height: 1.5; word-wrap: break-word;
+            border: var(--may-line); border-radius: 16px 16px 16px 4px; background: var(--may-paper);
+            box-shadow: 3px 3px 0 var(--may-baby-soft);
+        }
+        .may-row.user .may-msg {
+            background: var(--may-baby); border-radius: 16px 16px 4px 16px; box-shadow: 3px 3px 0 var(--may-ink);
+        }
+        .may-msg p { margin: 0; }
+        .may-msg p + p, .may-msg ul + p, .may-msg p + ul { margin-top: 6px; }
+        .may-msg ul { margin: 0; padding-left: 0; list-style: none; }
+        .may-msg li { position: relative; padding-left: 16px; margin-top: 3px; }
+        .may-msg li::before { content: ''; position: absolute; left: 3px; top: .62em; width: 6px; height: 6px; border-radius: 50%; background: var(--may-baby-deep); }
+        .may-msg strong { font-weight: 800; }
+        .may-time { font-size: .7rem; color: var(--may-ink-soft); padding: 0 4px; }
+
+        .may-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+        .may-action {
+            display: inline-flex; align-items: center; gap: 4px; padding: 6px 11px; border-radius: 10px;
+            background: var(--may-sun); color: var(--may-ink) !important; border: var(--may-line);
+            font-size: .82rem; font-weight: 700; text-decoration: none !important; box-shadow: 2px 2px 0 var(--may-ink);
+            transition: transform .12s, box-shadow .12s;
+        }
+        .may-action:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--may-ink); }
+
+        .may-suggestions { display: flex; flex-wrap: wrap; gap: 6px; padding-left: 38px; animation: mayRise .3s ease both; }
+        .may-chip {
+            border: 1.5px solid var(--may-baby-deep); background: var(--may-paper); color: var(--may-ink);
+            border-radius: 999px; padding: 5px 12px; font: inherit; font-size: .8rem; font-weight: 600; cursor: pointer;
+            transition: background .15s, transform .12s;
+        }
+        .may-chip:hover { background: var(--may-baby-soft); transform: translateY(-1px); }
+
+        /* O chu de nhanh trong loi chao */
+        .may-topics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; padding-left: 38px; animation: mayRise .35s ease both; }
+        .may-topic {
+            display: flex; align-items: center; gap: 8px; padding: 9px 10px; border-radius: 12px; text-align: left;
+            background: var(--may-paper); border: var(--may-line); box-shadow: 2px 2px 0 var(--may-baby);
+            font: inherit; font-size: .82rem; font-weight: 700; color: var(--may-ink); cursor: pointer;
+            transition: transform .12s, box-shadow .12s, background .15s;
+        }
+        .may-topic span:first-child { font-size: 1.15rem; }
+        .may-topic:hover { background: var(--may-baby-soft); transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--may-baby-deep); }
+
+        /* "May dang go..." */
+        .may-typing { display: inline-flex; gap: 4px; padding: 12px 14px; }
+        .may-typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--may-baby-deep); animation: mayDot 1.2s infinite ease-in-out; }
+        .may-typing i:nth-child(2) { animation-delay: .15s; }
+        .may-typing i:nth-child(3) { animation-delay: .3s; }
+
+        #chatbotForm {
+            display: flex; gap: 8px; align-items: center; padding: 10px 12px; flex-shrink: 0;
+            border-top: var(--may-line); background: var(--may-paper);
+        }
+        #chatbotInput {
+            flex: 1; min-width: 0; border: var(--may-line); border-radius: 999px; padding: 10px 16px;
+            font: inherit; font-size: .92rem; color: var(--may-ink); outline: none; background: var(--may-baby-soft);
+        }
+        #chatbotInput:focus { background: var(--may-paper); box-shadow: 3px 3px 0 var(--may-baby-deep); }
+        #chatbotSend {
+            width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0; display: grid; place-items: center;
+            background: var(--may-ink); color: var(--may-paper); border: var(--may-line); cursor: pointer; font-size: 16px;
+            transition: transform .12s, background .15s;
+        }
+        #chatbotSend:hover { background: #0d2742; transform: rotate(-12deg); }
+        #chatbotSend:disabled { opacity: .45; cursor: default; transform: none; }
+        .may-footnote { text-align: center; font-size: .68rem; color: var(--may-ink-soft); padding: 0 0 8px; background: var(--may-paper); }
+
+        @keyframes mayFloat { 0%, 100% { translate: 0 0; } 50% { translate: 0 -4px; } }
+        @keyframes mayOpen { from { opacity: 0; transform: translateY(16px) scale(.96); transform-origin: bottom right; } }
+        @keyframes mayRise { from { opacity: 0; transform: translateY(8px); } }
+        @keyframes mayPop { from { opacity: 0; transform: scale(.85); transform-origin: bottom right; } }
+        @keyframes mayDot { 0%, 80%, 100% { transform: translateY(0); opacity: .45; } 40% { transform: translateY(-5px); opacity: 1; } }
+
+        /* Dien thoai: khung chat toan man hinh */
+        @media (max-width: 576px) {
+            #chatbotPanel { right: 0; bottom: 0; width: 100vw; max-width: 100vw; height: 100dvh; max-height: 100dvh; border-radius: 0; border: 0; box-shadow: none; }
+            #chatbotBubble { padding-right: 6px; }
+            #chatbotBubble .may-bubble-label { display: none; }
+            #mayPeek { bottom: 130px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            #mayChat *, #mayChat *::before { animation: none !important; transition: none !important; }
+            #chatbotMessages { scroll-behavior: auto; }
+        }
+
+        /* ===== Nut nhan Zalo noi phia tren nut chat ===== */
+        #zaloButton {
+            position: fixed; right: 20px; bottom: 82px; z-index: 1079;
+            display: flex; align-items: center; gap: 8px; padding: 8px 14px 8px 8px; border-radius: 999px;
+            background: #fff; color: #0068ff; font-weight: 700; text-decoration: none;
+            border: 1.5px solid #0068ff; box-shadow: 0 6px 18px rgba(0, 104, 255, .25); transition: transform .15s;
+        }
+        #zaloButton:hover { transform: translateY(-2px); }
+        #zaloButton .zalo-mark {
+            width: 30px; height: 30px; border-radius: 50%; background: #0068ff; color: #fff;
+            display: grid; place-items: center; font-size: 11px; font-weight: 800; letter-spacing: -.02em;
+        }
+        #zaloButton::before {
+            content: ''; position: absolute; left: 6px; top: 6px; width: 34px; height: 34px; border-radius: 50%;
+            border: 2px solid #0068ff; animation: zaloPulse 2s ease-out infinite; pointer-events: none;
+        }
+        @keyframes zaloPulse { from { opacity: .6; transform: scale(.9); } to { opacity: 0; transform: scale(1.6); } }
+        @media (prefers-reduced-motion: reduce) { #zaloButton::before { animation: none; display: none; } }
+        @media (max-width: 576px) {
+            #zaloButton { padding: 6px; }
+            #zaloButton .zalo-label { display: none; }
+        }
+        body.chatbot-panel-open #zaloButton, body.chatbot-panel-open #mayPeek { display: none; }
+    </style>
+
+    <!-- So Zalo lay tu cau hinh app.contact.zalo-phone (bien moi truong ZALO_PHONE); de trong thi an nut -->
+    <th:block th:with="zaloPhone=${@environment.getProperty('app.contact.zalo-phone')}">
+    <a th:if="${zaloPhone != null and !#strings.isEmpty(zaloPhone)}"
+       th:href="'https://zalo.me/' + ${zaloPhone}" id="zaloButton" target="_blank" rel="noopener"
+       th:aria-label="#{chat.w.zaloAria}" th:title="#{chat.w.zaloTitle}">
+        <span class="zalo-mark">Zalo</span>
+        <span class="zalo-label" th:text="#{chat.w.zaloLabel}">Nhắn Zalo</span>
+    </a>
+    </th:block>
+
+    <input type="hidden" id="chatbotCsrfToken" th:value="${_csrf != null ? _csrf.token : ''}">
+    <input type="hidden" id="chatbotCsrfHeader" th:value="${_csrf != null ? _csrf.headerName : ''}">
+
+    <div id="mayChat">
+        <!-- Avatar dam may "May" - dung lai bang <use> -->
+        <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+            <symbol id="mayCloud" viewBox="0 0 64 64">
+                <circle cx="32" cy="32" r="31" fill="#e2f7f5" stroke="#0e3a52" stroke-width="2"/>
+                <path d="M18 41c-4.4 0-8-3.3-8-7.4 0-3.8 3-6.9 6.9-7.3C18 20.9 22.6 17 28 17c4.6 0 8.6 2.8 10.2 6.9.8-.2 1.6-.3 2.5-.3 5.5 0 9.9 4.3 9.9 9.7 0 4.3-3.6 7.7-8 7.7H18z"
+                      fill="#fff" stroke="#0e3a52" stroke-width="2.2" stroke-linejoin="round"/>
+                <circle cx="25.5" cy="32" r="2.1" fill="#0e3a52"/>
+                <circle cx="36.5" cy="32" r="2.1" fill="#0e3a52"/>
+                <path d="M28 36.5c1.6 1.6 4.4 1.6 6 0" fill="none" stroke="#0e3a52" stroke-width="2" stroke-linecap="round"/>
+                <circle cx="21.5" cy="35.5" r="2" fill="#ffb3c1" opacity=".8"/>
+                <circle cx="40.5" cy="35.5" r="2" fill="#ffb3c1" opacity=".8"/>
+            </symbol>
+        </svg>
+
+        <div id="mayPeek" role="button" tabindex="0">
+            <button type="button" id="mayPeekClose" th:aria-label="#{chat.w.peekClose}">&times;</button>
+            <span th:utext="#{chat.w.peek}">Chào bạn 👋 Mình là <b>Sóng</b>! Cần tư vấn phòng nghỉ biển Nha Trang thì hỏi Sóng nha 🌊</span>
+        </div>
+
+        <button type="button" id="chatbotBubble" th:aria-label="#{chat.w.open}">
+            <svg class="may-avatar" aria-hidden="true"><use href="#mayCloud"/></svg>
+            <span class="may-online"></span>
+            <span class="may-bubble-label" th:text="#{chat.w.ask}">Hỏi Sóng</span>
+        </button>
+
+        <div id="chatbotPanel" role="dialog" th:aria-label="#{chat.w.panel}">
+            <div class="may-header">
+                <svg class="may-avatar" aria-hidden="true"><use href="#mayCloud"/></svg>
+                <div>
+                    <div class="may-title">Sóng 🌊</div>
+                    <div class="may-status" th:text="#{chat.w.status}">Đang online · trả lời ngay</div>
+                </div>
+                <button type="button" class="may-header-btn" id="chatbotReset" th:title="#{chat.w.reset}" th:aria-label="#{chat.w.resetAria}">
+                    <i class="bi bi-arrow-counterclockwise"></i></button>
+                <button type="button" class="may-header-btn" id="chatbotClose" th:title="#{chat.w.close}" th:aria-label="#{chat.w.closeAria}">
+                    <i class="bi bi-x-lg"></i></button>
+            </div>
+            <div id="chatbotMessages" aria-live="polite"></div>
+            <form id="chatbotForm" autocomplete="off">
+                <input type="text" id="chatbotInput" th:placeholder="#{chat.w.placeholder}" maxlength="300" th:aria-label="#{chat.w.inputAria}">
+                <button type="submit" id="chatbotSend" th:aria-label="#{chat.w.send}"><i class="bi bi-send-fill"></i></button>
+            </form>
+            <div class="may-footnote" th:text="#{chat.w.footnote}">Sóng trả lời tự động từ dữ liệu của resort · cần người thật, nhắn Zalo nha</div>
+        </div>
+    </div>
+
+    <script th:inline="javascript">
+        (function () {
+            // Chu song ngu cho widget - moi gia tri inline 1 dong rieng ket thuc bang ''
+            // (Thymeleaf nuot phan code viet tiep sau gia tri mac dinh)
+            var LANG = /*[[${#locale.language == 'en' ? 'en' : 'vi'}]]*/ '';
+            var T_MORNING = /*[[#{chat.w.morning}]]*/ '';
+            var T_NOON = /*[[#{chat.w.noon}]]*/ '';
+            var T_AFTERNOON = /*[[#{chat.w.afternoon}]]*/ '';
+            var T_EVENING = /*[[#{chat.w.evening}]]*/ '';
+            var T_GREET1 = /*[[#{chat.w.greet1}]]*/ '';
+            var T_GREET2 = /*[[#{chat.w.greet2}]]*/ '';
+            var T_TYPING = /*[[#{chat.w.typing}]]*/ '';
+            var T_ERROR = /*[[#{chat.w.error}]]*/ '';
+            var TP_PRICE = /*[[#{chat.t.price}]]*/ '';
+            var SG_PRICE = /*[[#{chat.sg.price}]]*/ '';
+            var TP_AVAILABLE = /*[[#{chat.t.available}]]*/ '';
+            var SG_AVAILABLE = /*[[#{chat.sg.available}]]*/ '';
+            var TP_DEPOSIT = /*[[#{chat.t.deposit}]]*/ '';
+            var SG_DEPOSIT = /*[[#{chat.sg.deposit}]]*/ '';
+            var TP_COMBO = /*[[#{chat.t.combo}]]*/ '';
+            var SG_COMBO = /*[[#{chat.sg.combo}]]*/ '';
+            var TP_EXPLORE = /*[[#{chat.t.explore}]]*/ '';
+            var SG_EXPLORE = /*[[#{chat.sg.explore}]]*/ '';
+            var TP_DIRECTIONS = /*[[#{chat.t.directions}]]*/ '';
+            var SG_DIRECTIONS = /*[[#{chat.sg.directions}]]*/ '';
+            var TOPICS = [
+                ['💸', TP_PRICE, SG_PRICE],
+                ['📅', TP_AVAILABLE, SG_AVAILABLE],
+                ['🔒', TP_DEPOSIT, SG_DEPOSIT],
+                ['🍲', TP_COMBO, SG_COMBO],
+                ['🗺️', TP_EXPLORE, SG_EXPLORE],
+                ['🧭', TP_DIRECTIONS, SG_DIRECTIONS]
+            ];
+            // Lich su luu rieng theo ngon ngu: doi VI/EN thi bat dau hoi thoai moi bang ngon ngu do
+            var STORE_KEY = 'mayChat.v1.' + LANG;
+            var PEEK_KEY = 'mayChat.peekShown';
+            var bubble = document.getElementById('chatbotBubble');
+            var panel = document.getElementById('chatbotPanel');
+            var closeBtn = document.getElementById('chatbotClose');
+            var resetBtn = document.getElementById('chatbotReset');
+            var form = document.getElementById('chatbotForm');
+            var input = document.getElementById('chatbotInput');
+            var sendBtn = document.getElementById('chatbotSend');
+            var list = document.getElementById('chatbotMessages');
+            var peek = document.getElementById('mayPeek');
+            var csrfToken = document.getElementById('chatbotCsrfToken').value;
+            var csrfHeader = document.getElementById('chatbotCsrfHeader').value;
+            var busy = false;
+
+            
+
+            // Lich su hoi thoai giu trong phien (chuyen trang van con) - loi luu tru thi bo qua
+            var history = [];
+            try { history = JSON.parse(sessionStorage.getItem(STORE_KEY)) || []; } catch (e) { history = []; }
+            function save() {
+                try { sessionStorage.setItem(STORE_KEY, JSON.stringify(history.slice(-40))); } catch (e) { /* bo qua */ }
+            }
+
+            function avatar() {
+                var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svg.setAttribute('class', 'may-avatar');
+                svg.setAttribute('aria-hidden', 'true');
+                var use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+                use.setAttribute('href', '#mayCloud');
+                svg.appendChild(use);
+                return svg;
+            }
+
+            // Hien thi van ban an toan (khong dung innerHTML): "• " -> danh sach, **chu** -> chu dam
+            function appendInline(parent, text) {
+                text.split('**').forEach(function (part, i) {
+                    if (!part) return;
+                    if (i % 2 === 1) {
+                        var b = document.createElement('strong');
+                        b.textContent = part;
+                        parent.appendChild(b);
+                    } else {
+                        parent.appendChild(document.createTextNode(part));
+                    }
+                });
+            }
+            function renderText(container, text) {
+                var ul = null;
+                text.split('\n').forEach(function (line) {
+                    if (!line.trim()) { ul = null; return; }
+                    if (line.indexOf('• ') === 0) {
+                        if (!ul) { ul = document.createElement('ul'); container.appendChild(ul); }
+                        var li = document.createElement('li');
+                        appendInline(li, line.substring(2));
+                        ul.appendChild(li);
+                    } else {
+                        ul = null;
+                        var p = document.createElement('p');
+                        appendInline(p, line);
+                        container.appendChild(p);
+                    }
+                });
+            }
+
+            function timeLabel(ts) {
+                var d = new Date(ts);
+                return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+            }
+
+            function scrollDown() { list.scrollTop = list.scrollHeight; }
+
+            function removeEphemeral() {
+                list.querySelectorAll('.may-suggestions, .may-topics').forEach(function (el) { el.remove(); });
+            }
+
+            function renderMessage(m) {
+                var row = document.createElement('div');
+                row.className = 'may-row ' + m.from;
+                var col = document.createElement('div');
+                col.className = 'may-col';
+                var bubbleEl = document.createElement('div');
+                bubbleEl.className = 'may-msg';
+                if (m.from === 'bot') {
+                    renderText(bubbleEl, m.text);
+                } else {
+                    bubbleEl.textContent = m.text;
+                }
+                col.appendChild(bubbleEl);
+
+                if (m.actions && m.actions.length) {
+                    var acts = document.createElement('div');
+                    acts.className = 'may-actions';
+                    m.actions.forEach(function (a) {
+                        var link = document.createElement('a');
+                        link.className = 'may-action';
+                        link.href = a.url;
+                        link.textContent = a.label;
+                        if (/^https?:/.test(a.url)) { link.target = '_blank'; link.rel = 'noopener'; }
+                        acts.appendChild(link);
+                    });
+                    col.appendChild(acts);
+                }
+                var time = document.createElement('div');
+                time.className = 'may-time';
+                time.textContent = (m.from === 'bot' ? 'Sóng · ' : '') + timeLabel(m.time);
+                col.appendChild(time);
+
+                if (m.from === 'bot') row.appendChild(avatar());
+                row.appendChild(col);
+                list.appendChild(row);
+            }
+
+            // Goi y cau hoi tiep theo - bo cac cau khach da hoi
+            function renderSuggestions(items) {
+                var asked = history.filter(function (m) { return m.from === 'user'; })
+                    .map(function (m) { return m.text.toLowerCase(); });
+                var fresh = (items || []).filter(function (s) { return asked.indexOf(s.toLowerCase()) < 0; });
+                if (!fresh.length) return;
+                var wrap = document.createElement('div');
+                wrap.className = 'may-suggestions';
+                fresh.forEach(function (s) {
+                    var chip = document.createElement('button');
+                    chip.type = 'button';
+                    chip.className = 'may-chip';
+                    chip.textContent = s;
+                    chip.addEventListener('click', function () { send(s); });
+                    wrap.appendChild(chip);
+                });
+                list.appendChild(wrap);
+            }
+
+            function renderTopics() {
+                var grid = document.createElement('div');
+                grid.className = 'may-topics';
+                TOPICS.forEach(function (t) {
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'may-topic';
+                    var icon = document.createElement('span');
+                    icon.textContent = t[0];
+                    var label = document.createElement('span');
+                    label.textContent = t[1];
+                    btn.appendChild(icon);
+                    btn.appendChild(label);
+                    btn.addEventListener('click', function () { send(t[2]); });
+                    grid.appendChild(btn);
+                });
+                list.appendChild(grid);
+            }
+
+            function greet() {
+                var hour = new Date().getHours();
+                var hello = hour < 11 ? T_MORNING : hour < 14 ? T_NOON : hour < 18 ? T_AFTERNOON : T_EVENING;
+                var m = {
+                    from: 'bot', time: Date.now(),
+                    text: T_GREET1.replace('{0}', hello) + '\n' + T_GREET2
+                };
+                history.push(m);
+                save();
+                renderMessage(m);
+                renderTopics();
+            }
+
+            function renderAll() {
+                list.replaceChildren();
+                if (!history.length) { greet(); return; }
+                history.forEach(renderMessage);
+                var last = history[history.length - 1];
+                if (last.from === 'bot') {
+                    if (last.suggestions && last.suggestions.length) renderSuggestions(last.suggestions);
+                    else if (history.length === 1) renderTopics();
+                }
+                scrollDown();
+            }
+
+            function showTyping() {
+                var row = document.createElement('div');
+                row.className = 'may-row bot';
+                row.id = 'mayTyping';
+                var b = document.createElement('div');
+                b.className = 'may-msg may-typing';
+                b.setAttribute('aria-label', T_TYPING);
+                for (var i = 0; i < 3; i++) b.appendChild(document.createElement('i'));
+                row.appendChild(avatar());
+                row.appendChild(b);
+                list.appendChild(row);
+                scrollDown();
+            }
+
+            function addBot(data) {
+                var t = document.getElementById('mayTyping');
+                if (t) t.remove();
+                var m = { from: 'bot', time: Date.now(), text: data.reply, actions: data.actions || [], suggestions: data.suggestions || [] };
+                history.push(m);
+                save();
+                renderMessage(m);
+                renderSuggestions(m.suggestions);
+                scrollDown();
+            }
+
+            function send(text) {
+                text = (text || '').trim();
+                if (!text || busy) return;
+                busy = true;
+                sendBtn.disabled = true;
+                removeEphemeral();
+                var userMsg = { from: 'user', time: Date.now(), text: text };
+                history.push(userMsg);
+                save();
+                renderMessage(userMsg);
+                input.value = '';
+                showTyping();
+
+                var headers = { 'Content-Type': 'application/json' };
+                if (csrfHeader && csrfToken) headers[csrfHeader] = csrfToken;
+                var started = Date.now();
+                fetch('/api/chatbot/ask', { method: 'POST', headers: headers, body: JSON.stringify({ message: text }) })
+                    .then(function (res) { if (!res.ok) throw new Error(res.status); return res.json(); })
+                    .catch(function () {
+                        return { reply: T_ERROR, actions: [], suggestions: [] };
+                    })
+                    .then(function (data) {
+                        // Giu "dang go" mot chut cho tu nhien
+                        var wait = Math.max(0, 650 - (Date.now() - started));
+                        setTimeout(function () {
+                            addBot(data);
+                            busy = false;
+                            sendBtn.disabled = false;
+                            input.focus();
+                        }, wait);
+                    });
+            }
+
+            function openPanel() {
+                panel.classList.add('chatbot-open');
+                document.body.classList.add('chatbot-panel-open');
+                hidePeek();
+                renderAll();
+                setTimeout(function () { input.focus(); }, 50);
+            }
+            function closePanel() {
+                panel.classList.remove('chatbot-open');
+                document.body.classList.remove('chatbot-panel-open');
+                bubble.focus();
+            }
+
+            function hidePeek() {
+                peek.classList.remove('show');
+                try { sessionStorage.setItem(PEEK_KEY, '1'); } catch (e) { /* bo qua */ }
+            }
+
+            bubble.addEventListener('click', openPanel);
+            closeBtn.addEventListener('click', closePanel);
+            resetBtn.addEventListener('click', function () {
+                history = [];
+                save();
+                renderAll();
+            });
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                send(input.value);
+            });
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && panel.classList.contains('chatbot-open')) closePanel();
+            });
+            peek.addEventListener('click', function (e) {
+                if (e.target.id === 'mayPeekClose') { hidePeek(); return; }
+                openPanel();
+            });
+            peek.addEventListener('keydown', function (e) { if (e.key === 'Enter') openPanel(); });
+
+            // Loi chao nho hien 1 lan moi phien, sau vai giay, neu khach chua mo chat
+            var peekShown = false;
+            try { peekShown = sessionStorage.getItem(PEEK_KEY) === '1'; } catch (e) { peekShown = true; }
+            if (!peekShown) {
+                setTimeout(function () {
+                    if (!panel.classList.contains('chatbot-open')) peek.classList.add('show');
+                }, 5000);
+            }
+        })();
+    </script>
+</div>

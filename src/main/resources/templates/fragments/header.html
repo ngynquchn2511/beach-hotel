@@ -1,0 +1,32 @@
+<header th:fragment="header" class="border-bottom bg-white">
+    <nav class="navbar navbar-expand-lg container py-3">
+        <!-- Nhan vien/admin bam logo hoac "Danh sach phong" thi o lai trang quan tri, khong bi day sang giao dien khach hang -->
+        <a class="navbar-brand fw-bold" th:href="@{/}" sec:authorize="!hasAnyRole('ADMIN','STAFF')">Sóng Xanh Resort</a>
+        <a class="navbar-brand fw-bold" th:href="@{/admin/dashboard}" sec:authorize="hasAnyRole('ADMIN','STAFF')">Sóng Xanh Resort</a>
+        <div class="ms-auto d-flex align-items-center gap-3 flex-wrap justify-content-end">
+            <a th:href="@{/about}" class="text-decoration-none text-dark" sec:authorize="!hasAnyRole('ADMIN','STAFF')" th:text="#{nav.about}">Giới thiệu</a>
+            <a th:href="@{/rooms}" class="text-decoration-none text-dark" sec:authorize="!hasAnyRole('ADMIN','STAFF')" th:text="#{nav.rooms}">Danh sách phòng</a>
+            <a th:href="@{/admin/rooms}" class="text-decoration-none text-dark" sec:authorize="hasAnyRole('ADMIN','STAFF')">Danh sách phòng</a>
+            <a th:href="@{/customer/bookings}" class="text-decoration-none text-dark" sec:authorize="hasRole('CUSTOMER')" th:text="#{nav.history}">Lịch sử đặt phòng</a>
+            <a th:href="@{/customer/account}" class="text-decoration-none text-dark" sec:authorize="hasRole('CUSTOMER')" th:text="#{nav.account}">Tài khoản</a>
+
+            <div sec:authorize="isAuthenticated()" class="d-flex align-items-center gap-3">
+                <span class="text-muted" sec:authentication="name">Người dùng</span>
+                <form th:action="@{/admin/logout}" method="post" class="m-0" sec:authorize="hasAnyRole('ADMIN','STAFF')">
+                    <button type="submit" class="btn btn-outline-secondary btn-sm">Đăng xuất</button>
+                </form>
+                <form th:action="@{/logout}" method="post" class="m-0" sec:authorize="hasRole('CUSTOMER')">
+                    <button type="submit" class="btn btn-outline-secondary btn-sm" th:text="#{nav.logout}">Đăng xuất</button>
+                </form>
+            </div>
+
+            <div sec:authorize="isAnonymous()" class="d-flex align-items-center gap-2">
+                <a th:href="@{/login}" class="btn btn-outline-primary btn-sm" th:text="#{nav.login}">Đăng nhập</a>
+                <a th:href="@{/register}" class="btn btn-primary btn-sm" th:text="#{nav.register}">Đăng ký</a>
+            </div>
+
+            <!-- th:replace chay truoc sec:authorize nen boc dieu kien ra ngoai -->
+            <th:block sec:authorize="!hasAnyRole('ADMIN','STAFF')"><div th:replace="~{fragments/lang-switch :: switch}"></div></th:block>
+        </div>
+    </nav>
+</header>

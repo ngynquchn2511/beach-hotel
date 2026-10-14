@@ -1,0 +1,9 @@
+# Caddy tu xin + gia han chung chi HTTPS (Let's Encrypt) cho ten mien trong bien DOMAIN
+{$DOMAIN} {
+	encode gzip
+	# Cho phep tai len video danh gia (5 tep x 30MB)
+	request_body {
+		max_size 200MB
+	}
+	reverse_proxy app:8080
+}

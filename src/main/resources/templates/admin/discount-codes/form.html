@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${isEdit} ? 'Sửa mã giảm giá' : 'Thêm mã giảm giá'">Mã giảm giá</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+</head>
+<body class="eaut eaut-admin">
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="container py-5">
+    <div class="row g-4">
+        <div class="col-md-3">
+            <div th:replace="~{fragments/admin-sidebar :: sidebar}"></div>
+        </div>
+
+        <div class="col-md-9">
+            <h3 class="fw-bold mb-4" th:text="${isEdit} ? 'Sửa mã giảm giá' : 'Thêm mã giảm giá'"></h3>
+
+            <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+            <div class="bg-white p-4 rounded shadow-sm" style="max-width: 600px;">
+                <form th:action="${isEdit} ? @{/admin/discount-codes/{id}/edit(id=${discountCodeId})} : @{/admin/discount-codes/new}"
+                      th:object="${discountCodeRequest}" method="post">
+
+                    <div class="mb-3">
+                        <label class="form-label">Mã giảm giá</label>
+                        <input type="text" th:field="*{code}" class="form-control" placeholder="VD: WELCOME10, VIP20">
+                        <div class="text-danger small" th:if="${#fields.hasErrors('code')}" th:errors="*{code}"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Mô tả</label>
+                        <textarea th:field="*{description}" class="form-control" rows="2" placeholder="VD: Giảm giá cho khách lần đầu đặt phòng"></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Mô tả <span class="badge bg-info text-dark">EN</span> <span class="text-muted small">(không bắt buộc — bỏ trống thì khách chọn tiếng Anh vẫn thấy bản tiếng Việt)</span></label>
+                        <textarea th:field="*{descriptionEn}" class="form-control" rows="2" placeholder="VD: Discount for first-time guests"></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Loại giảm giá</label>
+                        <select th:field="*{discountType}" class="form-select">
+                            <option th:each="t : ${discountTypes}" th:value="${t}" th:text="${t.vietnameseLabel}"></option>
+                        </select>
+                        <div class="text-danger small" th:if="${#fields.hasErrors('discountType')}" th:errors="*{discountType}"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Giá trị giảm</label>
+                        <input type="number" step="0.01" th:field="*{discountValue}" class="form-control">
+                        <div class="text-danger small" th:if="${#fields.hasErrors('discountValue')}" th:errors="*{discountValue}"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Áp dụng cho loại khách hàng</label>
+                        <select th:field="*{applicableCustomerType}" class="form-select">
+                            <option value="">Tất cả khách hàng</option>
+                            <option th:each="ct : ${customerTypes}" th:value="${ct}" th:text="${ct.vietnameseLabel}"></option>
+                        </select>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Lưu</button>
+                        <a th:href="@{/admin/discount-codes}" class="btn btn-outline-secondary">Hủy</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+</body>
+</html>

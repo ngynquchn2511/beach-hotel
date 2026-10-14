@@ -1,0 +1,66 @@
+# Chay that tren 1 may ao (VD Oracle Cloud Always Free): MySQL + app + Caddy (HTTPS tu dong).
+# Du lieu nam trong volume tren o dia may ao -> deploy lai / khoi dong lai khong mat.
+# Cach dung: xem deploy/HUONG_DAN_DEPLOY.md
+services:
+  db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_DATABASE: beach_hotel
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      TZ: Asia/Ho_Chi_Minh
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${DB_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  app:
+    build: ..
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:mysql://db:3306/beach_hotel?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Ho_Chi_Minh
+      DB_USERNAME: root
+      DB_PASSWORD: ${DB_PASSWORD}
+      # Hibernate tu tao / bo sung bang (1 may chu duy nhat, khong can chay tay file sql/)
+      DDL_AUTO: update
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      STAFF_EMAIL: ${STAFF_EMAIL}
+      STAFF_PASSWORD: ${STAFF_PASSWORD}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      APP_BASE_URL: https://${DOMAIN}
+      PAYMENT_BANK_ID: ${PAYMENT_BANK_ID}
+      PAYMENT_ACCOUNT_NO: ${PAYMENT_ACCOUNT_NO}
+      PAYMENT_ACCOUNT_NAME: ${PAYMENT_ACCOUNT_NAME}
+      ZALO_PHONE: ${ZALO_PHONE}
+    volumes:
+      - uploads:/app/uploads
+
+  caddy:
+    image: caddy:2
+    restart: always
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  db_data:
+  uploads:
+  caddy_data:
+  caddy_config:

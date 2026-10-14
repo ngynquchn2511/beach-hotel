@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="vi" th:lang="${#locale.language}" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{auth.register.title}">Đăng ký | Sóng Xanh Resort</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+    <style>
+        body { min-height: 100vh; background: linear-gradient(115deg, rgba(10,31,53,.92), rgba(13,110,253,.45)), url('/page-images/dangky.jpg') center/cover fixed; }
+        .auth-shell { min-height: 100vh; display: grid; place-items: center; padding: 2rem 1rem; }
+        .auth-card { width: min(100%, 980px); border: 0; border-radius: 26px; box-shadow: 0 28px 80px rgba(0,0,0,.32); overflow: hidden; }
+        .auth-aside { position: relative; color: #fff; padding: 3rem 2.5rem; background: linear-gradient(160deg, rgba(13,110,253,.88), rgba(10,31,53,.94)), url('/page-images/dangky.jpg') center/cover; }
+        .auth-aside h2 { font-weight: 800; line-height: 1.25; }
+        .perk { display: flex; gap: .85rem; align-items: flex-start; margin-bottom: 1.1rem; }
+        .perk-icon { flex: 0 0 42px; height: 42px; display: grid; place-items: center; border-radius: 12px; background: rgba(255,255,255,.16); font-size: 1.15rem; }
+        .brand-mark { width: 52px; height: 52px; display: grid; place-items: center; border-radius: 16px; background: linear-gradient(135deg, #0d6efd, #6ea8fe); color: #fff; font-size: 24px; }
+        .form-label { font-weight: 600; font-size: .875rem; margin-bottom: .35rem; }
+        .input-group-text { background: #f4f7fb; border-color: #d9e2ef; color: #6c7a8d; border-radius: 12px 0 0 12px; }
+        .form-control { border-color: #d9e2ef; padding: .72rem .9rem; border-radius: 0 12px 12px 0; }
+        .form-control:focus { border-color: #0d6efd; box-shadow: 0 0 0 .22rem rgba(13,110,253,.12); }
+        .input-group:focus-within .input-group-text { border-color: #0d6efd; color: #0d6efd; }
+        .toggle-pw { border: 1px solid #d9e2ef; border-left: 0; background: #fff; color: #6c7a8d; border-radius: 0 12px 12px 0; padding: 0 .9rem; }
+        .has-toggle .form-control { border-radius: 0; border-right: 0; }
+        .is-invalid-group .input-group-text, .is-invalid-group .form-control, .is-invalid-group .toggle-pw { border-color: #dc3545; }
+        .field-error { color: #dc3545; font-size: .8rem; margin-top: .3rem; }
+        .strength { height: 5px; border-radius: 99px; background: #e9eef5; overflow: hidden; margin-top: .45rem; }
+        .strength > span { display: block; height: 100%; width: 0; transition: width .25s, background-color .25s; }
+        .btn-register { border-radius: 12px; padding: .82rem; font-weight: 700; letter-spacing: .02em; }
+    </style>
+</head>
+<body class="eaut eaut-auth" th:style="'--page-bg: url(' + @{/page-images/dangky.jpg} + ')'">
+<div class="position-fixed top-0 end-0 p-3" style="z-index: 10;"><div th:replace="~{fragments/lang-switch :: switch}"></div></div>
+<main class="auth-shell">
+    <section class="card auth-card">
+        <div class="row g-0">
+            <div class="col-lg-5 auth-aside d-none d-lg-flex flex-column justify-content-between">
+                <div>
+                    <a th:href="@{/}" class="text-white text-decoration-none fw-bold small text-uppercase" style="letter-spacing:.14em">
+                        <i class="bi bi-water me-1"></i> Sóng Xanh Resort
+                    </a>
+                    <h2 class="mt-4 mb-3" th:text="#{auth.register.asideTitle}">Kỳ nghỉ trọn vẹn bắt đầu từ một tài khoản.</h2>
+                    <p class="opacity-75 mb-4" th:text="#{auth.register.asideText}">Tạo tài khoản miễn phí để đặt phòng nhanh hơn và nhận nhiều ưu đãi dành riêng cho thành viên.</p>
+                    <div class="perk">
+                        <div class="perk-icon"><i class="bi bi-lightning-charge"></i></div>
+                        <div><div class="fw-semibold" th:text="#{auth.register.perk1}">Đặt phòng chỉ vài bước</div><div class="small opacity-75" th:text="#{auth.register.perk1d}">Thông tin được điền sẵn mỗi lần đặt.</div></div>
+                    </div>
+                    <div class="perk">
+                        <div class="perk-icon"><i class="bi bi-clock-history"></i></div>
+                        <div><div class="fw-semibold" th:text="#{auth.register.perk2}">Quản lý lịch sử đặt phòng</div><div class="small opacity-75" th:text="#{auth.register.perk2d}">Xem, sửa hoặc huỷ đơn mọi lúc.</div></div>
+                    </div>
+                    <div class="perk">
+                        <div class="perk-icon"><i class="bi bi-gift"></i></div>
+                        <div><div class="fw-semibold" th:text="#{auth.register.perk3}">Ưu đãi khách quen &amp; VIP</div><div class="small opacity-75" th:text="#{auth.register.perk3d}">Mã giảm giá hấp dẫn cho thành viên.</div></div>
+                    </div>
+                </div>
+                <div class="small opacity-50">© Sóng Xanh Resort</div>
+            </div>
+
+            <div class="col-lg-7 bg-white">
+                <div class="p-4 p-md-5">
+                    <div class="d-flex align-items-center gap-3 mb-4">
+                        <div class="brand-mark"><i class="bi bi-person-plus"></i></div>
+                        <div>
+                            <h1 class="h3 fw-bold mb-0" th:text="#{auth.register.heading}">Tạo tài khoản</h1>
+                            <p class="text-secondary small mb-0" th:text="#{auth.register.lead}">Chỉ mất chưa đầy một phút.</p>
+                        </div>
+                    </div>
+
+                    <div th:if="${errorMessage}" class="alert alert-danger border-0 rounded-3 small d-flex gap-2">
+                        <i class="bi bi-exclamation-circle-fill"></i><span th:text="${errorMessage}"></span>
+                    </div>
+
+                    <form th:action="@{/register}" th:object="${registerRequest}" method="post" novalidate>
+                        <div class="mb-3">
+                            <label for="fullName" class="form-label" th:text="#{auth.register.fullName}">Họ và tên</label>
+                            <div class="input-group" th:classappend="${#fields.hasErrors('fullName')} ? 'is-invalid-group'">
+                                <span class="input-group-text"><i class="bi bi-person"></i></span>
+                                <input id="fullName" type="text" th:field="*{fullName}" class="form-control" th:placeholder="#{auth.register.namePlaceholder}" autocomplete="name" autofocus>
+                            </div>
+                            <div class="field-error" th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"></div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-7">
+                                <label for="email" class="form-label">Email</label>
+                                <div class="input-group" th:classappend="${#fields.hasErrors('email')} ? 'is-invalid-group'">
+                                    <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                                    <input id="email" type="email" th:field="*{email}" class="form-control" placeholder="name@example.com" autocomplete="email">
+                                </div>
+                                <div class="field-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
+                            </div>
+                            <div class="col-md-5">
+                                <label for="phoneNumber" class="form-label" th:text="#{confirm.phone}">Số điện thoại</label>
+                                <div class="input-group" th:classappend="${#fields.hasErrors('phoneNumber')} ? 'is-invalid-group'">
+                                    <span class="input-group-text"><i class="bi bi-telephone"></i></span>
+                                    <input id="phoneNumber" type="tel" th:field="*{phoneNumber}" class="form-control" placeholder="0912345678" maxlength="10" inputmode="numeric" autocomplete="tel">
+                                </div>
+                                <div class="field-error" th:if="${#fields.hasErrors('phoneNumber')}" th:errors="*{phoneNumber}"></div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label for="password" class="form-label" th:text="#{auth.password}">Mật khẩu</label>
+                                <div class="input-group has-toggle" th:classappend="${#fields.hasErrors('password')} ? 'is-invalid-group'">
+                                    <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                                    <input id="password" type="password" th:field="*{password}" class="form-control" th:placeholder="#{account.passwordHint}" autocomplete="new-password">
+                                    <button type="button" class="toggle-pw" data-target="password" th:aria-label="#{auth.register.showPassword}"><i class="bi bi-eye"></i></button>
+                                </div>
+                                <div class="strength"><span id="strengthBar"></span></div>
+                                <div id="strengthText" class="small text-secondary mt-1"></div>
+                                <div class="field-error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="confirmPassword" class="form-label" th:text="#{auth.register.confirm}">Xác nhận mật khẩu</label>
+                                <div class="input-group has-toggle" th:classappend="${#fields.hasErrors('confirmPassword')} ? 'is-invalid-group'">
+                                    <span class="input-group-text"><i class="bi bi-shield-lock"></i></span>
+                                    <input id="confirmPassword" type="password" th:field="*{confirmPassword}" class="form-control" th:placeholder="#{auth.register.confirmPlaceholder}" autocomplete="new-password">
+                                    <button type="button" class="toggle-pw" data-target="confirmPassword" th:aria-label="#{auth.register.showPassword}"><i class="bi bi-eye"></i></button>
+                                </div>
+                                <div id="matchText" class="small mt-1"></div>
+                                <div class="field-error" th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}"></div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-register w-100">
+                            <span th:text="#{auth.register.submit}">Đăng ký</span> <i class="bi bi-arrow-right ms-1"></i>
+                        </button>
+                    </form>
+
+                    <div class="text-center mt-4 pt-3 border-top small text-secondary">
+                        <span th:text="#{auth.register.haveAccount}">Đã có tài khoản?</span> <a th:href="@{/login}" class="fw-semibold text-decoration-none" th:text="#{nav.login}">Đăng nhập</a>
+                        <span class="mx-2">·</span>
+                        <a th:href="@{/}" class="text-decoration-none text-secondary" th:text="#{auth.register.home}">Về trang chủ</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<script th:inline="javascript">
+    document.querySelectorAll('.toggle-pw').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var input = document.getElementById(btn.dataset.target);
+            var show = input.type === 'password';
+            input.type = show ? 'text' : 'password';
+            btn.querySelector('i').className = show ? 'bi bi-eye-slash' : 'bi bi-eye';
+        });
+    });
+
+    var pw = document.getElementById('password');
+    var confirmPw = document.getElementById('confirmPassword');
+    var bar = document.getElementById('strengthBar');
+    var strengthText = document.getElementById('strengthText');
+    var matchText = document.getElementById('matchText');
+    // Moi gia tri inline de rieng 1 dong ket thuc bang '' - Thymeleaf nuot ca phan code dung sau gia tri mac dinh
+    var MSG_WEAK = /*[[#{auth.pw.weak}]]*/ '';
+    var MSG_MEDIUM = /*[[#{auth.pw.medium}]]*/ '';
+    var MSG_GOOD = /*[[#{auth.pw.good}]]*/ '';
+    var MSG_STRONG = /*[[#{auth.pw.strong}]]*/ '';
+    var MSG_MATCH = /*[[#{auth.pw.match}]]*/ '';
+    var MSG_NO_MATCH = /*[[#{auth.pw.noMatch}]]*/ '';
+    var levels = [
+        { w: '0%', c: '#e9eef5', t: '' },
+        { w: '25%', c: '#dc3545', t: MSG_WEAK },
+        { w: '50%', c: '#fd7e14', t: MSG_MEDIUM },
+        { w: '75%', c: '#0dcaf0', t: MSG_GOOD },
+        { w: '100%', c: '#198754', t: MSG_STRONG }
+    ];
+
+    function updateStrength() {
+        var v = pw.value, score = 0;
+        if (v.length >= 6) score++;
+        if (v.length >= 10) score++;
+        if (/[A-Z]/.test(v) && /[a-z]/.test(v)) score++;
+        if (/\d/.test(v) && /[^A-Za-z0-9]/.test(v)) score++;
+        if (v.length > 0 && score === 0) score = 1;
+        var l = levels[score];
+        bar.style.width = l.w;
+        bar.style.backgroundColor = l.c;
+        strengthText.textContent = l.t;
+    }
+
+    function updateMatch() {
+        if (!confirmPw.value) { matchText.textContent = ''; return; }
+        var ok = confirmPw.value === pw.value;
+        matchText.textContent = ok ? MSG_MATCH : MSG_NO_MATCH;
+        matchText.className = 'small mt-1 ' + (ok ? 'text-success' : 'text-danger');
+    }
+
+    pw.addEventListener('input', function () { updateStrength(); updateMatch(); });
+    confirmPw.addEventListener('input', updateMatch);
+    document.getElementById('phoneNumber').addEventListener('input', function (e) {
+        e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10);
+    });
+</script>
+</body>
+</html>

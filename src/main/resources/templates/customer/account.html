@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="vi" th:lang="${#locale.language}" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{account.title}">Tài khoản của tôi</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+    <style>
+        /* The thanh vien: nhu the chia khoa phong co lo treo */
+        .member-card { position: relative; border-radius: 14px 14px 14px 40px !important; }
+        .member-card::before { content: ''; position: absolute; top: 18px; right: 18px; width: 14px; height: 14px; border-radius: 50%;
+            border: var(--line); background: var(--baby-soft); }
+        .avatar { width: 72px; height: 72px; border-radius: 50%; display: grid; place-items: center; font-family: var(--display);
+            font-size: 2rem; font-weight: 700; background: var(--baby); border: var(--line); box-shadow: 3px 3px 0 var(--ink); }
+        .info-row { display: flex; gap: .75rem; align-items: center; padding: .7rem 0; border-bottom: 1.5px dashed #b9dcf0; }
+        .info-row:last-child { border-bottom: 0; }
+        .info-row .bi { width: 34px; height: 34px; flex: 0 0 34px; display: grid; place-items: center; border-radius: 8px;
+            background: var(--baby-soft); border: 1.5px solid var(--ink); }
+        .field-error { color: #c2334d; font-size: .82rem; margin-top: .3rem; }
+        .section-anchor { scroll-margin-top: 100px; }
+    </style>
+</head>
+<body class="eaut">
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="container py-5 flex-grow-1" style="max-width: 1040px;">
+    <div class="eaut-head">
+        <div class="eyebrow" th:text="#{account.eyebrow}">Thành viên</div>
+        <h1 th:utext="#{account.heading}">Tài khoản <span class="gradient-text">của tôi</span></h1>
+        <div class="divider"></div>
+    </div>
+
+    <div class="row g-4">
+        <!-- The thanh vien -->
+        <div class="col-lg-4">
+            <div class="bg-white p-4 member-card">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="avatar" th:text="${#strings.substring(account.fullName, 0, 1)}">A</div>
+                    <div>
+                        <div class="fw-bold fs-5" th:text="${account.fullName}">Họ tên</div>
+                        <span class="badge bg-info" th:text="#{'enum.CustomerType.' + ${account.customerType}}">Khách</span>
+                    </div>
+                </div>
+                <div class="info-row"><i class="bi bi-envelope"></i><div><div class="small text-muted" th:text="#{account.loginEmail}">Email đăng nhập</div><div class="fw-semibold" th:text="${account.email}"></div></div></div>
+                <div class="info-row"><i class="bi bi-telephone"></i><div><div class="small text-muted" th:text="#{confirm.phone}">Số điện thoại</div><div class="fw-semibold" th:text="${account.phoneNumber != null ? account.phoneNumber : '-'}"></div></div></div>
+                <div class="info-row"><i class="bi bi-calendar-heart"></i><div><div class="small text-muted" th:text="#{account.memberSince}">Thành viên từ</div><div class="fw-semibold" th:text="${#temporals.format(account.createdAt, 'dd/MM/yyyy')}"></div></div></div>
+                <div class="info-row"><i class="bi bi-suitcase2"></i><div><div class="small text-muted" th:text="#{account.bookingCount}">Số đơn đã đặt</div><div class="fw-semibold" th:text="${bookingCount}"></div></div></div>
+                <a th:href="@{/customer/bookings}" class="btn btn-outline-primary w-100 mt-3"><i class="bi bi-clock-history me-1"></i><span th:text="#{nav.history}">Lịch sử đặt phòng</span></a>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <!-- Thong tin ca nhan -->
+            <div class="bg-white p-4 mb-4">
+                <h5 class="fw-bold mb-3"><i class="bi bi-person-vcard me-2"></i><span th:text="#{account.profile}">Thông tin cá nhân</span></h5>
+                <div th:if="${profileSuccess}" class="alert alert-success" th:text="${profileSuccess}"></div>
+                <div th:if="${profileError}" class="alert alert-danger" th:text="${profileError}"></div>
+                <form th:action="@{/customer/account/profile}" th:object="${profileRequest}" method="post" class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label" for="fullName" th:text="#{confirm.fullName}">Họ tên</label>
+                        <input type="text" id="fullName" th:field="*{fullName}" class="form-control" autocomplete="name">
+                        <div class="field-error" th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="phoneNumber" th:text="#{confirm.phone}">Số điện thoại</label>
+                        <input type="text" id="phoneNumber" th:field="*{phoneNumber}" class="form-control" autocomplete="tel">
+                        <div class="field-error" th:if="${#fields.hasErrors('phoneNumber')}" th:errors="*{phoneNumber}"></div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" th:value="${account.email}" disabled>
+                        <div class="small text-muted mt-1" th:text="#{account.emailFixed}">Email là tên đăng nhập nên không thể thay đổi.</div>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-check2 me-1"></i><span th:text="#{account.saveProfile}">Lưu thông tin</span></button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Doi mat khau -->
+            <div class="bg-white p-4 section-anchor" id="doi-mat-khau">
+                <h5 class="fw-bold mb-3"><i class="bi bi-shield-lock me-2"></i><span th:text="#{account.changePassword}">Đổi mật khẩu</span></h5>
+                <div th:if="${passwordSuccess}" class="alert alert-success" th:text="${passwordSuccess}"></div>
+                <div th:if="${passwordError}" class="alert alert-danger" th:text="${passwordError}"></div>
+                <form th:action="@{/customer/account/password}" th:object="${passwordRequest}" method="post" class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label" for="currentPassword" th:text="#{account.currentPassword}">Mật khẩu hiện tại</label>
+                        <input type="password" id="currentPassword" name="currentPassword" class="form-control" autocomplete="current-password">
+                        <div class="field-error" th:if="${#fields.hasErrors('currentPassword')}" th:errors="*{currentPassword}"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="newPassword" th:text="#{account.newPassword}">Mật khẩu mới</label>
+                        <input type="password" id="newPassword" name="newPassword" class="form-control" autocomplete="new-password" th:placeholder="#{account.passwordHint}">
+                        <div class="field-error" th:if="${#fields.hasErrors('newPassword')}" th:errors="*{newPassword}"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="confirmPassword" th:text="#{account.confirmPassword}">Xác nhận mật khẩu mới</label>
+                        <input type="password" id="confirmPassword" name="confirmPassword" class="form-control" autocomplete="new-password">
+                        <div class="field-error" th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}"></div>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-key me-1"></i><span th:text="#{account.changePassword}">Đổi mật khẩu</span></button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/chatbot-widget :: widget}"></div>
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+</body>
+</html>

@@ -1,0 +1,36 @@
+<nav th:fragment="sidebar" class="list-group admin-sidebar" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+     th:with="p=${currentPath != null ? currentPath : ''}">
+    <div class="admin-sidebar-title">Quầy lễ tân</div>
+    <a th:href="@{/admin/dashboard}" class="list-group-item list-group-item-action"
+       th:classappend="${p.startsWith('/admin/dashboard')} ? 'active'"><i class="bi bi-speedometer2"></i>Tổng quan</a>
+    <a th:href="@{/admin/bookings}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+       th:classappend="${p.startsWith('/admin/bookings')} ? 'active'">
+        <span><i class="bi bi-journal-bookmark"></i>Đặt phòng / Check-in-out</span>
+        <span th:if="${newBookingCount != null and newBookingCount > 0}"
+              class="rounded-circle bg-danger new-dot" style="width:10px;height:10px;" th:title="|${newBookingCount} đơn mới|"></span>
+    </a>
+    <a th:href="@{/admin/room-calendar}" class="list-group-item list-group-item-action"
+       th:classappend="${p.startsWith('/admin/room-calendar')} ? 'active'"><i class="bi bi-calendar3-range"></i>Lịch phòng</a>
+    <a th:href="@{/admin/guest-registrations}" class="list-group-item list-group-item-action"
+       th:classappend="${p.startsWith('/admin/guest-registrations')} ? 'active'"><i class="bi bi-person-vcard"></i>Khai báo lưu trú</a>
+    <a th:href="@{/admin/customers}" class="list-group-item list-group-item-action"
+       th:classappend="${p.startsWith('/admin/customers')} ? 'active'"><i class="bi bi-people"></i>Khách hàng</a>
+    <div class="admin-sidebar-title">Danh mục</div>
+    <a th:href="@{/admin/room-types}" class="list-group-item list-group-item-action"
+       th:classappend="${p.startsWith('/admin/room-types')} ? 'active'"><i class="bi bi-grid-3x3-gap"></i>Loại phòng</a>
+    <a th:href="@{/admin/rooms}" class="list-group-item list-group-item-action"
+       th:classappend="${p.startsWith('/admin/rooms')} ? 'active'"><i class="bi bi-door-closed"></i>Phòng</a>
+    <a th:href="@{/admin/combos}" class="list-group-item list-group-item-action"
+       th:classappend="${p.startsWith('/admin/combos')} ? 'active'"><i class="bi bi-cup-hot"></i>Combo dịch vụ</a>
+    <a th:href="@{/admin/discount-codes}" class="list-group-item list-group-item-action"
+       th:classappend="${p.startsWith('/admin/discount-codes')} ? 'active'"><i class="bi bi-ticket-perforated"></i>Mã giảm giá</a>
+    <a th:href="@{/admin/reviews}" class="list-group-item list-group-item-action"
+       th:classappend="${p.startsWith('/admin/reviews')} ? 'active'"><i class="bi bi-star"></i>Đánh giá</a>
+    <div class="admin-sidebar-title" sec:authorize="hasRole('ADMIN')">Quản trị</div>
+    <a th:href="@{/admin/pricing}" class="list-group-item list-group-item-action" sec:authorize="hasRole('ADMIN')"
+       th:classappend="${p.startsWith('/admin/pricing')} ? 'active'"><i class="bi bi-tags"></i>Giá &amp; đặt cọc</a>
+    <a th:href="@{/admin/staff-accounts}" class="list-group-item list-group-item-action" sec:authorize="hasRole('ADMIN')"
+       th:classappend="${p.startsWith('/admin/staff-accounts')} ? 'active'"><i class="bi bi-person-badge"></i>Tài khoản nhân viên</a>
+    <a th:href="@{/admin/audit-logs}" class="list-group-item list-group-item-action" sec:authorize="hasRole('ADMIN')"
+       th:classappend="${p.startsWith('/admin/audit-logs')} ? 'active'"><i class="bi bi-clock-history"></i>Nhật ký thao tác</a>
+</nav>

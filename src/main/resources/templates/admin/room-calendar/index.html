@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>Lịch phòng</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+    <style>
+        /* Moi ngay = 2 nua cot (--half). Nhan phong giua ngay, tra phong giua ngay */
+        .rc-wrap { overflow-x: auto; background: var(--paper); border: var(--line); border-radius: 10px; box-shadow: var(--pop); }
+        .rc { min-width: max-content; font-size: .85rem; }
+        .rc-row { display: flex; border-bottom: 1px solid #dbe9f5; }
+        .rc-row:last-child { border-bottom: 0; }
+        .rc-label { position: sticky; left: 0; z-index: 4; flex: 0 0 150px; padding: 8px 10px; background: var(--paper);
+            border-right: 1.5px solid var(--ink); line-height: 1.2; }
+        .rc-label .type { display: block; color: var(--ink-soft); font-size: .72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .rc-track { display: grid; grid-template-columns: repeat(var(--halves), var(--half)); grid-template-rows: 46px; }
+        .rc-cell { grid-row: 1; border-right: 1px solid #e4eef7; display: block; }
+        .rc-cell.weekend { background: #f3f9fe; }
+        .rc-cell.today { background: #fff6d6; box-shadow: inset 2px 0 0 #f0b400; }
+        .rc-cell.past { background-image: linear-gradient(rgba(20, 54, 90, .04), rgba(20, 54, 90, .04)); }
+        a.rc-cell:hover { background: var(--baby-soft); box-shadow: inset 0 0 0 2px var(--baby-deep); }
+        a.rc-cell:hover::after { content: '+'; display: grid; place-items: center; height: 100%; color: var(--baby-deep); font-weight: 800; font-size: 1.1rem; }
+        .rc-row.maintenance .rc-track { background: repeating-linear-gradient(45deg, #f1f1f1 0 8px, #e6e6e6 8px 16px); }
+        .rc-row.maintenance .rc-cell { background: transparent; }
+
+        .rc-head .rc-label, .rc-head .rc-cell { background: var(--baby-soft); }
+        .rc-head .rc-track { grid-template-rows: 50px; }
+        .rc-head .rc-cell { display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 700; line-height: 1.15; }
+        .rc-head .rc-cell small { font-weight: 500; color: var(--ink-soft); font-size: .72rem; }
+        .rc-head .rc-cell.today { background: #ffe58a; }
+        .rc-foot .rc-label, .rc-foot .rc-cell { background: #f7fbff; }
+        .rc-foot .rc-track { grid-template-rows: 34px; }
+        .rc-foot .rc-cell { display: grid; place-items: center; font-weight: 700; }
+        .rc-foot .rc-cell.full { color: #c0392b; }
+
+        .rc-bar { grid-row: 1; z-index: 2; align-self: center; height: 32px; margin: 0 1px; padding: 0 8px; border-radius: 16px;
+            border: 1.5px solid var(--ink); display: flex; align-items: center; gap: 5px; overflow: hidden; white-space: nowrap;
+            text-decoration: none !important; color: var(--ink) !important; font-weight: 600; transition: transform .15s, box-shadow .15s; }
+        .rc-bar:hover { transform: translateY(-2px); box-shadow: 3px 3px 0 var(--ink); z-index: 3; }
+        .rc-bar .name { overflow: hidden; text-overflow: ellipsis; }
+        .rc-bar .id { font-weight: 500; opacity: .7; font-size: .75rem; }
+        .rc-bar.clip-l { border-top-left-radius: 0; border-bottom-left-radius: 0; border-left-style: dashed; }
+        .rc-bar.clip-r { border-top-right-radius: 0; border-bottom-right-radius: 0; border-right-style: dashed; }
+        .st-PENDING { background: #ffe08a; }
+        .st-CONFIRMED { background: var(--baby); }
+        .st-CHECKED_IN { background: #8fdcaa; }
+        .st-CHECKED_OUT { background: #d9dee3; color: #5c6670 !important; }
+        .rc-bar.awaiting { background-image: repeating-linear-gradient(-45deg, rgba(255, 255, 255, .55) 0 6px, transparent 6px 12px); }
+        .rc-bar .dot { flex: 0 0 8px; height: 8px; border-radius: 50%; background: #e74c3c; }
+
+        .rc-legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: .85rem; }
+        .rc-legend span { display: inline-flex; align-items: center; gap: 6px; }
+        .rc-legend i.sw { width: 26px; height: 14px; border-radius: 7px; border: 1.5px solid var(--ink); display: inline-block; }
+    </style>
+</head>
+<body class="eaut eaut-admin">
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="container-fluid py-5 px-4">
+    <div class="row g-4">
+        <div class="col-md-3 col-xl-2">
+            <div th:replace="~{fragments/admin-sidebar :: sidebar}"></div>
+        </div>
+
+        <div class="col-md-9 col-xl-10">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <div>
+                    <h3 class="fw-bold m-0">Lịch phòng</h3>
+                    <div class="text-muted small"
+                         th:text="|${#temporals.format(cal.from, 'dd/MM/yyyy')} – ${#temporals.format(cal.to.minusDays(1), 'dd/MM/yyyy')}|"></div>
+                </div>
+                <form th:action="@{/admin/room-calendar}" method="get" class="d-flex gap-2 align-items-center flex-wrap">
+                    <div class="btn-group">
+                        <a class="btn btn-sm btn-outline-primary" title="Khoảng trước"
+                           th:href="@{/admin/room-calendar(from=${cal.prevFrom()}, days=${cal.days})}"><i class="bi bi-chevron-left"></i></a>
+                        <a class="btn btn-sm btn-outline-primary"
+                           th:href="@{/admin/room-calendar(days=${cal.days})}">Hôm nay</a>
+                        <a class="btn btn-sm btn-outline-primary" title="Khoảng sau"
+                           th:href="@{/admin/room-calendar(from=${cal.nextFrom()}, days=${cal.days})}"><i class="bi bi-chevron-right"></i></a>
+                    </div>
+                    <input type="date" name="from" class="form-control form-control-sm" style="width: auto;"
+                           th:value="${cal.from}" onchange="this.form.submit()">
+                    <select name="days" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+                        <option th:each="d : ${allowedDays}" th:value="${d}" th:text="|${d} ngày|" th:selected="${d == cal.days}"></option>
+                    </select>
+                </form>
+            </div>
+
+            <div class="rc-legend mb-3">
+                <span><i class="sw st-PENDING"></i>Chờ xác nhận</span>
+                <span><i class="sw st-PENDING awaiting rc-bar" style="height:14px;padding:0;margin:0"></i>Chờ chuyển cọc</span>
+                <span><i class="sw st-CONFIRMED"></i>Đã xác nhận</span>
+                <span><i class="sw st-CHECKED_IN"></i>Đang ở</span>
+                <span><i class="sw st-CHECKED_OUT"></i>Đã trả phòng</span>
+                <span><i class="sw" style="background: repeating-linear-gradient(45deg,#f1f1f1 0 4px,#d6d6d6 4px 8px)"></i>Bảo trì</span>
+                <span class="text-muted"><i class="bi bi-hand-index"></i> Bấm ô trống để đặt tại quầy</span>
+            </div>
+
+            <div th:if="${#lists.isEmpty(cal.rows)}" class="alert alert-info">Chưa có phòng nào. Hãy thêm phòng trước.</div>
+
+            <div class="rc-wrap" th:unless="${#lists.isEmpty(cal.rows)}"
+                 th:style="|--halves: ${cal.halfColumns()}; --half: ${cal.days == 30 ? '22px' : (cal.days == 14 ? '36px' : '64px')};|">
+                <div class="rc">
+                    <!-- Hang tieu de: ngay -->
+                    <div class="rc-row rc-head">
+                        <div class="rc-label fw-bold d-flex align-items-center">Phòng</div>
+                        <div class="rc-track">
+                            <div th:each="d : ${cal.dayList}" class="rc-cell"
+                                 th:classappend="${d.today} ? 'today' : (${d.weekend} ? 'weekend' : '')"
+                                 th:style="|grid-column: ${d.gridStart()} / span 2|">
+                                <small th:text="${ {'T2','T3','T4','T5','T6','T7','CN'}[d.date.dayOfWeek.value - 1] }"></small>
+                                <span th:text="${#temporals.format(d.date, 'dd/MM')}"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Moi phong 1 hang -->
+                    <div th:each="row : ${cal.rows}" class="rc-row"
+                         th:with="maint=${row.room.status.name() == 'MAINTENANCE'}"
+                         th:classappend="${maint} ? 'maintenance'">
+                        <div class="rc-label">
+                            <a th:href="@{/admin/rooms}" class="fw-bold" th:text="'Phòng ' + ${row.room.roomNumber}"></a>
+                            <span th:if="${maint}" class="badge bg-secondary ms-1">Bảo trì</span>
+                            <span class="type" th:text="${row.room.roomType.name}"></span>
+                        </div>
+                        <div class="rc-track">
+                            <th:block th:each="d : ${cal.dayList}">
+                                <a th:if="${d.bookable and !maint}" class="rc-cell"
+                                   th:classappend="${d.today} ? 'today' : (${d.weekend} ? 'weekend' : '')"
+                                   th:style="|grid-column: ${d.gridStart()} / span 2|"
+                                   th:href="@{/admin/bookings/walk-in/new(roomId=${row.room.id}, checkIn=${d.date}, checkOut=${d.date.plusDays(1)})}"
+                                   th:title="|Đặt phòng ${row.room.roomNumber} từ ${#temporals.format(d.date, 'dd/MM')}|"></a>
+                                <div th:unless="${d.bookable and !maint}" class="rc-cell"
+                                     th:classappend="${d.today} ? 'today' : (${d.weekend} ? 'weekend past' : 'past')"
+                                     th:style="|grid-column: ${d.gridStart()} / span 2|"></div>
+                            </th:block>
+                            <a th:each="bar : ${row.bars}" class="rc-bar"
+                               th:with="b=${bar.booking}"
+                               th:classappend="|st-${b.status} ${bar.clippedLeft ? 'clip-l' : ''} ${bar.clippedRight ? 'clip-r' : ''} ${b.awaitingDeposit ? 'awaiting' : ''}|"
+                               th:style="|grid-column: ${bar.gridStart} / ${bar.gridEnd}|"
+                               th:href="@{/admin/bookings/{id}(id=${b.id})}"
+                               th:title="|#${b.id} · ${bar.guestName()} · ${b.status.vietnameseLabel}${b.awaitingDeposit ? ' (chờ cọc)' : ''}
+${#temporals.format(b.checkInDate, 'dd/MM')} ${b.checkInTime} → ${#temporals.format(b.checkOutDate, 'dd/MM')} ${b.checkOutTime} · ${b.nights} đêm · ${b.numberOfGuests != null ? b.numberOfGuests : '?'} khách|">
+                                <span th:if="${b.newBooking}" class="dot" title="Đơn mới"></span>
+                                <span class="name" th:text="${bar.guestName()}"></span>
+                                <span class="id" th:text="'#' + ${b.id}"></span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Hang cuoi: so phong con trong moi dem -->
+                    <div class="rc-row rc-foot">
+                        <div class="rc-label small fw-bold d-flex align-items-center">Phòng trống</div>
+                        <div class="rc-track">
+                            <div th:each="d : ${cal.dayList}" class="rc-cell"
+                                 th:classappend="${cal.freeRooms[d.index] == 0} ? 'full'"
+                                 th:style="|grid-column: ${d.gridStart()} / span 2|"
+                                 th:text="${cal.freeRooms[d.index]}"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+</body>
+</html>
