@@ -77,7 +77,7 @@
                         <label class="form-label">Chọn phòng</label>
                         <select name="roomId" class="form-select" required>
                             <option th:each="room : ${availableRooms}" th:value="${room.id}"
-                                    th:text="'Phòng ' + ${room.roomNumber} + ' - ' + ${room.roomType.name} + ' (' + ${#numbers.formatDecimal(room.price, 1, 0)} + 'VND/đêm)'"
+                                    th:text="'Phòng ' + ${room.roomNumber} + ' - ' + ${room.roomType.name} + ' (' + ${#numbers.formatDecimal(room.price, 1, 'POINT', 0, 'COMMA')} + 'VND/đêm)'"
                                     th:selected="${preselectedRoomId != null and room.id == preselectedRoomId}"></option>
                         </select>
                     </div>
@@ -102,7 +102,7 @@
                         <select name="comboId" class="form-select">
                             <option value="">Phòng thường (không combo)</option>
                             <option th:each="c : ${combos}" th:value="${c.id}"
-                                    th:text="${c.name} + ' (+' + ${#numbers.formatDecimal(c.price, 1, 0)} + 'VND)'"
+                                    th:text="${c.name} + ' (+' + ${#numbers.formatDecimal(c.price, 1, 'POINT', 0, 'COMMA')} + 'VND)'"
                                     th:selected="${preselectedComboId != null and c.id == preselectedComboId}"></option>
                         </select>
                     </div>

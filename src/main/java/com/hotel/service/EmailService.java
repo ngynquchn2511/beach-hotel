@@ -1,5 +1,6 @@
 package com.hotel.service;
 
+import com.hotel.util.Money;
 import com.hotel.entity.Booking;
 import com.hotel.entity.BookingCharge;
 import com.hotel.entity.BookingStatus;
@@ -19,12 +20,9 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.web.util.HtmlUtils;
 
 import java.math.BigDecimal;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.Executor;
 
 @Service
@@ -239,8 +237,7 @@ public class EmailService {
 
     // Dinh dang tien kieu Viet Nam: 1.250.000
     private String money(BigDecimal value) {
-        DecimalFormat format = new DecimalFormat("#,##0", DecimalFormatSymbols.getInstance(new Locale("vi", "VN")));
-        return format.format(value == null ? BigDecimal.ZERO : value);
+        return Money.format(value);
     }
 
     private String esc(String value) {

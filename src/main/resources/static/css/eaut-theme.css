@@ -1,6 +1,6 @@
 /* =====================================================================
    Giao dien khach hang - phong cach "do van phong pham khach san":
-   giay trang cham bi, muc xanh dai duong, xanh ngoc bien lam diem nhan, vang cat, bong do lech kieu nhan dan,
+   giay trang cham bi, muc xanh dai duong, xanh baby lam diem nhan, vang cat, bong do lech kieu nhan dan,
    the chia khoa / tem hanh ly / ve / anh polaroid.
    Chi ap dung khi <body class="eaut">. Khu quan tri dung chung theme (<body class="eaut eaut-admin">)
    va co them phan rieng o cuoi file (sidebar, nut/nhan nhieu mau, bang du lieu).
@@ -8,18 +8,29 @@
    ===================================================================== */
 body.eaut, body.eaut-chrome {
     --paper: #ffffff;
-    --dot: #d4f1ef;
-    --baby: #8fdcd6;
-    --baby-soft: #e2f7f5;
-    --baby-deep: #1fa9a3;
-    --ink: #0e3a52;
-    --ink-soft: #4a6e80;
+    --dot: #d6ebf8;
+    --baby: #89cff0;
+    --baby-soft: #e8f5fd;
+    --baby-deep: #3d9bd6;
+    --ink: #13395e;
+    --ink-soft: #4d6b88;
     --sun: #ffcf73;
     --line: 1.5px solid var(--ink);
     --pop: 5px 5px 0 var(--baby);
     --pop-hover: 8px 8px 0 var(--baby-deep);
     --display: 'Fraunces', Georgia, serif;
+    /* Mau "primary" cua Bootstrap (checkbox, focus, phan trang, nav-pills...) cung theo tone xanh baby */
+    --bs-primary: #3d9bd6;
+    --bs-primary-rgb: 61, 155, 214;
+    --bs-link-color: #13395e;
+    --bs-link-color-rgb: 19, 57, 94;
+    --bs-link-hover-color: #3d9bd6;
+    --bs-link-hover-color-rgb: 61, 155, 214;
 }
+body:is(.eaut, .eaut-chrome) .form-check-input:checked { background-color: var(--baby-deep); border-color: var(--baby-deep); }
+body:is(.eaut, .eaut-chrome) .page-link { color: var(--ink); }
+body:is(.eaut, .eaut-chrome) .page-item.active .page-link,
+body:is(.eaut, .eaut-chrome) .nav-pills .nav-link.active { background-color: var(--baby); border-color: var(--ink); color: var(--ink); }
 
 body.eaut {
     font-family: 'Be Vietnam Pro', system-ui, sans-serif;
@@ -193,8 +204,8 @@ body.eaut .no-image, body.eaut .main-image-box { background: var(--baby-soft) !i
 body.eaut .main-image-box { padding: 10px; box-shadow: var(--pop) !important; }
 body.eaut .room-thumb { border: var(--line) !important; border-radius: 6px !important; }
 .price-tag {
-    display: inline-block; position: relative; padding: .3rem .9rem .3rem 1.1rem; font-weight: 800; color: var(--ink, #0e3a52);
-    background: var(--sun, #ffcf73); border: 1.5px solid var(--ink, #0e3a52); border-radius: 4px;
+    display: inline-block; position: relative; padding: .3rem .9rem .3rem 1.1rem; font-weight: 800; color: var(--ink, #13395e);
+    background: var(--sun, #ffcf73); border: 1.5px solid var(--ink, #13395e); border-radius: 4px;
     /* rang cua ben trai nhu cuong ve */
     -webkit-mask: radial-gradient(circle at 0 50%, transparent 6px, #000 6.5px);
             mask: radial-gradient(circle at 0 50%, transparent 6px, #000 6.5px);

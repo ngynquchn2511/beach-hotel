@@ -69,7 +69,7 @@
                                 <div class="small text-danger" th:if="${o.booking.status.name() == 'CANCELLED'}">Đơn phòng đã hủy</div>
                             </td>
                             <td th:text="${o.participants}"></td>
-                            <td class="text-nowrap" th:text="${#numbers.formatDecimal(o.totalPrice, 1, 0)} + ' VND'"></td>
+                            <td class="text-nowrap" th:text="${#numbers.formatDecimal(o.totalPrice, 1, 'POINT', 0, 'COMMA')} + ' VND'"></td>
                             <td><span class="badge" th:classappend="${o.status.name() == 'CONFIRMED'} ? 'bg-success' : (${o.status.name() == 'PENDING'} ? 'bg-warning text-dark' : 'bg-secondary')"
                                       th:text="${o.status.vietnameseLabel}"></span></td>
                             <td class="text-end text-nowrap">
@@ -116,7 +116,7 @@
                                 <div class="small text-danger" th:if="${o.booking.status.name() == 'CANCELLED'}">Đơn phòng đã hủy</div>
                             </td>
                             <td class="text-nowrap" th:text="${o.vehicleType.vietnameseLabel} + ' · ' + ${o.passengers} + ' khách'"></td>
-                            <td class="text-nowrap" th:text="${#numbers.formatDecimal(o.price, 1, 0)} + ' VND'"></td>
+                            <td class="text-nowrap" th:text="${#numbers.formatDecimal(o.price, 1, 'POINT', 0, 'COMMA')} + ' VND'"></td>
                             <td><span class="badge" th:classappend="${o.status.name() == 'CONFIRMED'} ? 'bg-success' : (${o.status.name() == 'PENDING'} ? 'bg-warning text-dark' : 'bg-secondary')"
                                       th:text="${o.status.vietnameseLabel}"></span></td>
                             <td class="text-end text-nowrap">

@@ -45,6 +45,8 @@
     <!-- Tour lan -->
     <section id="tour-lan" class="mb-5">
         <h2 class="fw-bold mb-3"><i class="bi bi-water me-2"></i><span th:text="#{svc.tours.title}">Tour lặn biển</span></h2>
+        <!-- Khach vang lai (dat phong khong can tai khoan) dat tour qua link trong email xac nhan -->
+        <p class="small text-muted" sec:authorize="!hasRole('CUSTOMER')" th:text="#{svc.tour.guestHint}"></p>
         <div class="alert alert-info" th:if="${#lists.isEmpty(tours)}" th:text="#{svc.tours.empty}"></div>
         <div class="row g-4">
             <div class="col-md-6 col-lg-4" th:each="t : ${tours}">
@@ -59,8 +61,12 @@
                             <li th:if="${t.minAge != null}"><i class="bi bi-person-check"></i><span th:text="#{svc.tour.minAge(${t.minAge})}"></span></li>
                             <li th:if="${t.meetingPoint}"><i class="bi bi-geo-alt"></i><span th:text="#{svc.tour.meeting(${t.meetingPoint})}"></span></li>
                         </ul>
-                        <div class="mt-auto"><span class="price" th:text="${#numbers.formatDecimal(t.pricePerPerson, 1, 0)} + 'đ'"></span>
-                            <span class="text-muted" th:text="#{svc.tour.perPerson}">/ người</span></div>
+                        <div class="mt-auto d-flex justify-content-between align-items-center gap-2 flex-wrap">
+                            <div><span class="price" th:text="${#numbers.formatDecimal(t.pricePerPerson, 1, 'POINT', 0, 'COMMA')} + 'đ'"></span>
+                                <span class="text-muted" th:text="#{svc.tour.perPerson}">/ người</span></div>
+                            <a th:href="@{/customer/services/tours/{id}(id=${t.id})}" class="btn btn-primary btn-sm">
+                                <i class="bi bi-calendar-plus me-1"></i><span th:text="#{svc.tour.book}">Đặt tour này</span></a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -84,7 +90,7 @@
                     <td class="fw-semibold" th:text="#{${'airport.' + a.name()}}"></td>
                     <td th:each="v : ${vehicles}" class="text-end"
                         th:with="price=${rates.get(a) != null ? rates.get(a).get(v) : null}"
-                        th:text="${price != null} ? ${#numbers.formatDecimal(price, 1, 0)} + 'đ' : '—'"></td>
+                        th:text="${price != null} ? ${#numbers.formatDecimal(price, 1, 'POINT', 0, 'COMMA')} + 'đ' : '—'"></td>
                 </tr>
                 </tbody>
             </table>

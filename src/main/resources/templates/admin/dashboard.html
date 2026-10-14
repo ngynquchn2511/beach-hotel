@@ -163,10 +163,10 @@
     /*]]>*/
 
     // Cung bang mau voi theme: muc navy, xanh baby, vang tem, nhan trang thai giong badge
-    const INK = '#0e3a52', BABY = '#8fdcd6', BABY_DEEP = '#1fa9a3';
+    const INK = '#13395e', BABY = '#89cff0', BABY_DEEP = '#3d9bd6';
     Chart.defaults.font.family = "'Be Vietnam Pro', system-ui, sans-serif";
     Chart.defaults.color = INK;
-    Chart.defaults.borderColor = '#d4f1ef';
+    Chart.defaults.borderColor = '#d6ebf8';
     // Truc tien: rut gon 1.500.000 -> 1,5tr de nhan khong bi cat trong khung hep
     const moneyTick = v => v >= 1e6 ? (v / 1e6).toLocaleString('vi-VN') + 'tr'
         : v >= 1e3 ? (v / 1e3).toLocaleString('vi-VN') + 'k' : v;
@@ -178,7 +178,7 @@
             labels: bookingStatusLabels,
             datasets: [{
                 data: bookingStatusData,
-                backgroundColor: ['#ffcf73', BABY, '#bdeccf', '#e2f7f5', '#ffd4dc'],
+                backgroundColor: ['#ffcf73', BABY, '#bdeccf', '#e8f5fd', '#ffd4dc'],
                 borderColor: INK,
                 borderWidth: 1.5
             }]

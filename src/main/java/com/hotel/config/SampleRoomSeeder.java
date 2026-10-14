@@ -20,6 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalTime;
+import java.util.List;
+import java.util.Map;
 
 // Tao san hang phong, phong, combo hai san va tour lan cua resort bien de chay thu ngay sau khi clone.
 // Chi chay khi DB chua co hang phong nao (lan dau) va app.seed-sample-rooms=true (may dev).
@@ -30,6 +32,19 @@ import java.time.LocalTime;
 public class SampleRoomSeeder implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(SampleRoomSeeder.class);
+
+    // Bo anh gioi thieu tung hang phong (static/page-images/rooms, nguon Wikimedia Commons - xem about.credit)
+    private static final List<String> STANDARD_IMAGES = roomImages("standard", 4);
+    private static final List<String> DELUXE_IMAGES = roomImages("deluxe", 5);
+    private static final List<String> FAMILY_IMAGES = roomImages("family", 5);
+    private static final List<String> SUITE_IMAGES = roomImages("suite", 6);
+
+    // Ban mau cu moi phong chi co 1 anh -> doi sang bo anh moi (chi phong con dung nguyen 1 anh mau cu)
+    private static final Map<String, List<String>> LEGACY_IMAGES = Map.of(
+            "/page-images/anhphonggiuongdoi.jpg", STANDARD_IMAGES,
+            "/page-images/viewcuasogiuongdoi.jpg", DELUXE_IMAGES,
+            "/page-images/anhphonggiuongdoi2.jpg", FAMILY_IMAGES,
+            "/page-images/anhphongVIP.jpg", SUITE_IMAGES);
 
     private final RoomTypeRepository roomTypeRepository;
     private final RoomRepository roomRepository;
@@ -49,6 +64,7 @@ public class SampleRoomSeeder implements CommandLineRunner {
     public void run(String... args) {
         seedDivingTours();
         if (roomTypeRepository.count() > 0) {
+            upgradeLegacyRoomImages();
             return;
         }
 
@@ -85,10 +101,10 @@ public class SampleRoomSeeder implements CommandLineRunner {
                 .amenitiesEn("Private lounge, sea-view bathtub, large balcony, coffee machine, minibar")
                 .build());
 
-        addRooms(standard, "/page-images/anhphonggiuongdoi.jpg", "101", "102", "103");
-        addRooms(deluxe, "/page-images/viewcuasogiuongdoi.jpg", "201", "202", "203", "204");
-        addRooms(family, "/page-images/anhphonggiuongdoi2.jpg", "301", "302");
-        addRooms(suite, "/page-images/anhphongVIP.jpg", "501");
+        addRooms(standard, STANDARD_IMAGES, "101", "102", "103");
+        addRooms(deluxe, DELUXE_IMAGES, "201", "202", "203", "204");
+        addRooms(family, FAMILY_IMAGES, "301", "302");
+        addRooms(suite, SUITE_IMAGES, "501");
 
         addCombo("Combo BBQ hải sản bên biển", "Seafood BBQ by the beach",
                 "Tôm, mực, sò điệp, cá nướng tươi rói phục vụ ngay trên bãi biển của resort.",
@@ -138,7 +154,33 @@ public class SampleRoomSeeder implements CommandLineRunner {
                 .build());
     }
 
-    private void addRooms(RoomType type, String imageUrl, String... numbers) {
+    private static List<String> roomImages(String name, int count) {
+        return java.util.stream.IntStream.rangeClosed(1, count)
+                .mapToObj(i -> "/page-images/rooms/" + name + "-" + i + ".jpg")
+                .toList();
+    }
+
+    private void upgradeLegacyRoomImages() {
+        int upgraded = 0;
+        for (Room room : roomRepository.findAll()) {
+            if (room.getImages().size() != 1) {
+                continue;
+            }
+            List<String> images = LEGACY_IMAGES.get(room.getImages().get(0).getImageUrl());
+            if (images == null) {
+                continue;
+            }
+            room.getImages().clear();
+            images.forEach(url -> room.getImages().add(RoomImage.builder().room(room).imageUrl(url).build()));
+            roomRepository.save(room);
+            upgraded++;
+        }
+        if (upgraded > 0) {
+            log.info("Da cap nhat bo anh moi cho {} phong mau", upgraded);
+        }
+    }
+
+    private void addRooms(RoomType type, List<String> imageUrls, String... numbers) {
         for (String number : numbers) {
             Room room = Room.builder()
                     .roomNumber(number)
@@ -148,7 +190,7 @@ public class SampleRoomSeeder implements CommandLineRunner {
                     .description(type.getDescription())
                     .descriptionEn(type.getDescriptionEn())
                     .build();
-            room.getImages().add(RoomImage.builder().room(room).imageUrl(imageUrl).build());
+            imageUrls.forEach(url -> room.getImages().add(RoomImage.builder().room(room).imageUrl(url).build()));
             roomRepository.save(room);
         }
     }

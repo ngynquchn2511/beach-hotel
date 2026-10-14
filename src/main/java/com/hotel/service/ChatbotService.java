@@ -1,5 +1,6 @@
 package com.hotel.service;
 
+import com.hotel.util.Money;
 import com.hotel.entity.Airport;
 import com.hotel.entity.Combo;
 import com.hotel.entity.CustomerType;
@@ -22,7 +23,6 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.text.Normalizer;
-import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -118,9 +118,7 @@ public class ChatbotService {
         }
 
         private String money(BigDecimal amount) {
-            NumberFormat nf = NumberFormat.getInstance(locale);
-            nf.setMaximumFractionDigits(0);
-            return t("chat.money", nf.format(amount));
+            return t("chat.money", Money.format(amount));
         }
 
         private String lines(String... codes) {
@@ -347,9 +345,7 @@ public class ChatbotService {
         }
 
         private String number(BigDecimal amount) {
-            NumberFormat nf = NumberFormat.getInstance(locale);
-            nf.setMaximumFractionDigits(0);
-            return nf.format(amount);
+            return Money.format(amount);
         }
 
         private String buildAvailabilityAnswer(List<RoomType> matchedTypes) {

@@ -43,7 +43,7 @@
                 <tbody>
                 <tr th:each="rt : ${roomTypes}">
                     <td th:text="${rt.name}"></td>
-                    <td th:text="${#numbers.formatDecimal(rt.basePrice, 1, 0)} + 'VND'"></td>
+                    <td th:text="${#numbers.formatDecimal(rt.basePrice, 1, 'POINT', 0, 'COMMA')} + 'VND'"></td>
                     <td th:text="${rt.maxGuests} + ' người'"></td>
                     <td th:text="${rt.area} + ' m2'"></td>
                     <td class="text-end">

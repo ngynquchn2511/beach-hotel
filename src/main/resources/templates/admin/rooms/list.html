@@ -49,7 +49,7 @@
                     </td>
                     <td th:text="${room.roomNumber}"></td>
                     <td th:text="${room.roomType.name}"></td>
-                    <td th:text="${#numbers.formatDecimal(room.price, 1, 0)} + 'VND'"></td>
+                    <td th:text="${#numbers.formatDecimal(room.price, 1, 'POINT', 0, 'COMMA')} + 'VND'"></td>
                     <td>
                         <form th:action="@{/admin/rooms/{id}/status(id=${room.id})}" method="post" class="d-flex gap-1">
                             <select name="status" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">

@@ -64,41 +64,41 @@
         <tr>
             <td th:text="'Tiền phòng ' + ${booking.room.roomNumber} + ' (' + ${booking.room.roomType.name} + ')'"></td>
             <!-- Gia moi dem co the khac nhau (cuoi tuan / ngay le) -> hien gia trung binh -->
-            <td class="text-end" th:text="${#numbers.formatDecimal(roomUnitPrice, 1, 0)}"></td>
+            <td class="text-end" th:text="${#numbers.formatDecimal(roomUnitPrice, 1, 'POINT', 0, 'COMMA')}"></td>
             <td class="text-end" th:text="${nights} + ' đêm'"></td>
-            <td class="text-end" th:text="${#numbers.formatDecimal(roomAmount, 1, 0)}"></td>
+            <td class="text-end" th:text="${#numbers.formatDecimal(roomAmount, 1, 'POINT', 0, 'COMMA')}"></td>
         </tr>
         <tr th:if="${booking.combo != null}">
             <td th:text="'Combo: ' + ${booking.combo.name}"></td>
-            <td class="text-end" th:text="${#numbers.formatDecimal(booking.combo.price, 1, 0)}"></td>
+            <td class="text-end" th:text="${#numbers.formatDecimal(booking.combo.price, 1, 'POINT', 0, 'COMMA')}"></td>
             <td class="text-end">1</td>
-            <td class="text-end" th:text="${#numbers.formatDecimal(booking.combo.price, 1, 0)}"></td>
+            <td class="text-end" th:text="${#numbers.formatDecimal(booking.combo.price, 1, 'POINT', 0, 'COMMA')}"></td>
         </tr>
         <tr th:if="${booking.discountCode != null and booking.discountAmount != null}">
             <td colspan="3" th:text="'Giảm giá (mã ' + ${booking.discountCode.code} + ')'"></td>
-            <td class="text-end" th:text="'-' + ${#numbers.formatDecimal(booking.discountAmount, 1, 0)}"></td>
+            <td class="text-end" th:text="'-' + ${#numbers.formatDecimal(booking.discountAmount, 1, 'POINT', 0, 'COMMA')}"></td>
         </tr>
         <tr th:each="c : ${charges}">
             <td th:text="'Phụ phí: ' + ${c.label}"></td>
-            <td class="text-end" th:text="${#numbers.formatDecimal(c.amount, 1, 0)}"></td>
+            <td class="text-end" th:text="${#numbers.formatDecimal(c.amount, 1, 'POINT', 0, 'COMMA')}"></td>
             <td class="text-end">1</td>
-            <td class="text-end" th:text="${#numbers.formatDecimal(c.amount, 1, 0)}"></td>
+            <td class="text-end" th:text="${#numbers.formatDecimal(c.amount, 1, 'POINT', 0, 'COMMA')}"></td>
         </tr>
         </tbody>
         <tfoot>
         <th:block th:if="${depositPaid.signum() > 0}">
         <tr>
             <td colspan="3" class="text-end">Tổng giá trị đơn</td>
-            <td class="text-end" th:text="${#numbers.formatDecimal(grandTotal, 1, 0)}"></td>
+            <td class="text-end" th:text="${#numbers.formatDecimal(grandTotal, 1, 'POINT', 0, 'COMMA')}"></td>
         </tr>
         <tr>
             <td colspan="3" class="text-end">Đã đặt cọc</td>
-            <td class="text-end" th:text="'-' + ${#numbers.formatDecimal(depositPaid, 1, 0)}"></td>
+            <td class="text-end" th:text="'-' + ${#numbers.formatDecimal(depositPaid, 1, 'POINT', 0, 'COMMA')}"></td>
         </tr>
         </th:block>
         <tr class="fw-bold fs-5">
             <td colspan="3" class="text-end" th:text="${depositPaid.signum() > 0} ? 'Thanh toán khi trả phòng' : 'Tổng thanh toán'">Tổng thanh toán</td>
-            <td class="text-end" th:text="${#numbers.formatDecimal(payment.amount, 1, 0)} + ' VND'"></td>
+            <td class="text-end" th:text="${#numbers.formatDecimal(payment.amount, 1, 'POINT', 0, 'COMMA')} + ' VND'"></td>
         </tr>
         </tfoot>
     </table>

@@ -33,12 +33,12 @@
         .calendar-day.available { color: #212529; }
         .calendar-day.available:hover { background: #e9ecef; }
         .calendar-day.unavailable, .calendar-day.past { color: #adb5bd; background: #e9ecef; cursor: not-allowed; }
-        .calendar-day.selected, .calendar-day.in-range { background: #0d6efd; color: white; }
-        .calendar-day.in-range { background: #cfe2ff; color: #212529; }
+        .calendar-day.selected, .calendar-day.in-range { background: #3d9bd6; color: white; }
+        .calendar-day.in-range { background: #d6ebf8; color: #212529; }
         /* Ngay chi co don cho xac nhan giu cho: soc vang - co the trong lai neu don bi huy */
         .calendar-day.pending, .pending-swatch { background: repeating-linear-gradient(45deg, #fff3cd, #fff3cd 4px, #ffe69c 4px, #ffe69c 8px) !important; color: #8a6100 !important; }
         /* Ngay co khach nhung chon duoc lam ngay tra phong */
-        .calendar-day.checkout-only { background: #e9ecef; color: #212529; cursor: pointer; outline: 1.5px dashed #0d6efd; }
+        .calendar-day.checkout-only { background: #e9ecef; color: #212529; cursor: pointer; outline: 1.5px dashed #3d9bd6; }
         .room-stars .bi { color: #f2b705; }
         .room-review { padding: .9rem 0 0; }
         .room-review + .room-review { margin-top: .9rem; border-top: 1.5px dashed #b9dcf0; }
@@ -123,7 +123,7 @@
                     <span class="text-muted" th:text="#{detail.reviewCountShort(${ratingStats.count})}"></span>
                 </a>
                 <div th:unless="${ratingStats.count > 0}" class="mb-3"></div>
-                <h4 class="fw-bold text-primary" th:text="#{common.pricePerNight(${#numbers.formatDecimal(room.price, 1, 0)})}"></h4>
+                <h4 class="fw-bold text-primary" th:text="#{common.pricePerNight(${#numbers.formatDecimal(room.price, 1, 'POINT', 0, 'COMMA')})}"></h4>
 
                 <hr>
 
@@ -158,7 +158,7 @@
                         <select name="comboId" class="form-select" onchange="this.form.submit()">
                             <option value="" th:text="#{detail.noCombo}">Phòng thường (không combo)</option>
                             <option th:each="c : ${combos}" th:value="${c.id}"
-                                    th:text="#{detail.comboOption(${c.localizedName}, ${#numbers.formatDecimal(c.price, 1, 0)})}"
+                                    th:text="#{detail.comboOption(${c.localizedName}, ${#numbers.formatDecimal(c.price, 1, 'POINT', 0, 'COMMA')})}"
                                     th:selected="${selectedComboId != null and c.id == selectedComboId}"></option>
                         </select>
                     </form>
@@ -181,9 +181,9 @@
                     <p class="mb-1"><span th:text="#{detail.checkIn}">Ngày nhận phòng:</span> <span th:text="${#temporals.format(checkIn, 'dd/MM/yyyy')}"></span></p>
                     <p class="mb-1"><span th:text="#{detail.checkOut}">Ngày trả phòng:</span> <span th:text="${#temporals.format(checkOut, 'dd/MM/yyyy')}"></span></p>
                     <p class="mb-1"><span th:text="#{detail.nights}">Số đêm:</span> <span th:text="${nights}"></span></p>
-                    <p class="mb-1"><span th:text="#{detail.roomAmount}">Tiền phòng:</span> <span th:text="${#numbers.formatDecimal(roomAmount, 1, 0)} + 'VND'"></span></p>
-                    <p class="mb-1" th:if="${selectedCombo != null}"><span th:text="#{detail.comboLine(${selectedCombo.localizedName})}">Combo:</span> <span th:text="${#numbers.formatDecimal(comboAmount, 1, 0)} + 'VND'"></span></p>
-                    <p class="fw-bold mb-3"><span th:text="#{detail.total}">Tổng tiền:</span> <span th:text="${#numbers.formatDecimal(totalAmount, 1, 0)} + 'VND'"></span></p>
+                    <p class="mb-1"><span th:text="#{detail.roomAmount}">Tiền phòng:</span> <span th:text="${#numbers.formatDecimal(roomAmount, 1, 'POINT', 0, 'COMMA')} + 'VND'"></span></p>
+                    <p class="mb-1" th:if="${selectedCombo != null}"><span th:text="#{detail.comboLine(${selectedCombo.localizedName})}">Combo:</span> <span th:text="${#numbers.formatDecimal(comboAmount, 1, 'POINT', 0, 'COMMA')} + 'VND'"></span></p>
+                    <p class="fw-bold mb-3"><span th:text="#{detail.total}">Tổng tiền:</span> <span th:text="${#numbers.formatDecimal(totalAmount, 1, 'POINT', 0, 'COMMA')} + 'VND'"></span></p>
 
                     <div th:if="${available}" class="alert alert-success mb-2" th:text="#{detail.available}">Phòng còn trống trong khoảng ngày này</div>
                     <!-- Ngay doi khach: bao gio nhan / tra som nhat co the -->

@@ -46,7 +46,7 @@
                         <span th:unless="${combo.imageUrl}" class="text-muted small">Chưa có ảnh</span>
                     </td>
                     <td th:text="${combo.name}"></td>
-                    <td th:text="${#numbers.formatDecimal(combo.price, 1, 0)} + 'VND'"></td>
+                    <td th:text="${#numbers.formatDecimal(combo.price, 1, 'POINT', 0, 'COMMA')} + 'VND'"></td>
                     <td th:text="${combo.maxGuests != null ? combo.maxGuests + ' người' : '-'}"></td>
                     <td>
                         <span class="badge" th:classappend="${combo.active} ? 'bg-success' : 'bg-secondary'"

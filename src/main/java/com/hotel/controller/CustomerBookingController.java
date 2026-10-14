@@ -1,5 +1,6 @@
 package com.hotel.controller;
 
+import com.hotel.util.Money;
 import com.hotel.dto.BookingConfirmRequest;
 import com.hotel.entity.Booking;
 import com.hotel.entity.CustomerType;
@@ -21,7 +22,6 @@ import com.hotel.util.PaginationUtil;
 import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import com.hotel.service.UserMessages;
-import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.ui.Model;
@@ -30,7 +30,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.math.BigDecimal;
-import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
@@ -208,7 +207,7 @@ public class CustomerBookingController {
             result.put("valid", true);
             result.put("discountAmount", discountAmount);
             result.put("message", userMessages.get("msg.discountValid",
-                    NumberFormat.getIntegerInstance(LocaleContextHolder.getLocale()).format(discountAmount)));
+                    Money.format(discountAmount)));
         } catch (BusinessException ex) {
             result.put("valid", false);
             result.put("message", userMessages.of(ex));
@@ -221,6 +220,7 @@ public class CustomerBookingController {
     // khach da dang nhap thi xem duoc don cua chinh minh. Khong cho xem don nguoi khac chi bang cach doi id.
     @GetMapping("/{id}")
     public String viewBooking(@PathVariable Long id, @RequestParam(required = false) String token,
+                              @RequestParam(required = false) Long tourId,
                               @AuthenticationPrincipal CustomUserDetails userDetails, Model model) {
         Booking booking = bookingService.findForViewing(id, token,
                 userDetails != null ? userDetails.getUser().getId() : null);
@@ -245,6 +245,8 @@ public class CustomerBookingController {
         model.addAttribute("transferOrders", serviceOrderService.transfersOf(id));
         model.addAttribute("canOrderServices", serviceOrderService.canOrderServices(booking));
         model.addAttribute("activeTours", divingTourService.findActive());
+        // Den tu nut "Dat tour nay" o trang /services: chon san tour do trong form
+        model.addAttribute("preselectTourId", tourId);
         model.addAttribute("transferRates", transferRateService.priceTable());
         model.addAttribute("airports", com.hotel.entity.Airport.values());
         model.addAttribute("vehicles", com.hotel.entity.VehicleType.values());

@@ -55,10 +55,10 @@ class SystemJourneyST extends StBase {
     @Test
     @Order(2)
     @TcSteps("Bấm Xem chi tiết phòng, chọn khoảng ngày và combo Lẩu")
-    @DisplayName("Trang chi tiết phòng tính đúng tổng tiền ¦ 2 đêm × 350.000 + combo 399.000 ¦ Hiển thị \"Tổng tiền: 1099000VND\" và \"Phòng còn trống\"")
+    @DisplayName("Trang chi tiết phòng tính đúng tổng tiền ¦ 2 đêm × 350.000 + combo 399.000 ¦ Hiển thị \"Tổng tiền: 1.099.000VND\" và \"Phòng còn trống\"")
     void s02_detail() {
         Res r = guest.get(roomUrl() + "&comboId=" + combo.getId());
-        assertThat(r.body()).contains("1099000VND").contains("Phòng còn trống trong khoảng ngày này");
+        assertThat(r.body()).contains("1.099.000VND").contains("Phòng còn trống trong khoảng ngày này");
     }
 
     @Test
@@ -84,7 +84,7 @@ class SystemJourneyST extends StBase {
     @Test
     @Order(5)
     @TcSteps("Điền họ tên, email, SĐT, giờ nhận/trả, mã giảm giá rồi bấm Xác nhận đặt phòng")
-    @DisplayName("Khách vãng lai đặt phòng thành công ¦ POST /customer/bookings/new đủ thông tin + mã HANHTRINH10 ¦ Chuyển tới trang đơn, trạng thái \"Chờ xác nhận\", tổng 989100")
+    @DisplayName("Khách vãng lai đặt phòng thành công ¦ POST /customer/bookings/new đủ thông tin + mã HANHTRINH10 ¦ Chuyển tới trang đơn, trạng thái \"Chờ xác nhận\", tổng 989.100")
     void s05_book() {
         Res r = guest.post("/customer/bookings/new", form("roomId", room.getId().toString(), "checkIn", in.toString(), "checkOut", out.toString(),
                 "comboId", combo.getId().toString(), "guestName", "Khách Hành Trình", "guestEmail", "hanhtrinh" + seq() + "@gmail.com",
@@ -96,7 +96,7 @@ class SystemJourneyST extends StBase {
         guestBookingUrl = r.location();
         bookingId = Long.valueOf(r.location().substring("/customer/bookings/".length(), r.location().indexOf('?')));
         Res page = guest.get(r.location());
-        assertThat(page.body()).contains("Chờ xác nhận").contains("989100");
+        assertThat(page.body()).contains("Chờ xác nhận").contains("989.100");
     }
 
     @Test
@@ -232,11 +232,11 @@ class SystemJourneyST extends StBase {
     @Test
     @Order(18)
     @TcSteps("Khách chọn combo Lẩu trong mục Đổi/hủy combo, bấm Cập nhật combo")
-    @DisplayName("Khách tự thêm combo cho đơn ¦ POST /customer/bookings/<id>/edit-combo comboId=Lẩu ¦ Tổng tiền mới 749000 (350.000 + 399.000)")
+    @DisplayName("Khách tự thêm combo cho đơn ¦ POST /customer/bookings/<id>/edit-combo comboId=Lẩu ¦ Tổng tiền mới 749.000 (350.000 + 399.000)")
     void s18_editCombo() {
         Res r = customerBrowser.follow(customerBrowser.post("/customer/bookings/" + customerBookingId + "/edit-combo",
                 form("comboId", combo.getId().toString())));
-        assertThat(r.body()).contains("749000");
+        assertThat(r.body()).contains("749.000");
     }
 
     @Test

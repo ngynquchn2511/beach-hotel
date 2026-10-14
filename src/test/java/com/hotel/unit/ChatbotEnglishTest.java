@@ -96,7 +96,7 @@ class ChatbotEnglishTest {
 
     @Test
     void englishPrices_useEnglishNumberFormat() {
-        assertThat(ask("How much is the VIP room?")).contains("**1,500,000 VND**/night").contains("**+30%**");
+        assertThat(ask("How much is the VIP room?")).contains("**1.500.000 VND**/night").contains("**+30%**");
     }
 
     @Test

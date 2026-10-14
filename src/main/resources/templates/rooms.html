@@ -52,7 +52,7 @@
                         <div class="card-body">
                             <h5 class="card-title" th:text="#{common.room(${room.roomNumber})}"></h5>
                             <p class="card-text text-muted" th:text="${room.roomType.localizedName}"></p>
-                            <p class="card-text"><span class="price-tag" th:text="#{common.pricePerNight(${#numbers.formatDecimal(room.price, 1, 0)})}"></span></p>
+                            <p class="card-text"><span class="price-tag" th:text="#{common.pricePerNight(${#numbers.formatDecimal(room.price, 1, 'POINT', 0, 'COMMA')})}"></span></p>
                             <span class="badge bg-secondary mb-2" th:text="#{'enum.RoomStatus.' + ${room.status}}"></span>
                             <a th:href="@{/customer/rooms/{id}(id=${room.id})}" class="btn btn-primary btn-sm w-100" th:text="#{rooms.detailAndBook}">Xem chi tiết &amp; đặt phòng</a>
                         </div>

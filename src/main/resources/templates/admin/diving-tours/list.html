@@ -52,7 +52,7 @@
                         <div class="fw-semibold" th:text="${tour.name}"></div>
                         <div class="small text-muted" th:if="${tour.meetingPoint}" th:text="${tour.meetingPoint}"></div>
                     </td>
-                    <td th:text="${#numbers.formatDecimal(tour.pricePerPerson, 1, 0)} + ' VND'"></td>
+                    <td th:text="${#numbers.formatDecimal(tour.pricePerPerson, 1, 'POINT', 0, 'COMMA')} + ' VND'"></td>
                     <td th:text="${#temporals.format(tour.departureTime, 'HH:mm')} + ' · ' + ${tour.durationHours} + ' tiếng'"></td>
                     <td th:text="${tour.maxParticipants} + ' khách/chuyến'"></td>
                     <td>

@@ -32,8 +32,8 @@
         .calendar-day.available { color: #212529; }
         .calendar-day.available:hover { background: #e9ecef; }
         .calendar-day.unavailable, .calendar-day.past { color: #adb5bd; background: #e9ecef; cursor: not-allowed; }
-        .calendar-day.selected, .calendar-day.in-range { background: #0d6efd; color: white; }
-        .calendar-day.in-range { background: #cfe2ff; color: #212529; }
+        .calendar-day.selected, .calendar-day.in-range { background: #3d9bd6; color: white; }
+        .calendar-day.in-range { background: #d6ebf8; color: #212529; }
     </style>
 </head>
 <body class="eaut eaut-admin">
@@ -89,7 +89,7 @@
                     <div class="bg-white p-4 rounded shadow-sm" style="position: sticky; top: 1rem;">
                         <h3 class="fw-bold" th:text="'Phòng ' + ${room.roomNumber}"></h3>
                         <p class="text-muted mb-3" th:text="${room.roomType.name}"></p>
-                        <h4 class="fw-bold text-primary" th:text="${#numbers.formatDecimal(room.price, 1, 0)} + 'VND / đêm'"></h4>
+                        <h4 class="fw-bold text-primary" th:text="${#numbers.formatDecimal(room.price, 1, 'POINT', 0, 'COMMA')} + 'VND / đêm'"></h4>
 
                         <hr>
 
@@ -121,7 +121,7 @@
                                 <select name="comboId" class="form-select" onchange="this.form.submit()">
                                     <option value="">Phòng thường (không combo)</option>
                                     <option th:each="c : ${combos}" th:value="${c.id}"
-                                            th:text="${c.name} + ' (+' + ${#numbers.formatDecimal(c.price, 1, 0)} + 'VND)'"
+                                            th:text="${c.name} + ' (+' + ${#numbers.formatDecimal(c.price, 1, 'POINT', 0, 'COMMA')} + 'VND)'"
                                             th:selected="${selectedComboId != null and c.id == selectedComboId}"></option>
                                 </select>
                             </form>
@@ -144,9 +144,9 @@
                             <p class="mb-1">Ngày nhận phòng: <span th:text="${checkIn}"></span></p>
                             <p class="mb-1">Ngày trả phòng: <span th:text="${checkOut}"></span></p>
                             <p class="mb-1">Số đêm: <span th:text="${nights}"></span></p>
-                            <p class="mb-1">Tiền phòng: <span th:text="${#numbers.formatDecimal(roomAmount, 1, 0)} + 'VND'"></span></p>
-                            <p class="mb-1" th:if="${selectedCombo != null}">Combo (<span th:text="${selectedCombo.name}"></span>): <span th:text="${#numbers.formatDecimal(comboAmount, 1, 0)} + 'VND'"></span></p>
-                            <p class="fw-bold mb-3">Tổng tiền: <span th:text="${#numbers.formatDecimal(totalAmount, 1, 0)} + 'VND'"></span></p>
+                            <p class="mb-1">Tiền phòng: <span th:text="${#numbers.formatDecimal(roomAmount, 1, 'POINT', 0, 'COMMA')} + 'VND'"></span></p>
+                            <p class="mb-1" th:if="${selectedCombo != null}">Combo (<span th:text="${selectedCombo.name}"></span>): <span th:text="${#numbers.formatDecimal(comboAmount, 1, 'POINT', 0, 'COMMA')} + 'VND'"></span></p>
+                            <p class="fw-bold mb-3">Tổng tiền: <span th:text="${#numbers.formatDecimal(totalAmount, 1, 'POINT', 0, 'COMMA')} + 'VND'"></span></p>
 
                             <div th:if="${available}" class="alert alert-success">Phòng còn trống trong khoảng ngày này</div>
                             <div th:unless="${available}" class="alert alert-warning">Phòng đã được đặt trong khoảng ngày này, vui lòng chọn ngày khác</div>

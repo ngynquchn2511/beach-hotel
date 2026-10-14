@@ -9,7 +9,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <style>
         .method-option { cursor: pointer; transition: border-color .15s, background-color .15s; }
-        .method-option:has(input:checked) { border-color: var(--bs-primary) !important; background-color: rgba(13, 110, 253, .06); }
+        .method-option:has(input:checked) { border-color: var(--bs-primary) !important; background-color: rgba(137, 207, 240, .18); }
         .method-option .bi { font-size: 1.6rem; }
         .qr-box img { width: 260px; max-width: 100%; }
         .section-anchor { scroll-margin-top: 90px; }
@@ -41,13 +41,13 @@
 
                 <table class="table table-sm mt-3 mb-0">
                     <tr><td>Tiền đơn (phòng + combo − giảm giá)</td>
-                        <td class="text-end" th:text="${#numbers.formatDecimal(booking.totalAmount, 1, 0)} + ' VND'"></td></tr>
+                        <td class="text-end" th:text="${#numbers.formatDecimal(booking.totalAmount, 1, 'POINT', 0, 'COMMA')} + ' VND'"></td></tr>
                     <tr><td>Phụ phí phát sinh</td>
-                        <td class="text-end" th:text="${#numbers.formatDecimal(chargesTotal, 1, 0)} + ' VND'"></td></tr>
+                        <td class="text-end" th:text="${#numbers.formatDecimal(chargesTotal, 1, 'POINT', 0, 'COMMA')} + ' VND'"></td></tr>
                     <tr th:if="${depositPaid.signum() > 0}"><td>Đã đặt cọc</td>
-                        <td class="text-end text-success" th:text="'-' + ${#numbers.formatDecimal(depositPaid, 1, 0)} + ' VND'"></td></tr>
+                        <td class="text-end text-success" th:text="'-' + ${#numbers.formatDecimal(depositPaid, 1, 'POINT', 0, 'COMMA')} + ' VND'"></td></tr>
                     <tr class="fw-bold fs-5"><td class="border-0">Số tiền cần thanh toán</td>
-                        <td class="text-end text-danger border-0" th:text="${#numbers.formatDecimal(amountDue, 1, 0)} + ' VND'"></td></tr>
+                        <td class="text-end text-danger border-0" th:text="${#numbers.formatDecimal(amountDue, 1, 'POINT', 0, 'COMMA')} + ' VND'"></td></tr>
                 </table>
             </div>
 
@@ -62,7 +62,7 @@
                     <tr th:each="c : ${charges}">
                         <td th:text="${c.type.vietnameseLabel}"></td>
                         <td class="text-muted" th:text="${c.description != null ? c.description : '-'}"></td>
-                        <td class="text-end" th:text="${#numbers.formatDecimal(c.amount, 1, 0)} + ' VND'"></td>
+                        <td class="text-end" th:text="${#numbers.formatDecimal(c.amount, 1, 'POINT', 0, 'COMMA')} + ' VND'"></td>
                         <td class="text-end">
                             <form th:unless="${paid or c.type.serviceCharge}" th:action="@{/admin/bookings/{id}/charges/{cid}/delete(id=${booking.id}, cid=${c.id})}"
                                   method="post" class="m-0" onsubmit="return confirm('Xóa phụ phí này?')">
@@ -137,7 +137,7 @@
                 <div class="method-panel d-none" data-method="CASH">
                     <div class="alert alert-light border">
                         <i class="bi bi-info-circle me-1"></i>
-                        Thu đủ <strong th:text="${#numbers.formatDecimal(amountDue, 1, 0)} + ' VND'"></strong>
+                        Thu đủ <strong th:text="${#numbers.formatDecimal(amountDue, 1, 'POINT', 0, 'COMMA')} + ' VND'"></strong>
                         tiền mặt từ khách rồi bấm <strong>Hoàn tất check-out</strong>.
                     </div>
                 </div>
@@ -148,7 +148,7 @@
                         <img th:src="${qrUrl}" alt="Mã QR chuyển khoản" class="mb-3">
                         <p class="mb-1">Ngân hàng: <strong th:text="${bankId}"></strong> — STK: <strong th:text="${accountNo}"></strong></p>
                         <p class="mb-1">Chủ tài khoản: <strong th:text="${accountName}"></strong></p>
-                        <p class="mb-1">Số tiền: <strong th:text="${#numbers.formatDecimal(amountDue, 1, 0)} + ' VND'"></strong></p>
+                        <p class="mb-1">Số tiền: <strong th:text="${#numbers.formatDecimal(amountDue, 1, 'POINT', 0, 'COMMA')} + ' VND'"></strong></p>
                         <p class="mb-3">Nội dung CK: <strong class="text-primary" th:text="${transferContent}"></strong></p>
                         <p class="text-muted small mb-0">
                             Khách quét mã, app ngân hàng sẽ tự điền đúng số tiền và nội dung.
@@ -160,7 +160,7 @@
                          th:classappend="${paid} ? '' : 'd-none'">
                         <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>
                         <h5 class="fw-bold text-success mt-2 mb-1">Thanh toán thành công</h5>
-                        <p class="mb-0">Đã nhận <strong th:text="${#numbers.formatDecimal(amountDue, 1, 0)} + ' VND'"></strong> chuyển khoản.</p>
+                        <p class="mb-0">Đã nhận <strong th:text="${#numbers.formatDecimal(amountDue, 1, 'POINT', 0, 'COMMA')} + ' VND'"></strong> chuyển khoản.</p>
                     </div>
                 </div>
 
@@ -183,7 +183,7 @@
             <!-- Nhan vien kiem tra app ngan hang thay tien da vao -> xac nhan, QR chuyen sang "Thanh toan thanh cong" -->
             <form id="confirmTransferForm" th:action="@{/admin/bookings/{id}/confirm-transfer(id=${booking.id})}" method="post"
                   class="mt-3 d-none"
-                  th:attr="onsubmit=|return confirm('Xác nhận đã nhận đủ ${#numbers.formatDecimal(amountDue, 1, 0)} VND chuyển khoản?')|">
+                  th:attr="onsubmit=|return confirm('Xác nhận đã nhận đủ ${#numbers.formatDecimal(amountDue, 1, 'POINT', 0, 'COMMA')} VND chuyển khoản?')|">
                 <button type="submit" class="btn btn-success">
                     <i class="bi bi-check2-square me-1"></i>Đã nhận được tiền chuyển khoản
                 </button>

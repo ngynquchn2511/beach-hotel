@@ -49,18 +49,18 @@
                 <h6 class="fw-bold mt-3">Thanh toán</h6>
                 <p class="mb-1" th:if="${booking.discountCode != null}">
                     Mã giảm giá: <span th:text="${booking.discountCode.code}"></span>
-                    (giảm <span th:text="${#numbers.formatDecimal(booking.discountAmount, 1, 0)} + 'VND'"></span>)
+                    (giảm <span th:text="${#numbers.formatDecimal(booking.discountAmount, 1, 'POINT', 0, 'COMMA')} + 'VND'"></span>)
                 </p>
                 <p class="mb-1">Tiền phòng (<span th:text="${booking.nights}"></span> đêm):
-                    <span th:text="${#numbers.formatDecimal(booking.effectiveRoomAmount, 1, 0)} + ' VND'"></span></p>
-                <p class="fw-bold fs-5 mb-0">Tổng tiền: <span th:text="${#numbers.formatDecimal(booking.totalAmount, 1, 0)} + 'VND'"></span></p>
+                    <span th:text="${#numbers.formatDecimal(booking.effectiveRoomAmount, 1, 'POINT', 0, 'COMMA')} + ' VND'"></span></p>
+                <p class="fw-bold fs-5 mb-0">Tổng tiền: <span th:text="${#numbers.formatDecimal(booking.totalAmount, 1, 'POINT', 0, 'COMMA')} + 'VND'"></span></p>
 
                 <!-- Dat coc -->
                 <div class="mt-2" th:if="${booking.depositRequired}">
                     <span th:if="${booking.depositPaid}" class="badge bg-info"
-                          th:text="'Đã nhận cọc ' + ${#numbers.formatDecimal(booking.depositAmount, 1, 0)} + ' VND · ' + ${#temporals.format(booking.depositPaidAt, 'dd/MM/yyyy HH:mm')}"></span>
+                          th:text="'Đã nhận cọc ' + ${#numbers.formatDecimal(booking.depositAmount, 1, 'POINT', 0, 'COMMA')} + ' VND · ' + ${#temporals.format(booking.depositPaidAt, 'dd/MM/yyyy HH:mm')}"></span>
                     <th:block th:if="${booking.awaitingDeposit}">
-                        <span class="badge bg-warning" th:text="'Chờ cọc ' + ${#numbers.formatDecimal(booking.depositAmount, 1, 0)} + ' VND'"></span>
+                        <span class="badge bg-warning" th:text="'Chờ cọc ' + ${#numbers.formatDecimal(booking.depositAmount, 1, 'POINT', 0, 'COMMA')} + ' VND'"></span>
                         <span class="small text-muted ms-1">
                             nội dung CK <b th:text="${depositTransferContent}"></b>,
                             hạn <b th:text="${#temporals.format(booking.depositDeadline, 'HH:mm dd/MM/yyyy')}"></b>
@@ -75,7 +75,7 @@
                     <span th:class="'badge ' + (${payment.status.name() == 'PAID'} ? 'bg-success' : 'bg-secondary')"
                           th:text="${payment.status.vietnameseLabel}"></span>
                     — <span th:text="${payment.paymentMethod.vietnameseLabel}"></span>
-                    — đã thu <b th:text="${#numbers.formatDecimal(payment.amount, 1, 0)} + 'VND'"></b>
+                    — đã thu <b th:text="${#numbers.formatDecimal(payment.amount, 1, 'POINT', 0, 'COMMA')} + 'VND'"></b>
                     <span class="text-muted small" th:if="${payment.amount.compareTo(booking.totalAmount) > 0}">(gồm phụ phí)</span>
                     <span class="text-muted" th:if="${payment.paymentDate != null}"
                           th:text="'(' + ${#temporals.format(payment.paymentDate, 'dd/MM/yyyy HH:mm')} + ')'"></span>
@@ -86,7 +86,7 @@
                 <h6 class="fw-bold mb-3">Thao tác</h6>
 
                 <form th:if="${booking.awaitingDeposit}" th:action="@{/admin/bookings/{id}/confirm-deposit(id=${booking.id})}" method="post" class="d-inline"
-                      th:attr="onsubmit=|return confirm('Xác nhận đã nhận đủ ${#numbers.formatDecimal(booking.depositAmount, 1, 0)} VND tiền cọc?')|">
+                      th:attr="onsubmit=|return confirm('Xác nhận đã nhận đủ ${#numbers.formatDecimal(booking.depositAmount, 1, 'POINT', 0, 'COMMA')} VND tiền cọc?')|">
                     <button type="submit" class="btn btn-primary"><i class="bi bi-cash-coin me-1"></i>Đã nhận cọc &amp; xác nhận</button>
                 </form>
 
@@ -142,7 +142,7 @@
                             <div th:text="${o.tour.name}"></div>
                             <div class="small text-muted" th:text="${#temporals.format(o.tourDate, 'dd/MM/yyyy')} + ' ' + ${#temporals.format(o.tour.departureTime, 'HH:mm')} + ' · ' + ${o.participants} + ' người'"></div>
                         </td>
-                        <td class="text-end text-nowrap" th:text="${#numbers.formatDecimal(o.totalPrice, 1, 0)} + ' VND'"></td>
+                        <td class="text-end text-nowrap" th:text="${#numbers.formatDecimal(o.totalPrice, 1, 'POINT', 0, 'COMMA')} + ' VND'"></td>
                         <td><span class="badge" th:classappend="${o.status.name() == 'CONFIRMED'} ? 'bg-success' : (${o.status.name() == 'PENDING'} ? 'bg-warning text-dark' : 'bg-secondary')" th:text="${o.status.vietnameseLabel}"></span></td>
                         <td class="text-end text-nowrap">
                             <form th:if="${o.status.name() == 'PENDING' and canOrderServices}" method="post" class="d-inline"
@@ -166,7 +166,7 @@
                                 <span th:if="${o.flightNumber}" th:text="' · ' + ${o.flightNumber}"></span>
                             </div>
                         </td>
-                        <td class="text-end text-nowrap" th:text="${#numbers.formatDecimal(o.price, 1, 0)} + ' VND'"></td>
+                        <td class="text-end text-nowrap" th:text="${#numbers.formatDecimal(o.price, 1, 'POINT', 0, 'COMMA')} + ' VND'"></td>
                         <td><span class="badge" th:classappend="${o.status.name() == 'CONFIRMED'} ? 'bg-success' : (${o.status.name() == 'PENDING'} ? 'bg-warning text-dark' : 'bg-secondary')" th:text="${o.status.vietnameseLabel}"></span></td>
                         <td class="text-end text-nowrap">
                             <form th:if="${o.status.name() == 'PENDING' and canOrderServices}" method="post" class="d-inline"
@@ -190,7 +190,7 @@
                             <div class="fw-semibold small mb-2">Đặt tour hộ khách (xác nhận luôn)</div>
                             <select name="tourId" class="form-select form-select-sm mb-2" required>
                                 <option th:each="t : ${activeTours}" th:value="${t.id}"
-                                        th:text="${t.name} + ' · ' + ${#temporals.format(t.departureTime, 'HH:mm')} + ' · ' + ${#numbers.formatDecimal(t.pricePerPerson, 1, 0)} + 'đ/người'"></option>
+                                        th:text="${t.name} + ' · ' + ${#temporals.format(t.departureTime, 'HH:mm')} + ' · ' + ${#numbers.formatDecimal(t.pricePerPerson, 1, 'POINT', 0, 'COMMA')} + 'đ/người'"></option>
                             </select>
                             <div class="row g-2 mb-2">
                                 <div class="col-7"><input type="date" name="tourDate" class="form-control form-control-sm" required

@@ -18,7 +18,7 @@
                          th:text="${#temporals.format(o.tourDate, 'dd/MM/yyyy')} + ' · ' + ${#temporals.format(o.tour.departureTime, 'HH:mm')} + ' · ' + #{svc.persons(${o.participants})}"></div>
                 </div>
                 <div class="d-flex align-items-center gap-2">
-                    <span class="fw-bold" th:text="${#numbers.formatDecimal(o.totalPrice, 1, 0)} + 'đ'"></span>
+                    <span class="fw-bold" th:text="${#numbers.formatDecimal(o.totalPrice, 1, 'POINT', 0, 'COMMA')} + 'đ'"></span>
                     <span class="badge" th:classappend="${o.status.name() == 'CONFIRMED'} ? 'bg-success' : (${o.status.name() == 'PENDING'} ? 'bg-warning text-dark' : 'bg-secondary')"
                           th:text="#{${'svc.status.' + o.status.name()}}"></span>
                     <form th:if="${o.status.name() != 'CANCELLED' and booking.status.name() != 'CHECKED_OUT'}" method="post" class="m-0"
@@ -43,7 +43,7 @@
                     </div>
                 </div>
                 <div class="d-flex align-items-center gap-2">
-                    <span class="fw-bold" th:text="${#numbers.formatDecimal(o.price, 1, 0)} + 'đ'"></span>
+                    <span class="fw-bold" th:text="${#numbers.formatDecimal(o.price, 1, 'POINT', 0, 'COMMA')} + 'đ'"></span>
                     <span class="badge" th:classappend="${o.status.name() == 'CONFIRMED'} ? 'bg-success' : (${o.status.name() == 'PENDING'} ? 'bg-warning text-dark' : 'bg-secondary')"
                           th:text="#{${'svc.status.' + o.status.name()}}"></span>
                     <form th:if="${o.status.name() != 'CANCELLED' and booking.status.name() != 'CHECKED_OUT'}" method="post" class="m-0"
@@ -72,8 +72,9 @@
                     <label class="form-label small" th:text="#{svc.form.tour}">Chọn tour</label>
                     <select name="tourId" class="form-select js-tour" required>
                         <option th:each="t : ${activeTours}" th:value="${t.id}"
+                                th:selected="${preselectTourId != null and preselectTourId == t.id}"
                                 th:attr="data-price=${t.pricePerPerson.intValue()},data-max=${t.maxParticipants}"
-                                th:text="${t.localizedName} + ' · ' + ${#temporals.format(t.departureTime, 'HH:mm')} + ' · ' + ${#numbers.formatDecimal(t.pricePerPerson, 1, 0)} + 'đ'"></option>
+                                th:text="${t.localizedName} + ' · ' + ${#temporals.format(t.departureTime, 'HH:mm')} + ' · ' + ${#numbers.formatDecimal(t.pricePerPerson, 1, 'POINT', 0, 'COMMA')} + 'đ'"></option>
                     </select>
                 </div>
                 <div class="row g-2 mb-2">
@@ -158,7 +159,7 @@
 
     <script>
         (function () {
-            var fmt = new Intl.NumberFormat(document.documentElement.lang === 'en' ? 'en-US' : 'vi-VN');
+            var fmt = new Intl.NumberFormat('vi-VN');
             var tourForm = document.querySelector('.js-tour-form');
             if (tourForm) {
                 var tour = tourForm.querySelector('.js-tour');

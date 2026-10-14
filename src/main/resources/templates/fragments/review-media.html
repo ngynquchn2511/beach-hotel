@@ -5,9 +5,9 @@
     <th:block th:each="m : ${items}">
         <a th:unless="${m.video}" th:href="${m.url}" target="_blank" rel="noopener" th:title="#{review.media.photo}">
             <img th:src="${m.url}" loading="lazy" th:alt="#{review.media.photo}"
-                 style="width: 112px; height: 84px; object-fit: cover; border-radius: 8px; border: 1.5px solid #0e3a52; display: block;">
+                 style="width: 112px; height: 84px; object-fit: cover; border-radius: 8px; border: 1.5px solid #13395e; display: block;">
         </a>
         <video th:if="${m.video}" th:src="${m.url}" controls preload="metadata" playsinline th:title="#{review.media.video}"
-               style="width: 168px; height: 112px; border-radius: 8px; border: 1.5px solid #0e3a52; background: #000;"></video>
+               style="width: 168px; height: 112px; border-radius: 8px; border: 1.5px solid #13395e; background: #000;"></video>
     </th:block>
 </div>

@@ -43,7 +43,7 @@
                 <tr th:each="dc : ${discountCodes}">
                     <td><span class="fw-bold" th:text="${dc.code}"></span></td>
                     <td th:text="${dc.discountType.vietnameseLabel}"></td>
-                    <td th:text="${dc.discountType.name() == 'PERCENTAGE'} ? (${#numbers.formatDecimal(dc.discountValue, 1, 0)} + ' %') : (${#numbers.formatDecimal(dc.discountValue, 1, 0)} + 'VND')"></td>
+                    <td th:text="${dc.discountType.name() == 'PERCENTAGE'} ? (${#numbers.formatDecimal(dc.discountValue, 1, 'POINT', 0, 'COMMA')} + ' %') : (${#numbers.formatDecimal(dc.discountValue, 1, 'POINT', 0, 'COMMA')} + 'VND')"></td>
                     <td th:text="${dc.applicableCustomerType != null} ? ${dc.applicableCustomerType.vietnameseLabel} : 'Tất cả khách hàng'"></td>
                     <td>
                         <span class="badge" th:classappend="${dc.active} ? 'bg-success' : 'bg-secondary'"

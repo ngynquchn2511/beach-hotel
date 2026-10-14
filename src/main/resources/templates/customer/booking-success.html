@@ -40,7 +40,7 @@
     <!-- Dat coc giu phong: QR VietQR dien san so tien + noi dung chuyen khoan -->
     <div class="bg-white p-4 rounded shadow-sm mb-4" th:if="${booking.awaitingDeposit}">
         <h5 class="fw-bold mb-2"><i class="bi bi-shield-check me-2"></i><span th:text="#{success.depositTitle}">Chuyển cọc để giữ phòng</span></h5>
-        <p class="mb-3" th:utext="#{success.depositText(${#numbers.formatDecimal(booking.depositAmount, 1, 0)}, ${#temporals.format(booking.depositDeadline, 'HH:mm dd/MM/yyyy')})}"></p>
+        <p class="mb-3" th:utext="#{success.depositText(${#numbers.formatDecimal(booking.depositAmount, 1, 'POINT', 0, 'COMMA')}, ${#temporals.format(booking.depositDeadline, 'HH:mm dd/MM/yyyy')})}"></p>
         <div class="row g-3 align-items-center">
             <div class="col-sm-5 text-center">
                 <img th:src="${depositQrUrl}" th:alt="#{success.qrAlt}" class="img-fluid rounded border" style="max-width: 240px;">
@@ -49,7 +49,7 @@
                 <p class="mb-1"><span th:text="#{success.bank}">Ngân hàng:</span> <b th:text="${bankId}"></b></p>
                 <p class="mb-1"><span th:text="#{success.accountNo}">Số tài khoản:</span> <b th:text="${accountNo}"></b></p>
                 <p class="mb-1"><span th:text="#{success.accountName}">Chủ tài khoản:</span> <b th:text="${accountName}"></b></p>
-                <p class="mb-1"><span th:text="#{success.amount}">Số tiền:</span> <b th:text="${#numbers.formatDecimal(booking.depositAmount, 1, 0)} + ' VND'"></b></p>
+                <p class="mb-1"><span th:text="#{success.amount}">Số tiền:</span> <b th:text="${#numbers.formatDecimal(booking.depositAmount, 1, 'POINT', 0, 'COMMA')} + ' VND'"></b></p>
                 <p class="mb-2"><span th:text="#{success.content}">Nội dung:</span> <b th:text="${depositTransferContent}"></b></p>
                 <p class="text-muted mb-0" th:text="#{success.qrHint}"></p>
             </div>
@@ -80,13 +80,13 @@
 
         <h6 class="fw-bold mt-3" th:text="#{success.payment}">Thanh toán</h6>
         <p class="mb-1" th:if="${booking.discountCode != null}"
-           th:text="#{success.discount(${booking.discountCode.code}, ${#numbers.formatDecimal(booking.discountAmount, 1, 0)})}"></p>
-        <p class="fw-bold fs-5 mb-0"><span th:text="#{success.total}">Tổng tiền:</span> <span class="price-tag" th:text="${#numbers.formatDecimal(booking.totalAmount, 1, 0)} + 'VND'"></span></p>
+           th:text="#{success.discount(${booking.discountCode.code}, ${#numbers.formatDecimal(booking.discountAmount, 1, 'POINT', 0, 'COMMA')})}"></p>
+        <p class="fw-bold fs-5 mb-0"><span th:text="#{success.total}">Tổng tiền:</span> <span class="price-tag" th:text="${#numbers.formatDecimal(booking.totalAmount, 1, 'POINT', 0, 'COMMA')} + 'VND'"></span></p>
         <p class="mb-0 mt-2" th:if="${booking.depositRequired}">
             <span th:if="${booking.depositPaid}" class="badge bg-info"
-                  th:text="#{success.depositPaid(${#numbers.formatDecimal(booking.depositAmount, 1, 0)})}"></span>
+                  th:text="#{success.depositPaid(${#numbers.formatDecimal(booking.depositAmount, 1, 'POINT', 0, 'COMMA')})}"></span>
             <span th:if="${!booking.depositPaid and booking.status.name() == 'PENDING'}" class="badge bg-warning"
-                  th:text="#{success.depositWaiting(${#numbers.formatDecimal(booking.depositAmount, 1, 0)})}"></span>
+                  th:text="#{success.depositWaiting(${#numbers.formatDecimal(booking.depositAmount, 1, 'POINT', 0, 'COMMA')})}"></span>
         </p>
         <p class="mb-0 mt-2">
             <span th:if="${payment != null and payment.status.name() == 'PAID'}" class="badge bg-success"
@@ -187,7 +187,7 @@
                 <div class="col-md-9">
                     <select name="comboId" class="form-select">
                         <option value="" th:text="#{success.noCombo}">Không dùng combo</option>
-                        <option th:each="c : ${combos}" th:value="${c.id}" th:text="#{detail.comboOption(${c.localizedName}, ${#numbers.formatDecimal(c.price, 1, 0)})}"
+                        <option th:each="c : ${combos}" th:value="${c.id}" th:text="#{detail.comboOption(${c.localizedName}, ${#numbers.formatDecimal(c.price, 1, 'POINT', 0, 'COMMA')})}"
                                 th:selected="${booking.combo != null and booking.combo.id == c.id}"></option>
                     </select>
                 </div>
@@ -236,7 +236,7 @@
                 if (!isImg && !isVid) problems.push(MSG_BAD_TYPE + ' ' + f.name);
                 else if (f.size > (isImg ? MAX_IMAGE_MB : MAX_VIDEO_MB) * 1024 * 1024) problems.push(MSG_TOO_LARGE + ' ' + f.name);
                 var box = document.createElement('div');
-                box.style.cssText = 'position:relative;width:112px;height:84px;border:1.5px solid #0e3a52;border-radius:8px;overflow:hidden;background:#000';
+                box.style.cssText = 'position:relative;width:112px;height:84px;border:1.5px solid #13395e;border-radius:8px;overflow:hidden;background:#000';
                 var media = document.createElement(isVid ? 'video' : 'img');
                 media.src = URL.createObjectURL(f);
                 media.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block';

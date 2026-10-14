@@ -18,6 +18,8 @@ import com.hotel.repository.BookingChargeRepository;
 import com.hotel.repository.DivingTourRepository;
 import com.hotel.repository.TourBookingRepository;
 import com.hotel.service.TransferRateService;
+import com.hotel.tc.TcSteps;
+import com.hotel.tc.TcSuite;
 import com.hotel.entity.Airport;
 import com.hotel.entity.VehicleType;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,9 +38,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrlPattern;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 // Dich vu them: dat tour lan bien + xe dua don san bay kem don phong (khach dat -> le tan xac nhan -> phu phi cua don)
+@TcSuite(level = "IT", module = "Dịch vụ thêm: tour lặn biển & xe đưa đón sân bay")
 class ExtraServicesIT extends ItFixtures {
 
     @Autowired private DivingTourRepository tourRepository;
@@ -80,6 +85,7 @@ class ExtraServicesIT extends ItFixtures {
                 .andExpect(status().is3xxRedirection());
     }
 
+    @TcSteps("Khách mở link đơn (token) đặt tour 2 người → lễ tân POST /admin/service-orders/tours/{id}/confirm")
     @Test
     void guestBooksTourWithTokenLink_staffConfirms_priceBecomesBookingCharge() throws Exception {
         mockMvc.perform(post("/customer/bookings/" + booking.getId() + "/tours").with(csrf())
@@ -110,6 +116,7 @@ class ExtraServicesIT extends ItFixtures {
         });
     }
 
+    @TcSteps("Khách đặt tour, lễ tân xác nhận rồi hủy đơn tour")
     @Test
     void cancellingConfirmedTour_removesItsCharge() throws Exception {
         bookTourAsGuest(booking.getCheckInDate(), 1);
@@ -124,6 +131,7 @@ class ExtraServicesIT extends ItFixtures {
         assertThat(chargeRepository.findByBookingIdOrderByCreatedAtAsc(booking.getId())).isEmpty();
     }
 
+    @TcSteps("Chuyến 3 chỗ đã có 2 người đặt, khách đặt thêm 2 người")
     @Test
     void tourSeats_areNotOversold() throws Exception {
         LocalDate day = booking.getCheckInDate().plusDays(1);
@@ -138,6 +146,7 @@ class ExtraServicesIT extends ItFixtures {
         assertThat(tourBookingRepository.sumBookedParticipants(tour.getId(), day)).isEqualTo(2);
     }
 
+    @TcSteps("Khách đặt tour vào ngày sau ngày trả phòng")
     @Test
     void tourDate_mustBeDuringTheStay() throws Exception {
         mockMvc.perform(post("/customer/bookings/" + booking.getId() + "/tours").with(csrf())
@@ -149,6 +158,7 @@ class ExtraServicesIT extends ItFixtures {
         assertThat(tourBookingRepository.findByBookingIdOrderByTourDateAscIdAsc(booking.getId())).isEmpty();
     }
 
+    @TcSteps("Tour khởi hành sau 3 tiếng: khách tự đặt, sau đó lễ tân đặt hộ tại quầy")
     @Test
     void tourStartingSoon_customerRejected_butReceptionCanBookForGuest() throws Exception {
         LocalDateTime start = LocalDateTime.now().plusHours(3).withSecond(0).withNano(0);
@@ -174,6 +184,7 @@ class ExtraServicesIT extends ItFixtures {
         assertThat(chargeRepository.findByBookingIdOrderByCreatedAtAsc(booking.getId())).hasSize(1);
     }
 
+    @TcSteps("Khách vãng lai gửi đặt tour với token sai")
     @Test
     void anonymousWithoutToken_cannotBookServices() throws Exception {
         mockMvc.perform(post("/customer/bookings/" + booking.getId() + "/tours").with(csrf())
@@ -185,6 +196,7 @@ class ExtraServicesIT extends ItFixtures {
         assertThat(tourBookingRepository.findByBookingIdOrderByTourDateAscIdAsc(booking.getId())).isEmpty();
     }
 
+    @TcSteps("Khách đặt xe đón: thiếu số hiệu bay, quá số khách, hợp lệ, trùng chiều; rồi đặt xe tiễn")
     @Test
     void airportPickup_usesRateTable_requiresFlight_andAllowsOnlyOnePerDirection() throws Exception {
         String url = "/customer/bookings/" + booking.getId() + "/transfers";
@@ -224,6 +236,7 @@ class ExtraServicesIT extends ItFixtures {
                 .last().extracting(AirportTransfer::getPickupAt).isEqualTo(booking.getCheckOutDate().atTime(9, 0));
     }
 
+    @TcSteps("Đơn phòng đã hủy, khách đặt tour")
     @Test
     void cancelledBooking_cannotOrderServices() throws Exception {
         booking.setStatus(BookingStatus.CANCELLED);
@@ -231,6 +244,7 @@ class ExtraServicesIT extends ItFixtures {
         assertThat(tourBookingRepository.findByBookingIdOrderByTourDateAscIdAsc(booking.getId())).isEmpty();
     }
 
+    @TcSteps("Khách chưa đăng nhập GET /services")
     @Test
     void servicesPage_isPublic_andShowsToursAndRates() throws Exception {
         mockMvc.perform(get("/services"))
@@ -239,6 +253,7 @@ class ExtraServicesIT extends ItFixtures {
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("Sân bay Vân Đồn")));
     }
 
+    @TcSteps("Khách GET /customer/bookings/{id}?token=… (trang đơn)")
     @Test
     void bookingPage_showsServicesSection() throws Exception {
         mockMvc.perform(get("/customer/bookings/" + booking.getId()).param("token", booking.getAccessToken()))
@@ -247,6 +262,7 @@ class ExtraServicesIT extends ItFixtures {
                 .andExpect(content().string(org.hamcrest.Matchers.containsString(tour.getName())));
     }
 
+    @TcSteps("Nhân viên / admin GET /admin/transfer-rates, /admin/service-orders, /admin/bookings/{id}")
     @Test
     void transferRates_onlyAdminCanEdit() throws Exception {
         mockMvc.perform(get("/admin/transfer-rates").with(as(staff))).andExpect(status().isForbidden());
@@ -255,5 +271,77 @@ class ExtraServicesIT extends ItFixtures {
         mockMvc.perform(get("/admin/bookings/" + booking.getId()).with(as(staff)))
                 .andExpect(status().isOk())
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("Đặt tour hộ khách")));
+    }
+
+    // ===================== Nut "Dat tour nay" o trang /services =====================
+
+    @TcSteps("Khách chưa đăng nhập bấm \"Đặt tour này\" → đăng nhập → quay lại bước đặt tour")
+    @Test
+    void bookThisTour_anonymous_loginThenComesBack() throws Exception {
+        String url = "/customer/services/tours/" + tour.getId();
+        var session = (org.springframework.mock.web.MockHttpSession) mockMvc.perform(get(url))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrlPattern("**/login"))
+                .andReturn().getRequest().getSession();
+        String target = mockMvc.perform(post("/login").session(session).with(csrf())
+                        .param("username", customer.getEmail()).param("password", "matkhau123"))
+                .andExpect(status().is3xxRedirection())
+                .andReturn().getResponse().getRedirectedUrl();
+        assertThat(target).contains(url);
+    }
+
+    @TcSteps("Khách có đúng 1 đơn còn hiệu lực bấm \"Đặt tour này\"")
+    @Test
+    void bookThisTour_singleBooking_opensBookingWithTourPreselected() throws Exception {
+        mockMvc.perform(get("/customer/services/tours/" + tour.getId()).with(as(customer)))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/customer/bookings/" + booking.getId() + "?tourId=" + tour.getId() + "#dich-vu"));
+
+        mockMvc.perform(get("/customer/bookings/" + booking.getId()).param("tourId", tour.getId().toString()).with(as(customer)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.matchesPattern(
+                        "(?s).*<option value=\"" + tour.getId() + "\"[^>]*selected=\"selected\".*")));
+    }
+
+    @TcSteps("Khách có 2 đơn còn hiệu lực + 1 đơn đã hủy + 1 đơn đã trả phòng, bấm \"Đặt tour này\"")
+    @Test
+    void bookThisTour_manyBookings_showsOnlyOrderableOnes() throws Exception {
+        Room room2 = persistRoom(persistRoomType("Phòng 2 IT", 700000, 2), 700000, RoomStatus.AVAILABLE);
+        Booking second = persistBooking(customer, room2, BookingStatus.PENDING, 20, 2);
+        Booking cancelled = persistBooking(customer, room2, BookingStatus.CANCELLED, 30, 2);
+        Booking past = persistBooking(customer, room2, BookingStatus.CHECKED_OUT, 40, 2);
+
+        mockMvc.perform(get("/customer/services/tours/" + tour.getId()).with(as(customer)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Chọn đơn phòng muốn đặt kèm tour")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("/customer/bookings/" + booking.getId() + "?tourId=")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("/customer/bookings/" + second.getId() + "?tourId=")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("/customer/bookings/" + cancelled.getId() + "?"))))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("/customer/bookings/" + past.getId() + "?"))));
+    }
+
+    @TcSteps("Khách chưa có đơn phòng nào bấm \"Đặt tour này\"")
+    @Test
+    void bookThisTour_noBooking_suggestsBookingARoom() throws Exception {
+        User fresh = persistUser(UserRole.CUSTOMER, CustomerType.NEW);
+        mockMvc.perform(get("/customer/services/tours/" + tour.getId()).with(as(fresh)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("chưa có đơn phòng nào còn hiệu lực")));
+    }
+
+    @TcSteps("Khách bấm \"Đặt tour này\" với tour đã ẩn")
+    @Test
+    void bookThisTour_hiddenTour_backToServices() throws Exception {
+        DivingTour hidden = persistTour(5, LocalTime.of(9, 0), false);
+        mockMvc.perform(get("/customer/services/tours/" + hidden.getId()).with(as(customer)))
+                .andExpect(redirectedUrl("/services#tour-lan"));
+    }
+
+    @TcSteps("GET /services có tour đang bán")
+    @Test
+    void servicesPage_hasBookThisTourButton() throws Exception {
+        mockMvc.perform(get("/services"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("/customer/services/tours/" + tour.getId())))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Đặt tour này")));
     }
 }

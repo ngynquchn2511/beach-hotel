@@ -229,7 +229,7 @@ class HomestayFeaturesIT {
         mockMvc.perform(get("/admin/bookings/{id}/invoice", b.getId()).with(user(new CustomUserDetails(staff))))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Thanh toán khi trả phòng")))
-                .andExpect(content().string(containsString("-300000")));
+                .andExpect(content().string(containsString("-300.000")));
     }
 
     @Test

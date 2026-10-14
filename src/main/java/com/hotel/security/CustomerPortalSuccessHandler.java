@@ -8,11 +8,16 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
+import org.springframework.security.web.savedrequest.RequestCache;
+import org.springframework.security.web.savedrequest.SavedRequest;
 
 import java.io.IOException;
 
 // Cong /login chi danh cho CUSTOMER, khong cho STAFF/ADMIN dang nhap vao day
 public class CustomerPortalSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
+
+    private final RequestCache requestCache = new HttpSessionRequestCache();
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
@@ -27,6 +32,14 @@ public class CustomerPortalSuccessHandler extends SimpleUrlAuthenticationSuccess
             return;
         }
 
+        // Bam "Dat tour nay" khi chua dang nhap -> dang nhap xong quay lai dung buoc chon don dat tour
+        SavedRequest saved = requestCache.getRequest(request, response);
+        if (saved != null && "GET".equals(saved.getMethod())
+                && java.net.URI.create(saved.getRedirectUrl()).getPath().startsWith("/customer/services/tours/")) {
+            requestCache.removeRequest(request, response);
+            getRedirectStrategy().sendRedirect(request, response, saved.getRedirectUrl());
+            return;
+        }
         getRedirectStrategy().sendRedirect(request, response, "/customer/rooms");
     }
 }

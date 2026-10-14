@@ -219,7 +219,7 @@
     <div class="row g-3 g-md-4">
         <div class="col-6 col-lg-3 reveal">
             <div class="stat-card">
-                <div class="stat-icon" style="background:linear-gradient(135deg,#3b82f6,#22d3ee)"><i class="bi bi-door-open"></i></div>
+                <div class="stat-icon" style="background:linear-gradient(135deg,#3d9bd6,#89cff0)"><i class="bi bi-door-open"></i></div>
                 <div class="stat-num gradient-text"><span class="counter" th:attr="data-to=${roomCount}">0</span>+</div>
                 <div class="muted small" th:text="#{about.stat.rooms}">Phòng nghỉ</div>
             </div>
@@ -240,7 +240,7 @@
         </div>
         <div class="col-6 col-lg-3 reveal">
             <div class="stat-card">
-                <div class="stat-icon" style="background:linear-gradient(135deg,#10b981,#22d3ee)"><i class="bi bi-emoji-heart-eyes"></i></div>
+                <div class="stat-icon" style="background:linear-gradient(135deg,#10b981,#89cff0)"><i class="bi bi-emoji-heart-eyes"></i></div>
                 <div class="stat-num gradient-text"><span class="counter" data-to="98">0</span>%</div>
                 <div class="muted small" th:text="#{about.stat.happy}">Khách hài lòng</div>
             </div>
@@ -254,8 +254,8 @@
         <div class="row align-items-center g-5">
             <div class="col-lg-6 reveal left">
                 <div class="collage">
-                    <img class="c1" src="/page-images/anhphongVIP.jpg" th:alt="#{about.story.img1}">
-                    <img class="c2" src="/page-images/viewcuasogiuongdoi.jpg" th:alt="#{about.story.img2}">
+                    <img class="c1" src="/page-images/rooms/suite-1.jpg" th:alt="#{about.story.img1}">
+                    <img class="c2" src="/page-images/rooms/deluxe-4.jpg" th:alt="#{about.story.img2}">
                     <div class="ring"></div>
                     <div class="experience">
                         <div class="serif fs-2 fw-bold lh-1">24/7</div>
@@ -396,7 +396,7 @@
             <div class="col-md-6 col-lg-4 reveal zoom" th:each="rt, st : ${roomTypes}" th:if="${st.index < 6}">
                 <div class="room-card">
                     <div class="overflow-hidden">
-                        <div class="thumb" th:style="'background-image:url(/page-images/' + ${ {'anhphonggiuongdoi.jpg','anhphongVIP.jpg','phongProMax.jpg','phongpromax2.jpg','anhphonggiuongdoi2.jpg','danhsachphong.jpg'}[st.index % 6] } + ')'"></div>
+                        <div class="thumb" th:style="'background-image:url(/page-images/' + ${ {'rooms/standard-1.jpg','rooms/deluxe-1.jpg','rooms/family-1.jpg','rooms/suite-1.jpg','rooms/deluxe-3.jpg','rooms/family-2.jpg'}[st.index % 6] } + ')'"></div>
                     </div>
                     <div class="price"><span th:text="${#numbers.formatDecimal(rt.basePrice, 1, 'POINT', 0, 'COMMA')}">0</span> đ</div>
                     <div class="p-4">
@@ -423,10 +423,10 @@
         </div>
         <div class="gallery">
             <div class="g-item reveal" th:attr="data-caption=#{about.g1}"><img src="/page-images/beach-toan-canh.jpg" th:alt="#{about.g1}" loading="lazy"></div>
-            <div class="g-item reveal" th:attr="data-caption=#{about.g2}"><img src="/page-images/phongProMax.jpg" th:alt="#{about.g2}" loading="lazy"></div>
+            <div class="g-item reveal" th:attr="data-caption=#{about.g2}"><img src="/page-images/rooms/suite-1.jpg" th:alt="#{about.g2}" loading="lazy"></div>
             <div class="g-item reveal" th:attr="data-caption=#{about.g3}"><img src="/page-images/donuong.jpg" th:alt="#{about.g3}" loading="lazy"></div>
-            <div class="g-item reveal" th:attr="data-caption=#{about.g4}"><img src="/page-images/anhphonggiuongdoi.jpg" th:alt="#{about.g4}" loading="lazy"></div>
-            <div class="g-item reveal" th:attr="data-caption=#{about.g5}"><img src="/page-images/wcpromax.jpg" th:alt="#{about.g5}" loading="lazy"></div>
+            <div class="g-item reveal" th:attr="data-caption=#{about.g4}"><img src="/page-images/rooms/deluxe-1.jpg" th:alt="#{about.g4}" loading="lazy"></div>
+            <div class="g-item reveal" th:attr="data-caption=#{about.g5}"><img src="/page-images/rooms/suite-4.jpg" th:alt="#{about.g5}" loading="lazy"></div>
             <div class="g-item reveal" th:attr="data-caption=#{about.g6}"><img src="/page-images/beach-hoang-hon.jpg" th:alt="#{about.g6}" loading="lazy"></div>
         </div>
     </div>
@@ -454,10 +454,10 @@
             <!-- Chua co danh gia that thi hien nhan xet mau -->
             <th:block th:if="${#lists.isEmpty(reviews)}">
             <div class="review"><div class="d-flex align-items-center gap-3 mb-3"><div class="avatar" style="background:linear-gradient(135deg,#ec4899,#8b5cf6)">L</div><div class="text-start"><div class="fw-semibold">Lan Anh</div><div class="stars small"><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i></div></div></div><p class="muted mb-0 text-start" th:text="|“#{about.review1}”|">“Phòng sạch, view đẹp, nhân viên cực kỳ thân thiện. Nhất định sẽ quay lại!”</p></div>
-            <div class="review"><div class="d-flex align-items-center gap-3 mb-3"><div class="avatar" style="background:linear-gradient(135deg,#3b82f6,#22d3ee)">M</div><div class="text-start"><div class="fw-semibold">Minh Đức</div><div class="stars small"><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i></div></div></div><p class="muted mb-0 text-start" th:text="|“#{about.review2}”|">“Đặt phòng online rất nhanh, có email xác nhận ngay. Combo lẩu ngon xuất sắc.”</p></div>
+            <div class="review"><div class="d-flex align-items-center gap-3 mb-3"><div class="avatar" style="background:linear-gradient(135deg,#3d9bd6,#89cff0)">M</div><div class="text-start"><div class="fw-semibold">Minh Đức</div><div class="stars small"><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i></div></div></div><p class="muted mb-0 text-start" th:text="|“#{about.review2}”|">“Đặt phòng online rất nhanh, có email xác nhận ngay. Combo lẩu ngon xuất sắc.”</p></div>
             <div class="review"><div class="d-flex align-items-center gap-3 mb-3"><div class="avatar" style="background:linear-gradient(135deg,#f59e0b,#ef4444)">H</div><div class="text-start"><div class="fw-semibold">Thu Hà</div><div class="stars small"><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-half"></i></div></div></div><p class="muted mb-0 text-start" th:text="|“#{about.review3}”|">“Tối nướng BBQ, đốt lửa trại giữa trời se lạnh — cả nhà mình mê luôn.”</p></div>
-            <div class="review"><div class="d-flex align-items-center gap-3 mb-3"><div class="avatar" style="background:linear-gradient(135deg,#10b981,#06b6d4)">T</div><div class="text-start"><div class="fw-semibold">Quốc Tuấn</div><div class="stars small"><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i></div></div></div><p class="muted mb-0 text-start" th:text="|“#{about.review4}”|">“Sáng dậy mở cửa ban công là thấy bình minh trên biển, check-in nhanh, giá hợp lý.”</p></div>
-            <div class="review"><div class="d-flex align-items-center gap-3 mb-3"><div class="avatar" style="background:linear-gradient(135deg,#8b5cf6,#3b82f6)">N</div><div class="text-start"><div class="fw-semibold">Bảo Ngọc</div><div class="stars small"><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i></div></div></div><p class="muted mb-0 text-start" th:text="|“#{about.review5}”|">“Phòng VIP xứng đáng từng đồng. Giường êm, phòng tắm cực xịn.”</p></div>
+            <div class="review"><div class="d-flex align-items-center gap-3 mb-3"><div class="avatar" style="background:linear-gradient(135deg,#10b981,#5fb6e6)">T</div><div class="text-start"><div class="fw-semibold">Quốc Tuấn</div><div class="stars small"><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i></div></div></div><p class="muted mb-0 text-start" th:text="|“#{about.review4}”|">“Sáng dậy mở cửa ban công là thấy bình minh trên biển, check-in nhanh, giá hợp lý.”</p></div>
+            <div class="review"><div class="d-flex align-items-center gap-3 mb-3"><div class="avatar" style="background:linear-gradient(135deg,#8b5cf6,#3d9bd6)">N</div><div class="text-start"><div class="fw-semibold">Bảo Ngọc</div><div class="stars small"><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i></div></div></div><p class="muted mb-0 text-start" th:text="|“#{about.review5}”|">“Phòng VIP xứng đáng từng đồng. Giường êm, phòng tắm cực xịn.”</p></div>
             </th:block>
         </div>
     </div>

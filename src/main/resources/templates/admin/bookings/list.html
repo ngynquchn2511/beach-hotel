@@ -70,7 +70,7 @@
                     <td th:text="'Phòng ' + ${b.room.roomNumber}"></td>
                     <td th:text="${b.checkInDate} + ' ' + ${b.checkInTime}"></td>
                     <td th:text="${b.checkOutDate} + ' ' + ${b.checkOutTime}"></td>
-                    <td th:text="${#numbers.formatDecimal(b.totalAmount, 1, 0)} + 'VND'"></td>
+                    <td th:text="${#numbers.formatDecimal(b.totalAmount, 1, 'POINT', 0, 'COMMA')} + 'VND'"></td>
                     <td>
                         <span th:class="'badge ' + ${b.status.badgeClass}" th:text="${b.status.vietnameseLabel}"></span>
                         <span th:if="${b.newBooking}" class="badge bg-danger d-block mt-1">Đơn mới</span>

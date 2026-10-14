@@ -49,7 +49,7 @@
                 <td th:text="${#temporals.format(b.checkInDate, 'dd/MM/yyyy')} + ' ' + ${b.checkInTime}"></td>
                 <td th:text="${#temporals.format(b.checkOutDate, 'dd/MM/yyyy')} + ' ' + ${b.checkOutTime}"></td>
                 <td th:text="${b.combo != null} ? ${b.combo.localizedName} : '-'"></td>
-                <td th:text="${#numbers.formatDecimal(b.totalAmount, 1, 0)} + 'VND'"></td>
+                <td th:text="${#numbers.formatDecimal(b.totalAmount, 1, 'POINT', 0, 'COMMA')} + 'VND'"></td>
                 <td><span th:class="'badge ' + ${b.status.badgeClass}" th:text="#{'enum.BookingStatus.' + ${b.status}}"></span></td>
                 <td th:with="pay=${payments[b.id]}">
                     <span th:if="${pay != null and pay.status.name() == 'PAID'}" class="badge bg-success"
