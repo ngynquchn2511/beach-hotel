@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>Hộp thư liên hệ</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        .contact-text { white-space: pre-line; margin: 0; }
+        tr.is-handled td { opacity: .65; }
+    </style>
+</head>
+<body class="eaut eaut-admin">
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="container-fluid px-lg-5 py-5">
+    <div class="row g-4">
+        <div class="col-md-3">
+            <div th:replace="~{fragments/admin-sidebar :: sidebar}"></div>
+        </div>
+
+        <div class="col-md-9">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="fw-bold m-0">Hộp thư liên hệ</h3>
+                <span class="text-muted small" th:text="|${totalElements} tin|"></span>
+            </div>
+
+            <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+            <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+            <form th:action="@{/admin/contact-messages}" method="get" class="row g-2 bg-white p-3 rounded shadow-sm mb-3">
+                <div class="col-md-5">
+                    <input type="text" name="q" th:value="${q}" class="form-control form-control-sm"
+                           placeholder="Tên, email, số điện thoại hoặc nội dung">
+                </div>
+                <div class="col-md-3">
+                    <select name="status" class="form-select form-select-sm">
+                        <option value="">Mọi trạng thái</option>
+                        <option value="NEW" th:selected="${status == 'NEW'}">Chưa xử lý</option>
+                        <option value="HANDLED" th:selected="${status == 'HANDLED'}">Đã xử lý</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex gap-1">
+                    <button type="submit" class="btn btn-sm btn-primary flex-fill">Lọc</button>
+                    <a th:href="@{/admin/contact-messages}" class="btn btn-sm btn-outline-secondary" title="Xóa bộ lọc">✕</a>
+                </div>
+            </form>
+
+            <div th:if="${#lists.isEmpty(contactMessages)}" class="alert alert-info">Chưa có tin liên hệ nào.</div>
+
+            <div class="table-responsive" th:if="${not #lists.isEmpty(contactMessages)}">
+                <table class="table table-striped bg-white align-middle small" style="--bs-table-striped-bg: #eaf6ff;">
+                    <thead>
+                    <tr>
+                        <th style="width: 130px;">Thời gian</th>
+                        <th style="width: 200px;">Khách</th>
+                        <th>Nội dung</th>
+                        <th style="width: 120px;">Trạng thái</th>
+                        <th style="width: 120px;"></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="m : ${contactMessages}" th:classappend="${m.handled} ? 'is-handled'" th:id="'contact-' + ${m.id}">
+                        <td class="text-nowrap" th:text="${#temporals.format(m.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
+                        <td>
+                            <div class="fw-semibold" th:text="${m.fullName}"></div>
+                            <a th:href="'mailto:' + ${m.email}" th:text="${m.email}"></a>
+                            <div th:if="${m.phone != null}"><a th:href="'tel:' + ${m.phone}" class="text-muted" th:text="${m.phone}"></a></div>
+                        </td>
+                        <td>
+                            <p class="contact-text" th:text="${m.message}"></p>
+                            <div th:if="${m.replied}" class="mt-2 p-2 rounded bg-light border-start border-3 border-primary">
+                                <div class="text-muted" th:text="|Đã trả lời ${#temporals.format(m.repliedAt, 'dd/MM/yyyy HH:mm')} - ${m.handledBy}|"></div>
+                                <p class="contact-text" th:text="${m.reply}"></p>
+                            </div>
+                            <details class="mt-2" th:unless="${m.replied}">
+                                <summary class="small fw-semibold text-primary">Trả lời qua email</summary>
+                                <form th:action="@{/admin/contact-messages/{id}/reply(id=${m.id})}" method="post" class="mt-1">
+                                    <input type="hidden" name="status" th:value="${status}">
+                                    <input type="hidden" name="q" th:value="${q}">
+                                    <input type="hidden" name="page" th:value="${currentPage}">
+                                    <textarea name="reply" rows="3" maxlength="2000" required class="form-control form-control-sm"
+                                              placeholder="Nội dung trả lời - gửi tới email của khách, kèm câu hỏi gốc"></textarea>
+                                    <button type="submit" class="btn btn-sm btn-primary mt-1">Gửi trả lời</button>
+                                </form>
+                            </details>
+                        </td>
+                        <td>
+                            <span th:if="${m.handled}" class="badge bg-success">Đã xử lý</span>
+                            <div th:if="${m.handled and !m.replied and m.handledBy != null}" class="text-muted" th:text="${m.handledBy}"></div>
+                            <span th:unless="${m.handled}" class="badge bg-danger">Chưa xử lý</span>
+                        </td>
+                        <td>
+                            <form th:action="@{/admin/contact-messages/{id}/toggle-handled(id=${m.id})}" method="post" class="m-0">
+                                <input type="hidden" name="status" th:value="${status}">
+                                <input type="hidden" name="q" th:value="${q}">
+                                <input type="hidden" name="page" th:value="${currentPage}">
+                                <button type="submit" class="btn btn-sm"
+                                        th:classappend="${m.handled} ? 'btn-outline-secondary' : 'btn-outline-success'"
+                                        th:text="${m.handled} ? 'Mở lại' : 'Đã xử lý'"
+                                        th:title="${m.handled} ? 'Chuyển về chưa xử lý' : 'Đánh dấu đã xử lý (VD đã gọi điện cho khách)'"></button>
+                            </form>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div th:replace="~{fragments/pagination :: pagination('/admin/contact-messages', ${currentPage}, ${totalPages}, ${pageNumbers}, ${status}, ${q})}"></div>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+</body>
+</html>

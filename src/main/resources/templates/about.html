@@ -465,7 +465,7 @@
 </section>
 
 <!-- ================= LIEN HE ================= -->
-<section class="block pt-0">
+<section class="block pt-0" id="lien-he">
     <div class="container">
         <div class="contact-card reveal zoom">
             <div class="row g-0">
@@ -484,6 +484,52 @@
                 <div class="col-lg-7">
                     <iframe class="map" loading="lazy" th:title="#{about.contact.map}"
                             src="https://maps.google.com/maps?q=21.454468,105.6393101&z=16&output=embed"></iframe>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gui yeu cau tu van: luu vao hop thu quan tri, le tan tra loi qua email -->
+        <div class="contact-card contact-form-card reveal zoom mt-4 p-4 p-md-5">
+            <div class="row g-4">
+                <div class="col-lg-4">
+                    <div class="eyebrow mb-2" th:text="#{contact.form.eyebrow}">Tư vấn</div>
+                    <h2 class="section-title h2 mb-3" th:text="#{contact.form.title}">Gửi yêu cầu tư vấn</h2>
+                    <p class="muted mb-0" th:text="#{contact.form.lead}">Hỏi về phòng, giá, đặt tiệc hay đoàn đông người - lễ tân sẽ trả lời qua email trong 24 giờ.</p>
+                </div>
+                <div class="col-lg-8">
+                    <div th:if="${contactSuccess}" class="alert alert-success" role="status" th:text="${contactSuccess}"></div>
+                    <div th:if="${contactError}" class="alert alert-danger" role="alert" th:text="${contactError}"></div>
+                    <form th:action="@{/contact}" method="post" class="row g-3" th:with="f=${contactForm}">
+                        <div class="col-md-6">
+                            <label for="contact-name" class="form-label" th:text="#{contact.form.name}">Họ và tên</label>
+                            <input id="contact-name" type="text" name="fullName" class="form-control" required maxlength="100"
+                                   th:value="${f != null ? f['fullName'] : ''}" autocomplete="name">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="contact-email" class="form-label">Email</label>
+                            <input id="contact-email" type="email" name="email" class="form-control" required maxlength="150"
+                                   th:value="${f != null ? f['email'] : ''}" autocomplete="email">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="contact-phone" class="form-label" th:text="#{contact.form.phone}">Số điện thoại (không bắt buộc)</label>
+                            <input id="contact-phone" type="tel" name="phone" class="form-control" maxlength="20"
+                                   th:value="${f != null ? f['phone'] : ''}" autocomplete="tel">
+                        </div>
+                        <!-- O an chong bot: nguoi that khong thay, khong dien -->
+                        <div class="d-none" aria-hidden="true">
+                            <label for="contact-website">Website</label>
+                            <input id="contact-website" type="text" name="website" tabindex="-1" autocomplete="off">
+                        </div>
+                        <div class="col-12">
+                            <label for="contact-message" class="form-label" th:text="#{contact.form.message}">Nội dung</label>
+                            <textarea id="contact-message" name="message" rows="4" class="form-control" required minlength="10" maxlength="2000"
+                                      th:placeholder="#{contact.form.placeholder}"
+                                      th:text="${f != null ? f['message'] : ''}"></textarea>
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-glow"><i class="bi bi-send me-2"></i><span th:text="#{contact.form.submit}">Gửi yêu cầu</span></button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>

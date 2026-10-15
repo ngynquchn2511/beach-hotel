@@ -226,6 +226,35 @@ public class EmailService {
         return queue(booking, "Sóng Xanh Resort - Đã trả lời đánh giá của bạn", sb.toString(), "tra loi danh gia");
     }
 
+    // Tra loi tin lien he cua khach (form "Lien he" o trang gioi thieu). Kem lai cau hoi goc de khach doi chieu
+    public boolean sendContactReply(com.hotel.entity.ContactMessage contact) {
+        if (senderEmail == null || senderEmail.isBlank() || senderPassword == null || senderPassword.isBlank()) {
+            log.warn("Chua dat MAIL_USERNAME va MAIL_PASSWORD - khong gui tra loi lien he #{}", contact.getId());
+            return false;
+        }
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom("Sóng Xanh Resort <" + senderEmail + ">");
+        message.setTo(contact.getEmail());
+        message.setSubject("Sóng Xanh Resort - Trả lời yêu cầu tư vấn của bạn");
+        message.setText("Xin chào " + contact.getFullName() + ",\n\n"
+                + "Cảm ơn bạn đã liên hệ Sóng Xanh Resort. Chúng tôi xin trả lời như sau:\n\n"
+                + contact.getReply() + "\n\n"
+                + "----------\nCâu hỏi của bạn:\n" + contact.getMessage() + "\n----------\n\n"
+                + "Cần hỗ trợ thêm, bạn cứ trả lời email này"
+                + (zaloPhone == null || zaloPhone.isBlank() ? "" : " hoặc nhắn Zalo " + zaloPhone) + ".\n\n"
+                + "Trân trọng,\nSóng Xanh Resort");
+        Long id = contact.getId();
+        deliverAfterCommit(() -> {
+            try {
+                mailSender.send(message);
+                log.info("Da gui tra loi lien he #{}", id);
+            } catch (Exception ex) {
+                log.error("Gui tra loi lien he #{} that bai", id, ex);
+            }
+        });
+        return true;
+    }
+
     private boolean canEmail(Booking booking) {
         if (booking.getGuestEmail() == null || booking.getGuestEmail().isBlank()
                 || booking.getGuestEmail().endsWith("@khachvanglai.local")) {

@@ -23,7 +23,8 @@ public final class AuditLabels {
             Map.entry("DivingTour", "Tour lặn biển"),
             Map.entry("TourBooking", "Đặt tour lặn"),
             Map.entry("AirportTransfer", "Đưa đón sân bay"),
-            Map.entry("TransferRate", "Giá đưa đón")
+            Map.entry("TransferRate", "Giá đưa đón"),
+            Map.entry("ContactMessage", "Tin liên hệ")
     );
 
     private static final Map<String, String> FIELD_LABELS = Map.ofEntries(
@@ -85,6 +86,10 @@ public final class AuditLabels {
             Map.entry("paymentDate", "Ngày thanh toán"),
             Map.entry("rating", "Số sao"),
             Map.entry("reply", "Trả lời của resort"),
+            Map.entry("message", "Nội dung"),
+            Map.entry("phone", "Số điện thoại"),
+            Map.entry("handled", "Đã xử lý"),
+            Map.entry("handledBy", "Người xử lý"),
             Map.entry("repliedAt", "Thời điểm trả lời"),
             Map.entry("comment", "Nhận xét"),
             Map.entry("hidden", "Ẩn"),

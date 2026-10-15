@@ -1,6 +1,7 @@
 package com.hotel.controller;
 
 import com.hotel.service.BookingService;
+import com.hotel.service.ContactMessageService;
 import com.hotel.service.FrontDeskService;
 import com.hotel.service.ServiceOrderService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,19 +27,28 @@ import org.springframework.web.bind.annotation.ModelAttribute;
         AdminPricingController.class,
         AdminGuestRegistrationController.class,
         AdminDivingTourController.class,
-        AdminServiceOrderController.class
+        AdminServiceOrderController.class,
+        AdminContactMessageController.class
 })
 public class AdminSidebarModelAdvice {
 
     private final BookingService bookingService;
     private final ServiceOrderService serviceOrderService;
     private final FrontDeskService frontDeskService;
+    private final ContactMessageService contactMessageService;
 
     public AdminSidebarModelAdvice(BookingService bookingService, ServiceOrderService serviceOrderService,
-                                   FrontDeskService frontDeskService) {
+                                   FrontDeskService frontDeskService, ContactMessageService contactMessageService) {
         this.bookingService = bookingService;
         this.serviceOrderService = serviceOrderService;
         this.frontDeskService = frontDeskService;
+        this.contactMessageService = contactMessageService;
+    }
+
+    // So tin lien he khach gui ma chua ai xu ly - hien so o muc "Hop thu lien he"
+    @ModelAttribute("newContactCount")
+    public long newContactCount() {
+        return contactMessageService.countNew();
     }
 
     // So khach con phai don hom nay (chua nhan phong) - hien o muc "Hom nay"

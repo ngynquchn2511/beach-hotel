@@ -31,6 +31,12 @@
     </a>
     <a th:href="@{/admin/customers}" class="list-group-item list-group-item-action"
        th:classappend="${p.startsWith('/admin/customers')} ? 'active'"><i class="bi bi-people"></i>Khách hàng</a>
+    <a th:href="@{/admin/contact-messages}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+       th:classappend="${p.startsWith('/admin/contact-messages')} ? 'active'">
+        <span><i class="bi bi-envelope-paper"></i>Hộp thư liên hệ</span>
+        <span th:if="${newContactCount != null and newContactCount > 0}" class="badge rounded-pill bg-danger"
+              th:text="${newContactCount}" title="Tin liên hệ chưa xử lý"></span>
+    </a>
     <div class="admin-sidebar-title">Danh mục</div>
     <a th:href="@{/admin/room-types}" class="list-group-item list-group-item-action"
        th:classappend="${p.startsWith('/admin/room-types')} ? 'active'"><i class="bi bi-grid-3x3-gap"></i>Loại phòng</a>
