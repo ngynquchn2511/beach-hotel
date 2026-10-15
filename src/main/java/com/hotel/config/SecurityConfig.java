@@ -1,5 +1,7 @@
 package com.hotel.config;
 
+import com.hotel.security.AdminOtpFilter;
+import com.hotel.security.AdminOtpService;
 import com.hotel.security.AdminPortalSuccessHandler;
 import com.hotel.security.CustomUserDetailsService;
 import com.hotel.security.CustomerPortalSuccessHandler;
@@ -34,8 +36,11 @@ public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
     private final LoginAttemptService loginAttemptService;
+    private final AdminOtpService adminOtpService;
 
-    public SecurityConfig(CustomUserDetailsService userDetailsService, LoginAttemptService loginAttemptService) {
+    public SecurityConfig(CustomUserDetailsService userDetailsService, LoginAttemptService loginAttemptService,
+                          AdminOtpService adminOtpService) {
+        this.adminOtpService = adminOtpService;
         this.userDetailsService = userDetailsService;
         this.loginAttemptService = loginAttemptService;
     }
@@ -89,6 +94,8 @@ public class SecurityConfig {
         http
                 .addFilterAfter(csrfTokenEagerLoadFilter(), CsrfFilter.class)
                 .securityMatcher("/admin", "/admin/**", "/staff/**")
+                // Xac thuc 2 buoc: phien chua nhap ma OTP chi vao duoc trang nhap ma / dang xuat
+                .addFilterAfter(new AdminOtpFilter(), org.springframework.security.web.access.ExceptionTranslationFilter.class)
                 .authorizeHttpRequests(auth -> auth
                         // /admin la diem vao duy nhat hien trang dang nhap quan tri.
                         // /admin/login chi la endpoint POST do Spring Security xu ly.
@@ -122,7 +129,7 @@ public class SecurityConfig {
                 .formLogin(form -> form
                         .loginPage("/admin")
                         .loginProcessingUrl("/admin/login")
-                        .successHandler(new AdminPortalSuccessHandler())
+                        .successHandler(new AdminPortalSuccessHandler(adminOtpService))
                         .failureHandler(loginFailureHandler("/admin"))
                         .permitAll()
                 )

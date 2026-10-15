@@ -20,7 +20,7 @@ class AdminPortalSuccessHandlerTest {
     @Mock private HttpServletResponse response;
     @Mock private Authentication authentication;
 
-    private final AdminPortalSuccessHandler handler = new AdminPortalSuccessHandler();
+    private final AdminPortalSuccessHandler handler = new AdminPortalSuccessHandler(new com.hotel.security.AdminOtpService(null, false));
 
     @Test
     void onAuthenticationSuccess_adminRole_redirectsToDashboard() throws Exception {

@@ -293,6 +293,34 @@ public class EmailService {
         return true;
     }
 
+    public boolean isConfigured() {
+        return senderEmail != null && !senderEmail.isBlank() && senderPassword != null && !senderPassword.isBlank();
+    }
+
+    // Ma xac thuc 2 buoc khi dang nhap cong quan tri
+    public boolean sendAdminOtp(String to, String fullName, String code, long validMinutes) {
+        if (!isConfigured() || to == null || to.isBlank()) {
+            return false;
+        }
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom("Sóng Xanh Resort <" + senderEmail + ">");
+        message.setTo(to);
+        message.setSubject("Sóng Xanh Resort - Mã đăng nhập quản trị: " + code);
+        message.setText("Xin chào " + (fullName != null ? fullName : "") + ",\n\n"
+                + "Mã xác thực đăng nhập cổng quản trị của bạn là: " + code + "\n"
+                + "Mã có hiệu lực " + validMinutes + " phút và chỉ dùng được 1 lần.\n\n"
+                + "Nếu bạn không vừa đăng nhập, hãy đổi mật khẩu ngay và báo quản trị viên.\n\n"
+                + "Sóng Xanh Resort");
+        deliverAfterCommit(() -> {
+            try {
+                mailSender.send(message);
+            } catch (Exception ex) {
+                log.error("Gui ma dang nhap quan tri that bai", ex);
+            }
+        });
+        return true;
+    }
+
     // "Bao toi khi phong trong lai": phong khach theo doi da trong dung khoang ngay -> gui link dat ngay
     public boolean sendRoomAvailable(com.hotel.entity.RoomAlert alert) {
         if (senderEmail == null || senderEmail.isBlank() || senderPassword == null || senderPassword.isBlank()) {

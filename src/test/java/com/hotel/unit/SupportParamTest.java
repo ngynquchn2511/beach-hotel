@@ -194,7 +194,7 @@ class SupportParamTest {
         if (portal.equals("khách hàng")) {
             new CustomerPortalSuccessHandler().onAuthenticationSuccess(req, res, auth);
         } else {
-            new AdminPortalSuccessHandler().onAuthenticationSuccess(req, res, auth);
+            new AdminPortalSuccessHandler(new com.hotel.security.AdminOtpService(null, false)).onAuthenticationSuccess(req, res, auth);
         }
         assertThat(res.getRedirectedUrl()).isEqualTo(target);
     }

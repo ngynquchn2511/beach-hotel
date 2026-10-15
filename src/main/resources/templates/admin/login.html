@@ -17,6 +17,7 @@
         <div th:if="${param.locked != null and param.locked[0] == 'temp'}" class="alert alert-warning small"
              th:text="|Đăng nhập sai quá ${T(com.hotel.security.LoginAttemptService).MAX_FAILED_ATTEMPTS} lần. Tài khoản tạm khóa, vui lòng thử lại sau ${param.minutes != null ? param.minutes[0] : T(com.hotel.security.LoginAttemptService).LOCK_MINUTES} phút hoặc nhờ quản trị viên mở khóa.|"></div>
         <div th:if="${param.logout}" class="alert alert-success small">Bạn đã đăng xuất thành công.</div>
+        <div th:if="${param.otp}" class="alert alert-warning small">Nhập sai mã xác thực quá nhiều lần. Vui lòng đăng nhập lại.</div>
         <form th:action="@{/admin/login}" method="post">
             <div class="mb-3"><label for="admin-email" class="form-label fw-semibold small">Email công việc</label><input id="admin-email" type="email" name="username" class="form-control" placeholder="name@hotel.com" autocomplete="email" required autofocus></div>
             <div class="mb-4"><label for="admin-password" class="form-label fw-semibold small">Mật khẩu</label><input id="admin-password" type="password" name="password" class="form-control" placeholder="Nhập mật khẩu" autocomplete="current-password" required></div>

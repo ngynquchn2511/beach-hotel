@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Xác thực đăng nhập | Sóng Xanh Resort</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+</head>
+<body class="eaut eaut-admin-login">
+<main class="login-shell">
+    <section class="card login-card bg-white"><div class="card-body p-4 p-md-5">
+        <div class="text-center mb-4"><div class="badge-icon">⌘</div>
+            <div class="text-uppercase fw-bold small eyebrow-text">Sóng Xanh Resort</div>
+            <h1 class="h3 fw-bold mt-2 mb-1">Xác thực 2 bước</h1>
+            <p class="text-secondary mb-0">Mã 6 số đã được gửi tới <b th:text="${maskedEmail}"></b>. Mã có hiệu lực <span th:text="${validMinutes}"></span> phút.</p>
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-danger small" th:text="${errorMessage}"></div>
+        <div th:if="${successMessage}" class="alert alert-success small" th:text="${successMessage}"></div>
+        <form th:action="@{/admin/otp}" method="post">
+            <div class="mb-3"><label for="otp-code" class="form-label fw-semibold small">Mã xác thực</label>
+                <input id="otp-code" type="text" name="code" class="form-control form-control-lg text-center" inputmode="numeric"
+                       pattern="[0-9 ]{6,7}" maxlength="7" autocomplete="one-time-code" placeholder="••••••" required autofocus></div>
+            <button type="submit" class="btn btn-primary w-100 py-2">Xác nhận</button>
+        </form>
+        <div class="d-flex justify-content-between mt-3 small">
+            <form th:action="@{/admin/otp/resend}" method="post"><button type="submit" class="btn btn-link p-0 small">Gửi lại mã</button></form>
+            <form th:action="@{/admin/logout}" method="post"><button type="submit" class="btn btn-link p-0 small text-secondary">Đăng xuất</button></form>
+        </div>
+    </div></section>
+</main>
+</body>
+</html>
