@@ -383,6 +383,11 @@ public class BookingService {
         throw BusinessException.of("err.bookingLinkInvalid");
     }
 
+    // So lan luu tru hoan tat (da tra phong) - de tinh hang khach than thiet
+    public long countCompletedStays(Long customerId) {
+        return bookingRepository.countByCustomerIdAndStatus(customerId, BookingStatus.CHECKED_OUT);
+    }
+
     public List<Booking> findAllForCustomer(Long customerId) {
         return bookingRepository.findByCustomerIdOrderByCreatedAtDesc(customerId);
     }
@@ -703,8 +708,21 @@ public class BookingService {
         roomRepository.save(room);
 
         Booking checkedOutBooking = bookingRepository.save(booking);
+        upgradeLoyaltyTier(checkedOutBooking);
         emailService.sendBookingConfirmation(checkedOutBooking);
         return checkedOutBooking;
+    }
+
+    // Khach than thiet: sau moi lan tra phong, du so lan luu tru hoan tat thi tu len hang (khong bao gio tu ha hang)
+    private void upgradeLoyaltyTier(Booking booking) {
+        User customer = booking.getCustomer();
+        // Don vua luu thanh CHECKED_OUT - Hibernate flush truoc truy van dem nen da tinh ca don nay
+        long stays = bookingRepository.countByCustomerIdAndStatus(customer.getId(), BookingStatus.CHECKED_OUT);
+        CustomerType earned = CustomerType.forCompletedStays(stays);
+        CustomerType current = customer.getCustomerType() != null ? customer.getCustomerType() : CustomerType.NEW;
+        if (earned.ordinal() > current.ordinal()) {
+            customer.setCustomerType(earned);
+        }
     }
 
     // Dat phong truc tiep tai quay cho khach vang lai (khong can dang ky tai khoan truoc),

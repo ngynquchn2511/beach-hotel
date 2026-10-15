@@ -407,6 +407,48 @@ class BookingServiceTest {
         assertEquals(RoomStatus.NOT_READY, room.getStatus());
     }
 
+    // ---------- Khach than thiet: >= 2 lan luu tru -> khach quen, >= 5 -> VIP, khong tu ha hang ----------
+
+    private Booking checkOutWithCompletedStays(long completedStays) {
+        Booking b = bookingWithCheckIn(LocalDateTime.now().minusHours(1), BookingStatus.CHECKED_IN);
+        when(bookingRepository.findById(100L)).thenReturn(Optional.of(b));
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(bookingRepository.countByCustomerIdAndStatus(1L, BookingStatus.CHECKED_OUT)).thenReturn(completedStays);
+        return bookingService.checkOut(100L);
+    }
+
+    @Test
+    void checkOut_secondStay_upgradesNewToRegular() {
+        customer.setCustomerType(CustomerType.NEW);
+        checkOutWithCompletedStays(2);
+        assertEquals(CustomerType.REGULAR, customer.getCustomerType());
+    }
+
+    @Test
+    void checkOut_fifthStay_upgradesToVip_firstStayStaysNew() {
+        customer.setCustomerType(CustomerType.REGULAR);
+        checkOutWithCompletedStays(5);
+        assertEquals(CustomerType.VIP, customer.getCustomerType());
+    }
+
+    @Test
+    void checkOut_neverDowngrades_adminSetVipKept() {
+        customer.setCustomerType(CustomerType.VIP);
+        checkOutWithCompletedStays(1);
+        assertEquals(CustomerType.VIP, customer.getCustomerType());
+    }
+
+    @Test
+    void customerType_tierMath() {
+        assertEquals(CustomerType.NEW, CustomerType.forCompletedStays(1));
+        assertEquals(CustomerType.REGULAR, CustomerType.forCompletedStays(2));
+        assertEquals(CustomerType.REGULAR, CustomerType.forCompletedStays(4));
+        assertEquals(CustomerType.VIP, CustomerType.forCompletedStays(5));
+        assertEquals(CustomerType.REGULAR, CustomerType.NEW.next());
+        assertNull(CustomerType.VIP.next());
+        assertEquals(5, CustomerType.VIP.minStays());
+    }
+
     @Test
     void checkOut_notCheckedIn_throws() {
         Booking b = bookingWithCheckIn(LocalDateTime.now().plusHours(1), BookingStatus.CONFIRMED);

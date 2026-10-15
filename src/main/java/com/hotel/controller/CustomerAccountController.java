@@ -45,6 +45,16 @@ public class CustomerAccountController {
         }
         model.addAttribute("account", user);
         model.addAttribute("bookingCount", bookingService.findAllForCustomer(user.getId()).size());
+        // Khach than thiet: so lan luu tru hoan tat va hang tiep theo
+        long stays = bookingService.countCompletedStays(user.getId());
+        com.hotel.entity.CustomerType tier = user.getCustomerType() != null ? user.getCustomerType() : com.hotel.entity.CustomerType.NEW;
+        model.addAttribute("completedStays", stays);
+        model.addAttribute("nextTier", tier.next());
+        if (tier.next() != null) {
+            int need = tier.next().minStays();
+            model.addAttribute("staysToNext", Math.max(1, need - stays));
+            model.addAttribute("tierProgress", Math.min(100, Math.round(100.0 * stays / need)));
+        }
         return "customer/account";
     }
 

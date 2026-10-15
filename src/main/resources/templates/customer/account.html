@@ -48,6 +48,18 @@
                 <div class="info-row"><i class="bi bi-envelope"></i><div><div class="small text-muted" th:text="#{account.loginEmail}">Email đăng nhập</div><div class="fw-semibold" th:text="${account.email}"></div></div></div>
                 <div class="info-row"><i class="bi bi-telephone"></i><div><div class="small text-muted" th:text="#{confirm.phone}">Số điện thoại</div><div class="fw-semibold" th:text="${account.phoneNumber != null ? account.phoneNumber : '-'}"></div></div></div>
                 <div class="info-row"><i class="bi bi-calendar-heart"></i><div><div class="small text-muted" th:text="#{account.memberSince}">Thành viên từ</div><div class="fw-semibold" th:text="${#temporals.format(account.createdAt, 'dd/MM/yyyy')}"></div></div></div>
+                <!-- Khach than thiet: tien do len hang -->
+                <div class="mb-3 p-3 rounded-3" style="background: var(--baby-soft);">
+                    <div class="small fw-semibold" th:text="#{loyalty.stays(${completedStays})}">Đã lưu trú 1 lần</div>
+                    <th:block th:if="${nextTier != null}">
+                        <div class="progress my-2" style="height: 8px;">
+                            <div class="progress-bar bg-info" th:style="'width:' + ${tierProgress} + '%'"></div>
+                        </div>
+                        <div class="small text-muted" th:text="#{loyalty.toNext(${staysToNext}, #{'enum.CustomerType.' + ${nextTier}})}"></div>
+                    </th:block>
+                    <div th:if="${nextTier == null}" class="small text-muted" th:text="#{loyalty.top}">Bạn đang ở hạng cao nhất.</div>
+                    <div class="small text-muted mt-1" th:text="#{loyalty.perk}"></div>
+                </div>
                 <div class="info-row"><i class="bi bi-suitcase2"></i><div><div class="small text-muted" th:text="#{account.bookingCount}">Số đơn đã đặt</div><div class="fw-semibold" th:text="${bookingCount}"></div></div></div>
                 <a th:href="@{/customer/bookings}" class="btn btn-outline-primary w-100 mt-3"><i class="bi bi-clock-history me-1"></i><span th:text="#{nav.history}">Lịch sử đặt phòng</span></a>
             </div>
