@@ -33,10 +33,13 @@ public class AdminBookingController {
     private final GuestRegistrationService guestRegistrationService;
     private final ServiceOrderService serviceOrderService;
     private final DivingTourService divingTourService;
+    private final com.hotel.service.VnPayService vnPayService;
 
     public AdminBookingController(BookingService bookingService, PaymentService paymentService,
                                   GuestRegistrationService guestRegistrationService,
-                                  ServiceOrderService serviceOrderService, DivingTourService divingTourService) {
+                                  ServiceOrderService serviceOrderService, DivingTourService divingTourService,
+                                  com.hotel.service.VnPayService vnPayService) {
+        this.vnPayService = vnPayService;
         this.bookingService = bookingService;
         this.paymentService = paymentService;
         this.guestRegistrationService = guestRegistrationService;
@@ -255,6 +258,19 @@ public class AdminBookingController {
         }
         model.addAttribute("backUrl", "/admin/bookings/" + id);
         return "admin/bookings/invoice";
+    }
+
+    // Hoan coc qua VNPay (coc da tra qua VNPay): goi API hoan tien, thanh cong thi tu ghi nhan + email khach
+    @PostMapping("/{id}/refund-vnpay")
+    public String refundViaVnpay(@PathVariable Long id, @org.springframework.security.core.annotation.AuthenticationPrincipal com.hotel.security.CustomUserDetails user,
+                                 jakarta.servlet.http.HttpServletRequest request, RedirectAttributes redirectAttributes) {
+        try {
+            vnPayService.refundDeposit(id, user != null ? user.getUser().getFullName() : null, request.getRemoteAddr());
+            redirectAttributes.addFlashAttribute("successMessage", "VNPay đã hoàn tiền cho khách, đã gửi email báo khách");
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "redirect:/admin/bookings/" + id;
     }
 
     // Duyet / tu choi yeu cau nhan phong som / tra phong muon (duyet -> doi gio + cong phu phi vao don)

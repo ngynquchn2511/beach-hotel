@@ -244,6 +244,22 @@ public class Booking {
         return depositPaidAt != null;
     }
 
+    // Ma don gui VNPay (vnp_TxnRef) va thoi diem thanh toan (vnp_PayDate, yyyyMMddHHmmss) - API hoan tien cua VNPay bat buoc
+    @Column(name = "deposit_online_txn_ref", length = 40)
+    private String depositOnlineTxnRef;
+
+    @Column(name = "deposit_online_pay_date", length = 14)
+    private String depositOnlinePayDate;
+
+    // Ma giao dich hoan tien qua VNPay (null = hoan bang chuyen khoan tay hoac chua hoan)
+    @Column(name = "refund_online_ref", length = 40)
+    private String refundOnlineRef;
+
+    // Hoan tu dong qua VNPay duoc khi: coc tra qua VNPay (co du thong tin giao dich) va dang cho hoan
+    public boolean isRefundableViaVnpay() {
+        return isRefundPending() && isDepositPaidOnline() && depositOnlineTxnRef != null && depositOnlinePayDate != null;
+    }
+
     public boolean isDepositPaidOnline() {
         return depositPaidAt != null && depositOnlineRef != null;
     }

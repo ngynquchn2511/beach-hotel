@@ -98,7 +98,7 @@ class VnPayServiceTest {
     @Test
     void successCallback_recordsDepositWithTransactionNo() {
         VnPayService vnPay = service();
-        when(bookingService.confirmOnlineDeposit(15L, new BigDecimal("330000"), "14123456"))
+        when(bookingService.confirmOnlineDeposit(15L, new BigDecimal("330000"), "14123456", "15_1760000000", null))
                 .thenReturn(BookingService.OnlineDepositResult.CONFIRMED);
         Map<String, String> p = new HashMap<>(Map.of("vnp_TxnRef", "15_1760000000", "vnp_Amount", "33000000",
                 "vnp_ResponseCode", "00", "vnp_TransactionStatus", "00", "vnp_TmnCode", "TESTCODE",

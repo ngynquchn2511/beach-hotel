@@ -857,6 +857,13 @@ public class BookingService {
     // Goi lap lai (trang tra ve + IPN cua VNPay cung bao 1 giao dich) chi ghi nhan 1 lan.
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public OnlineDepositResult confirmOnlineDeposit(Long bookingId, BigDecimal paidAmount, String transactionRef) {
+        return confirmOnlineDeposit(bookingId, paidAmount, transactionRef, null, null);
+    }
+
+    // txnRef / payDate: luu lai de sau nay hoan coc tu dong qua API cua VNPay
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public OnlineDepositResult confirmOnlineDeposit(Long bookingId, BigDecimal paidAmount, String transactionRef,
+                                                    String txnRef, String payDate) {
         Booking booking = bookingRepository.findById(bookingId).orElse(null);
         if (booking == null || !booking.isDepositRequired()) {
             return OnlineDepositResult.NOT_FOUND;
@@ -872,6 +879,8 @@ public class BookingService {
         }
         booking.setDepositPaidAt(LocalDateTime.now());
         booking.setDepositOnlineRef(transactionRef);
+        booking.setDepositOnlineTxnRef(txnRef);
+        booking.setDepositOnlinePayDate(payDate);
         try {
             ensureNoConfirmedConflict(booking);
         } catch (BusinessException roomTaken) {
@@ -1016,6 +1025,21 @@ public class BookingService {
         Booking refundedBooking = bookingRepository.save(booking);
         emailService.sendRefundCompleted(refundedBooking);
         return refundedBooking;
+    }
+
+    // VNPay bao hoan tien thanh cong -> ghi nhan da hoan (kem ma giao dich hoan) va email bao khach
+    @Transactional
+    public Booking confirmRefundOnline(Long bookingId, String refundTransactionNo) {
+        Booking booking = findById(bookingId);
+        if (!booking.isRefundPending()) {
+            throw new BusinessException("Đơn này không có khoản hoàn cọc nào đang chờ xử lý");
+        }
+        booking.setRefundedAt(LocalDateTime.now());
+        booking.setRefundOnlineRef(refundTransactionNo);
+        booking.setRefundNote("Hoàn qua VNPay" + (refundTransactionNo != null ? ", mã GD " + refundTransactionNo : ""));
+        Booking refunded = bookingRepository.save(booking);
+        emailService.sendRefundCompleted(refunded);
+        return refunded;
     }
 
     // So don da huy dang cho hoan coc - hien so o sidebar va dashboard

@@ -91,7 +91,15 @@
                             (<span th:text="${booking.refundPercent}"></span>% cọc, hủy lúc
                             <span th:text="${#temporals.format(booking.cancelledAt, 'HH:mm dd/MM/yyyy')}"></span>)
                         </div>
-                        Chuyển khoản lại cho khách rồi bấm xác nhận bên dưới. Khách sẽ nhận email báo đã hoàn tiền.
+                        <!-- Coc tra qua VNPay: hoan thang qua VNPay, khong phai chuyen khoan tay -->
+                        <form th:if="${booking.refundableViaVnpay}" th:action="@{/admin/bookings/{id}/refund-vnpay(id=${booking.id})}" method="post"
+                              class="my-2" th:attr="onsubmit=|return confirm('Hoàn ${#numbers.formatDecimal(booking.refundAmount, 1, 'POINT', 0, 'COMMA')} VND về tài khoản / thẻ khách đã trả qua VNPay?')|">
+                            <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-arrow-counterclockwise me-1"></i>Hoàn qua VNPay</button>
+                            <span class="small text-muted ms-1">Khách đã cọc qua VNPay - tiền về đúng thẻ / ví khách đã trả.</span>
+                        </form>
+                        <span th:if="${booking.refundableViaVnpay}">Hoặc chuyển khoản tay rồi bấm xác nhận bên dưới.</span>
+                        <span th:unless="${booking.refundableViaVnpay}">Chuyển khoản lại cho khách rồi bấm xác nhận bên dưới.</span>
+                        Khách sẽ nhận email báo đã hoàn tiền.
                         <form th:action="@{/admin/bookings/{id}/confirm-refund(id=${booking.id})}" method="post"
                               class="d-flex gap-2 mt-2 flex-wrap"
                               th:attr="onsubmit=|return confirm('Xác nhận đã chuyển ${#numbers.formatDecimal(booking.refundAmount, 1, 'POINT', 0, 'COMMA')} VND cho khách?')|">

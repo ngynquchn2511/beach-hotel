@@ -297,7 +297,9 @@ public class PaymentService {
         // Tien coc da chuyen tra lai khach (don huy) - tru theo ngay hoan
         for (Booking b : bookingRepository.findByRefundedAtBetween(from, to)) {
             if (b.getRefundAmount() != null) {
-                result.merge(PaymentMethod.BANK_TRANSFER, b.getRefundAmount().negate(), BigDecimal::add);
+                // Hoan qua VNPay tru vao muc online, hoan bang chuyen khoan tay tru vao muc chuyen khoan
+                result.merge(b.getRefundOnlineRef() != null ? PaymentMethod.ONLINE : PaymentMethod.BANK_TRANSFER,
+                        b.getRefundAmount().negate(), BigDecimal::add);
             }
         }
         return result;

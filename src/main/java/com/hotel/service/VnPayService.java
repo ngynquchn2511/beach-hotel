@@ -44,6 +44,8 @@ public class VnPayService {
     private final String tmnCode;
     private final String hashSecret;
     private final String payUrl;
+    private VnPayApiClient apiClient;
+    private String apiUrl = "https://sandbox.vnpayment.vn/merchant_webapi/api/transaction";
 
     public VnPayService(BookingService bookingService,
                         @Value("${app.vnpay.tmn-code:}") String tmnCode,
@@ -53,6 +55,87 @@ public class VnPayService {
         this.tmnCode = tmnCode == null ? "" : tmnCode.trim();
         this.hashSecret = hashSecret == null ? "" : hashSecret.trim();
         this.payUrl = payUrl;
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setApiClient(VnPayApiClient apiClient,
+                      @Value("${app.vnpay.api-url:https://sandbox.vnpayment.vn/merchant_webapi/api/transaction}") String apiUrl) {
+        this.apiClient = apiClient;
+        this.apiUrl = apiUrl;
+    }
+
+    // ===== Hoan coc qua API VNPay (toan bo hoac 1 phan theo chinh sach huy) =====
+
+    // Thu tu truong ky / kiem tra chu ky theo tai lieu API hoan tien (ban 2.1.0), noi bang dau |
+    static final String[] REFUND_REQUEST_FIELDS = {"vnp_RequestId", "vnp_Version", "vnp_Command", "vnp_TmnCode",
+            "vnp_TransactionType", "vnp_TxnRef", "vnp_Amount", "vnp_TransactionNo", "vnp_TransactionDate",
+            "vnp_CreateBy", "vnp_CreateDate", "vnp_IpAddr", "vnp_OrderInfo"};
+    static final String[] REFUND_RESPONSE_FIELDS = {"vnp_ResponseId", "vnp_Command", "vnp_ResponseCode", "vnp_Message",
+            "vnp_TmnCode", "vnp_TxnRef", "vnp_Amount", "vnp_BankCode", "vnp_PayDate", "vnp_TransactionNo",
+            "vnp_TransactionType", "vnp_TransactionStatus", "vnp_OrderInfo"};
+
+    // Goi VNPay hoan tien coc cua don da huy; thanh cong -> ghi nhan da hoan + email khach. Loi -> BusinessException kem ma loi VNPay
+    public void refundDeposit(Long bookingId, String staffName, String clientIp) {
+        if (!isEnabled()) {
+            throw new BusinessException("Chưa cấu hình VNPay (VNPAY_TMN_CODE / VNPAY_HASH_SECRET)");
+        }
+        com.hotel.entity.Booking booking = bookingService.findById(bookingId);
+        if (!booking.isRefundableViaVnpay()) {
+            throw new BusinessException("Đơn này không hoàn được qua VNPay (cọc không trả qua VNPay hoặc không còn chờ hoàn) - hãy chuyển khoản tay");
+        }
+        ZonedDateTime now = ZonedDateTime.now(VN_ZONE);
+        java.math.BigDecimal amount = booking.getRefundAmount().setScale(0, RoundingMode.HALF_UP);
+        boolean full = amount.compareTo(booking.getDepositAmount().setScale(0, RoundingMode.HALF_UP)) >= 0;
+        Map<String, String> req = new java.util.LinkedHashMap<>();
+        req.put("vnp_RequestId", booking.getId() + "R" + now.toEpochSecond());
+        req.put("vnp_Version", "2.1.0");
+        req.put("vnp_Command", "refund");
+        req.put("vnp_TmnCode", tmnCode);
+        req.put("vnp_TransactionType", full ? "02" : "03");
+        req.put("vnp_TxnRef", booking.getDepositOnlineTxnRef());
+        req.put("vnp_Amount", amount.multiply(BigDecimal.valueOf(100)).toPlainString());
+        req.put("vnp_TransactionNo", booking.getDepositOnlineRef());
+        req.put("vnp_TransactionDate", booking.getDepositOnlinePayDate());
+        req.put("vnp_CreateBy", staffName == null || staffName.isBlank() ? "le tan" : staffName);
+        req.put("vnp_CreateDate", now.format(VNP_TIME));
+        req.put("vnp_IpAddr", clientIp == null || clientIp.isBlank() ? "127.0.0.1" : clientIp);
+        req.put("vnp_OrderInfo", "Hoan coc don HB" + booking.getId());
+        req.put("vnp_SecureHash", hmacSha512(pipeJoin(req, REFUND_REQUEST_FIELDS)));
+
+        Map<String, String> res;
+        try {
+            res = apiClient.post(apiUrl, req);
+        } catch (IllegalStateException ex) {
+            log.error("VNPay hoan tien don #{} loi ket noi", bookingId, ex);
+            throw new BusinessException("Không kết nối được VNPay, vui lòng thử lại sau");
+        }
+        String received = res.get("vnp_SecureHash");
+        if (received != null && !received.equalsIgnoreCase(hmacSha512(pipeJoin(res, REFUND_RESPONSE_FIELDS)))) {
+            log.warn("VNPay hoan tien don #{}: chu ky phan hoi khong hop le", bookingId);
+            throw new BusinessException("Phản hồi từ VNPay không hợp lệ (sai chữ ký) - chưa ghi nhận hoàn tiền");
+        }
+        if (!"00".equals(res.get("vnp_ResponseCode"))) {
+            throw new BusinessException("VNPay từ chối hoàn tiền (mã " + res.get("vnp_ResponseCode") + ": "
+                    + res.getOrDefault("vnp_Message", "") + ")");
+        }
+        bookingService.confirmRefundOnline(bookingId, res.get("vnp_TransactionNo"));
+    }
+
+    static String pipeJoin(Map<String, String> values, String[] fields) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < fields.length; i++) {
+            if (i > 0) {
+                sb.append('|');
+            }
+            String v = values.get(fields[i]);
+            sb.append(v == null ? "" : v);
+        }
+        return sb.toString();
+    }
+
+    // Dung trong test de gia lap VNPay ky phan hoi hoan tien
+    String signPipe(Map<String, String> values, String[] fields) {
+        return hmacSha512(pipeJoin(values, fields));
     }
 
     public boolean isEnabled() {
@@ -114,7 +197,8 @@ public class VnPayService {
         } catch (RuntimeException ex) {
             return new Result(Outcome.WRONG_AMOUNT, bookingId);
         }
-        Outcome outcome = switch (bookingService.confirmOnlineDeposit(bookingId, amount, params.get("vnp_TransactionNo"))) {
+        Outcome outcome = switch (bookingService.confirmOnlineDeposit(bookingId, amount, params.get("vnp_TransactionNo"),
+                params.get("vnp_TxnRef"), params.get("vnp_PayDate"))) {
             case CONFIRMED -> Outcome.SUCCESS;
             case ALREADY_PAID -> Outcome.ALREADY_PAID;
             case NOT_FOUND -> Outcome.NOT_FOUND;
