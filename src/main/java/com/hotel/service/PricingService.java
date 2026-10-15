@@ -15,7 +15,9 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 // Tinh gia phong theo tung dem: ngay thuong = gia phong, dem thu 6/thu 7 + phu thu cuoi tuan,
 // dem nam trong giai doan le/Tet + phu thu rieng (uu tien hon cuoi tuan). Kem tinh tien coc.
@@ -90,6 +92,20 @@ public class PricingService {
                     special != null ? special.getLocalizedName() : null, percent));
         }
         return nights;
+    }
+
+    // Gia 1 dem tren lich chon ngay: p = gia (VND), s = % phu thu, n = ten dip le (null = cuoi tuan / ngay thuong)
+    public record CalendarPrice(long p, int s, String n) {
+    }
+
+    // Gia tung dem tu ngay "from" trong "days" ngay toi - lich o trang chi tiet phong hien gia ngay duoi so ngay
+    public Map<String, CalendarPrice> calendarPrices(BigDecimal basePrice, LocalDate from, int days) {
+        Map<String, CalendarPrice> result = new LinkedHashMap<>();
+        for (NightPrice night : nightlyPrices(basePrice, from, from.plusDays(days))) {
+            result.put(night.night().toString(), new CalendarPrice(night.price().setScale(0, RoundingMode.HALF_UP).longValue(),
+                    night.surchargePercent(), night.specialName()));
+        }
+        return result;
     }
 
     public BigDecimal roomAmount(BigDecimal basePrice, LocalDate checkIn, LocalDate checkOut) {

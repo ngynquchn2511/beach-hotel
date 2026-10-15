@@ -103,6 +103,21 @@ class SimilarRoomsIT {
         assertEquals(otherNear, roomService.findSimilarRooms(current, null, null, 3, 3).get(0));
     }
 
+    // Lich chon ngay hien gia tung dem 12 thang toi (gia JSON nhung vao trang)
+    @Test
+    void roomDetail_calendarHasNightlyPrices() throws Exception {
+        long n = System.nanoTime() % 10000;
+        RoomType rt = roomTypeRepository.save(RoomType.builder().name("Hang LichGia IT").basePrice(BigDecimal.valueOf(1_210_000)).maxGuests(2).build());
+        Room room = save("SP" + n + "A", rt, 1_210_000, RoomStatus.AVAILABLE);
+        String tomorrow = LocalDate.now().plusDays(1).toString();
+
+        mockMvc.perform(get("/customer/rooms/{id}", room.getId()))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("calendarPrices", org.hamcrest.Matchers.aMapWithSize(366)))
+                .andExpect(content().string(containsString("\"" + tomorrow + "\":{\"p\":")))
+                .andExpect(content().string(containsString("Cuối tuần có phụ thu")));
+    }
+
     private Room save(String number, RoomType rt, long price, RoomStatus status) {
         return roomRepository.save(Room.builder().roomNumber(number).roomType(rt)
                 .price(BigDecimal.valueOf(price)).status(status).build());

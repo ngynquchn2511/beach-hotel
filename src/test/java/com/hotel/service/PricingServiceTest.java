@@ -172,4 +172,19 @@ class PricingServiceTest {
         SpecialRate r = pricingService.createSpecialRate("  Tết  ", d, d.plusDays(3), 100);
         assertThat(r.getName()).isEqualTo("Tết");
     }
+
+    // Lich gia o trang chi tiet phong: moi dem 1 o, cuoi tuan co % phu thu, dip le co ten dip
+    @Test
+    void calendarPrices_markWeekendAndSpecialNights() {
+        settings(20, 0);
+        when(specialRateRepository.findOverlapping(any(), any())).thenReturn(List.of(SpecialRate.builder()
+                .name("Lễ 2/9").nameEn("National Day").startDate(THURSDAY).endDate(THURSDAY).surchargePercent(50).build()));
+
+        var prices = pricingService.calendarPrices(PRICE, THURSDAY, 4);
+
+        assertThat(prices).hasSize(4);
+        assertThat(prices.get(THURSDAY.toString())).isEqualTo(new PricingService.CalendarPrice(750000, 50, "Lễ 2/9"));
+        assertThat(prices.get(THURSDAY.plusDays(1).toString())).isEqualTo(new PricingService.CalendarPrice(600000, 20, null));
+        assertThat(prices.get(THURSDAY.plusDays(3).toString())).isEqualTo(new PricingService.CalendarPrice(500000, 0, null));
+    }
 }

@@ -42,6 +42,13 @@
         .calendar-day.pending, .pending-swatch { background: repeating-linear-gradient(45deg, #fff3cd, #fff3cd 4px, #ffe69c 4px, #ffe69c 8px) !important; color: #8a6100 !important; }
         /* Ngay co khach nhung chon duoc lam ngay tra phong */
         .calendar-day.checkout-only { background: #e9ecef; color: #212529; cursor: pointer; outline: 1.5px dashed #3d9bd6; }
+        /* Lich gia: gia moi dem nho ngay duoi so ngay; cuoi tuan mau cam, dip le mau do */
+        .calendar-day.has-price { height: 46px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; padding: 0; }
+        .calendar-day .day-price { font-size: .62rem; color: #198754; font-weight: 600; letter-spacing: -.02em; }
+        .calendar-day.surcharge .day-price, .price-swatch-weekend { color: #d9480f; }
+        .calendar-day.special .day-price, .price-swatch-special { color: #c92a2a; }
+        .calendar-day.special { box-shadow: inset 0 -2px 0 #ffa8a8; }
+        .calendar-day.selected .day-price { color: #fff; }
         .room-stars .bi { color: #f2b705; }
         .room-review { padding: .9rem 0 0; }
         .room-review + .room-review { margin-top: .9rem; border-top: 1.5px dashed #b9dcf0; }
@@ -189,6 +196,11 @@
                         <span class="text-secondary"><i class="d-inline-block rounded me-1" style="width: 12px; height: 12px; background: #e9ecef;"></i> <span th:text="#{detail.legendTaken}">Đã có khách</span></span>
                         <span class="text-secondary"><i class="d-inline-block rounded me-1 pending-swatch" style="width: 12px; height: 12px;"></i> <span th:text="#{detail.legendPending}">Có đơn chờ xác nhận</span></span>
                     </div>
+                    <div class="d-flex flex-wrap gap-3 small mt-1" id="priceLegend">
+                        <span class="text-success fw-semibold" th:text="#{detail.legendPrice}">Giá / đêm</span>
+                        <span class="price-swatch-weekend fw-semibold" th:text="#{detail.legendWeekend}">Cuối tuần có phụ thu</span>
+                        <span class="price-swatch-special fw-semibold" th:text="#{detail.legendSpecial}">Dịp lễ / cao điểm</span>
+                    </div>
                     <p class="small text-muted mt-1 mb-0" th:utext="#{detail.checkoutNote}">Ngày có khách vẫn chọn được làm <b>ngày trả phòng</b> (trả trước giờ khách sau nhận).</p>
                 </section>
 
@@ -302,6 +314,8 @@
         // Ngay chi co don cho xac nhan giu cho (van tinh la khong dat duoc, nhung to mau rieng)
         const pendingDates = new Set(/*[[${pendingDates}]]*/ []);
         const maintenance = /*[[${room.status.name() == 'MAINTENANCE'}]]*/ false;
+        // Gia tung dem: { "2026-10-17": {p: 1210000, s: 10, n: null}, ... } (s = % phu thu, n = ten dip le)
+        const nightPrices = /*[[${calendarPrices}]]*/ {};
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         let selectedCheckIn = calendar.dataset.checkIn || null;
@@ -324,8 +338,42 @@
             past: /*[[#{detail.cal.past}]]*/ '',
             pending: /*[[#{detail.cal.pending}]]*/ '',
             taken: /*[[#{detail.cal.taken}]]*/ '',
-            maintenance: /*[[#{detail.cal.maintenance}]]*/ ''
+            maintenance: /*[[#{detail.cal.maintenance}]]*/ '',
+            million: /*[[#{detail.cal.million}]]*/ '',
+            thousand: /*[[#{detail.cal.thousand}]]*/ '',
+            perNight: /*[[#{detail.cal.perNight}]]*/ '',
+            weekend: /*[[#{detail.cal.weekendSurcharge}]]*/ ''
         };
+        const moneyFormat = new Intl.NumberFormat(calendarLocale);
+
+        // 1210000 -> "1,21tr" (vi) / "1.21M" (en); 850000 -> "850k"
+        function shortPrice(value) {
+            const decimal = calendarLocale.startsWith('vi') ? ',' : '.';
+            if (value >= 1000000) {
+                return String(Math.round(value / 10000) / 100).replace('.', decimal) + T.million;
+            }
+            return Math.round(value / 1000) + T.thousand;
+        }
+
+        // Them gia vao o ngay con dat duoc; title hien gia day du + ly do phu thu
+        function addPrice(button, dateValue) {
+            const night = nightPrices[dateValue];
+            if (!night) return;
+            const price = document.createElement('small');
+            price.className = 'day-price';
+            price.textContent = shortPrice(night.p);
+            button.classList.add('has-price');
+            button.appendChild(price);
+            let title = moneyFormat.format(night.p) + ' VND' + T.perNight;
+            if (night.n) {
+                button.classList.add('special');
+                title += ' · ' + night.n + ' (+' + night.s + '%)';
+            } else if (night.s > 0) {
+                button.classList.add('surcharge');
+                title += ' · ' + T.weekend + ' (+' + night.s + '%)';
+            }
+            button.title = button.title ? button.title + ' · ' + title : title;
+        }
 
         function parseDate(value) {
             const [year, month, day] = value.split('-').map(Number);
@@ -444,6 +492,8 @@
                     button.classList.add('available');
                     button.addEventListener('click', () => selectDate(dateValue));
                 }
+                // Gia chi hien o ngay con chon duoc lam dem o (khong hien ngay da qua / da co khach / bao tri)
+                if (!maintenance && !isPast && !isUnavailable) addPrice(button, dateValue);
 
                 if (dateValue === selectedCheckIn || dateValue === selectedCheckOut) button.classList.add('selected');
                 if (isInSelectedRange(dateValue)) button.classList.add('in-range');

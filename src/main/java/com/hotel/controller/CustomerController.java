@@ -26,6 +26,9 @@ public class CustomerController {
     // So phong goi y o muc "Phong tuong tu" duoi trang chi tiet
     static final int SIMILAR_ROOMS = 3;
 
+    // So ngay toi co gia tren lich chon ngay (trang chi tiet phong)
+    static final int CALENDAR_PRICE_DAYS = 366;
+
     // So phong moi trang ket qua tim phong
     static final int ROOMS_PER_PAGE = 10;
 
@@ -112,6 +115,8 @@ public class CustomerController {
         model.addAttribute("checkIn", checkIn);
         model.addAttribute("checkOut", checkOut);
         model.addAttribute("guests", guests);
+        // Gia tung dem 12 thang toi (gom phu thu cuoi tuan / dip le) de hien ngay tren lich chon ngay
+        model.addAttribute("calendarPrices", pricingService.calendarPrices(room.getPrice(), LocalDate.now(), CALENDAR_PRICE_DAYS));
         model.addAttribute("combos", comboService.findActive());
         model.addAttribute("selectedComboId", comboId);
         // Danh gia cua khach da o cung loai phong (diem trung binh + 5 nhan xet moi nhat)
