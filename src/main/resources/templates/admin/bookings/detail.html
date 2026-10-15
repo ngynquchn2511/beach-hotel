@@ -322,6 +322,8 @@
                 </div>
             </div>
 
+            <div class="mt-4" th:replace="~{fragments/company-invoice :: box(${booking}, @{/admin/bookings/{id}/company-invoice(id=${booking.id})}, null, ${canEditCompanyInvoice})}"></div>
+
             <div class="bg-white p-4 rounded shadow-sm mt-4" id="khach-luu-tru"
                  th:if="${canEditGuests or !#lists.isEmpty(guests)}">
                 <div class="d-flex justify-content-between align-items-center mb-3">

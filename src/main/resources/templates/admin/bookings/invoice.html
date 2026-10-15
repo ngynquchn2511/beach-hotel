@@ -45,6 +45,11 @@
             <div th:text="${booking.guestName != null} ? ${booking.guestName} : ${booking.customer.fullName}"></div>
             <div th:text="${booking.guestPhone != null} ? ${booking.guestPhone} : ${booking.customer.phoneNumber}"></div>
             <div th:text="${booking.guestEmail != null} ? ${booking.guestEmail} : ${booking.customer.email}"></div>
+            <div class="mt-2" th:if="${booking.companyInvoice}">
+                <div class="fw-bold" th:text="${booking.invoiceCompanyName}"></div>
+                <div th:text="'MST: ' + ${booking.invoiceTaxCode}"></div>
+                <div class="small" th:text="${booking.invoiceAddress}"></div>
+            </div>
         </div>
         <div class="col-sm-6 text-sm-end">
             <h6 class="fw-bold">Đơn đặt phòng #<span th:text="${booking.id}"></span></h6>

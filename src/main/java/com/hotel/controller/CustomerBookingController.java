@@ -67,6 +67,12 @@ public class CustomerBookingController {
     private final GuestRegistrationService guestRegistrationService;
     private final com.hotel.service.PromotionService promotionService;
     private final com.hotel.service.RoomServiceService roomServiceService;
+    private com.hotel.service.CompanyInvoiceService companyInvoiceService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setCompanyInvoiceService(com.hotel.service.CompanyInvoiceService companyInvoiceService) {
+        this.companyInvoiceService = companyInvoiceService;
+    }
 
     public CustomerBookingController(BookingService bookingService, RoomService roomService,
                                       ComboService comboService, DiscountCodeService discountCodeService,
@@ -160,6 +166,9 @@ public class CustomerBookingController {
             @RequestParam(required = false) Long comboId,
             @Valid @ModelAttribute("bookingConfirmRequest") BookingConfirmRequest request,
             BindingResult bindingResult,
+            @RequestParam(defaultValue = "false") boolean wantCompanyInvoice,
+            @RequestParam(required = false) String companyName, @RequestParam(required = false) String taxCode,
+            @RequestParam(required = false) String companyAddress, @RequestParam(required = false) String invoiceEmail,
             @AuthenticationPrincipal CustomUserDetails userDetails,
             Model model) {
 
@@ -177,6 +186,9 @@ public class CustomerBookingController {
                     : customerManagementService.findOrCreateGuestCustomer(
                             request.getGuestName(), request.getGuestEmail(), request.getGuestPhone());
 
+            // Hoa don cong ty: kiem tra truoc khi tao don (sai MST thi bao loi, khong tao don)
+            com.hotel.service.CompanyInvoiceService.Info companyInfo = wantCompanyInvoice
+                    ? com.hotel.service.CompanyInvoiceService.validate(companyName, taxCode, companyAddress, invoiceEmail) : null;
             // Chi khach dang nhap moi dung diem thuong (khach vang lai khong co so du de tru)
             int points = userDetails != null && request.getPointsToUse() != null ? request.getPointsToUse() : 0;
             Booking booking = bookingService.createBooking(
@@ -186,6 +198,9 @@ public class CustomerBookingController {
                     request.getGuestName(), request.getGuestPhone(), request.getGuestEmail(), points,
                     request.getGiftCode()
             );
+            if (companyInfo != null) {
+                companyInvoiceService.save(booking, companyInfo);
+            }
             // Kem ma truy cap de khach vang lai xem lai duoc don (khong can dang nhap)
             return "redirect:/customer/bookings/" + booking.getId() + "?token=" + booking.getAccessToken();
         } catch (BusinessException ex) {
@@ -273,6 +288,8 @@ public class CustomerBookingController {
         model.addAttribute("nightlyRate", StayTimePolicy.nightlyRate(booking));
         // Goi mon len phong khi dang o
         model.addAttribute("canRoomService", roomServiceService.canOrder(booking));
+        model.addAttribute("canEditCompanyInvoice", companyInvoiceService.canEdit(booking)
+                && booking.getStatus() != com.hotel.entity.BookingStatus.CHECKED_OUT);
         model.addAttribute("roomServiceMenu", roomServiceService.menuByCategory());
         model.addAttribute("roomServiceOrders", roomServiceService.ordersOf(id));
         // Khai bao luu tru online truoc khi den (le tan doi chieu giay to khi nhan phong)
@@ -435,6 +452,30 @@ public class CustomerBookingController {
             redirectAttributes.addFlashAttribute("stayTimeError", userMessages.of(ex));
         }
         return backTo(id, token, "#gio-linh-hoat");
+    }
+
+    // Khach nhap / bo thong tin xuat hoa don cong ty
+    @PostMapping("/{id}/company-invoice")
+    public String companyInvoice(@PathVariable Long id, @RequestParam(required = false) String token,
+                                 @RequestParam(defaultValue = "save") String action,
+                                 @RequestParam(required = false) String companyName, @RequestParam(required = false) String taxCode,
+                                 @RequestParam(required = false) String companyAddress, @RequestParam(required = false) String invoiceEmail,
+                                 @AuthenticationPrincipal CustomUserDetails userDetails, RedirectAttributes redirectAttributes) {
+        Booking booking = bookingService.findForViewing(id, token, userDetails != null ? userDetails.getUser().getId() : null);
+        try {
+            if (booking.getStatus() == com.hotel.entity.BookingStatus.CHECKED_OUT) {
+                throw BusinessException.of("ci.error.locked");
+            }
+            if ("remove".equals(action)) {
+                companyInvoiceService.remove(booking);
+            } else {
+                companyInvoiceService.save(booking, com.hotel.service.CompanyInvoiceService.validate(companyName, taxCode, companyAddress, invoiceEmail));
+            }
+            redirectAttributes.addFlashAttribute("ciSuccess", userMessages.get("ci.saved"));
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("ciError", userMessages.of(ex));
+        }
+        return backTo(id, token, "#hoa-don-cong-ty");
     }
 
     // Khach dang o goi mon len phong: so luong gui len o tham so qty_<id mon>

@@ -35,6 +35,8 @@
         <span th:if="${openMaintenanceCount != null and openMaintenanceCount > 0}" class="badge rounded-pill bg-danger"
               th:text="${openMaintenanceCount}" title="Phiếu báo hỏng chưa xong"></span>
     </a>
+    <a th:href="@{/admin/company-invoices}" class="list-group-item list-group-item-action"
+       th:classappend="${p.startsWith('/admin/company-invoices')} ? 'active'"><i class="bi bi-building"></i>Hóa đơn công ty</a>
     <a th:href="@{/admin/gift-vouchers}" class="list-group-item list-group-item-action"
        th:classappend="${p.startsWith('/admin/gift-vouchers')} ? 'active'"><i class="bi bi-gift"></i>Thẻ quà tặng</a>
     <a th:href="@{/admin/lost-found}" class="list-group-item list-group-item-action"

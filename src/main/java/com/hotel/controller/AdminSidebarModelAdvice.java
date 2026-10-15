@@ -40,7 +40,8 @@ import org.springframework.web.bind.annotation.ModelAttribute;
         AdminBookingGroupController.class,
         AdminForecastController.class,
         AdminGiftVoucherController.class,
-        AdminLostItemController.class
+        AdminLostItemController.class,
+        AdminCompanyInvoiceController.class
 })
 public class AdminSidebarModelAdvice {
 

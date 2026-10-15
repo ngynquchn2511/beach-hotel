@@ -134,6 +134,30 @@ public class Booking {
     @Column(name = "discount_amount", precision = 12, scale = 2)
     private java.math.BigDecimal discountAmount;
 
+    // ===== Xuat hoa don cho cong ty (thong tin VAT) - null = hoa don ca nhan =====
+    @Column(name = "invoice_company_name", length = 200)
+    private String invoiceCompanyName;
+
+    @Column(name = "invoice_tax_code", length = 20)
+    private String invoiceTaxCode;
+
+    @Column(name = "invoice_address", length = 255)
+    private String invoiceAddress;
+
+    @Column(name = "invoice_email", length = 100)
+    private String invoiceEmail;
+
+    // Ke toan da xuat hoa don dien tu (so hoa don + thoi diem)
+    @Column(name = "e_invoice_number", length = 30)
+    private String eInvoiceNumber;
+
+    @Column(name = "e_invoice_issued_at")
+    private LocalDateTime eInvoiceIssuedAt;
+
+    public boolean isCompanyInvoice() {
+        return invoiceTaxCode != null;
+    }
+
     // The qua tang dung tru tien don (ma + so tien da tru); null = khong dung
     @Column(name = "gift_voucher_code", length = 20)
     private String giftVoucherCode;

@@ -1,0 +1,35 @@
+<!-- Thong tin xuat hoa don cong ty (VAT) - dung chung o trang don cua khach va trang don cua le tan.
+     action: URL post; token: ma truy cap khach vang lai (null o trang le tan); editable: con sua duoc khong -->
+<div th:fragment="box(booking, action, token, editable)" class="bg-white p-4 rounded shadow-sm mb-4" id="hoa-don-cong-ty"
+     xmlns:th="http://www.thymeleaf.org">
+    <h5 class="fw-bold mb-1"><i class="bi bi-building me-2"></i><span th:text="#{ci.title}">Hóa đơn công ty</span></h5>
+    <div th:if="${ciSuccess}" class="alert alert-success small py-2" th:text="${ciSuccess}"></div>
+    <div th:if="${ciError}" class="alert alert-danger small py-2" th:text="${ciError}"></div>
+
+    <div th:if="${booking.EInvoiceNumber != null}" class="alert alert-success small py-2"
+         th:text="#{ci.issued(${booking.EInvoiceNumber}, ${#temporals.format(booking.EInvoiceIssuedAt, 'dd/MM/yyyy')})}"></div>
+
+    <p class="small text-muted" th:if="${editable}" th:text="#{ci.lead}">Cần hóa đơn VAT cho công ty? Điền thông tin đơn vị - hóa đơn điện tử được gửi sau khi trả phòng.</p>
+    <dl class="row small mb-2" th:if="${booking.companyInvoice and !editable}">
+        <dt class="col-sm-4" th:text="#{ci.companyName}">Tên đơn vị</dt><dd class="col-sm-8" th:text="${booking.invoiceCompanyName}"></dd>
+        <dt class="col-sm-4" th:text="#{ci.taxCode}">Mã số thuế</dt><dd class="col-sm-8" th:text="${booking.invoiceTaxCode}"></dd>
+        <dt class="col-sm-4" th:text="#{ci.address}">Địa chỉ</dt><dd class="col-sm-8" th:text="${booking.invoiceAddress}"></dd>
+    </dl>
+
+    <form th:if="${editable}" method="post" th:action="${action}" class="row g-2">
+        <input type="hidden" name="token" th:if="${token != null}" th:value="${token}">
+        <div class="col-md-6"><label class="form-label small" th:text="#{ci.companyName}">Tên đơn vị</label>
+            <input type="text" name="companyName" class="form-control form-control-sm" maxlength="200" required th:value="${booking.invoiceCompanyName}"></div>
+        <div class="col-md-6"><label class="form-label small" th:text="#{ci.taxCode}">Mã số thuế</label>
+            <input type="text" name="taxCode" class="form-control form-control-sm" maxlength="20" required placeholder="0101234567" th:value="${booking.invoiceTaxCode}"></div>
+        <div class="col-md-8"><label class="form-label small" th:text="#{ci.address}">Địa chỉ</label>
+            <input type="text" name="companyAddress" class="form-control form-control-sm" maxlength="255" required th:value="${booking.invoiceAddress}"></div>
+        <div class="col-md-4"><label class="form-label small" th:text="#{ci.email}">Email nhận hóa đơn</label>
+            <input type="email" name="invoiceEmail" class="form-control form-control-sm" maxlength="100" th:value="${booking.invoiceEmail}"></div>
+        <div class="col-12 d-flex gap-2">
+            <button type="submit" name="action" value="save" class="btn btn-sm btn-primary" th:text="#{ci.save}">Lưu thông tin</button>
+            <button type="submit" name="action" value="remove" class="btn btn-sm btn-outline-secondary" formnovalidate
+                    th:if="${booking.companyInvoice}" th:text="#{ci.remove}">Không cần hóa đơn công ty</button>
+        </div>
+    </form>
+</div>

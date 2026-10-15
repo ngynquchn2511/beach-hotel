@@ -144,6 +144,34 @@
                      th:text="#{points.notEnough(${pointsBalance}, ${minRedeemPoints})}"></div>
             </div>
 
+            <!-- Hoa don cong ty (VAT): tick moi hien o nhap -->
+            <div class="mb-3">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="wantCompanyInvoice" value="true" id="wantCompanyInvoice"
+                           th:checked="${param.wantCompanyInvoice != null}">
+                    <label class="form-check-label" for="wantCompanyInvoice" th:text="#{ci.want}">Xuất hóa đơn công ty</label>
+                </div>
+                <div class="row g-2 mt-1" id="companyInvoiceFields" style="display: none;">
+                    <div class="col-md-6"><input type="text" name="companyName" class="form-control form-control-sm" maxlength="200"
+                                                 th:placeholder="#{ci.companyName}" th:value="${param.companyName}"></div>
+                    <div class="col-md-6"><input type="text" name="taxCode" class="form-control form-control-sm" maxlength="20"
+                                                 th:placeholder="#{ci.taxCode}" th:value="${param.taxCode}"></div>
+                    <div class="col-md-8"><input type="text" name="companyAddress" class="form-control form-control-sm" maxlength="255"
+                                                 th:placeholder="#{ci.address}" th:value="${param.companyAddress}"></div>
+                    <div class="col-md-4"><input type="email" name="invoiceEmail" class="form-control form-control-sm" maxlength="100"
+                                                 th:placeholder="#{ci.email}" th:value="${param.invoiceEmail}"></div>
+                </div>
+            </div>
+            <script>
+                (function () {
+                    const box = document.getElementById('wantCompanyInvoice');
+                    const fields = document.getElementById('companyInvoiceFields');
+                    const sync = () => { fields.style.display = box.checked ? '' : 'none'; };
+                    box.addEventListener('change', sync);
+                    sync();
+                })();
+            </script>
+
             <button type="submit" class="btn btn-primary w-100" th:text="#{confirm.submit}">Xác nhận đặt phòng</button>
             <a th:href="@{/customer/rooms/{id}(id=${room.id}, checkIn=${checkIn}, checkOut=${checkOut}, guests=${guests})}"
                class="btn btn-outline-secondary w-100 mt-2" th:text="#{confirm.back}">Quay lại</a>

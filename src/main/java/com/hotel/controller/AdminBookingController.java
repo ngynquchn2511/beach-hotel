@@ -34,6 +34,12 @@ public class AdminBookingController {
     private final ServiceOrderService serviceOrderService;
     private final DivingTourService divingTourService;
     private final com.hotel.service.VnPayService vnPayService;
+    private com.hotel.service.CompanyInvoiceService companyInvoiceService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setCompanyInvoiceService(com.hotel.service.CompanyInvoiceService companyInvoiceService) {
+        this.companyInvoiceService = companyInvoiceService;
+    }
 
     public AdminBookingController(BookingService bookingService, PaymentService paymentService,
                                   GuestRegistrationService guestRegistrationService,
@@ -80,6 +86,7 @@ public class AdminBookingController {
         model.addAttribute("booking", booking);
         model.addAttribute("payment", paymentService.findByBookingId(id).orElse(null));
         model.addAttribute("guests", guestRegistrationService.findByBooking(id));
+        model.addAttribute("canEditCompanyInvoice", companyInvoiceService.canEdit(bookingService.findById(id)));
         model.addAttribute("canEditGuests", guestRegistrationService.canEdit(booking));
         model.addAttribute("genders", Gender.values());
         model.addAttribute("idTypes", IdDocumentType.values());
@@ -258,6 +265,26 @@ public class AdminBookingController {
         }
         model.addAttribute("backUrl", "/admin/bookings/" + id);
         return "admin/bookings/invoice";
+    }
+
+    // Le tan nhap / sua / bo thong tin hoa don cong ty (truoc khi ke toan xuat HDDT)
+    @PostMapping("/{id}/company-invoice")
+    public String companyInvoice(@PathVariable Long id, @RequestParam(defaultValue = "save") String action,
+                                 @RequestParam(required = false) String companyName, @RequestParam(required = false) String taxCode,
+                                 @RequestParam(required = false) String companyAddress, @RequestParam(required = false) String invoiceEmail,
+                                 RedirectAttributes redirectAttributes) {
+        Booking booking = bookingService.findById(id);
+        try {
+            if ("remove".equals(action)) {
+                companyInvoiceService.remove(booking);
+            } else {
+                companyInvoiceService.save(booking, com.hotel.service.CompanyInvoiceService.validate(companyName, taxCode, companyAddress, invoiceEmail));
+            }
+            redirectAttributes.addFlashAttribute("ciSuccess", "Đã lưu thông tin hóa đơn công ty");
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("ciError", ex.getMessage());
+        }
+        return "redirect:/admin/bookings/" + id + "#hoa-don-cong-ty";
     }
 
     // Doi phong: chon phong con trong cac dem cua don (kem chenh lech gia)

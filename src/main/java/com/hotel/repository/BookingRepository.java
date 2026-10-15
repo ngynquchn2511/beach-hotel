@@ -86,4 +86,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             + "and b.depositAmount > 0 and b.depositPaidAt is null and b.depositReminderSentAt is null "
             + "and b.depositDeadline > :now and b.depositDeadline <= :until")
     List<Booking> findDepositDueSoon(@Param("now") java.time.LocalDateTime now, @Param("until") java.time.LocalDateTime until);
+
+    // Don can xuat hoa don cong ty: chua xuat len dau
+    @Query("select b from Booking b join fetch b.room where b.invoiceTaxCode is not null "
+            + "order by case when b.eInvoiceIssuedAt is null then 0 else 1 end, b.checkOutDate desc")
+    List<Booking> findCompanyInvoices();
 }
