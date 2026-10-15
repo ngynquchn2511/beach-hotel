@@ -27,6 +27,12 @@
         <span th:if="${pendingRoomServiceCount != null and pendingRoomServiceCount > 0}" class="badge rounded-pill bg-warning text-dark"
               th:text="${pendingRoomServiceCount}" title="Yêu cầu chờ giao"></span>
     </a>
+    <a th:href="@{/admin/maintenance}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+       th:classappend="${p.startsWith('/admin/maintenance')} ? 'active'">
+        <span><i class="bi bi-tools"></i>Bảo trì phòng</span>
+        <span th:if="${openMaintenanceCount != null and openMaintenanceCount > 0}" class="badge rounded-pill bg-danger"
+              th:text="${openMaintenanceCount}" title="Phiếu báo hỏng chưa xong"></span>
+    </a>
     <a th:href="@{/admin/room-alerts}" class="list-group-item list-group-item-action"
        th:classappend="${p.startsWith('/admin/room-alerts')} ? 'active'"><i class="bi bi-bell"></i>Khách chờ phòng trống</a>
     <a th:href="@{/admin/housekeeping}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
