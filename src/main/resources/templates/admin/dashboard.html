@@ -150,6 +150,50 @@
                 </div>
             </div>
 
+            <div class="bg-white p-3 rounded shadow-sm mt-3" th:if="${comparison != null}" id="so-sanh">
+                <div class="fw-semibold mb-2">So sánh cùng kỳ</div>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead><tr><th>Kỳ</th><th class="text-end">Tiền đã thu</th><th class="text-end">Công suất</th>
+                            <th class="text-end">ADR</th><th class="text-end">RevPAR</th><th class="text-end">Số đơn</th></tr></thead>
+                        <tbody>
+                        <tr class="fw-semibold">
+                            <td th:text="'Kỳ này (' + ${#temporals.format(comparison.current.from, 'dd/MM/yyyy')} + ' - ' + ${#temporals.format(comparison.current.to, 'dd/MM/yyyy')} + ')'"></td>
+                            <td class="text-end" th:text="${#numbers.formatDecimal(comparison.current.paidTotal, 1, 'POINT', 0, 'COMMA')}"></td>
+                            <td class="text-end" th:text="${#numbers.formatDecimal(comparison.current.occupancy, 1, 1)} + '%'"></td>
+                            <td class="text-end" th:text="${#numbers.formatDecimal(comparison.current.adr, 1, 'POINT', 0, 'COMMA')}"></td>
+                            <td class="text-end" th:text="${#numbers.formatDecimal(comparison.current.revPar, 1, 'POINT', 0, 'COMMA')}"></td>
+                            <td class="text-end" th:text="${comparison.current.bookings}"></td>
+                        </tr>
+                        <tr th:each="r : ${comparison.rows}">
+                            <td><div th:text="${r.label}"></div>
+                                <div class="small text-muted" th:text="${#temporals.format(r.snapshot.from, 'dd/MM/yyyy')} + ' - ' + ${#temporals.format(r.snapshot.to, 'dd/MM/yyyy')}"></div></td>
+                            <td class="text-end"><div th:text="${#numbers.formatDecimal(r.snapshot.paidTotal, 1, 'POINT', 0, 'COMMA')}"></div>
+                                <span th:if="${r.delta.paidPercent == null}" class="text-muted">-</span>
+                                <span th:if="${r.delta.paidPercent != null}" class="small fw-semibold" th:classappend="${r.delta.paidPercent >= 0} ? 'text-success' : 'text-danger'"
+                                      th:text="(${r.delta.paidPercent >= 0} ? '▲ +' : '▼ ') + ${#numbers.formatDecimal(r.delta.paidPercent, 1, 1)} + '%'"></span></td>
+                            <td class="text-end"><div th:text="${#numbers.formatDecimal(r.snapshot.occupancy, 1, 1)} + '%'"></div>
+                                <span class="small fw-semibold" th:classappend="${r.delta.occupancyPoints >= 0} ? 'text-success' : 'text-danger'"
+                                      th:text="(${r.delta.occupancyPoints >= 0} ? '▲ +' : '▼ ') + ${#numbers.formatDecimal(r.delta.occupancyPoints, 1, 1)} + ' điểm'"></span></td>
+                            <td class="text-end"><div th:text="${#numbers.formatDecimal(r.snapshot.adr, 1, 'POINT', 0, 'COMMA')}"></div>
+                                <span th:if="${r.delta.adrPercent == null}" class="text-muted">-</span>
+                                <span th:if="${r.delta.adrPercent != null}" class="small fw-semibold" th:classappend="${r.delta.adrPercent >= 0} ? 'text-success' : 'text-danger'"
+                                      th:text="(${r.delta.adrPercent >= 0} ? '▲ +' : '▼ ') + ${#numbers.formatDecimal(r.delta.adrPercent, 1, 1)} + '%'"></span></td>
+                            <td class="text-end"><div th:text="${#numbers.formatDecimal(r.snapshot.revPar, 1, 'POINT', 0, 'COMMA')}"></div>
+                                <span th:if="${r.delta.revParPercent == null}" class="text-muted">-</span>
+                                <span th:if="${r.delta.revParPercent != null}" class="small fw-semibold" th:classappend="${r.delta.revParPercent >= 0} ? 'text-success' : 'text-danger'"
+                                      th:text="(${r.delta.revParPercent >= 0} ? '▲ +' : '▼ ') + ${#numbers.formatDecimal(r.delta.revParPercent, 1, 1)} + '%'"></span></td>
+                            <td class="text-end"><div th:text="${r.snapshot.bookings}"></div>
+                                <span th:if="${r.delta.bookingsPercent == null}" class="text-muted">-</span>
+                                <span th:if="${r.delta.bookingsPercent != null}" class="small fw-semibold" th:classappend="${r.delta.bookingsPercent >= 0} ? 'text-success' : 'text-danger'"
+                                      th:text="(${r.delta.bookingsPercent >= 0} ? '▲ +' : '▼ ') + ${#numbers.formatDecimal(r.delta.bookingsPercent, 1, 1)} + '%'"></span></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="small text-muted mt-2">▲/▼: kỳ này so với kỳ đó. Kỳ trước = cùng số ngày ngay trước kỳ đang xem. Công suất so bằng điểm %.</div>
+            </div>
+
             <div class="row g-3 mt-2">
                 <div class="col-md-4">
                     <div class="bg-white p-3 rounded shadow-sm">

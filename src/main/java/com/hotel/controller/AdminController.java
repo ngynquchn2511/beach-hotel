@@ -44,6 +44,13 @@ public class AdminController {
         this.revenueExportService = revenueExportService;
     }
 
+    private com.hotel.service.PeriodComparisonService periodComparisonService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setPeriodComparisonService(com.hotel.service.PeriodComparisonService periodComparisonService) {
+        this.periodComparisonService = periodComparisonService;
+    }
+
     @GetMapping("/admin/dashboard")
     public String dashboard(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
@@ -104,6 +111,11 @@ public class AdminController {
 
         // Chi so khach san: cong suat phong, ADR, RevPAR (theo ngay khach o)
         model.addAttribute("kpi", bookingService.getHotelKpi(fromDate, toDate));
+
+        // So voi ky lien truoc (cung so ngay) va cung ky nam truoc
+        if (periodComparisonService != null) {
+            model.addAttribute("comparison", periodComparisonService.compare(fromDate, toDate));
+        }
 
         return "admin/dashboard";
     }
