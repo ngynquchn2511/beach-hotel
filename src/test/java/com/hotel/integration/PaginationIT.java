@@ -147,4 +147,16 @@ class PaginationIT extends ItFixtures {
                 // Nut sang khoang ngay sau van o trang 2
                 .andExpect(content().string(containsString("days=14&amp;page=2")));
     }
+
+    // Trang du bao cong suat mo duoc cho le tan, chon 14 / 30 / 60 ngay
+    @Test
+    void forecastPage_renders() throws Exception {
+        User staff = persistUser(UserRole.STAFF, null);
+        mockMvc.perform(get("/admin/forecast").param("days", "14").with(as(staff)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Dự báo công suất")))
+                .andExpect(content().string(containsString("Theo hạng phòng")));
+        mockMvc.perform(get("/admin/forecast").param("days", "999").with(as(staff)))
+                .andExpect(model().attribute("days", 30));
+    }
 }
