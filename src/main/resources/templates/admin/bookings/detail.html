@@ -57,6 +57,10 @@
                     Mã giảm giá: <span th:text="${booking.discountCode.code}"></span>
                     (giảm <span th:text="${#numbers.formatDecimal(booking.discountAmount, 1, 'POINT', 0, 'COMMA')} + 'VND'"></span>)
                 </p>
+                <p class="mb-1" th:if="${booking.pointsUsed != null and booking.pointsUsed > 0}"
+                   th:text="'Dùng ' + ${booking.pointsUsed} + ' điểm thưởng (giảm ' + ${#numbers.formatDecimal(booking.pointsDiscount, 1, 'POINT', 0, 'COMMA')} + ' VND)'"></p>
+                <p class="mb-1 text-success" th:if="${booking.pointsEarned != null and booking.pointsEarned > 0}"
+                   th:text="'Khách được cộng ' + ${booking.pointsEarned} + ' điểm khi trả phòng'"></p>
                 <p class="mb-1">Tiền phòng (<span th:text="${booking.nights}"></span> đêm):
                     <span th:text="${#numbers.formatDecimal(booking.effectiveRoomAmount, 1, 'POINT', 0, 'COMMA')} + ' VND'"></span></p>
                 <p class="fw-bold fs-5 mb-0">Tổng tiền: <span th:text="${#numbers.formatDecimal(booking.totalAmount, 1, 'POINT', 0, 'COMMA')} + 'VND'"></span></p>

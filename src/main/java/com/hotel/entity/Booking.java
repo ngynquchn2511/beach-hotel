@@ -130,6 +130,21 @@ public class Booking {
     @Column(name = "discount_amount", precision = 12, scale = 2)
     private java.math.BigDecimal discountAmount;
 
+    // Diem thuong khach dung de tru tien luc dat (pointsDiscount = so tien da tru); null = khong dung
+    @Column(name = "points_used")
+    private Integer pointsUsed;
+
+    @Column(name = "points_discount", precision = 12, scale = 2)
+    private java.math.BigDecimal pointsDiscount;
+
+    // Diem duoc cong khi tra phong (null = chua tra phong / khong tich diem)
+    @Column(name = "points_earned")
+    private Integer pointsEarned;
+
+    public java.math.BigDecimal getPointsDiscountAmount() {
+        return pointsDiscount != null ? pointsDiscount : java.math.BigDecimal.ZERO;
+    }
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

@@ -6,6 +6,7 @@ import com.hotel.entity.User;
 import com.hotel.exception.BusinessException;
 import com.hotel.security.CustomUserDetails;
 import com.hotel.service.BookingService;
+import com.hotel.service.LoyaltyService;
 import com.hotel.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -24,8 +25,11 @@ public class CustomerAccountController {
     private final UserService userService;
     private final BookingService bookingService;
     private final UserMessages userMessages;
+    private final LoyaltyService loyaltyService;
 
-    public CustomerAccountController(UserService userService, BookingService bookingService, UserMessages userMessages) {
+    public CustomerAccountController(UserService userService, BookingService bookingService, UserMessages userMessages,
+                                     LoyaltyService loyaltyService) {
+        this.loyaltyService = loyaltyService;
         this.userMessages = userMessages;
         this.userService = userService;
         this.bookingService = bookingService;
@@ -44,6 +48,8 @@ public class CustomerAccountController {
             model.addAttribute("passwordRequest", new ChangePasswordRequest());
         }
         model.addAttribute("account", user);
+        model.addAttribute("pointHistory", loyaltyService.history(user.getId(), 10));
+        model.addAttribute("earnMultiplier", LoyaltyService.earnMultiplier(user.getCustomerType()));
         model.addAttribute("bookingCount", bookingService.findAllForCustomer(user.getId()).size());
         // Khach than thiet: so lan luu tru hoan tat va hang tiep theo
         long stays = bookingService.countCompletedStays(user.getId());

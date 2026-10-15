@@ -48,11 +48,15 @@ public class BookingService {
     private final TourBookingRepository tourBookingRepository;
     private final AirportTransferRepository transferRepository;
 
+    private final LoyaltyService loyaltyService;
+
     public BookingService(BookingRepository bookingRepository, RoomRepository roomRepository,
                            ComboRepository comboRepository, DiscountCodeRepository discountCodeRepository,
                            EmailService emailService, BookingChargeRepository chargeRepository,
                            PricingService pricingService, BookingGuestRepository guestRepository,
-                           TourBookingRepository tourBookingRepository, AirportTransferRepository transferRepository) {
+                           TourBookingRepository tourBookingRepository, AirportTransferRepository transferRepository,
+                           LoyaltyService loyaltyService) {
+        this.loyaltyService = loyaltyService;
         this.bookingRepository = bookingRepository;
         this.roomRepository = roomRepository;
         this.comboRepository = comboRepository;
@@ -217,8 +221,24 @@ public class BookingService {
                                   LocalTime checkInTime, LocalTime checkOutTime, Integer guests,
                                   Long comboId, String discountCodeStr, String guestName, String guestPhone,
                                   String guestEmail) {
+        return createBooking(customer, roomId, checkInDate, checkOutDate, checkInTime, checkOutTime, guests,
+                comboId, discountCodeStr, guestName, guestPhone, guestEmail, 0);
+    }
+
+    // pointsToUse > 0: khach (da dang nhap) dung diem thuong tru vao tien don, tien coc tinh tren so con lai
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public Booking createBooking(User customer, Long roomId, LocalDate checkInDate, LocalDate checkOutDate,
+                                  LocalTime checkInTime, LocalTime checkOutTime, Integer guests,
+                                  Long comboId, String discountCodeStr, String guestName, String guestPhone,
+                                  String guestEmail, int pointsToUse) {
         Booking booking = buildBooking(customer, roomId, checkInDate, checkOutDate, checkInTime, checkOutTime,
                 guests, comboId, discountCodeStr, guestName, guestPhone, guestEmail);
+        if (pointsToUse > 0) {
+            BigDecimal pointsDiscount = loyaltyService.redeemDiscount(customer, pointsToUse, booking.getTotalAmount());
+            booking.setPointsUsed(pointsToUse);
+            booking.setPointsDiscount(pointsDiscount);
+            booking.setTotalAmount(booking.getTotalAmount().subtract(pointsDiscount).max(BigDecimal.ZERO));
+        }
 
         booking.setChannel(BookingChannel.ONLINE);
         BigDecimal deposit = pricingService.depositFor(booking.getTotalAmount());
@@ -228,6 +248,7 @@ public class BookingService {
         }
 
         Booking savedBooking = bookingRepository.save(booking);
+        loyaltyService.recordRedeem(savedBooking);
         emailService.sendBookingConfirmation(savedBooking);
         return savedBooking;
     }
@@ -440,7 +461,8 @@ public class BookingService {
         BigDecimal subtotal = roomAmount.add(comboAmount);
 
         BigDecimal discountAmount = discountFor(booking.getDiscountCode(), subtotal);
-        BigDecimal totalAmount = subtotal.subtract(discountAmount).max(BigDecimal.ZERO);
+        // Tien da tru bang diem thuong luc dat giu nguyen
+        BigDecimal totalAmount = subtotal.subtract(discountAmount).subtract(booking.getPointsDiscountAmount()).max(BigDecimal.ZERO);
 
         booking.setCombo(newCombo);
         booking.setDiscountAmount(discountAmount);
@@ -538,7 +560,8 @@ public class BookingService {
         BigDecimal roomAmount = pricingService.roomAmount(room.getPrice(), newCheckIn, newCheckOut);
         BigDecimal subtotal = roomAmount.add(booking.getCombo() != null ? booking.getCombo().getPrice() : BigDecimal.ZERO);
         BigDecimal discountAmount = discountFor(booking.getDiscountCode(), subtotal);
-        BigDecimal totalAmount = subtotal.subtract(discountAmount).max(BigDecimal.ZERO);
+        // Tien da tru bang diem thuong luc dat giu nguyen
+        BigDecimal totalAmount = subtotal.subtract(discountAmount).subtract(booking.getPointsDiscountAmount()).max(BigDecimal.ZERO);
         BigDecimal deposit = booking.isDepositRequired() && !booking.isDepositPaid()
                 ? pricingService.depositFor(totalAmount) : booking.getDepositPaidAmount();
         return new DateChangeQuote(newCheckIn, newCheckOut, ChronoUnit.DAYS.between(newCheckIn, newCheckOut),
@@ -585,6 +608,7 @@ public class BookingService {
         LocalDateTime now = LocalDateTime.now();
         booking.setStatus(BookingStatus.CANCELLED);
         booking.setCancelledAt(now);
+        loyaltyService.refundUsed(booking);
         if (booking.isDepositRequired() && booking.isDepositPaid()) {
             int percent = fullRefund ? 100 : pricingService.refundPercent(checkInDateTime(booking), now);
             booking.setRefundPercent(percent);
@@ -754,6 +778,8 @@ public class BookingService {
             throw new BusinessException("Chỉ có thể check-out đơn đã check-in (CHECKED_IN)");
         }
         booking.setStatus(BookingStatus.CHECKED_OUT);
+        // Tich diem theo hang hien tai (truoc khi xet len hang ben duoi)
+        loyaltyService.earn(booking);
 
         Room room = booking.getRoom();
         room.setStatus(RoomStatus.NOT_READY);

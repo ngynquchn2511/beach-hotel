@@ -60,6 +60,8 @@ class BookingServiceParamTest {
     @Spy private PricingService pricingService =
             new PricingService(mock(PricingSettingsRepository.class), mock(SpecialRateRepository.class));
 
+    @Mock private com.hotel.service.LoyaltyService loyaltyService;
+
     @InjectMocks private BookingService bookingService;
 
     private User customer;

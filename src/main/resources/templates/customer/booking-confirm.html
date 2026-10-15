@@ -119,6 +119,23 @@
                 <div id="discountCheckResult" class="small mt-1"></div>
             </div>
 
+            <!-- Diem thuong: 1 diem = 1.000d, toi da 50% tien don (kiem tra lai khi bam dat) -->
+            <div class="mb-3" th:if="${pointsBalance != null}">
+                <label class="form-label" for="pointsToUse" th:text="#{points.use}">Dùng điểm thưởng</label>
+                <div th:if="${maxPoints > 0}">
+                    <div class="input-group">
+                        <input type="number" th:field="*{pointsToUse}" id="pointsToUse" class="form-control"
+                               th:min="${minRedeemPoints}" th:max="${maxPoints}" step="1" placeholder="0">
+                        <button type="button" class="btn btn-outline-primary" id="useMaxPoints"
+                                th:attr="data-max=${maxPoints}" th:text="#{points.useMax(${maxPoints})}">Dùng tối đa</button>
+                    </div>
+                    <div class="small text-muted mt-1"
+                         th:text="#{points.hint(${pointsBalance}, ${#numbers.formatDecimal(vndPerPoint, 1, 'POINT', 0, 'COMMA')}, ${maxPoints})}"></div>
+                </div>
+                <div th:unless="${maxPoints > 0}" class="small text-muted"
+                     th:text="#{points.notEnough(${pointsBalance}, ${minRedeemPoints})}"></div>
+            </div>
+
             <button type="submit" class="btn btn-primary w-100" th:text="#{confirm.submit}">Xác nhận đặt phòng</button>
             <a th:href="@{/customer/rooms/{id}(id=${room.id}, checkIn=${checkIn}, checkOut=${checkOut}, guests=${guests})}"
                class="btn btn-outline-secondary w-100 mt-2" th:text="#{confirm.back}">Quay lại</a>
@@ -167,5 +184,14 @@
 <div th:replace="~{fragments/chatbot-widget :: widget}"></div>
 <div th:replace="~{fragments/footer :: footer}"></div>
 
+<script>
+    // Nut "Dung toi da" dien san so diem lon nhat duoc dung
+    (function () {
+        const btn = document.getElementById('useMaxPoints');
+        if (btn) btn.addEventListener('click', function () {
+            document.getElementById('pointsToUse').value = btn.dataset.max;
+        });
+    })();
+</script>
 </body>
 </html>

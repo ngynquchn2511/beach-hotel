@@ -60,6 +60,25 @@
                     <div th:if="${nextTier == null}" class="small text-muted" th:text="#{loyalty.top}">Bạn đang ở hạng cao nhất.</div>
                     <div class="small text-muted mt-1" th:text="#{loyalty.perk}"></div>
                 </div>
+                <!-- Diem thuong: so du + 10 giao dich gan nhat -->
+                <div class="mb-3 p-3 rounded-3 border" id="diem-thuong">
+                    <div class="d-flex justify-content-between align-items-baseline">
+                        <div class="small fw-semibold" th:text="#{points.title}">Điểm thưởng</div>
+                        <div class="fs-4 fw-bold text-primary" th:text="${account.pointsBalance}">0</div>
+                    </div>
+                    <div class="small text-muted" th:text="#{points.rule(${earnMultiplier})}"></div>
+                    <ul class="list-unstyled small mb-0 mt-2" th:unless="${#lists.isEmpty(pointHistory)}">
+                        <li th:each="t : ${pointHistory}" class="d-flex justify-content-between border-top py-1">
+                            <span>
+                                <span th:text="#{'points.type.' + ${t.type}}">Tích điểm</span>
+                                <span class="text-muted" th:if="${t.booking != null}" th:text="'· #' + ${t.booking.id}"></span>
+                                <span class="text-muted" th:text="'· ' + ${#temporals.format(t.createdAt, 'dd/MM/yyyy')}"></span>
+                            </span>
+                            <span class="fw-semibold" th:classappend="${t.points > 0} ? 'text-success' : 'text-danger'"
+                                  th:text="${t.points > 0 ? '+' + t.points : t.points}"></span>
+                        </li>
+                    </ul>
+                </div>
                 <div class="info-row"><i class="bi bi-suitcase2"></i><div><div class="small text-muted" th:text="#{account.bookingCount}">Số đơn đã đặt</div><div class="fw-semibold" th:text="${bookingCount}"></div></div></div>
                 <a th:href="@{/customer/bookings}" class="btn btn-outline-primary w-100 mt-3"><i class="bi bi-clock-history me-1"></i><span th:text="#{nav.history}">Lịch sử đặt phòng</span></a>
             </div>

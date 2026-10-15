@@ -90,6 +90,10 @@
         <h6 class="fw-bold mt-3" th:text="#{success.payment}">Thanh toán</h6>
         <p class="mb-1" th:if="${booking.discountCode != null}"
            th:text="#{success.discount(${booking.discountCode.code}, ${#numbers.formatDecimal(booking.discountAmount, 1, 'POINT', 0, 'COMMA')})}"></p>
+        <p class="mb-1" th:if="${booking.pointsUsed != null and booking.pointsUsed > 0}"
+           th:text="#{points.usedLine(${booking.pointsUsed}, ${#numbers.formatDecimal(booking.pointsDiscount, 1, 'POINT', 0, 'COMMA')})}"></p>
+        <p class="mb-1 text-success" th:if="${booking.pointsEarned != null and booking.pointsEarned > 0}"
+           th:text="#{points.earnedLine(${booking.pointsEarned})}"></p>
         <p class="fw-bold fs-5 mb-0"><span th:text="#{success.total}">Tổng tiền:</span> <span class="price-tag" th:text="${#numbers.formatDecimal(booking.totalAmount, 1, 'POINT', 0, 'COMMA')} + 'VND'"></span></p>
         <p class="mb-0 mt-2" th:if="${booking.depositRequired}">
             <span th:if="${booking.depositPaid}" class="badge bg-info"

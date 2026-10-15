@@ -4,6 +4,7 @@ import com.hotel.entity.Booking;
 import com.hotel.entity.BookingStatus;
 import com.hotel.repository.BookingRepository;
 import com.hotel.service.EmailService;
+import com.hotel.service.LoyaltyService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -24,10 +25,13 @@ public class BookingExpirationScheduler {
 
     private final BookingRepository bookingRepository;
     private final EmailService emailService;
+    private final LoyaltyService loyaltyService;
 
-    public BookingExpirationScheduler(BookingRepository bookingRepository, EmailService emailService) {
+    public BookingExpirationScheduler(BookingRepository bookingRepository, EmailService emailService,
+                                      LoyaltyService loyaltyService) {
         this.bookingRepository = bookingRepository;
         this.emailService = emailService;
+        this.loyaltyService = loyaltyService;
     }
 
     // Chay moi 5 phut de kiem tra
@@ -48,6 +52,8 @@ public class BookingExpirationScheduler {
             if (now.isAfter(confirmDeadline) || depositOverdue) {
                 booking.setStatus(BookingStatus.CANCELLED);
                 booking.setCancelledAt(now);
+                // Don tu huy da dung diem thuong -> tra lai diem cho khach
+                loyaltyService.refundUsed(booking);
                 bookingRepository.save(booking);
                 if (depositOverdue) {
                     // Bao cho khach biet don bi huy vi chua chuyen coc (khach co the dat lai)

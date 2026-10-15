@@ -22,6 +22,7 @@ import com.hotel.util.PaginationUtil;
 import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.util.UriComponentsBuilder;
+import com.hotel.service.LoyaltyService;
 import com.hotel.service.UserMessages;
 import com.hotel.service.VnPayService;
 import org.springframework.stereotype.Controller;
@@ -134,6 +135,7 @@ public class CustomerBookingController {
             request.setGuestEmail(userDetails.getUser().getEmail());
         }
         model.addAttribute("bookingConfirmRequest", request);
+        addPointsModel(model, userDetails);
 
         return "customer/booking-confirm";
     }
@@ -152,6 +154,7 @@ public class CustomerBookingController {
 
         if (bindingResult.hasErrors()) {
             rebuildModel(model, roomId, checkIn, checkOut, guests, comboId);
+            addPointsModel(model, userDetails);
             return "customer/booking-confirm";
         }
 
@@ -163,17 +166,20 @@ public class CustomerBookingController {
                     : customerManagementService.findOrCreateGuestCustomer(
                             request.getGuestName(), request.getGuestEmail(), request.getGuestPhone());
 
+            // Chi khach dang nhap moi dung diem thuong (khach vang lai khong co so du de tru)
+            int points = userDetails != null && request.getPointsToUse() != null ? request.getPointsToUse() : 0;
             Booking booking = bookingService.createBooking(
                     customer, roomId, checkIn, checkOut,
                     request.getCheckInTime(), request.getCheckOutTime(),
                     guests, comboId, request.getDiscountCode(),
-                    request.getGuestName(), request.getGuestPhone(), request.getGuestEmail()
+                    request.getGuestName(), request.getGuestPhone(), request.getGuestEmail(), points
             );
             // Kem ma truy cap de khach vang lai xem lai duoc don (khong can dang nhap)
             return "redirect:/customer/bookings/" + booking.getId() + "?token=" + booking.getAccessToken();
         } catch (BusinessException ex) {
             model.addAttribute("errorMessage", userMessages.of(ex));
             rebuildModel(model, roomId, checkIn, checkOut, guests, comboId);
+            addPointsModel(model, userDetails);
             return "customer/booking-confirm";
         }
     }
@@ -446,6 +452,20 @@ public class CustomerBookingController {
         model.addAttribute("refundPolicy", settings);
         // Uoc tinh truoc khi ap ma giam gia - so chinh xac hien o trang don sau khi dat
         model.addAttribute("estimatedDeposit", pricingService.depositFor(subtotal));
+        model.addAttribute("subtotal", subtotal);
+    }
+
+    // O "Dung diem thuong" tren trang xac nhan: so du moi nhat va so diem toi da dung duoc cho don nay
+    private void addPointsModel(Model model, CustomUserDetails userDetails) {
+        if (userDetails == null) {
+            return;
+        }
+        User fresh = customerManagementService.findById(userDetails.getUser().getId());
+        BigDecimal subtotal = (BigDecimal) model.getAttribute("subtotal");
+        model.addAttribute("pointsBalance", fresh.getPointsBalance());
+        model.addAttribute("maxPoints", LoyaltyService.maxRedeemable(fresh, subtotal));
+        model.addAttribute("minRedeemPoints", LoyaltyService.MIN_REDEEM_POINTS);
+        model.addAttribute("vndPerPoint", LoyaltyService.VND_PER_REDEEMED_POINT);
     }
 
     // Danh sach gio de chon (moi 30 phut) - thay cho o nhap gio mac dinh cua trinh duyet, de chon hon

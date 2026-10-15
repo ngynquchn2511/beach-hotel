@@ -13,6 +13,9 @@ import java.time.LocalTime;
 @Setter
 public class BookingConfirmRequest {
 
+    // So diem thuong muon dung (khach da dang nhap); null / 0 = khong dung
+    private Integer pointsToUse;
+
     @NotBlank(message = "{val.guestName.required}")
     private String guestName;
 

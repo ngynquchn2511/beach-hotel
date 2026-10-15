@@ -43,6 +43,14 @@ public class User {
     @Column(name = "customer_type", nullable = false, length = 20)
     private CustomerType customerType;
 
+    // Diem thuong thanh vien hien co (tich khi tra phong, dung de tru tien khi dat). null = 0 (tai khoan cu)
+    @Column(name = "loyalty_points")
+    private Integer loyaltyPoints;
+
+    public int getPointsBalance() {
+        return loyaltyPoints != null ? loyaltyPoints : 0;
+    }
+
     // Token dat lai mat khau (quen mat khau) - chi ton tai trong thoi gian ngan, xoa sau khi dung
     @Column(name = "reset_token", length = 64, unique = true)
     private String resetToken;
