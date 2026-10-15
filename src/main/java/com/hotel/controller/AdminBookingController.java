@@ -257,6 +257,31 @@ public class AdminBookingController {
         return "admin/bookings/invoice";
     }
 
+    // Duyet / tu choi yeu cau nhan phong som / tra phong muon (duyet -> doi gio + cong phu phi vao don)
+    @PostMapping("/{id}/stay-time/approve")
+    public String approveStayTime(@PathVariable Long id, @RequestParam(required = false) String back,
+                                  RedirectAttributes redirectAttributes) {
+        try {
+            bookingService.approveStayTime(id);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã duyệt, phụ phí đã cộng vào đơn và gửi email báo khách");
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "today".equals(back) ? "redirect:/admin/today" : "redirect:/admin/bookings/" + id;
+    }
+
+    @PostMapping("/{id}/stay-time/reject")
+    public String rejectStayTime(@PathVariable Long id, @RequestParam(required = false) String note,
+                                 @RequestParam(required = false) String back, RedirectAttributes redirectAttributes) {
+        try {
+            bookingService.rejectStayTime(id, note);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã từ chối yêu cầu và báo khách");
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "today".equals(back) ? "redirect:/admin/today" : "redirect:/admin/bookings/" + id;
+    }
+
     // Tai hoa don PDF (in / gui khach qua Zalo...)
     @GetMapping("/{id}/invoice.pdf")
     public Object invoicePdf(@PathVariable Long id, RedirectAttributes redirectAttributes) {

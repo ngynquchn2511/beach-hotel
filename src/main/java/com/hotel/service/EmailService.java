@@ -188,6 +188,39 @@ public class EmailService {
         return queue(booking, "Sóng Xanh Resort - Đã đổi ngày lưu trú đơn #" + booking.getId(), body, "doi ngay");
     }
 
+    // Le tan duyet / tu choi yeu cau nhan phong som / tra phong muon
+    public boolean sendStayTimeDecision(Booking booking, boolean approved) {
+        if (!canEmail(booking)) {
+            return false;
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append("Xin chào ").append(booking.getGuestName()).append(",\n\n");
+        if (approved) {
+            sb.append("Sóng Xanh Resort đã DUYỆT yêu cầu của bạn cho đơn #").append(booking.getId()).append(":\n");
+            sb.append("- Nhận phòng: ").append(booking.getCheckInTime()).append(" ngày ")
+                    .append(booking.getCheckInDate().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"))).append("\n");
+            sb.append("- Trả phòng: ").append(booking.getCheckOutTime()).append(" ngày ")
+                    .append(booking.getCheckOutDate().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"))).append("\n");
+            if (booking.getTimeRequestFee() != null && booking.getTimeRequestFee().signum() > 0) {
+                sb.append("- Phụ phí: ").append(money(booking.getTimeRequestFee())).append(" VND, thanh toán khi trả phòng\n");
+            }
+        } else {
+            sb.append("Rất tiếc, Sóng Xanh Resort chưa thể đáp ứng yêu cầu nhận phòng sớm / trả phòng muộn cho đơn #")
+                    .append(booking.getId()).append(".\n");
+            if (booking.getTimeRequestNote() != null) {
+                sb.append("Lý do: ").append(booking.getTimeRequestNote()).append("\n");
+            }
+            sb.append("Giờ nhận / trả phòng của bạn giữ nguyên như đã đặt.\n");
+        }
+        String link = bookingLink(booking, "#gio-linh-hoat");
+        if (link != null) {
+            sb.append("\nXem đơn: ").append(link).append("\n");
+        }
+        sb.append("\nSóng Xanh Resort");
+        return queue(booking, "Sóng Xanh Resort - " + (approved ? "Đã duyệt" : "Phản hồi") + " yêu cầu đổi giờ đơn #" + booking.getId(),
+                sb.toString(), approved ? "duyet doi gio" : "tu choi doi gio");
+    }
+
     // Moi danh gia sau khi tra phong (GuestEmailScheduler goi). Tra ve true neu da dua vao hang doi gui
     public boolean sendReviewInvitation(Booking booking) {
         if (!canEmail(booking)) {

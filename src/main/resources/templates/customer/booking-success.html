@@ -301,17 +301,62 @@
                 <div class="col-md-5">
                     <label class="form-label"><span th:text="#{confirm.checkInTime}">Giờ nhận phòng</span> <span class="text-muted fw-normal" th:text="#{confirm.onDay(${#temporals.format(booking.checkInDate, 'dd/MM/yyyy')})}"></span></label>
                     <select name="checkInTime" class="form-select">
-                        <option th:each="t : ${timeOptions}" th:value="${t}" th:text="${t}" th:selected="${t == booking.checkInTime}"></option>
+                        <option th:each="t : ${checkInOptions}" th:value="${t}" th:text="${t}" th:selected="${t == booking.checkInTime}"></option>
                     </select>
                 </div>
                 <div class="col-md-5">
                     <label class="form-label"><span th:text="#{confirm.checkOutTime}">Giờ trả phòng</span> <span class="text-muted fw-normal" th:text="#{confirm.onDay(${#temporals.format(booking.checkOutDate, 'dd/MM/yyyy')})}"></span></label>
                     <select name="checkOutTime" class="form-select">
-                        <option th:each="t : ${timeOptions}" th:value="${t}" th:text="${t}" th:selected="${t == booking.checkOutTime}"></option>
+                        <option th:each="t : ${checkOutOptions}" th:value="${t}" th:text="${t}" th:selected="${t == booking.checkOutTime}"></option>
                     </select>
                 </div>
                 <div class="col-md-2">
                     <button type="submit" class="btn btn-primary w-100" th:text="#{success.save}">Lưu</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Nhan phong som / tra phong muon: ngoai khung 14:00 - 12:00, co phu phi, le tan duyet -->
+        <div class="bg-white p-4 rounded shadow-sm mb-4" id="gio-linh-hoat"
+             th:if="${canRequestStayTime or booking.timeRequestStatus != null}">
+            <h5 class="fw-bold mb-1"><i class="bi bi-clock-history me-2"></i><span th:text="#{stay.title}">Nhận phòng sớm / Trả phòng muộn</span></h5>
+            <p class="small text-muted mb-2" th:text="#{stay.policy(${#numbers.formatDecimal(nightlyRate, 1, 'POINT', 0, 'COMMA')})}"></p>
+            <div th:if="${stayTimeSuccess}" class="alert alert-success small py-2" th:text="${stayTimeSuccess}"></div>
+            <div th:if="${stayTimeError}" class="alert alert-danger small py-2" th:text="${stayTimeError}"></div>
+
+            <div th:if="${booking.timeRequestStatus != null}" class="alert small py-2"
+                 th:classappend="${booking.timeRequestStatus.name() == 'APPROVED'} ? 'alert-success' : (${booking.timeRequestStatus.name() == 'REJECTED'} ? 'alert-secondary' : 'alert-warning')">
+                <b th:text="#{'stay.status.' + ${booking.timeRequestStatus}}"></b>:
+                <span th:if="${booking.requestedCheckInTime != null}" th:text="#{stay.reqIn(${booking.requestedCheckInTime})}"></span>
+                <span th:if="${booking.requestedCheckOutTime != null}" th:text="#{stay.reqOut(${booking.requestedCheckOutTime})}"></span>
+                <span th:if="${booking.timeRequestFee != null}" th:text="#{stay.fee(${#numbers.formatDecimal(booking.timeRequestFee, 1, 'POINT', 0, 'COMMA')})}"></span>
+                <span th:if="${booking.timeRequestNote != null}" th:text="' · ' + ${booking.timeRequestNote}"></span>
+                <form th:if="${booking.timeRequestPending}" method="post" class="d-inline ms-2"
+                      th:action="@{/customer/bookings/{id}/stay-time/withdraw(id=${booking.id})}">
+                    <input type="hidden" name="token" th:if="${accessToken}" th:value="${accessToken}">
+                    <button type="submit" class="btn btn-sm btn-link p-0 align-baseline" th:text="#{stay.withdraw}">Rút yêu cầu</button>
+                </form>
+            </div>
+
+            <form method="post" class="row g-2 align-items-end" th:if="${canRequestStayTime and !booking.timeRequestPending}"
+                  th:action="@{/customer/bookings/{id}/stay-time(id=${booking.id})}">
+                <input type="hidden" name="token" th:if="${accessToken}" th:value="${accessToken}">
+                <div class="col-sm-5" th:if="${booking.status.name() != 'CHECKED_IN'}">
+                    <label class="form-label small" th:text="#{stay.earlyLabel(${#temporals.format(booking.checkInDate, 'dd/MM')})}">Nhận phòng sớm lúc</label>
+                    <select name="checkInTime" class="form-select form-select-sm">
+                        <option value="" th:text="#{stay.keep(${booking.checkInTime})}">Giữ nguyên</option>
+                        <option th:each="t : ${earlyOptions}" th:value="${t}" th:text="${t}"></option>
+                    </select>
+                </div>
+                <div class="col-sm-5">
+                    <label class="form-label small" th:text="#{stay.lateLabel(${#temporals.format(booking.checkOutDate, 'dd/MM')})}">Trả phòng muộn lúc</label>
+                    <select name="checkOutTime" class="form-select form-select-sm">
+                        <option value="" th:text="#{stay.keep(${booking.checkOutTime})}">Giữ nguyên</option>
+                        <option th:each="t : ${lateOptions}" th:value="${t}" th:text="${t}"></option>
+                    </select>
+                </div>
+                <div class="col-sm-2">
+                    <button type="submit" class="btn btn-sm btn-primary w-100" th:text="#{stay.send}">Gửi yêu cầu</button>
                 </div>
             </form>
         </div>

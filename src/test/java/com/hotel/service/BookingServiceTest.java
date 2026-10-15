@@ -1049,12 +1049,14 @@ class BookingServiceTest {
         LocalDate d = LocalDate.now().plusDays(10);
         when(roomRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(room));
         when(bookingRepository.existsOverlappingBooking(10L, d, d.plusDays(1))).thenReturn(false);
-        when(bookingRepository.findByRoomIdAndStatusIn(eq(10L), anyList()))
-                .thenReturn(List.of(active(1L, d.minusDays(1), d, BookingStatus.CONFIRMED)));
+        // Khach truoc da duoc duyet tra phong muon 16:00 -> khach moi khong nhan duoc luc 14:00
+        Booking previous = active(1L, d.minusDays(1), d, BookingStatus.CONFIRMED);
+        previous.setCheckOutTime(LocalTime.of(16, 0));
+        when(bookingRepository.findByRoomIdAndStatusIn(eq(10L), anyList())).thenReturn(List.of(previous));
 
         BusinessException ex = assertThrows(BusinessException.class, () -> bookingService.createBooking(customer, 10L, d, d.plusDays(1),
-                LocalTime.of(10, 0), LocalTime.of(12, 0), 2, null, null, "A", "0901111111", "a@mail.com"));
-        assertTrue(ex.getMessage().contains("từ 12:00"), ex.getMessage());
+                LocalTime.of(14, 0), LocalTime.of(12, 0), 2, null, null, "A", "0901111111", "a@mail.com"));
+        assertTrue(ex.getMessage().contains("từ 16:00"), ex.getMessage());
     }
 
     @Test
@@ -1062,11 +1064,15 @@ class BookingServiceTest {
         LocalDate d = LocalDate.now().plusDays(10);
         Booking mine = active(100L, d, d.plusDays(1), BookingStatus.CONFIRMED);
         when(bookingRepository.findById(100L)).thenReturn(Optional.of(mine));
-        when(bookingRepository.findByRoomIdAndStatusIn(eq(10L), anyList())).thenReturn(List.of(
-                mine, active(2L, d.plusDays(1), d.plusDays(2), BookingStatus.CONFIRMED)));
+        // Khach sau da duoc duyet nhan phong som 11:00 -> don nay khong tra luc 12:00 duoc
+        Booking next = active(2L, d.plusDays(1), d.plusDays(2), BookingStatus.CONFIRMED);
+        next.setCheckInTime(LocalTime.of(11, 0));
+        mine.setCheckOutTime(LocalTime.of(10, 0));
+        when(bookingRepository.findByRoomIdAndStatusIn(eq(10L), anyList())).thenReturn(List.of(mine, next));
 
-        assertThrows(BusinessException.class,
-                () -> bookingService.updateTimes(100L, 1L, LocalTime.of(14, 0), LocalTime.of(15, 0)));
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> bookingService.updateTimes(100L, 1L, LocalTime.of(14, 0), LocalTime.of(12, 0)));
+        assertTrue(ex.getMessage().contains("11:00"), ex.getMessage());
     }
 
     @Test

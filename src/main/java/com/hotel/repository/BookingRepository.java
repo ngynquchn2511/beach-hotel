@@ -73,4 +73,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             @Param("checkInDate") LocalDate checkInDate,
             @Param("checkOutDate") LocalDate checkOutDate
     );
+
+    long countByTimeRequestStatus(com.hotel.entity.StayTimeRequestStatus status);
+
+    List<Booking> findByTimeRequestStatusOrderByTimeRequestedAtAsc(com.hotel.entity.StayTimeRequestStatus status);
 }

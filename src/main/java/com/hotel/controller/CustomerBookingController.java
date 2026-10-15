@@ -24,6 +24,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.util.UriComponentsBuilder;
 import com.hotel.service.GuestRegistrationService;
 import com.hotel.service.LoyaltyService;
+import com.hotel.service.StayTimePolicy;
 import com.hotel.service.UserMessages;
 import com.hotel.service.VnPayService;
 import org.springframework.stereotype.Controller;
@@ -258,8 +259,14 @@ public class CustomerBookingController {
             model.addAttribute("accountName", paymentService.getAccountName());
             model.addAttribute("vnpayEnabled", vnPayService.isEnabled());
         }
-        model.addAttribute("timeOptions", generateTimeOptions());
+        model.addAttribute("checkInOptions", withCurrent(StayTimePolicy.checkInOptions(), booking.getCheckInTime()));
+        model.addAttribute("checkOutOptions", withCurrent(StayTimePolicy.checkOutOptions(), booking.getCheckOutTime()));
         model.addAttribute("combos", comboService.findActive());
+        // Nhan phong som / tra phong muon: phu phi theo % gia 1 dem, le tan duyet
+        model.addAttribute("canRequestStayTime", bookingService.canRequestStayTime(booking));
+        model.addAttribute("earlyOptions", StayTimePolicy.earlyOptions());
+        model.addAttribute("lateOptions", StayTimePolicy.lateOptions());
+        model.addAttribute("nightlyRate", StayTimePolicy.nightlyRate(booking));
         // Khai bao luu tru online truoc khi den (le tan doi chieu giay to khi nhan phong)
         model.addAttribute("declaredGuests", guestRegistrationService.findByBooking(id));
         model.addAttribute("canDeclareOnline", guestRegistrationService.canDeclareOnline(booking));
@@ -392,6 +399,47 @@ public class CustomerBookingController {
         return backTo(id, token, "");
     }
 
+    // Khach xin nhan phong som / tra phong muon (de trong = giu nguyen gio do)
+    @PostMapping("/{id}/stay-time")
+    public String requestStayTime(@PathVariable Long id, @RequestParam(required = false) String token,
+                                  @RequestParam(required = false) String checkInTime,
+                                  @RequestParam(required = false) String checkOutTime,
+                                  @AuthenticationPrincipal CustomUserDetails userDetails,
+                                  RedirectAttributes redirectAttributes) {
+        Booking booking = bookingService.findForViewing(id, token, userDetails != null ? userDetails.getUser().getId() : null);
+        try {
+            bookingService.requestStayTime(booking, parseTime(checkInTime), parseTime(checkOutTime));
+            redirectAttributes.addFlashAttribute("stayTimeSuccess", userMessages.get("stay.sent"));
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("stayTimeError", userMessages.of(ex));
+        }
+        return backTo(id, token, "#gio-linh-hoat");
+    }
+
+    @PostMapping("/{id}/stay-time/withdraw")
+    public String withdrawStayTime(@PathVariable Long id, @RequestParam(required = false) String token,
+                                   @AuthenticationPrincipal CustomUserDetails userDetails,
+                                   RedirectAttributes redirectAttributes) {
+        Booking booking = bookingService.findForViewing(id, token, userDetails != null ? userDetails.getUser().getId() : null);
+        try {
+            bookingService.withdrawStayTime(booking);
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("stayTimeError", userMessages.of(ex));
+        }
+        return backTo(id, token, "#gio-linh-hoat");
+    }
+
+    private static LocalTime parseTime(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return LocalTime.parse(value.trim());
+        } catch (java.time.format.DateTimeParseException ex) {
+            return null;
+        }
+    }
+
     // Xem truoc khi doi ngay: phong con trong khong, tien phong / tong tien moi, chenh lech so voi hien tai
     @GetMapping("/{id}/change-dates/quote")
     @ResponseBody
@@ -498,7 +546,8 @@ public class CustomerBookingController {
         model.addAttribute("nightlyPrices", nightlyPrices);
         model.addAttribute("roomAmount", roomAmount);
         model.addAttribute("comboId", comboId);
-        model.addAttribute("timeOptions", generateTimeOptions());
+        model.addAttribute("checkInOptions", StayTimePolicy.checkInOptions());
+        model.addAttribute("checkOutOptions", StayTimePolicy.checkOutOptions());
         if (comboId != null) {
             var combo = comboService.findById(comboId);
             model.addAttribute("combo", combo);
@@ -538,14 +587,14 @@ public class CustomerBookingController {
         model.addAttribute("vndPerPoint", LoyaltyService.VND_PER_REDEEMED_POINT);
     }
 
-    // Danh sach gio de chon (moi 30 phut) - thay cho o nhap gio mac dinh cua trinh duyet, de chon hon
-    private static List<LocalTime> generateTimeOptions() {
-        List<LocalTime> options = new ArrayList<>();
-        LocalTime t = LocalTime.MIDNIGHT;
-        for (int i = 0; i < 48; i++) {
-            options.add(t);
-            t = t.plusMinutes(30);
+    // Gio da duoc duyet ngoai khung (nhan som / tra muon) van phai co trong danh sach de form giu dung gia tri
+    private static List<LocalTime> withCurrent(List<LocalTime> options, LocalTime current) {
+        if (current == null || options.contains(current)) {
+            return options;
         }
-        return options;
+        List<LocalTime> list = new ArrayList<>(options);
+        list.add(current);
+        list.sort(null);
+        return list;
     }
 }

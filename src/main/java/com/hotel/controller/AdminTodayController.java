@@ -1,5 +1,6 @@
 package com.hotel.controller;
 
+import com.hotel.service.BookingService;
 import com.hotel.service.FrontDeskService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
@@ -15,8 +16,10 @@ import java.time.LocalDate;
 public class AdminTodayController {
 
     private final FrontDeskService frontDeskService;
+    private final BookingService bookingService;
 
-    public AdminTodayController(FrontDeskService frontDeskService) {
+    public AdminTodayController(FrontDeskService frontDeskService, BookingService bookingService) {
+        this.bookingService = bookingService;
         this.frontDeskService = frontDeskService;
     }
 
@@ -25,6 +28,8 @@ public class AdminTodayController {
                         Model model) {
         LocalDate today = LocalDate.now();
         model.addAttribute("day", frontDeskService.day(date != null ? date : today, today));
+        // Yeu cau nhan som / tra muon cho le tan duyet (moi ngay)
+        model.addAttribute("stayTimeRequests", bookingService.findPendingStayTimeRequests());
         return "admin/today";
     }
 

@@ -98,14 +98,14 @@
                 <div class="col-md-6">
                     <label class="form-label"><span th:text="#{confirm.checkInTime}">Giờ nhận phòng</span> <span class="text-muted fw-normal" th:text="#{confirm.onDay(${#temporals.format(checkIn, 'dd/MM/yyyy')})}"></span></label>
                     <select th:field="*{checkInTime}" class="form-select">
-                        <option th:each="t : ${timeOptions}" th:value="${t}" th:text="${t}"></option>
+                        <option th:each="t : ${checkInOptions}" th:value="${t}" th:text="${t}"></option>
                     </select>
                     <div class="text-danger small" th:if="${#fields.hasErrors('checkInTime')}" th:errors="*{checkInTime}"></div>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label"><span th:text="#{confirm.checkOutTime}">Giờ trả phòng</span> <span class="text-muted fw-normal" th:text="#{confirm.onDay(${#temporals.format(checkOut, 'dd/MM/yyyy')})}"></span></label>
                     <select th:field="*{checkOutTime}" class="form-select">
-                        <option th:each="t : ${timeOptions}" th:value="${t}" th:text="${t}"></option>
+                        <option th:each="t : ${checkOutOptions}" th:value="${t}" th:text="${t}"></option>
                     </select>
                     <div class="text-danger small" th:if="${#fields.hasErrors('checkOutTime')}" th:errors="*{checkOutTime}"></div>
                 </div>

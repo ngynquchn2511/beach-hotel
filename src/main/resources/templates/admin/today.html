@@ -57,6 +57,33 @@
             <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
             <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
 
+            <!-- Yeu cau nhan som / tra muon cho duyet -->
+            <div class="fd-card border-warning" th:unless="${#lists.isEmpty(stayTimeRequests)}">
+                <h5><i class="bi bi-clock-history text-warning"></i>Yêu cầu nhận sớm / trả muộn chờ duyệt
+                    <span class="badge bg-warning text-dark" th:text="${#lists.size(stayTimeRequests)}"></span></h5>
+                <table class="table table-sm align-middle">
+                    <tbody>
+                    <tr th:each="b : ${stayTimeRequests}">
+                        <td><a class="fw-semibold" th:href="@{/admin/bookings/{id}(id=${b.id})} + '#doi-gio'" th:text="'#' + ${b.id} + ' · P.' + ${b.room.roomNumber}"></a>
+                            <div class="small text-muted" th:text="${b.guestName}"></div></td>
+                        <td class="small">
+                            <div th:if="${b.requestedCheckInTime != null}" th:text="'Nhận ' + ${b.requestedCheckInTime} + ' ngày ' + ${#temporals.format(b.checkInDate, 'dd/MM')}"></div>
+                            <div th:if="${b.requestedCheckOutTime != null}" th:text="'Trả ' + ${b.requestedCheckOutTime} + ' ngày ' + ${#temporals.format(b.checkOutDate, 'dd/MM')}"></div>
+                        </td>
+                        <td class="small text-nowrap" th:text="${#numbers.formatDecimal(b.timeRequestFee, 1, 'POINT', 0, 'COMMA')} + ' VND'"></td>
+                        <td class="text-end no-print text-nowrap">
+                            <form class="d-inline" method="post" th:action="@{/admin/bookings/{id}/stay-time/approve(id=${b.id}, back='today')}">
+                                <button type="submit" class="btn btn-sm btn-success">Duyệt</button>
+                            </form>
+                            <form class="d-inline" method="post" th:action="@{/admin/bookings/{id}/stay-time/reject(id=${b.id}, back='today')}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Từ chối</button>
+                            </form>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
             <!-- Tong quan nhanh -->
             <div class="row g-3 mb-4">
                 <div class="col-6 col-lg-3"><div class="fd-stat">

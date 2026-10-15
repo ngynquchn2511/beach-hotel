@@ -168,6 +168,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/customer/bookings/*/vnpay").permitAll()
                         // Khach tu khai bao luu tru truoc khi den (check-in online) - kiem tra chu don / ma truy cap nhu tren
                         .requestMatchers(HttpMethod.POST, "/customer/bookings/*/guests", "/customer/bookings/*/guests/*/delete").permitAll()
+                        // Xin nhan phong som / tra phong muon (kiem tra chu don / ma truy cap nhu tren)
+                        .requestMatchers(HttpMethod.POST, "/customer/bookings/*/stay-time", "/customer/bookings/*/stay-time/withdraw").permitAll()
                         // "Bao toi khi phong trong lai" o trang chi tiet phong - khach chua dang nhap cung dung duoc
                         .requestMatchers(HttpMethod.POST, "/customer/rooms/*/alerts").permitAll()
                         // Lich .ics cho Google Calendar / Booking.com - kiem tra ma bi mat ?key= trong IcalController

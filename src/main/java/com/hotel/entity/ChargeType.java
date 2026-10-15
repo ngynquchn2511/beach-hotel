@@ -6,6 +6,7 @@ public enum ChargeType {
     LAUNDRY,
     DAMAGE,
     LATE_CHECKOUT,
+    EARLY_CHECKIN,
     // 2 loai duoi tao tu dong khi le tan xac nhan dich vu them - khong chon tay o form phu phi
     DIVING_TOUR,
     AIRPORT_TRANSFER,
@@ -17,6 +18,7 @@ public enum ChargeType {
             case LAUNDRY -> "Giặt ủi";
             case DAMAGE -> "Hư hỏng / mất đồ";
             case LATE_CHECKOUT -> "Trả phòng muộn";
+            case EARLY_CHECKIN -> "Nhận phòng sớm";
             case DIVING_TOUR -> "Tour lặn biển";
             case AIRPORT_TRANSFER -> "Đưa đón sân bay";
             case OTHER -> "Khác";

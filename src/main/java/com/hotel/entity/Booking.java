@@ -130,6 +130,31 @@ public class Booking {
     @Column(name = "discount_amount", precision = 12, scale = 2)
     private java.math.BigDecimal discountAmount;
 
+    // ===== Yeu cau nhan som / tra muon (ngoai khung 14:00 - 12:00, co phu phi, le tan duyet) =====
+    @Column(name = "requested_check_in_time")
+    private java.time.LocalTime requestedCheckInTime;
+
+    @Column(name = "requested_check_out_time")
+    private java.time.LocalTime requestedCheckOutTime;
+
+    @Column(name = "time_request_fee", precision = 12, scale = 2)
+    private java.math.BigDecimal timeRequestFee;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "time_request_status", length = 10)
+    private StayTimeRequestStatus timeRequestStatus;
+
+    @Column(name = "time_requested_at")
+    private LocalDateTime timeRequestedAt;
+
+    // Ly do le tan tu choi (hien cho khach)
+    @Column(name = "time_request_note", length = 200)
+    private String timeRequestNote;
+
+    public boolean isTimeRequestPending() {
+        return timeRequestStatus == StayTimeRequestStatus.PENDING;
+    }
+
     // Khuyen mai tu dong da ap luc dat (ten luu lai vi luat co the bi sua / xoa sau); null = khong co
     @Column(name = "promotion_name", length = 100)
     private String promotionName;

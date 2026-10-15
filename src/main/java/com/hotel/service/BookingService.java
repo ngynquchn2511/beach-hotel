@@ -233,6 +233,7 @@ public class BookingService {
                                   LocalTime checkInTime, LocalTime checkOutTime, Integer guests,
                                   Long comboId, String discountCodeStr, String guestName, String guestPhone,
                                   String guestEmail, int pointsToUse) {
+        requireStandardTimes(checkInTime, checkOutTime);
         Booking booking = buildBooking(customer, roomId, checkInDate, checkOutDate, checkInTime, checkOutTime,
                 guests, comboId, discountCodeStr, guestName, guestPhone, guestEmail);
         // Khuyen mai tu dong (chi dat online): giam % tien phong theo luat co loi nhat
@@ -444,12 +445,145 @@ public class BookingService {
         if (newCheckInTime == null || newCheckOutTime == null) {
             throw BusinessException.of("err.editTimesRequired");
         }
+        // Gio da duoc le tan duyet (nhan som / tra muon) thi giu nguyen duoc; gio moi phai trong khung tieu chuan
+        requireStandardTimes(newCheckInTime.equals(booking.getCheckInTime()) ? StayTimePolicy.STANDARD_CHECK_IN : newCheckInTime,
+                newCheckOutTime.equals(booking.getCheckOutTime()) ? StayTimePolicy.STANDARD_CHECK_OUT : newCheckOutTime);
         checkTurnoverTimes(checkAvailability(booking.getRoom(), booking.getCheckInDate(), booking.getCheckOutDate(), booking.getId()),
                 booking.getCheckInDate(), newCheckInTime, booking.getCheckOutDate(), newCheckOutTime);
         booking.setCheckInTime(newCheckInTime);
         booking.setCheckOutTime(newCheckOutTime);
         booking.setCheckInTimeChanged(true);
         return bookingRepository.save(booking);
+    }
+
+    private static void requireStandardTimes(LocalTime checkInTime, LocalTime checkOutTime) {
+        if (StayTimePolicy.isEarlyCheckIn(checkInTime) || StayTimePolicy.isLateCheckOut(checkOutTime)) {
+            throw BusinessException.of("err.timeOutsideWindow",
+                    StayTimePolicy.STANDARD_CHECK_IN.format(TIME_FMT), StayTimePolicy.STANDARD_CHECK_OUT.format(TIME_FMT));
+        }
+    }
+
+    // ===== Yeu cau nhan phong som / tra phong muon =====
+
+    // Nhan som chi khi chua nhan phong; tra muon ca khi dang o (truoc gio tra hien tai)
+    public boolean canRequestStayTime(Booking booking) {
+        LocalDateTime now = LocalDateTime.now();
+        return switch (booking.getStatus()) {
+            case PENDING, CONFIRMED -> now.isBefore(checkInDateTime(booking));
+            case CHECKED_IN -> now.isBefore(LocalDateTime.of(booking.getCheckOutDate(), booking.getCheckOutTime()));
+            default -> false;
+        };
+    }
+
+    // Khach gui yeu cau: newCheckInTime / newCheckOutTime null = giu nguyen. It nhat 1 gio phai ngoai khung tieu chuan.
+    // Kiem tra truoc khach den truoc / khach den sau cung phong, bao truoc phu phi; le tan duyet moi doi gio
+    @Transactional
+    public Booking requestStayTime(Booking booking, LocalTime newCheckInTime, LocalTime newCheckOutTime) {
+        if (!canRequestStayTime(booking)) {
+            throw BusinessException.of("err.stayTime.closed");
+        }
+        if (booking.getStatus() == BookingStatus.CHECKED_IN) {
+            newCheckInTime = null;
+        }
+        LocalTime in = newCheckInTime != null ? newCheckInTime : booking.getCheckInTime();
+        LocalTime out = newCheckOutTime != null ? newCheckOutTime : booking.getCheckOutTime();
+        boolean early = newCheckInTime != null && StayTimePolicy.isEarlyCheckIn(newCheckInTime) && !newCheckInTime.equals(booking.getCheckInTime());
+        boolean late = newCheckOutTime != null && StayTimePolicy.isLateCheckOut(newCheckOutTime) && !newCheckOutTime.equals(booking.getCheckOutTime());
+        if (!early && !late) {
+            throw BusinessException.of("err.stayTime.nothing", StayTimePolicy.STANDARD_CHECK_IN.format(TIME_FMT),
+                    StayTimePolicy.STANDARD_CHECK_OUT.format(TIME_FMT));
+        }
+        checkTurnoverTimes(checkAvailability(booking.getRoom(), booking.getCheckInDate(), booking.getCheckOutDate(), booking.getId()),
+                booking.getCheckInDate(), in, booking.getCheckOutDate(), out);
+        BigDecimal fee = StayTimePolicy.fee(booking, early ? StayTimePolicy.earlyPercent(in) : 0)
+                .add(StayTimePolicy.fee(booking, late ? StayTimePolicy.latePercent(out) : 0));
+        booking.setRequestedCheckInTime(early ? in : null);
+        booking.setRequestedCheckOutTime(late ? out : null);
+        booking.setTimeRequestFee(fee);
+        booking.setTimeRequestStatus(StayTimeRequestStatus.PENDING);
+        booking.setTimeRequestedAt(LocalDateTime.now());
+        booking.setTimeRequestNote(null);
+        return bookingRepository.save(booking);
+    }
+
+    // Khach rut lai yeu cau dang cho duyet
+    @Transactional
+    public Booking withdrawStayTime(Booking booking) {
+        if (!booking.isTimeRequestPending()) {
+            throw BusinessException.of("err.stayTime.notPending");
+        }
+        clearStayTimeRequest(booking);
+        return bookingRepository.save(booking);
+    }
+
+    // Le tan duyet: kiem tra lai lich (co the da co don moi tu luc khach gui), doi gio + cong phu phi vao don
+    @Transactional
+    public Booking approveStayTime(Long bookingId) {
+        Booking booking = findById(bookingId);
+        if (!booking.isTimeRequestPending()) {
+            throw new BusinessException("Đơn này không có yêu cầu nhận sớm / trả muộn đang chờ duyệt");
+        }
+        lockRoom(booking.getRoom().getId());
+        LocalTime in = booking.getRequestedCheckInTime() != null ? booking.getRequestedCheckInTime() : booking.getCheckInTime();
+        LocalTime out = booking.getRequestedCheckOutTime() != null ? booking.getRequestedCheckOutTime() : booking.getCheckOutTime();
+        checkTurnoverTimes(checkAvailability(booking.getRoom(), booking.getCheckInDate(), booking.getCheckOutDate(), booking.getId()),
+                booking.getCheckInDate(), in, booking.getCheckOutDate(), out);
+        if (booking.getRequestedCheckInTime() != null) {
+            int percent = StayTimePolicy.earlyPercent(in);
+            addStayTimeCharge(booking, ChargeType.EARLY_CHECKIN, "Nhận phòng lúc " + in.format(TIME_FMT) + " (" + percent + "% giá 1 đêm)",
+                    StayTimePolicy.fee(booking, percent));
+            booking.setCheckInTime(in);
+            booking.setCheckInTimeChanged(true);
+        }
+        if (booking.getRequestedCheckOutTime() != null) {
+            int percent = StayTimePolicy.latePercent(out);
+            addStayTimeCharge(booking, ChargeType.LATE_CHECKOUT, "Trả phòng lúc " + out.format(TIME_FMT) + " (" + percent + "% giá 1 đêm)",
+                    StayTimePolicy.fee(booking, percent));
+            booking.setCheckOutTime(out);
+        }
+        booking.setTimeRequestStatus(StayTimeRequestStatus.APPROVED);
+        Booking saved = bookingRepository.save(booking);
+        emailService.sendStayTimeDecision(saved, true);
+        return saved;
+    }
+
+    @Transactional
+    public Booking rejectStayTime(Long bookingId, String note) {
+        Booking booking = findById(bookingId);
+        if (!booking.isTimeRequestPending()) {
+            throw new BusinessException("Đơn này không có yêu cầu nhận sớm / trả muộn đang chờ duyệt");
+        }
+        String reason = note == null ? null : note.trim();
+        booking.setTimeRequestStatus(StayTimeRequestStatus.REJECTED);
+        booking.setTimeRequestNote(reason == null || reason.isEmpty() ? null : reason.substring(0, Math.min(200, reason.length())));
+        Booking saved = bookingRepository.save(booking);
+        emailService.sendStayTimeDecision(saved, false);
+        return saved;
+    }
+
+    @Transactional(readOnly = true)
+    public List<Booking> findPendingStayTimeRequests() {
+        return bookingRepository.findByTimeRequestStatusOrderByTimeRequestedAtAsc(StayTimeRequestStatus.PENDING);
+    }
+
+    // So yeu cau dang cho duyet - hien tren sidebar / man hinh Hom nay
+    public long countPendingStayTimeRequests() {
+        return bookingRepository.countByTimeRequestStatus(StayTimeRequestStatus.PENDING);
+    }
+
+    private void addStayTimeCharge(Booking booking, ChargeType type, String description, BigDecimal amount) {
+        if (amount.signum() > 0) {
+            chargeRepository.save(BookingCharge.builder().booking(booking).type(type).description(description).amount(amount).build());
+        }
+    }
+
+    private static void clearStayTimeRequest(Booking booking) {
+        booking.setRequestedCheckInTime(null);
+        booking.setRequestedCheckOutTime(null);
+        booking.setTimeRequestFee(null);
+        booking.setTimeRequestStatus(null);
+        booking.setTimeRequestedAt(null);
+        booking.setTimeRequestNote(null);
     }
 
     // Doi hoac huy combo cho booking da tao - tinh lai tien combo va ma giam gia (neu co) theo tong tien moi
