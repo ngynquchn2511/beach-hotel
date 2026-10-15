@@ -21,6 +21,15 @@ public class GuestEmailScheduler {
         this.guestEmailService = guestEmailService;
     }
 
+    // 15 phut 1 lan: nhac khach chuyen coc khi don sap tu huy vi qua han coc
+    @Scheduled(fixedDelay = 900_000, initialDelay = 120_000)
+    public void sendDepositReminders() {
+        int sent = guestEmailService.sendDepositReminders(LocalDateTime.now());
+        if (sent > 0) {
+            log.info("Da gui {} email nhac chuyen coc", sent);
+        }
+    }
+
     @Scheduled(cron = "0 5 * * * *")
     public void sendGuestEmails() {
         GuestEmailService.Result result = guestEmailService.sendDueEmails(LocalDateTime.now());

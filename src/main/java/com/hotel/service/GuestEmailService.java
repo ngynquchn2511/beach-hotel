@@ -50,6 +50,29 @@ public class GuestEmailService {
         return new Result(sendReminders(now), sendReviewInvitations(now));
     }
 
+    // Nhac chuyen coc: con <= DEPOSIT_REMIND_HOURS gio la het han (don tu huy). Don vua dat duoi 1 tieng thi khong nhac.
+    // Khong gioi han gio gui (han coc co the roi vao buoi toi). Tra ve so email da gui
+    public static final int DEPOSIT_REMIND_HOURS = 3;
+
+    @Transactional
+    public int sendDepositReminders(LocalDateTime now) {
+        if (!enabled) {
+            return 0;
+        }
+        int sent = 0;
+        for (Booking b : bookingRepository.findDepositDueSoon(now, now.plusHours(DEPOSIT_REMIND_HOURS))) {
+            if (b.getCreatedAt() != null && b.getCreatedAt().isAfter(now.minusHours(1))) {
+                continue;
+            }
+            if (emailService.sendDepositReminder(b)) {
+                b.setDepositReminderSentAt(now);
+                bookingRepository.save(b);
+                sent++;
+            }
+        }
+        return sent;
+    }
+
     private int sendReminders(LocalDateTime now) {
         int sent = 0;
         LocalDateTime windowEnd = now.plusHours(REMINDER_HOURS_BEFORE);

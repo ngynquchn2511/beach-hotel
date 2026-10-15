@@ -113,6 +113,10 @@ public class Booking {
     @Column(name = "reminder_sent_at")
     private LocalDateTime reminderSentAt;
 
+    // Da gui email nhac chuyen coc truoc khi het han (null = chua)
+    @Column(name = "deposit_reminder_sent_at")
+    private LocalDateTime depositReminderSentAt;
+
     // Email moi danh gia sau khi tra phong
     @Column(name = "review_invite_sent_at")
     private LocalDateTime reviewInviteSentAt;

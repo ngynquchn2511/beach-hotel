@@ -188,6 +188,30 @@ public class EmailService {
         return queue(booking, "Sóng Xanh Resort - Đã đổi ngày lưu trú đơn #" + booking.getId(), body, "doi ngay");
     }
 
+    // Nhac chuyen coc truoc khi het han (don se tu huy)
+    public boolean sendDepositReminder(Booking booking) {
+        if (!canEmail(booking)) {
+            return false;
+        }
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy");
+        StringBuilder sb = new StringBuilder();
+        sb.append("Xin chào ").append(booking.getGuestName()).append(",\n\n");
+        sb.append("Đơn #").append(booking.getId()).append(" (phòng ").append(booking.getRoom().getRoomNumber())
+                .append(", nhận phòng ").append(booking.getCheckInDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")))
+                .append(") vẫn chưa nhận được tiền cọc.\n");
+        sb.append("Hạn chuyển cọc: ").append(booking.getDepositDeadline().format(fmt))
+                .append(" - quá hạn đơn sẽ tự hủy để nhường phòng cho khách khác.\n\n");
+        sb.append("Số tiền cọc: ").append(money(booking.getDepositAmount())).append(" VND\n");
+        sb.append("Chuyển khoản: ").append(bankId).append(" ").append(accountNo).append(" (").append(accountName).append(")\n");
+        sb.append("Nội dung: HB").append(booking.getId()).append(" COC\n");
+        String link = bookingLink(booking, "");
+        if (link != null) {
+            sb.append("\nThanh toán nhanh bằng mã QR hoặc VNPay tại: ").append(link).append("\n");
+        }
+        sb.append("\nNếu bạn đã chuyển khoản, vui lòng bỏ qua email này - lễ tân sẽ xác nhận sớm.\n\nSóng Xanh Resort");
+        return queue(booking, "Sóng Xanh Resort - Nhắc chuyển cọc đơn #" + booking.getId(), sb.toString(), "nhac coc");
+    }
+
     // Dat nhieu phong: 1 email tong hop cho ca nhom (cancelled = bao da huy)
     public boolean sendGroupBooking(com.hotel.entity.BookingGroup group, List<Booking> bookings, boolean cancelled) {
         if (bookings.isEmpty() || !canEmail(bookings.get(0))) {

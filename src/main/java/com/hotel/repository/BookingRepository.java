@@ -80,4 +80,10 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     @Query("select b from Booking b join fetch b.room r join fetch r.roomType where b.group.id = :groupId order by r.roomNumber")
     List<Booking> findByGroupId(@Param("groupId") Long groupId);
+
+    // Don cho coc sap het han ma chua nhac
+    @Query("select b from Booking b join fetch b.room r join fetch r.roomType where b.status = com.hotel.entity.BookingStatus.PENDING "
+            + "and b.depositAmount > 0 and b.depositPaidAt is null and b.depositReminderSentAt is null "
+            + "and b.depositDeadline > :now and b.depositDeadline <= :until")
+    List<Booking> findDepositDueSoon(@Param("now") java.time.LocalDateTime now, @Param("until") java.time.LocalDateTime until);
 }
