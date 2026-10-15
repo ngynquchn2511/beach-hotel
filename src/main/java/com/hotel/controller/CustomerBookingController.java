@@ -68,6 +68,12 @@ public class CustomerBookingController {
     private final com.hotel.service.PromotionService promotionService;
     private final com.hotel.service.RoomServiceService roomServiceService;
     private com.hotel.service.CompanyInvoiceService companyInvoiceService;
+    private com.hotel.service.FacilityReservationService facilityService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setFacilityService(com.hotel.service.FacilityReservationService facilityService) {
+        this.facilityService = facilityService;
+    }
 
     @org.springframework.beans.factory.annotation.Autowired
     void setCompanyInvoiceService(com.hotel.service.CompanyInvoiceService companyInvoiceService) {
@@ -288,6 +294,11 @@ public class CustomerBookingController {
         model.addAttribute("nightlyRate", StayTimePolicy.nightlyRate(booking));
         // Goi mon len phong khi dang o
         model.addAttribute("canRoomService", roomServiceService.canOrder(booking));
+        model.addAttribute("facilityReservations", facilityService.ofBooking(id));
+        model.addAttribute("canFacility", facilityService.canReserve(booking));
+        model.addAttribute("spaTreatments", com.hotel.entity.SpaTreatment.values());
+        model.addAttribute("spaSlots", com.hotel.service.FacilityReservationService.SPA_SLOTS);
+        model.addAttribute("restaurantSlots", com.hotel.service.FacilityReservationService.RESTAURANT_SLOTS);
         model.addAttribute("canEditCompanyInvoice", companyInvoiceService.canEdit(booking)
                 && booking.getStatus() != com.hotel.entity.BookingStatus.CHECKED_OUT);
         model.addAttribute("roomServiceMenu", roomServiceService.menuByCategory());
@@ -476,6 +487,37 @@ public class CustomerBookingController {
             redirectAttributes.addFlashAttribute("ciError", userMessages.of(ex));
         }
         return backTo(id, token, "#hoa-don-cong-ty");
+    }
+
+    // Dat lich spa / ban nha hang trong thoi gian luu tru
+    @PostMapping("/{id}/facility")
+    public String reserveFacility(@PathVariable Long id, @RequestParam(required = false) String token,
+                                  @RequestParam(required = false) com.hotel.entity.FacilityReservation.Kind kind,
+                                  @RequestParam(required = false) com.hotel.entity.SpaTreatment treatment,
+                                  @RequestParam(required = false) LocalDate date, @RequestParam(required = false) LocalTime time,
+                                  @RequestParam(required = false) Integer people, @RequestParam(required = false) String note,
+                                  @AuthenticationPrincipal CustomUserDetails userDetails, RedirectAttributes redirectAttributes) {
+        Booking booking = bookingService.findForViewing(id, token, userDetails != null ? userDetails.getUser().getId() : null);
+        try {
+            facilityService.reserve(booking, kind, treatment, date, time, people, note);
+            redirectAttributes.addFlashAttribute("facilitySuccess", userMessages.get("fac.reserved"));
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("facilityError", userMessages.of(ex));
+        }
+        return backTo(id, token, "#spa-nha-hang");
+    }
+
+    @PostMapping("/{id}/facility/{reservationId}/cancel")
+    public String cancelFacility(@PathVariable Long id, @PathVariable Long reservationId, @RequestParam(required = false) String token,
+                                 @AuthenticationPrincipal CustomUserDetails userDetails, RedirectAttributes redirectAttributes) {
+        Booking booking = bookingService.findForViewing(id, token, userDetails != null ? userDetails.getUser().getId() : null);
+        try {
+            facilityService.cancelByGuest(booking, reservationId);
+            redirectAttributes.addFlashAttribute("facilitySuccess", userMessages.get("fac.cancelled"));
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("facilityError", userMessages.of(ex));
+        }
+        return backTo(id, token, "#spa-nha-hang");
     }
 
     // Khach dang o goi mon len phong: so luong gui len o tham so qty_<id mon>

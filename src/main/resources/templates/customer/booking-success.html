@@ -137,6 +137,60 @@
     </div>
 
     <!-- Goi mon len phong khi dang o: le tan giao xong moi cong tien vao hoa don -->
+    <div class="bg-white p-4 rounded shadow-sm mb-4" id="spa-nha-hang"
+         th:if="${canFacility or not #lists.isEmpty(facilityReservations)}">
+        <h5 class="fw-bold mb-1"><i class="bi bi-flower1 me-2"></i><span th:text="#{fac.title}">Spa &amp; nhà hàng</span></h5>
+        <p class="small text-muted" th:text="#{fac.lead}"></p>
+        <div th:if="${facilitySuccess}" class="alert alert-success small py-2" th:text="${facilitySuccess}"></div>
+        <div th:if="${facilityError}" class="alert alert-danger small py-2" th:text="${facilityError}"></div>
+
+        <ul class="list-group mb-3" th:unless="${#lists.isEmpty(facilityReservations)}">
+            <li th:each="r : ${facilityReservations}" class="list-group-item d-flex justify-content-between align-items-center gap-2">
+                <span>
+                    <span class="badge me-1" th:classappend="${r.status.name() == 'CONFIRMED'} ? 'bg-success' : (${r.status.name() == 'PENDING'} ? 'bg-warning text-dark' : 'bg-secondary')"
+                          th:text="#{'fac.status.' + ${r.status}}"></span>
+                    <span th:text="${r.spa} ? #{fac.spaLine(${r.treatment.localizedName}, ${r.people})} : #{fac.tableLine(${r.people})}"></span>
+                    <span class="text-muted" th:text="' · ' + ${#temporals.format(r.reservedDate, 'dd/MM')} + ' ' + ${r.reservedTime}"></span>
+                    <span class="text-muted" th:if="${r.totalPrice != null}" th:text="' · ' + ${#numbers.formatDecimal(r.totalPrice, 1, 'POINT', 0, 'COMMA')} + ' VND'"></span>
+                </span>
+                <form th:if="${r.status.name() != 'CANCELLED'}" method="post" th:action="@{/customer/bookings/{id}/facility/{rid}/cancel(id=${booking.id}, rid=${r.id})}">
+                    <input type="hidden" name="token" th:if="${accessToken != null}" th:value="${accessToken}">
+                    <button type="submit" class="btn btn-sm btn-outline-secondary" th:text="#{fac.cancel}">Hủy</button>
+                </form>
+            </li>
+        </ul>
+
+        <div class="row g-3" th:if="${canFacility}">
+            <form class="col-md-6" method="post" th:action="@{/customer/bookings/{id}/facility(id=${booking.id})}">
+                <input type="hidden" name="token" th:if="${accessToken != null}" th:value="${accessToken}">
+                <input type="hidden" name="kind" value="SPA">
+                <h6 class="fw-bold" th:text="#{fac.spa}">Spa</h6>
+                <select name="treatment" class="form-select form-select-sm mb-2" required>
+                    <option th:each="t : ${spaTreatments}" th:value="${t}"
+                            th:text="${t.localizedName} + ' - ' + ${t.minutes} + #{fac.minutes} + ' - ' + ${#numbers.formatDecimal(t.price, 1, 'POINT', 0, 'COMMA')} + ' VND'"></option>
+                </select>
+                <div class="d-flex gap-2 mb-2">
+                    <input type="date" name="date" class="form-control form-control-sm" required th:min="${booking.checkInDate}" th:max="${booking.checkOutDate}">
+                    <select name="time" class="form-select form-select-sm" required><option th:each="s : ${spaSlots}" th:value="${s}" th:text="${s}"></option></select>
+                    <select name="people" class="form-select form-select-sm"><option value="1">1</option><option value="2">2</option></select>
+                </div>
+                <button type="submit" class="btn btn-sm btn-primary" th:text="#{fac.bookSpa}">Đặt lịch spa</button>
+            </form>
+            <form class="col-md-6" method="post" th:action="@{/customer/bookings/{id}/facility(id=${booking.id})}">
+                <input type="hidden" name="token" th:if="${accessToken != null}" th:value="${accessToken}">
+                <input type="hidden" name="kind" value="RESTAURANT">
+                <h6 class="fw-bold" th:text="#{fac.restaurant}">Nhà hàng</h6>
+                <div class="d-flex gap-2 mb-2">
+                    <input type="date" name="date" class="form-control form-control-sm" required th:min="${booking.checkInDate}" th:max="${booking.checkOutDate}">
+                    <select name="time" class="form-select form-select-sm" required><option th:each="s : ${restaurantSlots}" th:value="${s}" th:text="${s}"></option></select>
+                    <input type="number" name="people" class="form-control form-control-sm" min="1" max="20" value="2" required style="max-width: 80px">
+                </div>
+                <input type="text" name="note" class="form-control form-control-sm mb-2" maxlength="300" th:placeholder="#{fac.notePlaceholder}">
+                <button type="submit" class="btn btn-sm btn-primary" th:text="#{fac.bookTable}">Đặt bàn</button>
+            </form>
+        </div>
+    </div>
+
     <div class="bg-white p-4 rounded shadow-sm mb-4" id="goi-phong"
          th:if="${canRoomService or not #lists.isEmpty(roomServiceOrders)}">
         <h5 class="fw-bold mb-1"><i class="bi bi-cup-hot me-2"></i><span th:text="#{rs.title}">Gọi dịch vụ lên phòng</span></h5>

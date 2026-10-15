@@ -42,7 +42,8 @@ import org.springframework.web.bind.annotation.ModelAttribute;
         AdminGiftVoucherController.class,
         AdminLostItemController.class,
         AdminCompanyInvoiceController.class,
-        AdminCashShiftController.class
+        AdminCashShiftController.class,
+        AdminFacilityController.class
 })
 public class AdminSidebarModelAdvice {
 
@@ -53,6 +54,18 @@ public class AdminSidebarModelAdvice {
     private final HousekeepingService housekeepingService;
     private final RoomServiceService roomServiceService;
     private final MaintenanceService maintenanceService;
+    private com.hotel.service.FacilityReservationService facilityService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setFacilityService(com.hotel.service.FacilityReservationService facilityService) {
+        this.facilityService = facilityService;
+    }
+
+    // Lich spa / ban nha hang cho le tan xac nhan
+    @ModelAttribute("pendingFacilityCount")
+    public long pendingFacilityCount() {
+        return facilityService != null ? facilityService.countPending() : 0;
+    }
 
     public AdminSidebarModelAdvice(BookingService bookingService, ServiceOrderService serviceOrderService,
                                    FrontDeskService frontDeskService, ContactMessageService contactMessageService,
