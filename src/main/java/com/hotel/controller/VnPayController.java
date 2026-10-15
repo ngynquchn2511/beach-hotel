@@ -51,6 +51,25 @@ public class VnPayController {
         }
     }
 
+    // Coc gop ca doan qua VNPay (kiem tra chu doan / ma truy cap cua doan)
+    @PostMapping("/customer/bookings/group/{id}/vnpay")
+    public String startGroup(@PathVariable Long id, @RequestParam(required = false) String token,
+                             @AuthenticationPrincipal CustomUserDetails userDetails,
+                             HttpServletRequest request, RedirectAttributes redirectAttributes) {
+        com.hotel.entity.BookingGroup group = bookingService.findGroupForViewing(id, token,
+                userDetails != null ? userDetails.getUser().getId() : null);
+        try {
+            String returnUrl = ServletUriComponentsBuilder.fromContextPath(request)
+                    .path("/payment/vnpay/return").build().toUriString();
+            boolean english = "en".equals(LocaleContextHolder.getLocale().getLanguage());
+            return "redirect:" + vnPayService.createGroupDepositPaymentUrl(group, bookingService.groupBookings(id),
+                    clientIp(request), returnUrl, english);
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", messages.of(ex));
+            return "redirect:" + groupPage(group);
+        }
+    }
+
     // VNPay dua khach quay lai sau khi tra tien (hoac bam huy). Chu ky da duoc kiem tra truoc khi tin bat ky tham so nao
     @GetMapping("/payment/vnpay/return")
     public String paymentReturn(@RequestParam Map<String, String> params, RedirectAttributes redirectAttributes) {
@@ -60,6 +79,21 @@ public class VnPayController {
             redirectAttributes.addFlashAttribute(ok ? "successMessage" : "errorMessage",
                     messages.get(ok ? "gv.paid" : "vnpay.failed"));
             return "redirect:/gift-vouchers/" + result.voucherId() + "/paid";
+        }
+        if (result.groupId() != null && result.outcome() != VnPayService.Outcome.INVALID_SIGNATURE) {
+            String key = switch (result.outcome()) {
+                case SUCCESS, ALREADY_PAID -> "vnpay.groupSuccess";
+                case PAYMENT_FAILED -> "vnpay.failed";
+                case PAID_BUT_ROOM_TAKEN, NOT_AWAITING -> "vnpay.paidNeedsStaff";
+                default -> "vnpay.invalid";
+            };
+            boolean ok = result.outcome() == VnPayService.Outcome.SUCCESS || result.outcome() == VnPayService.Outcome.ALREADY_PAID;
+            redirectAttributes.addFlashAttribute(ok ? "successMessage" : "errorMessage", messages.get(key));
+            try {
+                return "redirect:" + groupPage(bookingService.findGroup(result.groupId()));
+            } catch (BusinessException ex) {
+                return "redirect:/";
+            }
         }
         if (result.outcome() == VnPayService.Outcome.INVALID_SIGNATURE || result.bookingId() == null) {
             redirectAttributes.addFlashAttribute("errorMessage", messages.get("vnpay.invalid"));
@@ -99,6 +133,10 @@ public class VnPayController {
     private static String bookingPage(Booking booking) {
         return "/customer/bookings/" + booking.getId()
                 + (booking.getAccessToken() != null ? "?token=" + booking.getAccessToken() : "");
+    }
+
+    private static String groupPage(com.hotel.entity.BookingGroup group) {
+        return "/customer/bookings/group/" + group.getId() + "?token=" + group.getAccessToken();
     }
 
     private static String clientIp(HttpServletRequest request) {

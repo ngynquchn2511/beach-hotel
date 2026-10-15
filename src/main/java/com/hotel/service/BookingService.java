@@ -1161,6 +1161,34 @@ public class BookingService {
         return OnlineDepositResult.CONFIRMED;
     }
 
+    // VNPay bao ca doan da tra coc gop: so tien phai bang tong coc cac phong dang cho coc -> ghi nhan tung phong.
+    // Goi lap lai (trang tra ve + IPN) chi ghi nhan 1 lan; phong bi don khac giu thi van ghi da coc, cho le tan xu ly
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public OnlineDepositResult confirmOnlineGroupDeposit(Long groupId, BigDecimal paidAmount, String transactionRef,
+                                                         String txnRef, String payDate) {
+        if (groupId == null || bookingGroupRepository.findById(groupId).isEmpty()) {
+            return OnlineDepositResult.NOT_FOUND;
+        }
+        List<Booking> bookings = groupBookings(groupId);
+        List<Booking> awaiting = bookings.stream().filter(Booking::isAwaitingDeposit).toList();
+        if (awaiting.isEmpty()) {
+            boolean sameTxn = txnRef != null && bookings.stream().anyMatch(b -> txnRef.equals(b.getDepositOnlineTxnRef()));
+            return sameTxn ? OnlineDepositResult.ALREADY_PAID : OnlineDepositResult.NOT_AWAITING;
+        }
+        BigDecimal due = awaiting.stream().map(Booking::getDepositAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+        if (paidAmount == null || paidAmount.compareTo(due) != 0) {
+            return OnlineDepositResult.WRONG_AMOUNT;
+        }
+        OnlineDepositResult overall = OnlineDepositResult.CONFIRMED;
+        for (Booking b : awaiting) {
+            OnlineDepositResult r = confirmOnlineDeposit(b.getId(), b.getDepositAmount(), transactionRef, txnRef, payDate);
+            if (r != OnlineDepositResult.CONFIRMED) {
+                overall = OnlineDepositResult.PAID_BUT_ROOM_TAKEN;
+            }
+        }
+        return overall;
+    }
+
     // Truoc khi chuyen khach sang cong thanh toan: don con cho coc, chua qua han, phong chua bi don khac giu
     @Transactional(readOnly = true)
     public void ensureCanPayDepositOnline(Booking booking) {

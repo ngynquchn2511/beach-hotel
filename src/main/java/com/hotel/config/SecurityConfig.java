@@ -187,7 +187,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/customer/bookings/*/change-dates/quote").permitAll()
                         // Dat coc qua VNPay: nut tren trang don (kiem tra chu don / ma truy cap nhu tren);
                         // trang tra ve + IPN do VNPay goi, an toan nho kiem tra chu ky HMAC
-                        .requestMatchers(HttpMethod.POST, "/customer/bookings/*/vnpay").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/customer/bookings/*/vnpay", "/customer/bookings/group/*/vnpay").permitAll()
                         // Khach tu khai bao luu tru truoc khi den (check-in online) - kiem tra chu don / ma truy cap nhu tren
                         .requestMatchers(HttpMethod.POST, "/customer/bookings/*/guests", "/customer/bookings/*/guests/*/delete").permitAll()
                         // Xin nhan phong som / tra phong muon (kiem tra chu don / ma truy cap nhu tren)

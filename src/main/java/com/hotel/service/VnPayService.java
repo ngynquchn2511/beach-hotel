@@ -18,6 +18,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
@@ -38,7 +39,11 @@ public class VnPayService {
 
     // Ket qua xu ly 1 lan VNPay bao ve; bookingId = null khi khong doc duoc ma don
     // voucherId != null: giao dich mua the qua tang (vnp_TxnRef bat dau bang "V")
-    public record Result(Outcome outcome, Long bookingId, Long voucherId) {
+    public record Result(Outcome outcome, Long bookingId, Long voucherId, Long groupId) {
+        public Result(Outcome outcome, Long bookingId, Long voucherId) {
+            this(outcome, bookingId, voucherId, null);
+        }
+
         public Result(Outcome outcome, Long bookingId) {
             this(outcome, bookingId, null);
         }
@@ -96,7 +101,8 @@ public class VnPayService {
         }
         ZonedDateTime now = ZonedDateTime.now(VN_ZONE);
         java.math.BigDecimal amount = booking.getRefundAmount().setScale(0, RoundingMode.HALF_UP);
-        boolean full = amount.compareTo(booking.getDepositAmount().setScale(0, RoundingMode.HALF_UP)) >= 0;
+        boolean groupTxn = booking.getDepositOnlineTxnRef() != null && booking.getDepositOnlineTxnRef().startsWith("G");
+        boolean full = !groupTxn && amount.compareTo(booking.getDepositAmount().setScale(0, RoundingMode.HALF_UP)) >= 0;
         Map<String, String> req = new java.util.LinkedHashMap<>();
         req.put("vnp_RequestId", booking.getId() + "R" + now.toEpochSecond());
         req.put("vnp_Version", "2.1.0");
@@ -188,6 +194,44 @@ public class VnPayService {
         return payUrl + "?" + query + "&vnp_SecureHash=" + hmacSha512(query);
     }
 
+    // Coc gop ca doan: 1 giao dich = tong coc cac phong dang cho coc (vnp_TxnRef "G<ma doan>_<thoi diem>")
+    public String createGroupDepositPaymentUrl(com.hotel.entity.BookingGroup group, List<Booking> bookings, String clientIp,
+                                               String returnUrl, boolean english) {
+        if (!isEnabled()) {
+            throw new BusinessException("Thanh toán online chưa được bật");
+        }
+        List<Booking> awaiting = bookings.stream().filter(Booking::isAwaitingDeposit).toList();
+        if (awaiting.isEmpty()) {
+            throw new BusinessException("Đoàn không còn phòng nào chờ đặt cọc");
+        }
+        ZonedDateTime now = ZonedDateTime.now(VN_ZONE);
+        ZonedDateTime expire = now.plusMinutes(LINK_MINUTES);
+        BigDecimal amount = BigDecimal.ZERO;
+        for (Booking b : awaiting) {
+            bookingService.ensureCanPayDepositOnline(b);
+            amount = amount.add(b.getDepositAmount());
+            if (b.getDepositDeadline() != null && b.getDepositDeadline().atZone(VN_ZONE).isBefore(expire)) {
+                expire = b.getDepositDeadline().atZone(VN_ZONE);
+            }
+        }
+        Map<String, String> params = new TreeMap<>();
+        params.put("vnp_Version", "2.1.0");
+        params.put("vnp_Command", "pay");
+        params.put("vnp_TmnCode", tmnCode);
+        params.put("vnp_Amount", amount.setScale(0, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100)).toPlainString());
+        params.put("vnp_CurrCode", "VND");
+        params.put("vnp_TxnRef", "G" + group.getId() + "_" + now.toEpochSecond());
+        params.put("vnp_OrderInfo", "Dat coc doan " + group.getCode());
+        params.put("vnp_OrderType", "other");
+        params.put("vnp_Locale", english ? "en" : "vn");
+        params.put("vnp_ReturnUrl", returnUrl);
+        params.put("vnp_IpAddr", clientIp == null || clientIp.isBlank() ? "127.0.0.1" : clientIp);
+        params.put("vnp_CreateDate", now.format(VNP_TIME));
+        params.put("vnp_ExpireDate", expire.format(VNP_TIME));
+        String query = canonicalQuery(params);
+        return payUrl + "?" + query + "&vnp_SecureHash=" + hmacSha512(query);
+    }
+
     // Link thanh toan the qua tang (het han sau 15 phut)
     public String createVoucherPaymentUrl(com.hotel.entity.GiftVoucher voucher, String clientIp, String returnUrl, boolean english) {
         if (!isEnabled()) {
@@ -225,6 +269,9 @@ public class VnPayService {
         if (txnRef != null && txnRef.startsWith("V")) {
             return handleVoucherCallback(params, parseBookingId(txnRef.substring(1)));
         }
+        if (txnRef != null && txnRef.startsWith("G")) {
+            return handleGroupCallback(params, parseBookingId(txnRef.substring(1)));
+        }
         Long bookingId = parseBookingId(params.get("vnp_TxnRef"));
         if (bookingId == null || !tmnCode.equals(params.get("vnp_TmnCode"))) {
             return new Result(Outcome.NOT_FOUND, bookingId);
@@ -253,6 +300,35 @@ public class VnPayService {
                     params.get("vnp_TransactionNo"));
         }
         return new Result(outcome, bookingId);
+    }
+
+    private Result handleGroupCallback(Map<String, String> params, Long groupId) {
+        if (groupId == null || !tmnCode.equals(params.get("vnp_TmnCode"))) {
+            return new Result(Outcome.NOT_FOUND, null, null, groupId);
+        }
+        if (!"00".equals(params.get("vnp_ResponseCode")) || !"00".equals(params.get("vnp_TransactionStatus"))) {
+            return new Result(Outcome.PAYMENT_FAILED, null, null, groupId);
+        }
+        BigDecimal amount;
+        try {
+            amount = new BigDecimal(params.get("vnp_Amount")).divide(BigDecimal.valueOf(100));
+        } catch (RuntimeException ex) {
+            return new Result(Outcome.WRONG_AMOUNT, null, null, groupId);
+        }
+        Outcome outcome = switch (bookingService.confirmOnlineGroupDeposit(groupId, amount, params.get("vnp_TransactionNo"),
+                params.get("vnp_TxnRef"), params.get("vnp_PayDate"))) {
+            case CONFIRMED -> Outcome.SUCCESS;
+            case ALREADY_PAID -> Outcome.ALREADY_PAID;
+            case NOT_FOUND -> Outcome.NOT_FOUND;
+            case WRONG_AMOUNT -> Outcome.WRONG_AMOUNT;
+            case NOT_AWAITING -> Outcome.NOT_AWAITING;
+            case PAID_BUT_ROOM_TAKEN -> Outcome.PAID_BUT_ROOM_TAKEN;
+        };
+        if (outcome == Outcome.NOT_AWAITING || outcome == Outcome.PAID_BUT_ROOM_TAKEN) {
+            log.warn("VNPay: doan #{} da tra coc nhung co phong khong con cho coc ({}), ma GD {}", groupId, outcome,
+                    params.get("vnp_TransactionNo"));
+        }
+        return new Result(outcome, null, null, groupId);
     }
 
     private Result handleVoucherCallback(Map<String, String> params, Long voucherId) {

@@ -37,6 +37,12 @@
                 <p class="mb-1"><span th:text="#{success.content}">Nội dung:</span> <b th:text="'HB ' + ${group.code} + ' COC'"></b></p>
             </div>
         </div>
+        <form th:if="${vnpayEnabled}" method="post" class="border-top pt-3 mt-3"
+              th:action="@{/customer/bookings/group/{id}/vnpay(id=${group.id})}">
+            <input type="hidden" name="token" th:if="${accessToken != null}" th:value="${accessToken}">
+            <p class="small text-muted mb-2" th:text="#{vnpay.groupOr}"></p>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-credit-card me-1"></i><span th:text="#{vnpay.groupPay}">Thanh toán cọc cả đoàn qua VNPay</span></button>
+        </form>
     </div>
 
     <div class="bg-white p-4 rounded shadow-sm mb-4">

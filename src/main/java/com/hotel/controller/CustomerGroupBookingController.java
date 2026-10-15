@@ -114,6 +114,13 @@ public class CustomerGroupBookingController {
         }
     }
 
+    private com.hotel.service.VnPayService vnPayService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setVnPayService(com.hotel.service.VnPayService vnPayService) {
+        this.vnPayService = vnPayService;
+    }
+
     @GetMapping("/customer/bookings/group/{id}")
     public String view(@PathVariable Long id, @RequestParam(required = false) String token,
                        @AuthenticationPrincipal CustomUserDetails userDetails, Model model) {
@@ -134,6 +141,7 @@ public class CustomerGroupBookingController {
             model.addAttribute("bankId", paymentService.getBankId());
             model.addAttribute("accountNo", paymentService.getAccountNo());
             model.addAttribute("accountName", paymentService.getAccountName());
+            model.addAttribute("vnpayEnabled", vnPayService != null && vnPayService.isEnabled());
         }
         return "customer/group-booking";
     }
