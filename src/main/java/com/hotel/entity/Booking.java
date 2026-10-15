@@ -130,6 +130,11 @@ public class Booking {
     @Column(name = "discount_amount", precision = 12, scale = 2)
     private java.math.BigDecimal discountAmount;
 
+    // Thuoc nhom dat nhieu phong (null = don le)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "group_id")
+    private BookingGroup group;
+
     // ===== Le tan doi phong cho khach (phong hong, trung phong, nang hang...) =====
     @Column(name = "moved_from_room", length = 20)
     private String movedFromRoom;

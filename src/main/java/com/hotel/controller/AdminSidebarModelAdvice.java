@@ -36,7 +36,8 @@ import org.springframework.web.bind.annotation.ModelAttribute;
         AdminIcalController.class,
         AdminRoomServiceController.class,
         AdminRoomAlertController.class,
-        AdminMaintenanceController.class
+        AdminMaintenanceController.class,
+        AdminBookingGroupController.class
 })
 public class AdminSidebarModelAdvice {
 

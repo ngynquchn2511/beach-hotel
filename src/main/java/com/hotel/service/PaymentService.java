@@ -87,6 +87,11 @@ public class PaymentService {
         return vietQrUrl(amountDue(booking), transferContent(booking));
     }
 
+    // QR chuyen coc gop ca nhom dat nhieu phong, noi dung "HB G12 COC"
+    public String buildGroupDepositQrUrl(BigDecimal amount, String groupCode) {
+        return vietQrUrl(amount, TRANSFER_PREFIX + " " + groupCode + " COC");
+    }
+
     // QR chuyen tien coc, hien cho khach ngay sau khi dat phong
     public String buildDepositQrUrl(Booking booking) {
         return vietQrUrl(booking.getDepositAmount(), depositTransferContent(booking));

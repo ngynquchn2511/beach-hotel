@@ -52,6 +52,8 @@
                 <h6 class="fw-bold mt-3" th:if="${booking.combo != null}">Combo dịch vụ</h6>
                 <p class="mb-1" th:if="${booking.combo != null}" th:text="${booking.combo.name}"></p>
 
+                <p class="mb-1" th:if="${booking.group != null}"><span class="badge bg-primary-subtle text-primary-emphasis">Đặt theo đoàn</span>
+                    <a th:href="@{/admin/booking-groups/{id}(id=${booking.group.id})}" th:text="'Xem đoàn ' + ${booking.group.code}"></a></p>
                 <p class="small text-muted mb-1" th:if="${booking.movedFromRoom != null}"
                    th:text="'Đã đổi từ phòng ' + ${booking.movedFromRoom} + ' lúc ' + ${#temporals.format(booking.roomMovedAt, 'HH:mm dd/MM/yyyy')}
                             + (${booking.roomMoveNote != null} ? ' · ' + ${booking.roomMoveNote} : '')"></p>

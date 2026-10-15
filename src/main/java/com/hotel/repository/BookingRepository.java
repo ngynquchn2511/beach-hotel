@@ -77,4 +77,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     long countByTimeRequestStatus(com.hotel.entity.StayTimeRequestStatus status);
 
     List<Booking> findByTimeRequestStatusOrderByTimeRequestedAtAsc(com.hotel.entity.StayTimeRequestStatus status);
+
+    @Query("select b from Booking b join fetch b.room r join fetch r.roomType where b.group.id = :groupId order by r.roomNumber")
+    List<Booking> findByGroupId(@Param("groupId") Long groupId);
 }

@@ -50,6 +50,12 @@ public class BookingService {
 
     private final LoyaltyService loyaltyService;
     private final PromotionService promotionService;
+    private com.hotel.repository.BookingGroupRepository bookingGroupRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setBookingGroupRepository(com.hotel.repository.BookingGroupRepository bookingGroupRepository) {
+        this.bookingGroupRepository = bookingGroupRepository;
+    }
 
     public BookingService(BookingRepository bookingRepository, RoomRepository roomRepository,
                            ComboRepository comboRepository, DiscountCodeRepository discountCodeRepository,
@@ -233,6 +239,15 @@ public class BookingService {
                                   LocalTime checkInTime, LocalTime checkOutTime, Integer guests,
                                   Long comboId, String discountCodeStr, String guestName, String guestPhone,
                                   String guestEmail, int pointsToUse) {
+        return placeOnline(customer, roomId, checkInDate, checkOutDate, checkInTime, checkOutTime, guests, comboId,
+                discountCodeStr, guestName, guestPhone, guestEmail, pointsToUse, null);
+    }
+
+    // group != null: 1 phong trong nhom dat nhieu phong (khong gui email tung don - gui 1 email tong hop)
+    private Booking placeOnline(User customer, Long roomId, LocalDate checkInDate, LocalDate checkOutDate,
+                                LocalTime checkInTime, LocalTime checkOutTime, Integer guests,
+                                Long comboId, String discountCodeStr, String guestName, String guestPhone,
+                                String guestEmail, int pointsToUse, BookingGroup group) {
         requireStandardTimes(checkInTime, checkOutTime);
         Booking booking = buildBooking(customer, roomId, checkInDate, checkOutDate, checkInTime, checkOutTime,
                 guests, comboId, discountCodeStr, guestName, guestPhone, guestEmail);
@@ -254,10 +269,118 @@ public class BookingService {
             booking.setDepositDeadline(depositDeadline(checkInDate, checkInTime));
         }
 
+        booking.setGroup(group);
         Booking savedBooking = bookingRepository.save(booking);
         loyaltyService.recordRedeem(savedBooking);
-        emailService.sendBookingConfirmation(savedBooking);
+        if (group == null) {
+            emailService.sendBookingConfirmation(savedBooking);
+        }
         return savedBooking;
+    }
+
+    // ===== Dat nhieu phong 1 lan =====
+
+    public static final int MIN_GROUP_ROOMS = 2;
+    public static final int MAX_GROUP_ROOMS = 5;
+
+    // Tao tat ca don trong 1 giao dich: 1 phong vua bi dat mat -> khong tao don nao. guestsByRoom: so khach tung phong
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public BookingGroup createGroupBooking(User customer, List<Long> roomIds, LocalDate checkInDate, LocalDate checkOutDate,
+                                           LocalTime checkInTime, LocalTime checkOutTime,
+                                           java.util.Map<Long, Integer> guestsByRoom,
+                                           String guestName, String guestPhone, String guestEmail) {
+        List<Long> distinct = roomIds == null ? List.of() : roomIds.stream().distinct().toList();
+        if (distinct.size() < MIN_GROUP_ROOMS || distinct.size() > MAX_GROUP_ROOMS) {
+            throw BusinessException.of("group.error.count", MIN_GROUP_ROOMS, MAX_GROUP_ROOMS);
+        }
+        BookingGroup group = bookingGroupRepository.save(BookingGroup.builder().customer(customer)
+                .guestName(guestName == null ? "" : guestName.trim())
+                .guestEmail(guestEmail == null ? null : guestEmail.trim())
+                .guestPhone(guestPhone == null ? null : guestPhone.trim()).build());
+        List<Booking> bookings = new java.util.ArrayList<>();
+        for (Long roomId : distinct) {
+            Integer guests = guestsByRoom != null ? guestsByRoom.get(roomId) : null;
+            Room room = roomRepository.findById(roomId).orElseThrow(() -> BusinessException.of("err.roomNotFound"));
+            if (guests != null && room.getRoomType().getMaxGuests() != null && guests > room.getRoomType().getMaxGuests()) {
+                throw BusinessException.of("group.error.guests", room.getRoomNumber(), room.getRoomType().getMaxGuests());
+            }
+            bookings.add(placeOnline(customer, roomId, checkInDate, checkOutDate, checkInTime, checkOutTime, guests,
+                    null, null, guestName, guestPhone, guestEmail, 0, group));
+        }
+        emailService.sendGroupBooking(group, bookings, false);
+        return group;
+    }
+
+    public List<Booking> groupBookings(Long groupId) {
+        return bookingRepository.findByGroupId(groupId);
+    }
+
+    // Giong findForViewing: dung ma truy cap cua nhom, hoac chu nhom dang dang nhap
+    public BookingGroup findGroupForViewing(Long groupId, String accessToken, Long viewerCustomerId) {
+        BookingGroup group = bookingGroupRepository.findById(groupId).orElse(null);
+        if (group != null) {
+            if (accessToken != null && java.security.MessageDigest.isEqual(
+                    accessToken.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                    group.getAccessToken().getBytes(java.nio.charset.StandardCharsets.UTF_8))) {
+                return group;
+            }
+            if (viewerCustomerId != null && group.getCustomer().getId().equals(viewerCustomerId)) {
+                return group;
+            }
+        }
+        throw BusinessException.of("err.bookingLinkInvalid");
+    }
+
+    public BookingGroup findGroup(Long groupId) {
+        return bookingGroupRepository.findById(groupId).orElseThrow(() -> new BusinessException("Không tìm thấy đoàn"));
+    }
+
+    // Khach huy ca nhom: chi cac don con huy duoc (cho / da xac nhan), het han sua thi bao loi
+    @Transactional
+    public int cancelGroupByCustomer(BookingGroup group) {
+        List<Booking> cancellable = groupBookings(group.getId()).stream()
+                .filter(b -> b.getStatus() == BookingStatus.PENDING || b.getStatus() == BookingStatus.CONFIRMED)
+                .toList();
+        if (cancellable.isEmpty()) {
+            throw BusinessException.of("group.error.nothingToCancel");
+        }
+        for (Booking b : cancellable) {
+            applyCancellation(b, false);
+            bookingRepository.save(b);
+        }
+        emailService.sendGroupBooking(group, groupBookings(group.getId()), true);
+        return cancellable.size();
+    }
+
+    // Le tan nhan coc gop cua ca nhom -> ghi nhan coc + xac nhan tung don con cho coc
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public int confirmGroupDeposit(Long groupId) {
+        int count = 0;
+        for (Booking b : groupBookings(groupId)) {
+            if (b.isAwaitingDeposit()) {
+                confirmDeposit(b.getId());
+                count++;
+            }
+        }
+        if (count == 0) {
+            throw new BusinessException("Không có phòng nào trong đoàn đang chờ cọc");
+        }
+        return count;
+    }
+
+    @Transactional
+    public int cancelGroupByStaff(Long groupId, boolean fullRefund) {
+        int count = 0;
+        for (Booking b : groupBookings(groupId)) {
+            if (b.getStatus() == BookingStatus.PENDING || b.getStatus() == BookingStatus.CONFIRMED) {
+                cancelBookingByStaff(b.getId(), fullRefund);
+                count++;
+            }
+        }
+        if (count == 0) {
+            throw new BusinessException("Không có phòng nào trong đoàn còn hủy được");
+        }
+        return count;
     }
 
     private static void applyPromotion(Booking booking, PromotionService.Applied promo) {

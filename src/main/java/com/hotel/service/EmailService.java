@@ -188,6 +188,44 @@ public class EmailService {
         return queue(booking, "Sóng Xanh Resort - Đã đổi ngày lưu trú đơn #" + booking.getId(), body, "doi ngay");
     }
 
+    // Dat nhieu phong: 1 email tong hop cho ca nhom (cancelled = bao da huy)
+    public boolean sendGroupBooking(com.hotel.entity.BookingGroup group, List<Booking> bookings, boolean cancelled) {
+        if (bookings.isEmpty() || !canEmail(bookings.get(0))) {
+            return false;
+        }
+        Booking first = bookings.get(0);
+        DateTimeFormatter dateFmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        StringBuilder sb = new StringBuilder();
+        sb.append("Xin chào ").append(group.getGuestName()).append(",\n\n");
+        sb.append(cancelled ? "Đã hủy đặt phòng theo đoàn " : "Cảm ơn bạn đã đặt phòng theo đoàn tại Sóng Xanh Resort. Mã đoàn: ")
+                .append(group.getCode()).append("\n");
+        sb.append("Nhận phòng: ").append(first.getCheckInTime()).append(" ngày ").append(first.getCheckInDate().format(dateFmt)).append("\n");
+        sb.append("Trả phòng: ").append(first.getCheckOutTime()).append(" ngày ").append(first.getCheckOutDate().format(dateFmt)).append("\n\n");
+        BigDecimal total = BigDecimal.ZERO;
+        BigDecimal deposit = BigDecimal.ZERO;
+        for (Booking b : bookings) {
+            sb.append("- Đơn #").append(b.getId()).append(": phòng ").append(b.getRoom().getRoomNumber())
+                    .append(" (").append(b.getRoom().getRoomType().getName()).append("), ")
+                    .append(money(b.getTotalAmount())).append(" VND - ").append(b.getStatus().getVietnameseLabel()).append("\n");
+            total = total.add(b.getTotalAmount());
+            if (b.isAwaitingDeposit()) {
+                deposit = deposit.add(b.getDepositAmount());
+            }
+        }
+        sb.append("\nTổng tiền phòng: ").append(money(total)).append(" VND\n");
+        if (!cancelled && deposit.signum() > 0) {
+            sb.append("Tiền cọc cả đoàn: ").append(money(deposit)).append(" VND - chuyển khoản tới ").append(bankId).append(" ")
+                    .append(accountNo).append(" (").append(accountName).append("), nội dung: HB ").append(group.getCode()).append(" COC\n");
+        }
+        if (baseUrl != null && !baseUrl.isBlank()) {
+            sb.append("\nXem đoàn: ").append(baseUrl.replaceAll("/+$", "")).append("/customer/bookings/group/").append(group.getId())
+                    .append("?token=").append(group.getAccessToken()).append("\n");
+        }
+        sb.append("\nSóng Xanh Resort");
+        return queue(first, "Sóng Xanh Resort - " + (cancelled ? "Đã hủy" : "Xác nhận") + " đặt phòng đoàn " + group.getCode(),
+                sb.toString(), cancelled ? "huy doan" : "dat doan");
+    }
+
     // Le tan doi phong cho khach - gui lai thong tin don voi phong moi
     public boolean sendRoomMoved(Booking booking, String oldRoomNumber) {
         if (!canEmail(booking)) {

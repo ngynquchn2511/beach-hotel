@@ -123,11 +123,39 @@
                            class="btn btn-primary btn-sm" th:text="#{common.viewDetails}">Xem chi tiết</a>
                         <th:block th:replace="~{fragments/favorite :: heart(${room}, 'btn-sm ms-1')}"></th:block>
                         <th:block th:replace="~{fragments/compare :: toggle(${room})}"></th:block>
+                        <label class="ms-2 small group-pick"><input type="checkbox" class="form-check-input group-room me-1"
+                               th:value="${room.id}"><span th:text="#{group.pick}">Đặt cùng</span></label>
                     </div>
                 </div>
             </div>
 
             <div th:replace="~{fragments/pagination :: pager(${pager})}"></div>
+
+            <!-- Dat nhieu phong 1 lan: tick 2-5 phong -> trang xac nhan chung -->
+            <div class="bg-white p-3 rounded shadow-sm mt-3 d-flex align-items-center gap-2 flex-wrap" th:if="${pager.totalItems > 1}">
+                <span class="small text-muted flex-grow-1" th:text="#{group.hint}">Gia đình / đoàn: tick "Đặt cùng" ở 2-5 phòng rồi đặt 1 lần.</span>
+                <button type="button" class="btn btn-sm btn-primary" id="groupBookBtn" disabled
+                        th:attr="data-url=@{/customer/bookings/group/new(checkIn=${checkIn}, checkOut=${checkOut})}"
+                        th:text="#{group.bookSelected}">Đặt các phòng đã chọn</button>
+            </div>
+            <script>
+                (function () {
+                    const btn = document.getElementById('groupBookBtn');
+                    if (!btn) return;
+                    const boxes = Array.from(document.querySelectorAll('.group-room'));
+                    const label = btn.textContent;
+                    function update() {
+                        const n = boxes.filter(b => b.checked).length;
+                        btn.disabled = n < 2 || n > 5;
+                        btn.textContent = n ? label + ' (' + n + ')' : label;
+                    }
+                    boxes.forEach(b => b.addEventListener('change', update));
+                    btn.addEventListener('click', function () {
+                        const ids = boxes.filter(b => b.checked).map(b => 'roomIds=' + b.value).join('&');
+                        window.location.href = btn.dataset.url + '&' + ids;
+                    });
+                })();
+            </script>
         </div>
 
         <div class="col-md-3">

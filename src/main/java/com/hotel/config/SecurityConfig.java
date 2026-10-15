@@ -181,6 +181,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/customer/bookings/*/stay-time", "/customer/bookings/*/stay-time/withdraw").permitAll()
                         // Khach dang o goi mon len phong (kiem tra chu don / ma truy cap nhu tren)
                         .requestMatchers(HttpMethod.POST, "/customer/bookings/*/room-service", "/customer/bookings/*/room-service/*/cancel").permitAll()
+                        // Dat nhieu phong 1 lan (khach vang lai dung ?token= cua nhom)
+                        .requestMatchers("/customer/bookings/group/new", "/customer/bookings/group/*",
+                                "/customer/bookings/group/*/cancel").permitAll()
                         // "Bao toi khi phong trong lai" o trang chi tiet phong - khach chua dang nhap cung dung duoc
                         .requestMatchers(HttpMethod.POST, "/customer/rooms/*/alerts").permitAll()
                         // Lich .ics cho Google Calendar / Booking.com - kiem tra ma bi mat ?key= trong IcalController
