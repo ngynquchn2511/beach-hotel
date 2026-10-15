@@ -21,7 +21,8 @@
      xmlns:th="http://www.thymeleaf.org">
     <ul class="pagination justify-content-center flex-wrap mt-3 mb-0">
         <li class="page-item" th:classappend="${pager.currentPage <= 1} ? 'disabled'">
-            <a class="page-link" th:href="${pager.url(pager.currentPage - 1)}" th:aria-label="#{pager.prev}">&laquo;</a>
+            <a th:if="${pager.currentPage > 1}" class="page-link" th:href="${pager.url(pager.currentPage - 1)}" th:aria-label="#{pager.prev}">&laquo;</a>
+            <span th:unless="${pager.currentPage > 1}" class="page-link" aria-hidden="true">&laquo;</span>
         </li>
         <li th:each="p : ${pager.pageNumbers}" class="page-item"
             th:classappend="${p == 0} ? 'disabled' : (${p == pager.currentPage} ? 'active')">
@@ -30,7 +31,8 @@
                th:attrappend="aria-current=${p == pager.currentPage} ? 'page'"></a>
         </li>
         <li class="page-item" th:classappend="${pager.currentPage >= pager.totalPages} ? 'disabled'">
-            <a class="page-link" th:href="${pager.url(pager.currentPage + 1)}" th:aria-label="#{pager.next}">&raquo;</a>
+            <a th:if="${pager.currentPage < pager.totalPages}" class="page-link" th:href="${pager.url(pager.currentPage + 1)}" th:aria-label="#{pager.next}">&raquo;</a>
+            <span th:unless="${pager.currentPage < pager.totalPages}" class="page-link" aria-hidden="true">&raquo;</span>
         </li>
     </ul>
     <p class="text-center small text-muted mt-2 mb-0"

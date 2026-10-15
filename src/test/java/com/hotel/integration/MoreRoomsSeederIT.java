@@ -57,10 +57,13 @@ class MoreRoomsSeederIT {
                 .andExpect(status().isOk())
                 .andExpect(model().attribute("rooms", hasSize(9)))
                 .andExpect(content().string(containsString("Hiển thị 1–9 trên tổng 60")))
-                .andExpect(content().string(containsString("href=\"/rooms?page=7\"")));
+                .andExpect(content().string(containsString("href=\"/rooms?page=7\"")))
+                // Nut "trang truoc" o trang 1 khong co link (khong tro toi page=0)
+                .andExpect(content().string(not(containsString("page=0"))));
         mockMvc.perform(get("/rooms").param("page", "7"))
                 .andExpect(model().attribute("rooms", hasSize(6)))
-                .andExpect(content().string(containsString("Hiển thị 55–60 trên tổng 60")));
+                .andExpect(content().string(containsString("Hiển thị 55–60 trên tổng 60")))
+                .andExpect(content().string(not(containsString("page=8"))));
 
         // Tren 3 trieu: 2 bungalow + penthouse, nam o trang khac nhau neu loc o trinh duyet
         var result = mockMvc.perform(get("/rooms").param("price", "r4"))
