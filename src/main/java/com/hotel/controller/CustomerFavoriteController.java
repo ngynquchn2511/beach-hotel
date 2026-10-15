@@ -1,9 +1,11 @@
 package com.hotel.controller;
 
+import com.hotel.entity.Room;
 import com.hotel.exception.BusinessException;
 import com.hotel.security.CustomUserDetails;
 import com.hotel.service.FavoriteRoomService;
 import com.hotel.service.UserMessages;
+import com.hotel.util.Pager;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -25,9 +27,15 @@ public class CustomerFavoriteController {
         this.messages = messages;
     }
 
+    // So the phong moi trang (luoi 3 cot)
+    static final int ROOMS_PER_PAGE = 9;
+
     @GetMapping("/customer/favorites")
-    public String list(@AuthenticationPrincipal CustomUserDetails userDetails, Model model) {
-        model.addAttribute("rooms", favoriteRoomService.rooms(userDetails.getUser().getId()));
+    public String list(@AuthenticationPrincipal CustomUserDetails userDetails,
+                       @RequestParam(defaultValue = "1") int page, Model model) {
+        Pager<Room> pager = Pager.of(favoriteRoomService.rooms(userDetails.getUser().getId()), page, ROOMS_PER_PAGE);
+        model.addAttribute("pager", pager);
+        model.addAttribute("rooms", pager.items());
         return "customer/favorites";
     }
 

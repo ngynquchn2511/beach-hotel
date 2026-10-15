@@ -85,12 +85,13 @@
                 <form th:action="@{/admin/room-calendar}" method="get" class="d-flex gap-2 align-items-center flex-wrap">
                     <div class="btn-group">
                         <a class="btn btn-sm btn-outline-primary" title="Khoảng trước"
-                           th:href="@{/admin/room-calendar(from=${cal.prevFrom()}, days=${cal.days})}"><i class="bi bi-chevron-left"></i></a>
+                           th:href="@{/admin/room-calendar(from=${cal.prevFrom()}, days=${cal.days}, page=${roomPager.currentPage})}"><i class="bi bi-chevron-left"></i></a>
                         <a class="btn btn-sm btn-outline-primary"
-                           th:href="@{/admin/room-calendar(days=${cal.days})}">Hôm nay</a>
+                           th:href="@{/admin/room-calendar(days=${cal.days}, page=${roomPager.currentPage})}">Hôm nay</a>
                         <a class="btn btn-sm btn-outline-primary" title="Khoảng sau"
-                           th:href="@{/admin/room-calendar(from=${cal.nextFrom()}, days=${cal.days})}"><i class="bi bi-chevron-right"></i></a>
+                           th:href="@{/admin/room-calendar(from=${cal.nextFrom()}, days=${cal.days}, page=${roomPager.currentPage})}"><i class="bi bi-chevron-right"></i></a>
                     </div>
+                    <input type="hidden" name="page" th:value="${roomPager.currentPage}">
                     <input type="date" name="from" class="form-control form-control-sm" style="width: auto;"
                            th:value="${cal.from}" onchange="this.form.submit()">
                     <select name="days" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
@@ -128,7 +129,7 @@
                     </div>
 
                     <!-- Moi phong 1 hang -->
-                    <div th:each="row : ${cal.rows}" class="rc-row"
+                    <div th:each="row : ${roomPager.items}" class="rc-row"
                          th:with="maint=${row.room.status.name() == 'MAINTENANCE'}"
                          th:classappend="${maint} ? 'maintenance'">
                         <div class="rc-label">
@@ -176,6 +177,7 @@ ${#temporals.format(b.checkInDate, 'dd/MM')} ${b.checkInTime} → ${#temporals.f
                     </div>
                 </div>
             </div>
+            <div th:replace="~{fragments/pagination :: pager(${roomPager})}"></div>
         </div>
     </div>
 </main>

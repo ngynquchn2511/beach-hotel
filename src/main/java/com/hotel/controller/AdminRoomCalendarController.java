@@ -1,6 +1,7 @@
 package com.hotel.controller;
 
 import com.hotel.service.RoomCalendarService;
+import com.hotel.util.Pager;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -15,6 +16,9 @@ import java.time.LocalDate;
 @RequestMapping("/admin/room-calendar")
 public class AdminRoomCalendarController {
 
+    // So phong (hang) moi trang lich
+    static final int ROOMS_PER_PAGE = 20;
+
     private final RoomCalendarService roomCalendarService;
 
     public AdminRoomCalendarController(RoomCalendarService roomCalendarService) {
@@ -23,12 +27,16 @@ public class AdminRoomCalendarController {
 
     @GetMapping
     public String calendar(@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-                           @RequestParam(defaultValue = "14") int days, Model model) {
+                           @RequestParam(defaultValue = "14") int days,
+                           @RequestParam(defaultValue = "1") int page, Model model) {
         LocalDate today = LocalDate.now();
         int range = RoomCalendarService.ALLOWED_DAYS.contains(days) ? days : 14;
         // Mac dinh lui 1 ngay de le tan van thay khach tra phong hom nay
         LocalDate start = from != null ? from : today.minusDays(1);
-        model.addAttribute("cal", roomCalendarService.build(start, range, today));
+        RoomCalendarService.Calendar cal = roomCalendarService.build(start, range, today);
+        model.addAttribute("cal", cal);
+        // Chia trang theo phong (hang); dong "con trong" cuoi bang van tinh tren tat ca phong
+        model.addAttribute("roomPager", Pager.of(cal.rows(), page, ROOMS_PER_PAGE));
         model.addAttribute("allowedDays", RoomCalendarService.ALLOWED_DAYS);
         model.addAttribute("today", today);
         return "admin/room-calendar/index";

@@ -1,12 +1,16 @@
 package com.hotel.controller;
 
 import com.hotel.entity.Airport;
+import com.hotel.entity.AirportTransfer;
 import com.hotel.entity.ServiceStatus;
+import com.hotel.entity.TourBooking;
 import com.hotel.entity.TransferDirection;
 import com.hotel.entity.VehicleType;
 import com.hotel.exception.BusinessException;
 import com.hotel.service.ServiceOrderService;
 import com.hotel.service.TransferRateService;
+import com.hotel.util.PaginationUtil;
+import com.hotel.util.Pager;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -35,13 +39,22 @@ public class AdminServiceOrderController {
 
     @GetMapping("/admin/service-orders")
     public String list(@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-                       @RequestParam(required = false) ServiceStatus status, Model model) {
+                       @RequestParam(required = false) ServiceStatus status,
+                       @RequestParam(defaultValue = "1") int tourPage,
+                       @RequestParam(defaultValue = "1") int transferPage, Model model) {
         LocalDate fromDate = from != null ? from : LocalDate.now();
         model.addAttribute("from", fromDate);
         model.addAttribute("status", status);
         model.addAttribute("statuses", ServiceStatus.values());
-        model.addAttribute("tours", serviceOrderService.toursForStaff(fromDate, status));
-        model.addAttribute("transfers", serviceOrderService.transfersForStaff(fromDate, status));
+        // 2 bang tren cung trang -> moi bang 1 tham so trang rieng, chuyen trang bang nay khong lam mat trang bang kia
+        Pager<TourBooking> tourPager = Pager.of(serviceOrderService.toursForStaff(fromDate, status),
+                tourPage, PaginationUtil.DEFAULT_PAGE_SIZE, "tourPage");
+        Pager<AirportTransfer> transferPager = Pager.of(serviceOrderService.transfersForStaff(fromDate, status),
+                transferPage, PaginationUtil.DEFAULT_PAGE_SIZE, "transferPage");
+        model.addAttribute("tourPager", tourPager);
+        model.addAttribute("transferPager", transferPager);
+        model.addAttribute("tours", tourPager.items());
+        model.addAttribute("transfers", transferPager.items());
         return "admin/service-orders/list";
     }
 

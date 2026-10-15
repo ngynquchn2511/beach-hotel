@@ -20,7 +20,7 @@ class SystemParamST extends StBase {
     @ParameterizedTest(name = "Trang {0} hiển thị \"{1}\" ¦ GET {0} (chưa đăng nhập) ¦ HTTP 200, HTML chứa \"{1}\"")
     @CsvSource(delimiter = '|', value = {
             "/|Tìm phòng, xem thông tin và đặt phòng trực tuyến", "/|Xem danh sách phòng", "/|Hỏi Sóng", "/|Đăng nhập", "/|Đăng ký",
-            "/rooms|Danh sách phòng", "/rooms|Tìm theo giá", "/rooms|Loại phòng", "/rooms|Từ 1.300.000 VND",
+            "/rooms|Danh sách phòng", "/rooms|Tìm theo giá", "/rooms|Loại phòng", "/rooms|Trên 3.000.000 VND",
             "/login|Chào mừng trở lại", "/login|Đăng ký ngay", "/login|name=\"username\"", "/login|name=\"password\"",
             "/register|name=\"fullName\"", "/register|name=\"phoneNumber\"", "/register|name=\"confirmPassword\"",
             "/admin|Cổng quản trị", "/admin|Email công việc", "/admin|Quay lại đăng nhập khách hàng",

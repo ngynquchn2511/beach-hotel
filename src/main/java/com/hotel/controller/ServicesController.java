@@ -9,11 +9,14 @@ import com.hotel.service.BookingService;
 import com.hotel.service.DivingTourService;
 import com.hotel.service.ServiceOrderService;
 import com.hotel.service.TransferRateService;
+import com.hotel.util.PaginationUtil;
+import com.hotel.util.Pager;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -36,9 +39,14 @@ public class ServicesController {
         this.serviceOrderService = serviceOrderService;
     }
 
+    // So tour moi trang o muc "Tour lan bien" (luoi 3 cot)
+    static final int TOURS_PER_PAGE = 6;
+
     @GetMapping("/services")
-    public String services(Model model) {
-        model.addAttribute("tours", divingTourService.findActive());
+    public String services(@RequestParam(defaultValue = "1") int page, Model model) {
+        Pager<DivingTour> tourPager = Pager.of(divingTourService.findActive(), page, TOURS_PER_PAGE);
+        model.addAttribute("tourPager", tourPager);
+        model.addAttribute("tours", tourPager.items());
         model.addAttribute("airports", Airport.values());
         model.addAttribute("vehicles", VehicleType.values());
         model.addAttribute("rates", transferRateService.priceTable());
@@ -51,7 +59,8 @@ public class ServicesController {
     // Khach co 1 don con dat dich vu duoc -> mo thang form dat tour cua don do (chon san tour);
     // nhieu don -> chon don; chua co don nao -> goi y dat phong
     @GetMapping("/customer/services/tours/{tourId}")
-    public String bookTour(@PathVariable Long tourId, @AuthenticationPrincipal CustomUserDetails userDetails, Model model) {
+    public String bookTour(@PathVariable Long tourId, @AuthenticationPrincipal CustomUserDetails userDetails,
+                           @RequestParam(defaultValue = "1") int page, Model model) {
         DivingTour tour = divingTourService.findActive().stream()
                 .filter(t -> t.getId().equals(tourId))
                 .findFirst().orElse(null);
@@ -68,7 +77,9 @@ public class ServicesController {
             return "redirect:/customer/bookings/" + bookings.get(0).getId() + "?tourId=" + tourId + "#dich-vu";
         }
         model.addAttribute("tour", tour);
-        model.addAttribute("bookings", bookings);
+        Pager<Booking> pager = Pager.of(bookings, page, PaginationUtil.DEFAULT_PAGE_SIZE);
+        model.addAttribute("pager", pager);
+        model.addAttribute("bookings", pager.items());
         return "customer/choose-booking-for-tour";
     }
 }

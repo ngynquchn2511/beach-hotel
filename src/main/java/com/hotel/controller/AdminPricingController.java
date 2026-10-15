@@ -1,7 +1,10 @@
 package com.hotel.controller;
 
+import com.hotel.entity.SpecialRate;
 import com.hotel.exception.BusinessException;
 import com.hotel.service.PricingService;
+import com.hotel.util.PaginationUtil;
+import com.hotel.util.Pager;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -22,9 +25,11 @@ public class AdminPricingController {
     }
 
     @GetMapping
-    public String page(Model model) {
+    public String page(@RequestParam(defaultValue = "1") int page, Model model) {
         model.addAttribute("settings", pricingService.getSettings());
-        model.addAttribute("specialRates", pricingService.findAllSpecialRates());
+        Pager<SpecialRate> pager = Pager.of(pricingService.findAllSpecialRates(), page, PaginationUtil.DEFAULT_PAGE_SIZE);
+        model.addAttribute("pager", pager);
+        model.addAttribute("specialRates", pager.items());
         model.addAttribute("today", LocalDate.now());
         return "admin/pricing/index";
     }

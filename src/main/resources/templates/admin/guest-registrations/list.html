@@ -51,7 +51,7 @@
                     </thead>
                     <tbody>
                     <tr th:each="g, st : ${guests}">
-                        <td th:text="${st.count}"></td>
+                        <td th:text="${pager.offset() + st.count}"></td>
                         <td class="fw-semibold" th:text="${g.fullName}"></td>
                         <td th:text="${#temporals.format(g.dateOfBirth, 'dd/MM/yyyy')}"></td>
                         <td th:text="${g.gender.vietnameseLabel}"></td>
@@ -64,7 +64,8 @@
                     </tbody>
                 </table>
             </div>
-            <p class="small text-muted" th:unless="${#lists.isEmpty(guests)}" th:text="'Tổng: ' + ${#lists.size(guests)} + ' khách'"></p>
+            <div th:replace="~{fragments/pagination :: pager(${pager})}"></div>
+            <p class="small text-muted mt-2" th:unless="${#lists.isEmpty(guests)}" th:text="'Tổng: ' + ${pager.totalItems} + ' khách'"></p>
         </div>
     </div>
 </main>

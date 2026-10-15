@@ -4,6 +4,7 @@ import com.hotel.entity.BookingGuest;
 import com.hotel.exception.BusinessException;
 import com.hotel.service.GuestRegistrationExportService;
 import com.hotel.service.GuestRegistrationService;
+import com.hotel.util.Pager;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -26,6 +27,8 @@ public class AdminGuestRegistrationController {
     // Gioi han khoang ngay de trang khong qua nang
     private static final int MAX_RANGE_DAYS = 92;
 
+    static final int GUESTS_PER_PAGE = 20;
+
     private final GuestRegistrationService guestRegistrationService;
     private final GuestRegistrationExportService exportService;
 
@@ -38,12 +41,15 @@ public class AdminGuestRegistrationController {
     @GetMapping
     public String list(@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
-                       Model model) {
+                       @RequestParam(defaultValue = "1") int page, Model model) {
         LocalDate[] range = normalizeRange(from, to);
         List<BookingGuest> guests = guestRegistrationService.findStaying(range[0], range[1]);
+        // Xuat Excel van lay du ca khoang ngay, chi man hinh moi chia trang
+        Pager<BookingGuest> pager = Pager.of(guests, page, GUESTS_PER_PAGE);
         model.addAttribute("from", range[0]);
         model.addAttribute("to", range[1]);
-        model.addAttribute("guests", guests);
+        model.addAttribute("pager", pager);
+        model.addAttribute("guests", pager.items());
         return "admin/guest-registrations/list";
     }
 
