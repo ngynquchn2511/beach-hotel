@@ -115,4 +115,35 @@ class RoomAlertIT extends ItFixtures {
         roomRepository.save(room);
         assertThat(roomAlertService.notifyAvailable(LocalDate.now())).isEqualTo(1);
     }
+
+    // Trang le tan: phong duoc san nhieu nhat len dau, email che bot, xoa duoc yeu cau; khach khong vao duoc
+    @Test
+    void adminPage_showsDemandMaskedEmails_andDelete() throws Exception {
+        Room other = persistRoom(room.getRoomType(), 900_000, RoomStatus.MAINTENANCE);
+        alertRepository.save(RoomAlert.builder().room(other).email("mot@mail.vn").checkIn(in).checkOut(out).build());
+        subscribe("hai@mail.vn", in, out);
+        subscribe("ba@mail.vn", in, out);
+        User staff = persistUser(UserRole.STAFF, null);
+
+        var result = mockMvc.perform(get("/admin/room-alerts").with(as(staff)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Phòng đang được săn")))
+                .andExpect(content().string(containsString("h***@mail.vn")))
+                .andExpect(content().string(not(containsString("hai@mail.vn"))))
+                .andReturn();
+        @SuppressWarnings("unchecked")
+        java.util.List<RoomAlertService.Demand> demand =
+                (java.util.List<RoomAlertService.Demand>) result.getModelAndView().getModel().get("demand");
+        assertThat(demand.get(0).room().getId()).isEqualTo(room.getId());
+        assertThat(demand.get(0).requests()).isEqualTo(2);
+
+        RoomAlert first = alertRepository.findPending(LocalDate.now()).stream()
+                .filter(a -> a.getEmail().equals("mot@mail.vn")).findFirst().orElseThrow();
+        mockMvc.perform(post("/admin/room-alerts/{id}/delete", first.getId()).with(csrf()).with(as(staff)))
+                .andExpect(flash().attribute("successMessage", containsString("Đã xóa")));
+        assertThat(alertRepository.findById(first.getId())).isEmpty();
+
+        User customer = persistUser(UserRole.CUSTOMER, CustomerType.NEW);
+        mockMvc.perform(get("/admin/room-alerts").with(as(customer))).andExpect(status().isForbidden());
+    }
 }

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Khách chờ phòng trống</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+</head>
+<body class="eaut eaut-admin">
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="container py-5">
+    <div class="row g-4">
+        <div class="col-md-3">
+            <div th:replace="~{fragments/admin-sidebar :: sidebar}"></div>
+        </div>
+
+        <div class="col-md-9">
+            <h3 class="fw-bold mb-1">Khách chờ phòng trống</h3>
+            <p class="text-muted small">Khách bấm "Báo tôi khi phòng trống lại" ở phòng đã kín. Hệ thống tự gửi email (1 lần) khi phòng trống đúng ngày đó;
+                yêu cầu quá ngày nhận phòng tự xóa. Phòng nhiều người chờ = nhu cầu cao, cân nhắc giá / mở thêm phòng cùng hạng.</p>
+
+            <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+            <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+
+            <div th:if="${#lists.isEmpty(demand)}" class="alert alert-info">Chưa có khách nào đang chờ phòng.</div>
+
+            <div class="bg-white p-4 rounded shadow-sm mb-4" th:unless="${#lists.isEmpty(demand)}">
+                <h5 class="fw-bold mb-3"><i class="bi bi-fire text-danger me-1"></i>Phòng đang được săn</h5>
+                <table class="table align-middle mb-0">
+                    <thead><tr><th>Phòng</th><th>Hạng</th><th>Số khách chờ</th><th>Nhận phòng sớm nhất</th></tr></thead>
+                    <tbody>
+                    <tr th:each="d : ${demand}">
+                        <td class="fw-semibold"><a th:href="@{/admin/rooms/{id}/view(id=${d.room.id})}" th:text="'Phòng ' + ${d.room.roomNumber}"></a></td>
+                        <td th:text="${d.room.roomType.name}"></td>
+                        <td><span class="badge" th:classappend="${d.requests >= 3} ? 'bg-danger' : 'bg-warning text-dark'" th:text="${d.requests}"></span></td>
+                        <td th:text="${#temporals.format(d.earliestCheckIn, 'dd/MM/yyyy')}"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="bg-white p-4 rounded shadow-sm" th:unless="${#lists.isEmpty(alerts)}">
+                <h5 class="fw-bold mb-3">Tất cả yêu cầu <span class="badge bg-secondary" th:text="${pager.totalItems}"></span></h5>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead><tr><th>Phòng</th><th>Ngày muốn ở</th><th>Khách</th><th>Gửi lúc</th><th></th></tr></thead>
+                        <tbody>
+                        <tr th:each="a : ${alerts}">
+                            <td class="fw-semibold" th:text="${a.room.roomNumber}"></td>
+                            <td th:text="${#temporals.format(a.checkIn, 'dd/MM')} + ' – ' + ${#temporals.format(a.checkOut, 'dd/MM/yyyy')} + (${a.guests != null} ? ' · ' + ${a.guests} + ' khách' : '')"></td>
+                            <td class="small" th:text="${T(com.hotel.service.RoomAlertService).maskEmail(a.email)}"></td>
+                            <td class="small text-muted" th:text="${#temporals.format(a.createdAt, 'HH:mm dd/MM')}"></td>
+                            <td class="text-end">
+                                <form method="post" th:action="@{/admin/room-alerts/{id}/delete(id=${a.id})}" onsubmit="return confirm('Xóa yêu cầu này?')">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa"><i class="bi bi-trash"></i></button>
+                                </form>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div th:replace="~{fragments/pagination :: pager(${pager})}"></div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

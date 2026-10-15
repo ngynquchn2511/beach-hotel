@@ -59,6 +59,44 @@ public class RoomAlertService {
                 .build());
     }
 
+    // ===== Trang le tan: nhu cau dang cho =====
+
+    // 1 phong dang duoc san: so yeu cau, ngay nhan phong som nhat
+    public record Demand(com.hotel.entity.Room room, long requests, LocalDate earliestCheckIn) {
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.List<RoomAlert> pending(LocalDate today) {
+        return alertRepository.findPending(today);
+    }
+
+    // Phong duoc nhieu nguoi cho nhat len dau
+    public static java.util.List<Demand> demand(java.util.List<RoomAlert> alerts) {
+        return alerts.stream()
+                .collect(java.util.stream.Collectors.groupingBy(a -> a.getRoom().getId(), java.util.LinkedHashMap::new,
+                        java.util.stream.Collectors.toList()))
+                .values().stream()
+                .map(list -> new Demand(list.get(0).getRoom(), list.size(),
+                        list.stream().map(RoomAlert::getCheckIn).min(LocalDate::compareTo).orElse(null)))
+                .sorted(java.util.Comparator.comparingLong(Demand::requests).reversed()
+                        .thenComparing(Demand::earliestCheckIn))
+                .toList();
+    }
+
+    // Le tan xoa yeu cau rac / khach nho bo
+    @Transactional
+    public void delete(Long alertId) {
+        RoomAlert alert = alertRepository.findById(alertId)
+                .orElseThrow(() -> new BusinessException("Không tìm thấy yêu cầu"));
+        alertRepository.delete(alert);
+    }
+
+    // abc@gmail.com -> a***@gmail.com
+    public static String maskEmail(String email) {
+        int at = email == null ? -1 : email.indexOf('@');
+        return at <= 0 ? email : email.charAt(0) + "***" + email.substring(at);
+    }
+
     // Bo yeu cau da qua ngay nhan phong; gui email cho yeu cau co phong trong lai. Tra ve so email da gui.
     // Chua cau hinh mail -> giu yeu cau lai, gui khi co cau hinh (van con han)
     @Transactional
