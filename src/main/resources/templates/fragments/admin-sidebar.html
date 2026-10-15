@@ -61,6 +61,8 @@
        th:classappend="${p.startsWith('/admin/pricing')} ? 'active'"><i class="bi bi-tags"></i>Giá &amp; đặt cọc</a>
     <a th:href="@{/admin/transfer-rates}" class="list-group-item list-group-item-action" sec:authorize="hasRole('ADMIN')"
        th:classappend="${p.startsWith('/admin/transfer-rates')} ? 'active'"><i class="bi bi-airplane"></i>Giá đưa đón sân bay</a>
+    <a th:href="@{/admin/ical}" class="list-group-item list-group-item-action" sec:authorize="hasRole('ADMIN')"
+       th:classappend="${p.startsWith('/admin/ical')} ? 'active'"><i class="bi bi-calendar-week"></i>Đồng bộ lịch (iCal)</a>
     <a th:href="@{/admin/staff-accounts}" class="list-group-item list-group-item-action" sec:authorize="hasRole('ADMIN')"
        th:classappend="${p.startsWith('/admin/staff-accounts')} ? 'active'"><i class="bi bi-person-badge"></i>Tài khoản nhân viên</a>
     <a th:href="@{/admin/audit-logs}" class="list-group-item list-group-item-action" sec:authorize="hasRole('ADMIN')"

@@ -110,6 +110,8 @@ public class SecurityConfig {
                         .requestMatchers("/admin/customers/*/update-type", "/admin/customers/*/toggle-lock").hasRole("ADMIN")
                         // Gia cuoi tuan / ngay le va chinh sach dat coc - chi ADMIN duoc doi gia
                         .requestMatchers("/admin/pricing", "/admin/pricing/**").hasRole("ADMIN")
+                        // Link lich iCal lo ra la ai cung xem duoc lich phong -> chi ADMIN lay link / doi ma
+                        .requestMatchers("/admin/ical", "/admin/ical/**").hasRole("ADMIN")
                         // Cac chuc nang con lai (don dat phong, check-in/out, trang thai phong, doanh thu...) - ca STAFF va ADMIN
                         .requestMatchers("/admin/**").hasAnyRole("ADMIN", "STAFF")
                         .requestMatchers("/staff/**").hasAnyRole("STAFF", "ADMIN")
@@ -166,6 +168,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/customer/bookings/*/vnpay").permitAll()
                         // "Bao toi khi phong trong lai" o trang chi tiet phong - khach chua dang nhap cung dung duoc
                         .requestMatchers(HttpMethod.POST, "/customer/rooms/*/alerts").permitAll()
+                        // Lich .ics cho Google Calendar / Booking.com - kiem tra ma bi mat ?key= trong IcalController
+                        .requestMatchers(HttpMethod.GET, "/ical/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/payment/vnpay/return", "/payment/vnpay/ipn").permitAll()
                         // Con lai (lich su dat phong, tai khoan, hoa don...) can dang nhap
                         .requestMatchers("/customer/**").hasRole("CUSTOMER")

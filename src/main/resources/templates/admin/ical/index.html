@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Đồng bộ lịch (iCal)</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+    <style>
+        .ical-url { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .8rem; }
+    </style>
+</head>
+<body class="eaut eaut-admin">
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="container py-5">
+    <div class="row g-4">
+        <div class="col-md-3">
+            <div th:replace="~{fragments/admin-sidebar :: sidebar}"></div>
+        </div>
+
+        <div class="col-md-9">
+            <h3 class="fw-bold mb-1">Đồng bộ lịch (iCal)</h3>
+            <p class="text-muted">Dán link vào Google Calendar, Booking.com, Airbnb... để thấy ngày phòng đã có khách.
+                Lịch chỉ ghi số phòng, mã đơn và trạng thái - không có tên hay số điện thoại khách.</p>
+
+            <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+
+            <div class="bg-white p-4 rounded shadow-sm mb-4">
+                <h5 class="fw-bold">Cách dùng</h5>
+                <ul class="small mb-0">
+                    <li><b>Google Calendar</b>: Cài đặt → Thêm lịch → <i>Từ URL</i> → dán link. Google tự cập nhật vài giờ một lần.</li>
+                    <li><b>Booking.com / Airbnb</b>: mục Đồng bộ lịch → <i>Nhập lịch</i> → dán link của đúng phòng đó để tránh nhận trùng khách.</li>
+                    <li>Lỡ chia sẻ link ra ngoài? Bấm <b>Đổi mã</b> - mọi link cũ ngừng hoạt động ngay.</li>
+                </ul>
+            </div>
+
+            <div class="bg-white p-4 rounded shadow-sm mb-4">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                    <h5 class="fw-bold m-0">Tất cả phòng</h5>
+                    <form method="post" th:action="@{/admin/ical/rotate}"
+                          onsubmit="return confirm('Đổi mã? Các link đang dùng ở Google Calendar / Booking.com sẽ ngừng hoạt động.')">
+                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-arrow-repeat me-1"></i>Đổi mã</button>
+                    </form>
+                </div>
+                <div class="input-group input-group-sm">
+                    <input type="text" class="form-control ical-url" readonly th:value="${allUrl}">
+                    <button type="button" class="btn btn-outline-primary copy-btn" th:attr="data-url=${allUrl}"><i class="bi bi-clipboard"></i> Sao chép</button>
+                    <a class="btn btn-outline-secondary" th:href="${allUrl}"><i class="bi bi-download"></i> .ics</a>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded shadow-sm">
+                <h5 class="fw-bold mb-3">Từng phòng</h5>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <tbody>
+                        <tr th:each="r : ${rooms}" th:with="url=${baseUrl + '/ical/rooms/' + r.id + '.ics?key=' + icalKey}">
+                            <td class="fw-semibold text-nowrap" th:text="'Phòng ' + ${r.roomNumber}"></td>
+                            <td class="small text-muted" th:text="${r.roomType.name}"></td>
+                            <td class="w-50"><input type="text" class="form-control form-control-sm ical-url" readonly th:value="${url}"></td>
+                            <td class="text-nowrap text-end">
+                                <button type="button" class="btn btn-sm btn-outline-primary copy-btn" th:attr="data-url=${url}" title="Sao chép"><i class="bi bi-clipboard"></i></button>
+                                <a class="btn btn-sm btn-outline-secondary" th:href="${url}" title="Tải .ics"><i class="bi bi-download"></i></a>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+    // Sao chep link vao bo nho tam; trinh duyet chan clipboard thi chon san chu de nguoi dung tu Ctrl+C
+    document.querySelectorAll('.copy-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const url = btn.dataset.url;
+            const done = function () {
+                const old = btn.innerHTML;
+                btn.innerHTML = '<i class="bi bi-check2"></i> Đã chép';
+                setTimeout(function () { btn.innerHTML = old; }, 1500);
+            };
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(url).then(done);
+            } else {
+                const input = btn.closest('tr, .input-group').querySelector('input');
+                input.select();
+                try { document.execCommand('copy'); done(); } catch (e) { /* nguoi dung tu sao chep */ }
+            }
+        });
+    });
+</script>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

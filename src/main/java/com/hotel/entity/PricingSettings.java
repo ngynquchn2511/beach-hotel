@@ -53,6 +53,11 @@ public class PricingSettings {
     @Column(name = "refund_partial_percent")
     private Integer refundPartialPercent;
 
+    // Ma bi mat trong link lich iCal (.ics) cua phong - Google Calendar / Booking.com doc link nay khong can dang nhap.
+    // null = chua tao (tu tao khi admin mo trang "Dong bo lich"); admin doi ma neu lo link
+    @Column(name = "ical_token", length = 40)
+    private String icalToken;
+
     public Integer getRefundFullHours() {
         return refundFullHours != null ? refundFullHours : DEFAULT_REFUND_FULL_HOURS;
     }
