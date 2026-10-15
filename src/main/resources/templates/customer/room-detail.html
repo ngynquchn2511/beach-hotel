@@ -122,7 +122,20 @@
 
         <div class="col-md-5">
             <div class="bg-white p-4 rounded shadow-sm" style="position: sticky; top: 1rem;">
-                <h3 class="fw-bold" th:text="#{common.room(${room.roomNumber})}"></h3>
+                <div class="d-flex justify-content-between align-items-start gap-2">
+                    <h3 class="fw-bold" th:text="#{common.room(${room.roomNumber})}"></h3>
+                    <!-- Chia se phong: dien thoai mo bang chia se cua may (Zalo, Messenger...), may tinh thi sao chep link -->
+                    <div class="d-flex gap-1 flex-shrink-0">
+                        <button type="button" id="shareRoom" class="btn btn-sm btn-outline-primary"
+                                th:attr="data-url=${siteBaseUrl + '/customer/rooms/' + room.id}, data-title=#{common.room(${room.roomNumber})} + ' - ' + ${room.roomType.localizedName},
+                                         data-copied=#{share.copied}">
+                            <i class="bi bi-share me-1"></i><span th:text="#{share.button}">Chia sẻ</span>
+                        </button>
+                        <a class="btn btn-sm btn-outline-primary" target="_blank" rel="noopener" th:title="#{share.facebook}"
+                           th:href="'https://www.facebook.com/sharer/sharer.php?u=' + ${#uris.escapeQueryParam(siteBaseUrl + '/customer/rooms/' + room.id)}">
+                            <i class="bi bi-facebook"></i></a>
+                    </div>
+                </div>
                 <p class="text-muted mb-1" th:text="${room.roomType.localizedName}"></p>
                 <a th:if="${ratingStats.count > 0}" href="#danh-gia-phong" class="d-inline-flex align-items-center gap-1 mb-3 small text-decoration-none">
                     <span class="room-stars"><i class="bi bi-star-fill"></i></span>
@@ -220,6 +233,30 @@
     </div>
 </main>
 
+<script>
+    // Nut "Chia se": Web Share API (dien thoai) -> chon Zalo / Messenger...; khong ho tro thi sao chep link
+    (function () {
+        var btn = document.getElementById('shareRoom');
+        if (!btn) return;
+        btn.addEventListener('click', function () {
+            var url = btn.dataset.url, title = btn.dataset.title;
+            if (navigator.share) {
+                navigator.share({ title: title, url: url }).catch(function () {});
+                return;
+            }
+            var done = function () {
+                var label = btn.querySelector('span'), old = label.textContent;
+                label.textContent = btn.dataset.copied;
+                setTimeout(function () { label.textContent = old; }, 2000);
+            };
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(url).then(done, function () { window.prompt('', url); });
+            } else {
+                window.prompt('', url);
+            }
+        });
+    })();
+</script>
 <script>
     document.querySelectorAll('.room-thumb').forEach(function (thumb) {
         thumb.addEventListener('click', function () {

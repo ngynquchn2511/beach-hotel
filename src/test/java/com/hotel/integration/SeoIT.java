@@ -52,7 +52,10 @@ class SeoIT {
                 .andExpect(content().string(containsString("Suite SeoIT")))
                 .andExpect(content().string(containsString("2.500.000 VND")))
                 .andExpect(content().string(containsString("/page-images/rooms/suite-1.jpg\"")))
-                .andExpect(content().string(containsString("/customer/rooms/" + room.getId() + "\"")));
+                .andExpect(content().string(containsString("/customer/rooms/" + room.getId() + "\"")))
+                // Nut chia se: link phong tuyet doi + chia se Facebook
+                .andExpect(content().string(containsString("id=\"shareRoom\"")))
+                .andExpect(content().string(containsString("facebook.com/sharer/sharer.php?u=http")));
     }
 
     @Test
