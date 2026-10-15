@@ -27,7 +27,7 @@ public class AdminPortalSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
         UserRole role = userDetails.getUser().getRole();
 
-        if (role != UserRole.ADMIN && role != UserRole.STAFF) {
+        if (!role.isBackOffice()) {
             new SecurityContextLogoutHandler().logout(request, response, authentication);
             SecurityContextHolder.clearContext();
             response.sendRedirect("/admin?error=wrong_portal");
@@ -40,6 +40,6 @@ public class AdminPortalSuccessHandler extends SimpleUrlAuthenticationSuccessHan
             return;
         }
         // STAFF gio co day du quyen quan tri nhu ADMIN (tru khu vuc quan ly nhan vien), nen dua vao chung 1 dashboard
-        getRedirectStrategy().sendRedirect(request, response, "/admin/dashboard");
+        getRedirectStrategy().sendRedirect(request, response, role.adminHome());
     }
 }

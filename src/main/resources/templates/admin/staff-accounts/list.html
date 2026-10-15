@@ -51,7 +51,7 @@
                     <td th:text="${a.email}"></td>
                     <td th:text="${a.phoneNumber}"></td>
                     <td>
-                        <span class="badge" th:classappend="${a.role.name() == 'ADMIN'} ? 'bg-dark' : 'bg-primary'"
+                        <span class="badge" th:classappend="${a.role.name() == 'ADMIN'} ? 'bg-dark' : (${a.role.name() == 'STAFF'} ? 'bg-primary' : 'bg-secondary')"
                               th:text="${a.role.vietnameseLabel}"></span>
                     </td>
                     <td th:text="${#temporals.format(a.createdAt, 'dd/MM/yyyy')}"></td>

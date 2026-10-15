@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
     <title>Sổ quỹ ca</title>
@@ -33,7 +33,7 @@
                     <div class="mt-1" th:if="${lastClosed.handoverNote != null}"><b>Bàn giao:</b>
                         <span style="white-space: pre-line" th:text="${lastClosed.handoverNote}"></span></div>
                 </div>
-                <form method="post" th:action="@{/admin/shifts/open}" class="row g-2 align-items-end">
+                <form sec:authorize="hasAnyRole('ADMIN','STAFF')" method="post" th:action="@{/admin/shifts/open}" class="row g-2 align-items-end">
                     <div class="col-md-4"><label class="form-label small">Tiền mặt đếm được khi nhận ca (đ)</label>
                         <input type="number" name="openingCash" class="form-control" min="0" step="1000" required
                                th:value="${lastClosed != null} ? ${lastClosed.leftCash.longValue()} : 0"></div>
@@ -77,7 +77,7 @@
 
                 <div class="bg-white p-4 rounded shadow-sm mb-4">
                     <h5 class="fw-bold">Đóng ca &amp; bàn giao</h5>
-                    <form method="post" th:action="@{/admin/shifts/{id}/close(id=${current.id})}" class="row g-2">
+                    <form sec:authorize="hasAnyRole('ADMIN','STAFF')" method="post" th:action="@{/admin/shifts/{id}/close(id=${current.id})}" class="row g-2">
                         <div class="col-md-4"><label class="form-label small">Tiền mặt đếm được (đ)</label>
                             <input type="number" name="countedCash" class="form-control" min="0" step="1000" required></div>
                         <div class="col-md-4"><label class="form-label small">Nộp két / ngân hàng (đ)</label>

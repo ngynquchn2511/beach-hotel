@@ -69,6 +69,8 @@ public class AuditLog {
         return switch (actorRole) {
             case "ADMIN" -> "Quản trị viên";
             case "STAFF" -> "Nhân viên";
+            case "HOUSEKEEPER" -> "Buồng phòng";
+            case "ACCOUNTANT" -> "Kế toán";
             case "CUSTOMER" -> "Khách hàng";
             case "GUEST" -> "Khách vãng lai";
             default -> "Hệ thống";

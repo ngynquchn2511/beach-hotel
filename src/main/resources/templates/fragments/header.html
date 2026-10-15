@@ -1,12 +1,13 @@
 <header th:fragment="header" class="border-bottom bg-white">
     <nav class="navbar navbar-expand-lg container py-3">
         <!-- Nhan vien/admin bam logo hoac "Danh sach phong" thi o lai trang quan tri, khong bi day sang giao dien khach hang -->
-        <a class="navbar-brand fw-bold" th:href="@{/}" sec:authorize="!hasAnyRole('ADMIN','STAFF')">Sóng Xanh Resort</a>
+        <a class="navbar-brand fw-bold" th:href="@{/}" sec:authorize="!hasAnyRole('ADMIN','STAFF','HOUSEKEEPER','ACCOUNTANT')">Sóng Xanh Resort</a>
         <a class="navbar-brand fw-bold" th:href="@{/admin/dashboard}" sec:authorize="hasAnyRole('ADMIN','STAFF')">Sóng Xanh Resort</a>
+        <a class="navbar-brand fw-bold" th:href="@{/admin/home}" sec:authorize="hasAnyRole('HOUSEKEEPER','ACCOUNTANT')">Sóng Xanh Resort</a>
         <div class="ms-auto d-flex align-items-center gap-3 flex-wrap justify-content-end">
-            <a th:href="@{/about}" class="text-decoration-none text-dark" sec:authorize="!hasAnyRole('ADMIN','STAFF')" th:text="#{nav.about}">Giới thiệu</a>
-            <a th:href="@{/rooms}" class="text-decoration-none text-dark" sec:authorize="!hasAnyRole('ADMIN','STAFF')" th:text="#{nav.rooms}">Danh sách phòng</a>
-            <a th:href="@{/services}" class="text-decoration-none text-dark" sec:authorize="!hasAnyRole('ADMIN','STAFF')" th:text="#{nav.services}">Dịch vụ</a>
+            <a th:href="@{/about}" class="text-decoration-none text-dark" sec:authorize="!hasAnyRole('ADMIN','STAFF','HOUSEKEEPER','ACCOUNTANT')" th:text="#{nav.about}">Giới thiệu</a>
+            <a th:href="@{/rooms}" class="text-decoration-none text-dark" sec:authorize="!hasAnyRole('ADMIN','STAFF','HOUSEKEEPER','ACCOUNTANT')" th:text="#{nav.rooms}">Danh sách phòng</a>
+            <a th:href="@{/services}" class="text-decoration-none text-dark" sec:authorize="!hasAnyRole('ADMIN','STAFF','HOUSEKEEPER','ACCOUNTANT')" th:text="#{nav.services}">Dịch vụ</a>
             <a th:href="@{/admin/rooms}" class="text-decoration-none text-dark" sec:authorize="hasAnyRole('ADMIN','STAFF')">Danh sách phòng</a>
             <a th:href="@{/customer/bookings}" class="text-decoration-none text-dark" sec:authorize="hasRole('CUSTOMER')" th:text="#{nav.history}">Lịch sử đặt phòng</a>
             <a th:href="@{/customer/favorites}" class="text-decoration-none text-dark" sec:authorize="hasRole('CUSTOMER')"><i class="bi bi-heart me-1"></i><span th:text="#{nav.favorites}">Yêu thích</span></a>
@@ -14,7 +15,7 @@
 
             <div sec:authorize="isAuthenticated()" class="d-flex align-items-center gap-3">
                 <span class="text-muted" sec:authentication="name">Người dùng</span>
-                <form th:action="@{/admin/logout}" method="post" class="m-0" sec:authorize="hasAnyRole('ADMIN','STAFF')">
+                <form th:action="@{/admin/logout}" method="post" class="m-0" sec:authorize="hasAnyRole('ADMIN','STAFF','HOUSEKEEPER','ACCOUNTANT')">
                     <button type="submit" class="btn btn-outline-secondary btn-sm">Đăng xuất</button>
                 </form>
                 <form th:action="@{/logout}" method="post" class="m-0" sec:authorize="hasRole('CUSTOMER')">
@@ -28,7 +29,7 @@
             </div>
 
             <!-- th:replace chay truoc sec:authorize nen boc dieu kien ra ngoai -->
-            <th:block sec:authorize="!hasAnyRole('ADMIN','STAFF')"><div th:replace="~{fragments/lang-switch :: switch}"></div></th:block>
+            <th:block sec:authorize="!hasAnyRole('ADMIN','STAFF','HOUSEKEEPER','ACCOUNTANT')"><div th:replace="~{fragments/lang-switch :: switch}"></div></th:block>
         </div>
     </nav>
 </header>

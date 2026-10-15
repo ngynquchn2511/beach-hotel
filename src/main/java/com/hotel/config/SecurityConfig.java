@@ -100,6 +100,9 @@ public class SecurityConfig {
                         // /admin la diem vao duy nhat hien trang dang nhap quan tri.
                         // /admin/login chi la endpoint POST do Spring Security xu ly.
                         .requestMatchers("/admin", "/admin/login").permitAll()
+                        // Moi vai tro cong quan tri: trang chu theo vai tro + nhap ma OTP
+                        .requestMatchers("/admin/home", "/admin/otp", "/admin/otp/**")
+                                .hasAnyRole("ADMIN", "STAFF", "HOUSEKEEPER", "ACCOUNTANT")
                         // Quan ly tai khoan nhan vien va xem nhat ky thao tac - chi danh rieng cho ADMIN
                         .requestMatchers("/admin/staff-accounts", "/admin/staff-accounts/**",
                                 "/admin/audit-logs", "/admin/audit-logs/**").hasRole("ADMIN")
@@ -122,6 +125,14 @@ public class SecurityConfig {
                         // Le tan giao mon duoc, sua thuc don chi ADMIN
                         .requestMatchers("/admin/room-service/menu", "/admin/room-service/menu/**").hasRole("ADMIN")
                         // Cac chuc nang con lai (don dat phong, check-in/out, trang thai phong, doanh thu...) - ca STAFF va ADMIN
+                        // Buong phong: don phong, bao hong / bao tri, do that lac
+                        .requestMatchers("/admin/housekeeping", "/admin/housekeeping/**", "/admin/maintenance", "/admin/maintenance/**",
+                                "/admin/lost-found", "/admin/lost-found/**").hasAnyRole("ADMIN", "STAFF", "HOUSEKEEPER")
+                        // Ke toan: hoa don cong ty (ghi so HDDT), xem doanh thu / so quy ca / the qua tang / hoa don don phong
+                        .requestMatchers("/admin/company-invoices", "/admin/company-invoices/**").hasAnyRole("ADMIN", "STAFF", "ACCOUNTANT")
+                        .requestMatchers(HttpMethod.GET, "/admin/dashboard", "/admin/dashboard/export", "/admin/forecast",
+                                "/admin/shifts", "/admin/shifts/*", "/admin/gift-vouchers",
+                                "/admin/bookings/*/invoice", "/admin/bookings/*/invoice.pdf").hasAnyRole("ADMIN", "STAFF", "ACCOUNTANT")
                         .requestMatchers("/admin/**").hasAnyRole("ADMIN", "STAFF")
                         .requestMatchers("/staff/**").hasAnyRole("STAFF", "ADMIN")
                         .anyRequest().authenticated()

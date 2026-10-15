@@ -18,7 +18,7 @@
                         <a th:href="@{/admin/rooms}" class="link-light link-opacity-75 link-opacity-100-hover text-decoration-none">Phòng</a>
                     </li>
                 </ul>
-                <ul class="list-inline mb-0 small" sec:authorize="!hasAnyRole('ADMIN','STAFF')">
+                <ul class="list-inline mb-0 small" sec:authorize="!hasAnyRole('ADMIN','STAFF','HOUSEKEEPER','ACCOUNTANT')">
                     <li class="list-inline-item mx-2">
                         <a th:href="@{/}" class="link-light link-opacity-75 link-opacity-100-hover text-decoration-none" th:text="#{nav.home}">Trang chủ</a>
                     </li>

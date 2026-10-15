@@ -25,6 +25,8 @@ public class AdminAuditLogController {
     private static final Map<String, String> ACTOR_ROLES = Map.of(
             "ADMIN", "Quản trị viên",
             "STAFF", "Nhân viên",
+            "HOUSEKEEPER", "Buồng phòng",
+            "ACCOUNTANT", "Kế toán",
             "CUSTOMER", "Khách hàng",
             "GUEST", "Khách vãng lai",
             "SYSTEM", "Hệ thống"

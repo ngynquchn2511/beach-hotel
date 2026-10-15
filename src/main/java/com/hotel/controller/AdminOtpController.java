@@ -24,7 +24,7 @@ public class AdminOtpController {
     @GetMapping("/admin/otp")
     public String page(HttpSession session, Model model) {
         if (!AdminOtpService.isPending(session)) {
-            return "redirect:/admin/dashboard";
+            return "redirect:/admin/home";
         }
         model.addAttribute("maskedEmail", AdminOtpService.maskedEmail(session));
         model.addAttribute("validMinutes", AdminOtpService.VALIDITY.toMinutes());
@@ -35,7 +35,7 @@ public class AdminOtpController {
     public String verify(@RequestParam(required = false) String code, HttpSession session, RedirectAttributes redirectAttributes) {
         AdminOtpService.Result result = otpService.verify(session, code);
         return switch (result) {
-            case OK, NOT_PENDING -> "redirect:/admin/dashboard";
+            case OK, NOT_PENDING -> "redirect:/admin/home";
             case WRONG -> {
                 redirectAttributes.addFlashAttribute("errorMessage", "Mã không đúng, vui lòng kiểm tra lại email");
                 yield "redirect:/admin/otp";
@@ -55,7 +55,7 @@ public class AdminOtpController {
     @PostMapping("/admin/otp/resend")
     public String resend(HttpSession session, @AuthenticationPrincipal CustomUserDetails user, RedirectAttributes redirectAttributes) {
         if (!AdminOtpService.isPending(session)) {
-            return "redirect:/admin/dashboard";
+            return "redirect:/admin/home";
         }
         boolean sent = otpService.resend(session, user != null ? user.getUser().getFullName() : null);
         redirectAttributes.addFlashAttribute(sent ? "successMessage" : "errorMessage",

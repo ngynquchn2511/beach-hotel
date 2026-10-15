@@ -67,7 +67,7 @@ class AdminOtpIT extends ItFixtures {
                 .andExpect(flash().attribute("errorMessage", containsString("không đúng")));
 
         mockMvc.perform(post("/admin/otp").session(session).with(csrf()).param("code", lastCode()))
-                .andExpect(redirectedUrl("/admin/dashboard"));
+                .andExpect(redirectedUrl("/admin/home"));
         mockMvc.perform(get("/admin/dashboard").session(session)).andExpect(status().isOk());
     }
 
@@ -99,7 +99,7 @@ class AdminOtpIT extends ItFixtures {
         mockMvc.perform(post("/admin/otp/resend").session(session).with(csrf()))
                 .andExpect(flash().attribute("successMessage", containsString("Đã gửi mã mới")));
         mockMvc.perform(post("/admin/otp").session(session).with(csrf()).param("code", lastCode()))
-                .andExpect(redirectedUrl("/admin/dashboard"));
+                .andExpect(redirectedUrl("/admin/home"));
     }
 
     @Test

@@ -1,5 +1,28 @@
 <nav th:fragment="sidebar" class="list-group admin-sidebar" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
      th:with="p=${currentPath != null ? currentPath : ''}">
+    <th:block sec:authorize="hasRole('HOUSEKEEPER')">
+        <div class="admin-sidebar-title">Buồng phòng</div>
+        <a th:href="@{/admin/housekeeping}" class="list-group-item list-group-item-action"
+           th:classappend="${p.startsWith('/admin/housekeeping')} ? 'active'"><i class="bi bi-stars"></i>Dọn phòng</a>
+        <a th:href="@{/admin/maintenance}" class="list-group-item list-group-item-action"
+           th:classappend="${p.startsWith('/admin/maintenance')} ? 'active'"><i class="bi bi-tools"></i>Báo hỏng / bảo trì</a>
+        <a th:href="@{/admin/lost-found}" class="list-group-item list-group-item-action"
+           th:classappend="${p.startsWith('/admin/lost-found')} ? 'active'"><i class="bi bi-box-seam"></i>Đồ thất lạc</a>
+    </th:block>
+    <th:block sec:authorize="hasRole('ACCOUNTANT')">
+        <div class="admin-sidebar-title">Kế toán</div>
+        <a th:href="@{/admin/company-invoices}" class="list-group-item list-group-item-action"
+           th:classappend="${p.startsWith('/admin/company-invoices')} ? 'active'"><i class="bi bi-building"></i>Hóa đơn công ty</a>
+        <a th:href="@{/admin/dashboard}" class="list-group-item list-group-item-action"
+           th:classappend="${p.startsWith('/admin/dashboard')} ? 'active'"><i class="bi bi-speedometer2"></i>Doanh thu</a>
+        <a th:href="@{/admin/shifts}" class="list-group-item list-group-item-action"
+           th:classappend="${p.startsWith('/admin/shifts')} ? 'active'"><i class="bi bi-cash-coin"></i>Sổ quỹ ca</a>
+        <a th:href="@{/admin/gift-vouchers}" class="list-group-item list-group-item-action"
+           th:classappend="${p.startsWith('/admin/gift-vouchers')} ? 'active'"><i class="bi bi-gift"></i>Thẻ quà tặng</a>
+        <a th:href="@{/admin/forecast}" class="list-group-item list-group-item-action"
+           th:classappend="${p.startsWith('/admin/forecast')} ? 'active'"><i class="bi bi-graph-up-arrow"></i>Dự báo công suất</a>
+    </th:block>
+    <th:block sec:authorize="hasAnyRole('ADMIN','STAFF')">
     <div class="admin-sidebar-title">Quầy lễ tân</div>
     <a th:href="@{/admin/today}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
        th:classappend="${p.startsWith('/admin/today')} ? 'active'">
@@ -91,4 +114,5 @@
        th:classappend="${p.startsWith('/admin/staff-accounts')} ? 'active'"><i class="bi bi-person-badge"></i>Tài khoản nhân viên</a>
     <a th:href="@{/admin/audit-logs}" class="list-group-item list-group-item-action" sec:authorize="hasRole('ADMIN')"
        th:classappend="${p.startsWith('/admin/audit-logs')} ? 'active'"><i class="bi bi-clock-history"></i>Nhật ký thao tác</a>
+    </th:block>
 </nav>

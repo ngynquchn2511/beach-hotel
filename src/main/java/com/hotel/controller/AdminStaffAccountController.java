@@ -22,7 +22,7 @@ import java.util.List;
 @RequestMapping("/admin/staff-accounts")
 public class AdminStaffAccountController {
 
-    private static final List<UserRole> STAFF_ROLES = List.of(UserRole.STAFF, UserRole.ADMIN);
+    private static final List<UserRole> STAFF_ROLES = List.of(UserRole.STAFF, UserRole.HOUSEKEEPER, UserRole.ACCOUNTANT, UserRole.ADMIN);
 
     private final StaffAccountService staffAccountService;
 

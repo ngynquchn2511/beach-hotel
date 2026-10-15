@@ -31,6 +31,8 @@ public class StaffAccountService {
     public List<User> findAllStaffAccounts() {
         List<User> all = new ArrayList<>(userRepository.findByRoleOrderByCreatedAtDesc(UserRole.ADMIN));
         all.addAll(userRepository.findByRoleOrderByCreatedAtDesc(UserRole.STAFF));
+        all.addAll(userRepository.findByRoleOrderByCreatedAtDesc(UserRole.HOUSEKEEPER));
+        all.addAll(userRepository.findByRoleOrderByCreatedAtDesc(UserRole.ACCOUNTANT));
         all.sort(Comparator.comparing(User::getCreatedAt).reversed());
         return all;
     }
@@ -98,8 +100,8 @@ public class StaffAccountService {
     }
 
     private void validateRole(UserRole role) {
-        if (role != UserRole.STAFF && role != UserRole.ADMIN) {
-            throw new BusinessException("Vai trò chỉ được là Nhân viên hoặc Quản trị viên");
+        if (role == null || !role.isBackOffice()) {
+            throw new BusinessException("Vai trò chỉ được là Nhân viên, Buồng phòng, Kế toán hoặc Quản trị viên");
         }
     }
 
