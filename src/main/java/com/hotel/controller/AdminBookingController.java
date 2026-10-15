@@ -260,6 +260,33 @@ public class AdminBookingController {
         return "admin/bookings/invoice";
     }
 
+    // Doi phong: chon phong con trong cac dem cua don (kem chenh lech gia)
+    @GetMapping("/{id}/move")
+    public String moveForm(@PathVariable Long id, Model model) {
+        Booking booking = bookingService.findById(id);
+        if (!bookingService.canMoveRoom(booking)) {
+            return "redirect:/admin/bookings/" + id;
+        }
+        model.addAttribute("booking", booking);
+        model.addAttribute("options", bookingService.roomMoveOptions(id));
+        return "admin/bookings/move";
+    }
+
+    @PostMapping("/{id}/move")
+    public String move(@PathVariable Long id, @RequestParam(required = false) Long newRoomId,
+                       @RequestParam(defaultValue = "false") boolean waiveDifference,
+                       @RequestParam(required = false) String note, RedirectAttributes redirectAttributes) {
+        try {
+            Booking moved = bookingService.moveRoom(id, newRoomId, waiveDifference, note);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã chuyển sang phòng " + moved.getRoom().getRoomNumber()
+                    + " và gửi email báo khách");
+            return "redirect:/admin/bookings/" + id;
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+            return "redirect:/admin/bookings/" + id + "/move";
+        }
+    }
+
     // Hoan coc qua VNPay (coc da tra qua VNPay): goi API hoan tien, thanh cong thi tu ghi nhan + email khach
     @PostMapping("/{id}/refund-vnpay")
     public String refundViaVnpay(@PathVariable Long id, @org.springframework.security.core.annotation.AuthenticationPrincipal com.hotel.security.CustomUserDetails user,

@@ -188,6 +188,18 @@ public class EmailService {
         return queue(booking, "Sóng Xanh Resort - Đã đổi ngày lưu trú đơn #" + booking.getId(), body, "doi ngay");
     }
 
+    // Le tan doi phong cho khach - gui lai thong tin don voi phong moi
+    public boolean sendRoomMoved(Booking booking, String oldRoomNumber) {
+        if (!canEmail(booking)) {
+            return false;
+        }
+        String body = buildBody(booking, "Sóng Xanh Resort đã chuyển đơn #" + booking.getId() + " từ phòng " + oldRoomNumber
+                + " sang phòng " + booking.getRoom().getRoomNumber() + " (" + booking.getRoom().getRoomType().getName() + ")."
+                + (booking.getRoomMoveNote() != null ? " Lý do: " + booking.getRoomMoveNote() + "." : "")
+                + " Thông tin đơn sau khi đổi:");
+        return queue(booking, "Sóng Xanh Resort - Đổi phòng cho đơn #" + booking.getId(), body, "doi phong");
+    }
+
     // Le tan duyet / tu choi yeu cau nhan phong som / tra phong muon
     public boolean sendStayTimeDecision(Booking booking, boolean approved) {
         if (!canEmail(booking)) {

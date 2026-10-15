@@ -130,6 +130,16 @@ public class Booking {
     @Column(name = "discount_amount", precision = 12, scale = 2)
     private java.math.BigDecimal discountAmount;
 
+    // ===== Le tan doi phong cho khach (phong hong, trung phong, nang hang...) =====
+    @Column(name = "moved_from_room", length = 20)
+    private String movedFromRoom;
+
+    @Column(name = "room_moved_at")
+    private LocalDateTime roomMovedAt;
+
+    @Column(name = "room_move_note", length = 200)
+    private String roomMoveNote;
+
     // ===== Yeu cau nhan som / tra muon (ngoai khung 14:00 - 12:00, co phu phi, le tan duyet) =====
     @Column(name = "requested_check_in_time")
     private java.time.LocalTime requestedCheckInTime;

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Đổi phòng</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+</head>
+<body class="eaut eaut-admin">
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="container py-5">
+    <div class="row g-4">
+        <div class="col-md-3">
+            <div th:replace="~{fragments/admin-sidebar :: sidebar}"></div>
+        </div>
+
+        <div class="col-md-9">
+            <a th:href="@{/admin/bookings/{id}(id=${booking.id})}" class="small">&laquo; Quay lại đơn</a>
+            <h3 class="fw-bold mt-2 mb-1" th:text="'Đổi phòng cho đơn #' + ${booking.id}">Đổi phòng</h3>
+            <p class="text-muted" th:text="'Đang ở phòng ' + ${booking.room.roomNumber} + ' (' + ${booking.room.roomType.name} + ') · '
+                + ${#temporals.format(booking.checkInDate, 'dd/MM')} + ' – ' + ${#temporals.format(booking.checkOutDate, 'dd/MM/yyyy')}
+                + ' · ' + ${booking.numberOfGuests != null ? booking.numberOfGuests : 1} + ' khách'"></p>
+
+            <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+            <div class="alert alert-info small" th:if="${booking.status.name() == 'CHECKED_IN'}">
+                Khách đang ở: chỉ hiện phòng đang sạch và trống từ hôm nay tới ngày trả. Phòng cũ sẽ chuyển sang "Chờ dọn".
+                Các đêm đã ở giữ nguyên tiền phòng cũ.
+            </div>
+
+            <div th:if="${#lists.isEmpty(options)}" class="alert alert-warning">
+                Không còn phòng nào trống phù hợp cho các đêm của đơn này. Có thể đổi ngày hoặc hủy đơn (hoàn cọc 100% nếu lỗi phía resort).
+            </div>
+
+            <form th:unless="${#lists.isEmpty(options)}" th:action="@{/admin/bookings/{id}/move(id=${booking.id})}" method="post"
+                  class="bg-white p-4 rounded shadow-sm"
+                  onsubmit="return confirm('Đổi phòng cho đơn này? Khách sẽ nhận email báo phòng mới.')">
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead><tr><th></th><th>Phòng</th><th>Hạng</th><th>Tiền phòng mới</th><th>Chênh lệch</th></tr></thead>
+                        <tbody>
+                        <tr th:each="o, st : ${options}">
+                            <td><input class="form-check-input" type="radio" name="newRoomId" required
+                                       th:id="'r' + ${o.room.id}" th:value="${o.room.id}" th:checked="${st.first}"></td>
+                            <td><label class="fw-semibold mb-0" th:for="'r' + ${o.room.id}" th:text="'Phòng ' + ${o.room.roomNumber}"></label>
+                                <span th:if="${o.room.roomType.id == booking.room.roomType.id}" class="badge bg-success-subtle text-success-emphasis ms-1">cùng hạng</span></td>
+                            <td class="small" th:text="${o.room.roomType.name}"></td>
+                            <td th:text="${#numbers.formatDecimal(o.newRoomAmount, 1, 'POINT', 0, 'COMMA')}"></td>
+                            <td th:classappend="${o.difference.signum() > 0} ? 'text-danger' : (${o.difference.signum() < 0} ? 'text-success' : '')"
+                                th:text="${o.difference.signum() > 0 ? '+' : ''} + ${#numbers.formatDecimal(o.difference, 1, 'POINT', 0, 'COMMA')}"></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" name="waiveDifference" value="true" id="waive">
+                    <label class="form-check-label" for="waive">Miễn chênh lệch (lỗi phía resort / nâng hạng miễn phí) - giữ nguyên tiền phòng</label>
+                </div>
+                <input type="text" name="note" class="form-control mb-3" maxlength="200" placeholder="Lý do (VD: điều hòa hỏng, khách xin view biển)">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-arrow-left-right me-1"></i>Đổi phòng</button>
+            </form>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

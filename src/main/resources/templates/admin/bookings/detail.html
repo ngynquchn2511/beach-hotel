@@ -52,6 +52,9 @@
                 <h6 class="fw-bold mt-3" th:if="${booking.combo != null}">Combo dịch vụ</h6>
                 <p class="mb-1" th:if="${booking.combo != null}" th:text="${booking.combo.name}"></p>
 
+                <p class="small text-muted mb-1" th:if="${booking.movedFromRoom != null}"
+                   th:text="'Đã đổi từ phòng ' + ${booking.movedFromRoom} + ' lúc ' + ${#temporals.format(booking.roomMovedAt, 'HH:mm dd/MM/yyyy')}
+                            + (${booking.roomMoveNote != null} ? ' · ' + ${booking.roomMoveNote} : '')"></p>
                 <h6 class="fw-bold mt-3">Thanh toán</h6>
                 <p class="mb-1" th:if="${booking.discountCode != null}">
                     Mã giảm giá: <span th:text="${booking.discountCode.code}"></span>
@@ -154,6 +157,10 @@
 
                 <a th:if="${booking.status.name() == 'CHECKED_IN'}" th:href="@{/admin/bookings/{id}/check-out(id=${booking.id})}"
                    class="btn btn-warning">Check-out &amp; thanh toán</a>
+
+                <a th:if="${booking.status.name() == 'PENDING' or booking.status.name() == 'CONFIRMED' or booking.status.name() == 'CHECKED_IN'}"
+                   th:href="@{/admin/bookings/{id}/move(id=${booking.id})}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left-right me-1"></i>Đổi phòng</a>
 
                 <a th:if="${payment != null and payment.status.name() == 'PAID'}" th:href="@{/admin/bookings/{id}/invoice(id=${booking.id})}"
                    target="_blank" class="btn btn-outline-primary">Xuất hóa đơn</a>

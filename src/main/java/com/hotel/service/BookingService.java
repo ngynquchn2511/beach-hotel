@@ -463,6 +463,119 @@ public class BookingService {
         }
     }
 
+    // ===== Le tan doi phong cho khach =====
+
+    // 1 phong co the chuyen sang: tien phong moi cua don va chenh lech so voi hien tai (> 0 = khach tra them)
+    public record RoomMoveOption(Room room, BigDecimal newRoomAmount, BigDecimal difference) {
+    }
+
+    public boolean canMoveRoom(Booking booking) {
+        return booking.getStatus() == BookingStatus.PENDING || booking.getStatus() == BookingStatus.CONFIRMED
+                || booking.getStatus() == BookingStatus.CHECKED_IN;
+    }
+
+    // Khach dang o: phong moi tinh tu hom nay (cac dem da o giu nguyen tien phong cu)
+    private static LocalDate moveFrom(Booking booking) {
+        LocalDate today = LocalDate.now();
+        return booking.getStatus() == BookingStatus.CHECKED_IN && booking.getCheckInDate().isBefore(today)
+                ? today : booking.getCheckInDate();
+    }
+
+    // Tien phong cua don neu chuyen sang phong moi: dem da o (khach dang o) tinh theo tien cu, dem con lai theo bang gia phong moi
+    private BigDecimal roomAmountAfterMove(Booking booking, Room newRoom) {
+        LocalDate from = moveFrom(booking);
+        BigDecimal remaining = pricingService.roomAmount(newRoom.getPrice(), from, booking.getCheckOutDate());
+        long nights = booking.getNights();
+        long stayed = ChronoUnit.DAYS.between(booking.getCheckInDate(), from);
+        if (stayed <= 0 || nights <= 0) {
+            return remaining;
+        }
+        BigDecimal stayedAmount = booking.getEffectiveRoomAmount().multiply(BigDecimal.valueOf(stayed))
+                .divide(BigDecimal.valueOf(nights), 0, RoundingMode.HALF_UP);
+        return stayedAmount.add(remaining);
+    }
+
+    // Phong con trong dung cac dem con lai, du cho, khong bao tri; khach dang o thi phong moi phai dang sach.
+    // Cung hang phong len dau, roi chenh lech it nhat
+    @Transactional(readOnly = true)
+    public List<RoomMoveOption> roomMoveOptions(Long bookingId) {
+        Booking booking = findById(bookingId);
+        LocalDate from = moveFrom(booking);
+        if (!canMoveRoom(booking) || !booking.getCheckOutDate().isAfter(from)) {
+            return List.of();
+        }
+        int guests = booking.getNumberOfGuests() != null ? booking.getNumberOfGuests() : 1;
+        Long typeId = booking.getRoom().getRoomType().getId();
+        return roomRepository.findAll().stream()
+                .filter(r -> !r.getId().equals(booking.getRoom().getId()))
+                .filter(r -> r.getStatus() != RoomStatus.MAINTENANCE)
+                .filter(r -> r.getRoomType().getMaxGuests() == null || r.getRoomType().getMaxGuests() >= guests)
+                .filter(r -> booking.getStatus() != BookingStatus.CHECKED_IN || r.getStatus() == RoomStatus.AVAILABLE)
+                .filter(r -> fitsMove(booking, r, from))
+                .map(r -> {
+                    BigDecimal amount = roomAmountAfterMove(booking, r);
+                    return new RoomMoveOption(r, amount, amount.subtract(booking.getEffectiveRoomAmount()));
+                })
+                .sorted(java.util.Comparator.comparing((RoomMoveOption o) -> !o.room().getRoomType().getId().equals(typeId))
+                        .thenComparing(o -> o.difference().abs())
+                        .thenComparing(o -> o.room().getRoomNumber()))
+                .toList();
+    }
+
+    private boolean fitsMove(Booking booking, Room room, LocalDate from) {
+        Availability availability = checkAvailability(room, from, booking.getCheckOutDate(), booking.getId());
+        if (!availability.conflicts().isEmpty()) {
+            return false;
+        }
+        try {
+            // Khach dang o da nhan phong roi -> chi xet gio tra phong
+            LocalTime in = booking.getStatus() == BookingStatus.CHECKED_IN ? LocalTime.MAX : booking.getCheckInTime();
+            checkTurnoverTimes(availability, from, in, booking.getCheckOutDate(), booking.getCheckOutTime());
+            return true;
+        } catch (BusinessException ex) {
+            return false;
+        }
+    }
+
+    // waiveDifference = true: loi phia resort (phong hong, trung phong) / nang hang mien phi -> giu nguyen tien phong
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public Booking moveRoom(Long bookingId, Long newRoomId, boolean waiveDifference, String note) {
+        Booking booking = findById(bookingId);
+        if (!canMoveRoom(booking)) {
+            throw new BusinessException("Chỉ đổi phòng cho đơn đang chờ, đã xác nhận hoặc khách đang ở");
+        }
+        if (newRoomId == null || newRoomId.equals(booking.getRoom().getId())) {
+            throw new BusinessException("Vui lòng chọn phòng mới khác phòng hiện tại");
+        }
+        Room newRoom = lockRoom(newRoomId).orElseThrow(() -> new BusinessException("Không tìm thấy phòng"));
+        RoomMoveOption option = roomMoveOptions(bookingId).stream()
+                .filter(o -> o.room().getId().equals(newRoomId)).findFirst()
+                .orElseThrow(() -> new BusinessException("Phòng " + newRoom.getRoomNumber()
+                        + " không còn trống / không phù hợp cho các đêm của đơn này"));
+        Room oldRoom = booking.getRoom();
+
+        if (!waiveDifference && option.difference().signum() != 0) {
+            booking.setTotalAmount(booking.getTotalAmount().add(option.difference()).max(BigDecimal.ZERO));
+            booking.setRoomAmount(option.newRoomAmount());
+        }
+        if (booking.getStatus() == BookingStatus.CHECKED_IN) {
+            // Phong cu can don, phong moi co khach
+            oldRoom.setStatus(RoomStatus.NOT_READY);
+            oldRoom.setDirtySince(LocalDateTime.now());
+            roomRepository.save(oldRoom);
+            newRoom.setStatus(RoomStatus.OCCUPIED);
+            roomRepository.save(newRoom);
+        }
+        String text = note == null ? null : note.trim();
+        booking.setRoom(newRoom);
+        booking.setMovedFromRoom(oldRoom.getRoomNumber());
+        booking.setRoomMovedAt(LocalDateTime.now());
+        booking.setRoomMoveNote(text == null || text.isEmpty() ? null : text.substring(0, Math.min(200, text.length())));
+        Booking saved = bookingRepository.save(booking);
+        emailService.sendRoomMoved(saved, oldRoom.getRoomNumber());
+        return saved;
+    }
+
     // ===== Yeu cau nhan phong som / tra phong muon =====
 
     // Nhan som chi khi chua nhan phong; tra muon ca khi dang o (truoc gio tra hien tai)
