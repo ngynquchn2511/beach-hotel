@@ -41,7 +41,10 @@
                 <div class="card-body d-flex flex-column">
                     <div class="d-flex justify-content-between align-items-start gap-2">
                         <h5 class="card-title mb-1" th:text="#{common.room(${room.roomNumber})}"></h5>
-                        <th:block th:replace="~{fragments/favorite :: heart(${room}, 'btn-sm')}"></th:block>
+                        <div class="d-flex gap-1">
+                            <th:block th:replace="~{fragments/compare :: toggle(${room})}"></th:block>
+                            <th:block th:replace="~{fragments/favorite :: heart(${room}, 'btn-sm')}"></th:block>
+                        </div>
                     </div>
                     <p class="text-muted mb-1" th:text="${room.roomType.localizedName}"></p>
                     <p class="fw-bold text-primary" th:text="#{common.pricePerNight(${#numbers.formatDecimal(room.price, 1, 'POINT', 0, 'COMMA')})}"></p>
@@ -54,6 +57,7 @@
     <div th:replace="~{fragments/pagination :: pager(${pager})}"></div>
 </main>
 
+<th:block th:replace="~{fragments/compare :: bar}"></th:block>
 <div th:replace="~{fragments/footer :: footer}"></div>
 
 </body>

@@ -1,0 +1,82 @@
+<!-- So sanh phong: nut chon phong (toi da 3) + thanh noi o cuoi trang dan toi /rooms/compare.
+     Danh sach phong dang chon luu trong trinh duyet (localStorage) de giu khi chuyen trang / phan trang. -->
+<th:block th:fragment="toggle(room)" xmlns:th="http://www.thymeleaf.org">
+    <button type="button" class="btn btn-sm btn-outline-secondary compare-toggle"
+            th:attr="data-room-id=${room.id},data-room-number=${room.roomNumber}"
+            th:title="#{compare.add}" aria-pressed="false">
+        <i class="bi bi-layout-split"></i><span class="ms-1 d-none d-sm-inline" th:text="#{compare.short}">So sánh</span>
+    </button>
+</th:block>
+
+<th:block th:fragment="bar" xmlns:th="http://www.thymeleaf.org">
+    <style>
+        .compare-bar { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 1040;
+            background: #fff; border: 1px solid #dee2e6; border-radius: 999px; box-shadow: 0 6px 24px rgba(0,0,0,.15);
+            padding: 6px 8px 6px 16px; display: none; align-items: center; gap: 10px; max-width: calc(100% - 32px); }
+        .compare-bar.show { display: flex; }
+        .compare-toggle.active { background: #3d9bd6; border-color: #3d9bd6; color: #fff; }
+    </style>
+    <div class="compare-bar" id="compareBar" role="region" th:aria-label="#{compare.short}">
+        <span class="small fw-semibold text-nowrap" id="compareCount"></span>
+        <button type="button" class="btn btn-sm btn-link text-muted" id="compareClear" th:text="#{compare.clear}">Bỏ chọn</button>
+        <a class="btn btn-sm btn-primary rounded-pill text-nowrap" id="compareGo" th:href="@{/rooms/compare}"
+           th:text="#{compare.go}">So sánh ngay</a>
+    </div>
+    <script th:inline="javascript">
+        (function () {
+            const KEY = 'compareRooms';
+            const MAX = 3;
+            const T = {
+                count: /*[[#{compare.count}]]*/ '',
+                full: /*[[#{compare.full}]]*/ '',
+                add: /*[[#{compare.add}]]*/ '',
+                remove: /*[[#{compare.remove}]]*/ ''
+            };
+            // localStorage co the bi chan (che do an danh...) -> van chay, chi khong nho qua cac trang
+            let memory = [];
+            function load() {
+                try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return memory; }
+            }
+            function save(list) {
+                memory = list;
+                try { localStorage.setItem(KEY, JSON.stringify(list)); } catch (e) { /* bo qua */ }
+            }
+            const bar = document.getElementById('compareBar');
+            const go = document.getElementById('compareGo');
+            const baseUrl = go.getAttribute('href');
+
+            function render() {
+                const list = load();
+                document.querySelectorAll('.compare-toggle').forEach(btn => {
+                    const on = list.some(r => String(r.id) === btn.dataset.roomId);
+                    btn.classList.toggle('active', on);
+                    btn.setAttribute('aria-pressed', on);
+                    btn.title = on ? T.remove : T.add;
+                });
+                document.getElementById('compareCount').textContent =
+                    T.count.replace('{0}', list.length).replace('{1}', MAX) + ': ' + list.map(r => r.n).join(', ');
+                go.href = baseUrl + '?ids=' + list.map(r => r.id).join(',');
+                go.classList.toggle('disabled', list.length < 2);
+                bar.classList.toggle('show', list.length > 0);
+            }
+
+            document.querySelectorAll('.compare-toggle').forEach(btn => btn.addEventListener('click', event => {
+                event.stopPropagation();
+                let list = load();
+                const id = btn.dataset.roomId;
+                if (list.some(r => String(r.id) === id)) {
+                    list = list.filter(r => String(r.id) !== id);
+                } else if (list.length >= MAX) {
+                    alert(T.full.replace('{0}', MAX));
+                    return;
+                } else {
+                    list.push({ id: Number(id), n: btn.dataset.roomNumber });
+                }
+                save(list);
+                render();
+            }));
+            document.getElementById('compareClear').addEventListener('click', () => { save([]); render(); });
+            render();
+        })();
+    </script>
+</th:block>

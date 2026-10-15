@@ -121,6 +121,7 @@
                         <a th:href="@{/customer/rooms/{id}(id=${room.id}, checkIn=${checkIn}, checkOut=${checkOut}, guests=${guests})}"
                            class="btn btn-primary btn-sm" th:text="#{common.viewDetails}">Xem chi tiết</a>
                         <th:block th:replace="~{fragments/favorite :: heart(${room}, 'btn-sm ms-1')}"></th:block>
+                        <th:block th:replace="~{fragments/compare :: toggle(${room})}"></th:block>
                     </div>
                 </div>
             </div>
@@ -160,6 +161,7 @@
 </script>
 
 <div th:replace="~{fragments/chatbot-widget :: widget}"></div>
+<th:block th:replace="~{fragments/compare :: bar}"></th:block>
 <div th:replace="~{fragments/footer :: footer}"></div>
 
 </body>

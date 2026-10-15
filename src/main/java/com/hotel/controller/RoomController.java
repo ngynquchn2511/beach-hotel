@@ -10,7 +10,13 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Controller
 public class RoomController {
@@ -44,5 +50,39 @@ public class RoomController {
         model.addAttribute("roomTypes", roomTypeRepository.findAll());
         model.addAttribute("roomTypeId", roomTypeId);
         return "rooms";
+    }
+
+    // So sanh toi da 3 phong canh nhau: ?ids=12,15,40 (bo id trung / khong ton tai)
+    static final int MAX_COMPARE = 3;
+
+    @GetMapping("/rooms/compare")
+    public String compare(@RequestParam(required = false) String ids, Model model) {
+        List<Long> wanted = new ArrayList<>();
+        if (ids != null) {
+            for (String part : ids.split(",")) {
+                try {
+                    Long id = Long.valueOf(part.trim());
+                    // Gioi han so id doc tu URL; loc phong co that roi moi lay 3 phong dau
+                    if (!wanted.contains(id) && wanted.size() < 10) {
+                        wanted.add(id);
+                    }
+                } catch (NumberFormatException ignored) {
+                    // bo qua gia tri la
+                }
+            }
+        }
+        // Giu dung thu tu khach da chon
+        Map<Long, Room> found = roomRepository.findAllById(wanted).stream()
+                .collect(Collectors.toMap(Room::getId, Function.identity()));
+        List<Room> rooms = wanted.stream().map(found::get).filter(Objects::nonNull).limit(MAX_COMPARE).toList();
+
+        model.addAttribute("rooms", rooms);
+        // To xanh o tot nhat: gia thap nhat, dien tich / so khach lon nhat
+        model.addAttribute("minPrice", rooms.stream().map(Room::getPrice).min(Comparator.naturalOrder()).orElse(null));
+        model.addAttribute("maxArea", rooms.stream().map(r -> r.getRoomType().getArea()).filter(Objects::nonNull)
+                .max(Comparator.naturalOrder()).orElse(null));
+        model.addAttribute("maxGuests", rooms.stream().map(r -> r.getRoomType().getMaxGuests()).filter(Objects::nonNull)
+                .max(Comparator.naturalOrder()).orElse(null));
+        return "compare";
     }
 }
