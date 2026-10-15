@@ -22,6 +22,7 @@ import com.hotel.util.PaginationUtil;
 import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.util.UriComponentsBuilder;
+import com.hotel.service.GuestRegistrationService;
 import com.hotel.service.LoyaltyService;
 import com.hotel.service.UserMessages;
 import com.hotel.service.VnPayService;
@@ -62,6 +63,7 @@ public class CustomerBookingController {
     private final DivingTourService divingTourService;
     private final TransferRateService transferRateService;
     private final VnPayService vnPayService;
+    private final GuestRegistrationService guestRegistrationService;
 
     public CustomerBookingController(BookingService bookingService, RoomService roomService,
                                       ComboService comboService, DiscountCodeService discountCodeService,
@@ -69,7 +71,9 @@ public class CustomerBookingController {
                                       PaymentService paymentService, ReviewService reviewService,
                                       PricingService pricingService, UserMessages userMessages,
                                       ServiceOrderService serviceOrderService, DivingTourService divingTourService,
-                                      TransferRateService transferRateService, VnPayService vnPayService) {
+                                      TransferRateService transferRateService, VnPayService vnPayService,
+                                      GuestRegistrationService guestRegistrationService) {
+        this.guestRegistrationService = guestRegistrationService;
         this.userMessages = userMessages;
         this.vnPayService = vnPayService;
         this.serviceOrderService = serviceOrderService;
@@ -253,6 +257,12 @@ public class CustomerBookingController {
         }
         model.addAttribute("timeOptions", generateTimeOptions());
         model.addAttribute("combos", comboService.findActive());
+        // Khai bao luu tru online truoc khi den (le tan doi chieu giay to khi nhan phong)
+        model.addAttribute("declaredGuests", guestRegistrationService.findByBooking(id));
+        model.addAttribute("canDeclareOnline", guestRegistrationService.canDeclareOnline(booking));
+        model.addAttribute("guestLimit", GuestRegistrationService.onlineLimit(booking));
+        model.addAttribute("genders", com.hotel.entity.Gender.values());
+        model.addAttribute("idTypes", com.hotel.entity.IdDocumentType.values());
         // Dich vu them: tour lan + xe dua don san bay (form dat giu lai ?token= cho khach vang lai)
         model.addAttribute("accessToken", token);
         model.addAttribute("tourOrders", serviceOrderService.toursOf(id));
@@ -283,6 +293,43 @@ public class CustomerBookingController {
         }
         model.addAttribute("backUrl", "/customer/bookings/" + id);
         return "admin/bookings/invoice";
+    }
+
+    // Khach tu khai bao luu tru truoc khi den: chu don (dang nhap) hoac khach vang lai co ?token=
+    @PostMapping("/{id}/guests")
+    public String declareGuest(@PathVariable Long id, @RequestParam(required = false) String token,
+                               @RequestParam(required = false) String fullName,
+                               @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(
+                                       iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate dateOfBirth,
+                               @RequestParam(required = false) com.hotel.entity.Gender gender,
+                               @RequestParam(required = false) com.hotel.entity.IdDocumentType idType,
+                               @RequestParam(required = false) String idNumber,
+                               @RequestParam(required = false) String nationality,
+                               @RequestParam(required = false) String address,
+                               @AuthenticationPrincipal CustomUserDetails userDetails,
+                               RedirectAttributes redirectAttributes) {
+        Booking booking = bookingService.findForViewing(id, token, userDetails != null ? userDetails.getUser().getId() : null);
+        try {
+            guestRegistrationService.addGuestOnline(booking, fullName, dateOfBirth, gender, idType, idNumber, nationality, address);
+            redirectAttributes.addFlashAttribute("guestSuccess", userMessages.get("precheck.saved"));
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("guestError", userMessages.of(ex));
+        }
+        return backTo(id, token, "#khai-bao");
+    }
+
+    @PostMapping("/{id}/guests/{guestId}/delete")
+    public String removeDeclaredGuest(@PathVariable Long id, @PathVariable Long guestId,
+                                      @RequestParam(required = false) String token,
+                                      @AuthenticationPrincipal CustomUserDetails userDetails,
+                                      RedirectAttributes redirectAttributes) {
+        Booking booking = bookingService.findForViewing(id, token, userDetails != null ? userDetails.getUser().getId() : null);
+        try {
+            guestRegistrationService.removeGuestOnline(booking, guestId);
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("guestError", userMessages.of(ex));
+        }
+        return backTo(id, token, "#khai-bao");
     }
 
     // Khach tai hoa don PDF cua chinh minh (dang nhap, dung chu don)

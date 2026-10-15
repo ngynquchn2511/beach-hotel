@@ -52,6 +52,23 @@ public class BookingGuest {
     @Column(length = 255)
     private String address;
 
+    // Khach tu khai online truoc khi den (trang don / link email) - le tan doi chieu giay to that khi nhan phong.
+    // null / false = le tan nhap tai quay
+    @Column(name = "declared_online")
+    private Boolean declaredOnline;
+
+    public boolean isSelfDeclared() {
+        return Boolean.TRUE.equals(declaredOnline);
+    }
+
+    // So giay to che bot cho trang cua khach (link co the bi chuyen tiep): chi hien 3 ky tu cuoi
+    public String getMaskedIdNumber() {
+        if (idNumber == null || idNumber.length() <= 3) {
+            return idNumber;
+        }
+        return "•".repeat(Math.min(8, idNumber.length() - 3)) + idNumber.substring(idNumber.length() - 3);
+    }
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

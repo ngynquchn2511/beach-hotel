@@ -50,6 +50,50 @@ public class GuestRegistrationService {
         if (!canEdit(booking)) {
             throw new BusinessException("Chỉ khai báo khách lưu trú cho đơn đã xác nhận hoặc đang ở");
         }
+        return save(booking, fullName, dateOfBirth, gender, idType, idNumber, nationality, address, false);
+    }
+
+    // ===== Khach tu khai bao truoc khi den (check-in online) =====
+
+    // Don da xac nhan va chua toi / chua qua ngay nhan phong (da nhan phong thi le tan lo)
+    public boolean canDeclareOnline(Booking booking) {
+        return booking.getStatus() == BookingStatus.CONFIRMED && !booking.getCheckInDate().isBefore(LocalDate.now());
+    }
+
+    // Toi da bang so khach cua hang phong
+    public static int onlineLimit(Booking booking) {
+        Integer max = booking.getRoom().getRoomType().getMaxGuests();
+        return max != null && max > 0 ? max : 1;
+    }
+
+    @Transactional
+    public BookingGuest addGuestOnline(Booking booking, String fullName, LocalDate dateOfBirth, Gender gender,
+                                       IdDocumentType idType, String idNumber, String nationality, String address) {
+        if (!canDeclareOnline(booking)) {
+            throw new BusinessException("Đơn chưa được xác nhận hoặc đã qua ngày nhận phòng - vui lòng khai báo tại quầy lễ tân");
+        }
+        if (findByBooking(booking.getId()).size() >= onlineLimit(booking)) {
+            throw new BusinessException("Phòng này tối đa " + onlineLimit(booking) + " khách - đã khai báo đủ");
+        }
+        return save(booking, fullName, dateOfBirth, gender, idType, idNumber, nationality, address, true);
+    }
+
+    // Khach chi xoa duoc nguoi do chinh minh khai online (khong xoa duoc khach le tan da nhap)
+    @Transactional
+    public void removeGuestOnline(Booking booking, Long guestId) {
+        BookingGuest guest = guestRepository.findById(guestId)
+                .filter(g -> g.getBooking().getId().equals(booking.getId()) && g.isSelfDeclared())
+                .orElseThrow(() -> new BusinessException("Không tìm thấy khách lưu trú"));
+        if (!canDeclareOnline(booking)) {
+            throw new BusinessException("Không thể sửa danh sách khách sau khi đã nhận phòng");
+        }
+        guestRepository.delete(guest);
+    }
+
+    private BookingGuest save(Booking booking, String fullName, LocalDate dateOfBirth, Gender gender,
+                              IdDocumentType idType, String idNumber, String nationality, String address,
+                              boolean online) {
+        Long bookingId = booking.getId();
 
         String name = trim(fullName);
         if (name == null || name.length() > 100) {
@@ -90,6 +134,7 @@ public class GuestRegistrationService {
                 .idNumber(number)
                 .nationality(country)
                 .address(addr)
+                .declaredOnline(online ? Boolean.TRUE : null)
                 .build());
     }
 

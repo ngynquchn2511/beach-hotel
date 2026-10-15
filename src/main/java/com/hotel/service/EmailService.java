@@ -160,7 +160,12 @@ public class EmailService {
                 .append(booking.getDepositPaidAmount().signum() > 0 ? " (đã trừ tiền cọc)" : "")
                 .append(", chưa gồm phụ phí phát sinh\n\n");
         sb.append("CHUẨN BỊ KHI ĐẾN\n");
-        sb.append("- Mang CCCD/hộ chiếu của tất cả khách lưu trú để làm thủ tục khai báo lưu trú.\n");
+        String declareLink = bookingLink(booking, "#khai-bao");
+        if (declareLink != null) {
+            sb.append("- Khai báo lưu trú online trước (đến nơi chỉ cần đối chiếu giấy tờ, nhận phòng nhanh hơn): ")
+                    .append(declareLink).append("\n");
+        }
+        sb.append("- Mang CCCD/hộ chiếu của tất cả khách lưu trú để lễ tân đối chiếu.\n");
         sb.append("- Chỉ đường tới resort (Bãi Cháy, Hạ Long): ").append(DIRECTIONS_URL).append("\n");
         if (zaloPhone != null && !zaloPhone.isBlank()) {
             sb.append("- Cần đổi giờ hoặc hỗ trợ gấp, nhắn Zalo: ").append(zaloPhone).append("\n");

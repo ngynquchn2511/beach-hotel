@@ -166,6 +166,8 @@ public class SecurityConfig {
                         // Dat coc qua VNPay: nut tren trang don (kiem tra chu don / ma truy cap nhu tren);
                         // trang tra ve + IPN do VNPay goi, an toan nho kiem tra chu ky HMAC
                         .requestMatchers(HttpMethod.POST, "/customer/bookings/*/vnpay").permitAll()
+                        // Khach tu khai bao luu tru truoc khi den (check-in online) - kiem tra chu don / ma truy cap nhu tren
+                        .requestMatchers(HttpMethod.POST, "/customer/bookings/*/guests", "/customer/bookings/*/guests/*/delete").permitAll()
                         // "Bao toi khi phong trong lai" o trang chi tiet phong - khach chua dang nhap cung dung duoc
                         .requestMatchers(HttpMethod.POST, "/customer/rooms/*/alerts").permitAll()
                         // Lich .ics cho Google Calendar / Booking.com - kiem tra ma bi mat ?key= trong IcalController

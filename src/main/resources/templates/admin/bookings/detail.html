@@ -298,7 +298,9 @@
                         <thead><tr><th>Họ tên</th><th>Ngày sinh</th><th>Giới tính</th><th>Giấy tờ</th><th>Quốc tịch</th><th>Thường trú</th><th></th></tr></thead>
                         <tbody>
                         <tr th:each="g : ${guests}">
-                            <td class="fw-semibold" th:text="${g.fullName}"></td>
+                            <td class="fw-semibold"><span th:text="${g.fullName}"></span>
+                                <span th:if="${g.selfDeclared}" class="badge bg-info-subtle text-info-emphasis fw-normal"
+                                      title="Khách tự khai online - đối chiếu giấy tờ thật khi nhận phòng">Khách tự khai</span></td>
                             <td th:text="${#temporals.format(g.dateOfBirth, 'dd/MM/yyyy')}"></td>
                             <td th:text="${g.gender.vietnameseLabel}"></td>
                             <td><span class="small text-muted" th:text="${g.idType.vietnameseLabel}"></span><br><span th:text="${g.idNumber}"></span></td>
