@@ -85,6 +85,19 @@
             </div>
 
             <!-- Gia ngay le -->
+            <div class="bg-white p-4 rounded shadow-sm mb-4" id="ty-gia">
+                <h5 class="fw-bold mb-1">Tỷ giá USD</h5>
+                <p class="text-muted small mb-3">Dùng để hiện giá tham khảo "≈ US$" cho khách xem trang tiếng Anh. Khách vẫn thanh toán bằng VND.</p>
+                <form th:action="@{/admin/pricing/usd-rate}" method="post" class="d-flex gap-2 align-items-end flex-wrap">
+                    <div>
+                        <label class="form-label small">VND / 1 USD</label>
+                        <input type="number" name="usdRate" class="form-control" min="10000" max="100000" step="10" required
+                               th:value="${settings.effectiveUsdRate}">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Lưu tỷ giá</button>
+                </form>
+            </div>
+
             <div class="bg-white p-4 rounded shadow-sm mb-4" id="khuyen-mai">
                 <h5 class="fw-bold mb-1">Khuyến mãi tự động</h5>
                 <p class="text-muted small mb-3">Khách đặt online thỏa điều kiện thì tự giảm % tiền phòng, không cần mã.

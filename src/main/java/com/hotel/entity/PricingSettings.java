@@ -58,6 +58,16 @@ public class PricingSettings {
     @Column(name = "ical_token", length = 40)
     private String icalToken;
 
+    // Ty gia hien gia quy doi USD cho khach xem trang tieng Anh (VND / 1 USD). null = mac dinh
+    public static final int DEFAULT_USD_RATE = 25_400;
+
+    @Column(name = "usd_rate")
+    private Integer usdRate;
+
+    public int getEffectiveUsdRate() {
+        return usdRate != null && usdRate > 0 ? usdRate : DEFAULT_USD_RATE;
+    }
+
     public Integer getRefundFullHours() {
         return refundFullHours != null ? refundFullHours : DEFAULT_REFUND_FULL_HOURS;
     }

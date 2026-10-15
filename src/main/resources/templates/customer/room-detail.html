@@ -187,6 +187,8 @@
                 </a>
                 <div th:unless="${ratingStats.count > 0}" class="mb-3"></div>
                 <h4 class="fw-bold text-primary" th:text="#{common.pricePerNight(${#numbers.formatDecimal(room.price, 1, 'POINT', 0, 'COMMA')})}"></h4>
+                <div class="mb-2" th:if="${#locale.language == 'en'}"><th:block th:replace="~{fragments/usd :: approx(${room.price})}"></th:block>
+                    <small class="text-muted" th:text="#{usd.note}"></small></div>
 
                 <hr>
 
@@ -253,7 +255,7 @@
                     <p class="mb-1 text-success" th:if="${promotion != null}"
                        th:text="#{promo.line(${promotion.nameEn != null and #locale.language == 'en' ? promotion.nameEn : promotion.name}, ${promotion.percent}, ${#numbers.formatDecimal(promotion.amount, 1, 'POINT', 0, 'COMMA')})}"></p>
                     <p class="mb-1" th:if="${selectedCombo != null}"><span th:text="#{detail.comboLine(${selectedCombo.localizedName})}">Combo:</span> <span th:text="${#numbers.formatDecimal(comboAmount, 1, 'POINT', 0, 'COMMA')} + 'VND'"></span></p>
-                    <p class="fw-bold mb-3"><span th:text="#{detail.total}">Tổng tiền:</span> <span th:text="${#numbers.formatDecimal(totalAmount, 1, 'POINT', 0, 'COMMA')} + 'VND'"></span></p>
+                    <p class="fw-bold mb-3"><span th:text="#{detail.total}">Tổng tiền:</span> <span th:text="${#numbers.formatDecimal(totalAmount, 1, 'POINT', 0, 'COMMA')} + 'VND'"></span> <th:block th:replace="~{fragments/usd :: approx(${totalAmount})}"></th:block></p>
 
                     <div th:if="${available}" class="alert alert-success mb-2" th:text="#{detail.available}">Phòng còn trống trong khoảng ngày này</div>
                     <!-- Ngay doi khach: bao gio nhan / tra som nhat co the -->

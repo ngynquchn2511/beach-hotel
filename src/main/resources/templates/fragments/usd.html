@@ -1,0 +1,5 @@
+<!-- Gia quy doi USD canh gia VND (chi hien khi khach xem tieng Anh) -->
+<th:block th:fragment="approx(amount)" xmlns:th="http://www.thymeleaf.org">
+    <small class="text-muted fw-normal usd-approx" th:if="${#locale.language == 'en' and amount != null}"
+           th:text="${@currency.approxUsd(amount)}"></small>
+</th:block>

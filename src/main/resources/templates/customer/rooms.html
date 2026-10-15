@@ -118,6 +118,7 @@
                         <p class="text-muted mb-1" th:text="#{search.typeMax(${room.roomType.localizedName}, ${room.roomType.maxGuests})}"></p>
                         <p class="text-muted mb-2" th:if="${room.roomType.localizedAmenities}" th:text="#{search.amenities(${room.roomType.localizedAmenities})}"></p>
                         <p class="fw-bold text-primary mb-2" th:text="#{common.pricePerNight(${#numbers.formatDecimal(room.price, 1, 'POINT', 0, 'COMMA')})}"></p>
+                        <th:block th:replace="~{fragments/usd :: approx(${room.price})}"></th:block>
                         <a th:href="@{/customer/rooms/{id}(id=${room.id}, checkIn=${checkIn}, checkOut=${checkOut}, guests=${guests})}"
                            class="btn btn-primary btn-sm" th:text="#{common.viewDetails}">Xem chi tiết</a>
                         <th:block th:replace="~{fragments/favorite :: heart(${room}, 'btn-sm ms-1')}"></th:block>

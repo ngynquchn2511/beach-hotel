@@ -203,6 +203,17 @@ public class PricingService {
         return settingsRepository.save(settings);
     }
 
+    // Ty gia USD (chi de hien gia tham khao cho khach nuoc ngoai, khach van tra bang VND)
+    @Transactional
+    public PricingSettings updateUsdRate(Integer usdRate) {
+        if (usdRate == null || usdRate < 10_000 || usdRate > 100_000) {
+            throw new BusinessException("Tỷ giá USD phải từ 10.000 đến 100.000 VND");
+        }
+        PricingSettings settings = getSettings();
+        settings.setUsdRate(usdRate);
+        return settingsRepository.save(settings);
+    }
+
     public List<SpecialRate> findAllSpecialRates() {
         return specialRateRepository.findAllByOrderByStartDateDesc();
     }

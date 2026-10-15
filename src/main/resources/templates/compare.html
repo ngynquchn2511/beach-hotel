@@ -53,8 +53,9 @@
             </tr>
             <tr>
                 <th scope="row" th:text="#{compare.price}">Giá / đêm</th>
-                <td th:each="r : ${rooms}" class="fw-bold text-primary" th:classappend="${r.price == minPrice} ? 'best'"
-                    th:text="${#numbers.formatDecimal(r.price, 1, 'POINT', 0, 'COMMA')} + ' VND'"></td>
+                <td th:each="r : ${rooms}" class="fw-bold text-primary" th:classappend="${r.price == minPrice} ? 'best'">
+                    <span th:text="${#numbers.formatDecimal(r.price, 1, 'POINT', 0, 'COMMA')} + ' VND'"></span>
+                    <th:block th:replace="~{fragments/usd :: approx(${r.price})}"></th:block></td>
             </tr>
             <tr>
                 <th scope="row" th:text="#{compare.area}">Diện tích</th>

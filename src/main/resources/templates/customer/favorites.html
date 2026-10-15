@@ -48,6 +48,7 @@
                     </div>
                     <p class="text-muted mb-1" th:text="${room.roomType.localizedName}"></p>
                     <p class="fw-bold text-primary" th:text="#{common.pricePerNight(${#numbers.formatDecimal(room.price, 1, 'POINT', 0, 'COMMA')})}"></p>
+                    <th:block th:replace="~{fragments/usd :: approx(${room.price})}"></th:block>
                     <a th:href="@{/customer/rooms/{id}(id=${room.id})}" class="btn btn-primary btn-sm mt-auto" th:text="#{rooms.detailAndBook}">Xem chi tiết &amp; đặt phòng</a>
                 </div>
             </div>

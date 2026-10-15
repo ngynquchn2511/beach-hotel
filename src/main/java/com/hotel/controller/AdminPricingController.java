@@ -22,10 +22,13 @@ public class AdminPricingController {
 
     private final PricingService pricingService;
     private final PromotionService promotionService;
+    private final com.hotel.util.CurrencyDisplay currencyDisplay;
 
-    public AdminPricingController(PricingService pricingService, PromotionService promotionService) {
+    public AdminPricingController(PricingService pricingService, PromotionService promotionService,
+                                  com.hotel.util.CurrencyDisplay currencyDisplay) {
         this.pricingService = pricingService;
         this.promotionService = promotionService;
+        this.currencyDisplay = currencyDisplay;
     }
 
     @GetMapping
@@ -123,5 +126,17 @@ public class AdminPricingController {
         promotionService.delete(id);
         redirectAttributes.addFlashAttribute("successMessage", "Đã xóa khuyến mãi. Đơn đã đặt giữ nguyên mức giảm");
         return "redirect:/admin/pricing#khuyen-mai";
+    }
+
+    @PostMapping("/usd-rate")
+    public String updateUsdRate(@RequestParam(required = false) Integer usdRate, RedirectAttributes redirectAttributes) {
+        try {
+            pricingService.updateUsdRate(usdRate);
+            currencyDisplay.evict();
+            redirectAttributes.addFlashAttribute("successMessage", "Đã lưu tỷ giá USD");
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "redirect:/admin/pricing#ty-gia";
     }
 }
