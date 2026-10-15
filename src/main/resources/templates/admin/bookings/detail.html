@@ -147,6 +147,8 @@
 
                 <a th:if="${payment != null and payment.status.name() == 'PAID'}" th:href="@{/admin/bookings/{id}/invoice(id=${booking.id})}"
                    target="_blank" class="btn btn-outline-primary">Xuất hóa đơn</a>
+                <a th:if="${payment != null and payment.status.name() == 'PAID'}" th:href="@{/admin/bookings/{id}/invoice.pdf(id=${booking.id})}"
+                   target="_blank" class="btn btn-outline-primary"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</a>
 
                 <form th:if="${payment != null and payment.status.name() == 'PAID'}" class="d-inline"
                       th:action="@{/admin/bookings/{id}/invoice/email(id=${booking.id})}" method="post">

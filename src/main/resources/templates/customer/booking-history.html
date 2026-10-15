@@ -60,6 +60,9 @@
                     <a th:href="@{/customer/bookings/{id}(id=${b.id})}" class="btn btn-sm btn-outline-primary" th:text="#{common.viewDetails}">Xem chi tiết</a>
                     <a th:if="${payments[b.id] != null and payments[b.id].status.name() == 'PAID'}" target="_blank"
                        th:href="@{/customer/bookings/{id}/invoice(id=${b.id})}" class="btn btn-sm btn-outline-success" th:text="#{history.invoice}">Hóa đơn</a>
+                    <a th:if="${payments[b.id] != null and payments[b.id].status.name() == 'PAID'}" target="_blank"
+                       th:href="@{/customer/bookings/{id}/invoice.pdf(id=${b.id})}" class="btn btn-sm btn-outline-success"
+                       th:title="#{invoice.pdf}"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
                     <a th:if="${b.status.name() == 'CHECKED_OUT' and reviews[b.id] == null}"
                        th:href="@{/customer/bookings/{id}(id=${b.id})} + '#danh-gia'" class="btn btn-sm btn-primary"><i class="bi bi-star me-1"></i><span th:text="#{history.review}">Đánh giá</span></a>
                     <span th:if="${reviews[b.id] != null}" class="badge bg-warning" th:text="${reviews[b.id].rating} + ' ★'"></span>

@@ -285,6 +285,20 @@ public class CustomerBookingController {
         return "admin/bookings/invoice";
     }
 
+    // Khach tai hoa don PDF cua chinh minh (dang nhap, dung chu don)
+    @GetMapping("/{id}/invoice.pdf")
+    public Object invoicePdf(@PathVariable Long id, @AuthenticationPrincipal CustomUserDetails userDetails,
+                             RedirectAttributes redirectAttributes) {
+        try {
+            Booking booking = bookingService.findByIdForCustomer(id, userDetails.getUser().getId());
+            return AdminBookingController.pdfResponse(paymentService.invoicePdf(booking),
+                    paymentService.findByBookingId(id).orElseThrow().getInvoiceNo());
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", userMessages.of(ex));
+            return "redirect:/customer/bookings";
+        }
+    }
+
     // Khach danh gia don da tra phong (1 lan / don)
     @PostMapping("/{id}/review")
     public String review(@PathVariable Long id,

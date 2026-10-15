@@ -257,6 +257,27 @@ public class AdminBookingController {
         return "admin/bookings/invoice";
     }
 
+    // Tai hoa don PDF (in / gui khach qua Zalo...)
+    @GetMapping("/{id}/invoice.pdf")
+    public Object invoicePdf(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            Booking booking = bookingService.findById(id);
+            return pdfResponse(paymentService.invoicePdf(booking), paymentService.findByBookingId(id).orElseThrow().getInvoiceNo());
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+            return "redirect:/admin/bookings/" + id;
+        }
+    }
+
+    static org.springframework.http.ResponseEntity<byte[]> pdfResponse(byte[] pdf, String invoiceNo) {
+        return org.springframework.http.ResponseEntity.ok()
+                .contentType(org.springframework.http.MediaType.APPLICATION_PDF)
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
+                        org.springframework.http.ContentDisposition.inline()
+                                .filename(com.hotel.service.InvoicePdfService.fileName(invoiceNo)).build().toString())
+                .body(pdf);
+    }
+
     // Gui lai hoa don qua email cho khach (VD khach bao chua nhan duoc)
     @PostMapping("/{id}/invoice/email")
     public String emailInvoice(@PathVariable Long id, RedirectAttributes redirectAttributes) {

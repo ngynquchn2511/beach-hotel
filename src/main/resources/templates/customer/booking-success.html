@@ -121,6 +121,9 @@
         <div sec:authorize="isAuthenticated()">
             <a th:if="${payment != null and payment.status.name() == 'PAID'}" target="_blank"
                th:href="@{/customer/bookings/{id}/invoice(id=${booking.id})}" class="btn btn-outline-primary w-100 mt-2" th:text="#{success.invoice}">Xem / in hóa đơn</a>
+            <a th:if="${payment != null and payment.status.name() == 'PAID'}" target="_blank"
+               th:href="@{/customer/bookings/{id}/invoice.pdf(id=${booking.id})}" class="btn btn-outline-primary w-100 mt-2">
+                <i class="bi bi-file-earmark-pdf me-1"></i><span th:text="#{invoice.pdf}">Tải hóa đơn PDF</span></a>
             <a th:href="@{/customer/bookings}" class="btn btn-outline-secondary w-100 mt-2" th:text="#{success.history}">Xem lịch sử đặt phòng</a>
         </div>
 

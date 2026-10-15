@@ -33,6 +33,7 @@ public class PaymentService {
     private final EmailService emailService;
     private final BookingChargeRepository chargeRepository;
     private final BookingRepository bookingRepository;
+    private final InvoicePdfService invoicePdfService;
 
     @Value("${app.payment.bank-id:MB}")
     private String bankId;
@@ -44,7 +45,9 @@ public class PaymentService {
     private String accountName;
 
     public PaymentService(PaymentRepository paymentRepository, BookingService bookingService, EmailService emailService,
-                          BookingChargeRepository chargeRepository, BookingRepository bookingRepository) {
+                          BookingChargeRepository chargeRepository, BookingRepository bookingRepository,
+                          InvoicePdfService invoicePdfService) {
+        this.invoicePdfService = invoicePdfService;
         this.paymentRepository = paymentRepository;
         this.bookingService = bookingService;
         this.emailService = emailService;
@@ -213,7 +216,8 @@ public class PaymentService {
         }
         Booking checkedOut = bookingService.checkOut(bookingId);
         // Gui hoa don cho khach qua email (thay cho email bao "da check-out" dang chu thuong)
-        findByBookingId(bookingId).ifPresent(payment -> emailService.sendInvoice(checkedOut, payment, findCharges(bookingId)));
+        findByBookingId(bookingId).ifPresent(payment ->
+                emailService.sendInvoice(checkedOut, payment, findCharges(bookingId), invoicePdfOrNull(checkedOut)));
         return checkedOut;
     }
 
@@ -227,10 +231,27 @@ public class PaymentService {
         if (booking.getGuestEmail() == null || booking.getGuestEmail().isBlank()) {
             throw new BusinessException("Đơn này không có email người nhận phòng");
         }
-        if (!emailService.sendInvoice(booking, payment, findCharges(bookingId))) {
+        if (!emailService.sendInvoice(booking, payment, findCharges(bookingId), invoicePdfOrNull(booking))) {
             throw new BusinessException("Gửi email thất bại. Kiểm tra cấu hình MAIL_USERNAME / MAIL_PASSWORD");
         }
         return booking.getGuestEmail();
+    }
+
+    // Hoa don PDF (tai ve / dinh kem email) - chi khi don da thanh toan
+    @Transactional(readOnly = true)
+    public byte[] invoicePdf(Booking booking) {
+        return invoicePdfService.render(buildInvoiceData(booking));
+    }
+
+    // Tao PDF loi (VD thieu font) khong duoc lam hong check-out: van gui email hoa don, chi khong kem file
+    private byte[] invoicePdfOrNull(Booking booking) {
+        try {
+            return invoicePdf(booking);
+        } catch (RuntimeException ex) {
+            org.slf4j.LoggerFactory.getLogger(PaymentService.class)
+                    .error("Khong tao duoc hoa don PDF cho booking #{}", booking.getId(), ex);
+            return null;
+        }
     }
 
     // Du lieu hien thi hoa don - chi xuat duoc khi don da thanh toan

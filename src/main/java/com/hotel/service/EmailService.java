@@ -434,6 +434,11 @@ public class EmailService {
     // Gui hoa don thanh toan (HTML) sau khi check-out. Tra ve true neu gui thanh cong.
     // Gui that bai chi ghi log, khong lam hong luong check-out.
     public boolean sendInvoice(Booking booking, Payment payment, List<BookingCharge> charges) {
+        return sendInvoice(booking, payment, charges, null);
+    }
+
+    // pdf != null: dinh kem hoa don PDF (HoaDon-<so hoa don>.pdf) de khach luu / in
+    public boolean sendInvoice(Booking booking, Payment payment, List<BookingCharge> charges, byte[] pdf) {
         if (booking.getGuestEmail() == null || booking.getGuestEmail().isBlank()) {
             log.warn("Khong gui hoa don cho booking #{} vi email nguoi nhan trong", booking.getId());
             return false;
@@ -445,11 +450,15 @@ public class EmailService {
         }
         try {
             MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, false, "UTF-8");
+            MimeMessageHelper helper = new MimeMessageHelper(message, pdf != null, "UTF-8");
             helper.setFrom(senderEmail, "Sóng Xanh Resort");
             helper.setTo(booking.getGuestEmail());
             helper.setSubject("Sóng Xanh Resort - Hóa đơn " + payment.getInvoiceNo() + " (đơn #" + booking.getId() + ")");
             helper.setText(buildInvoiceHtml(booking, payment, charges), true);
+            if (pdf != null) {
+                helper.addAttachment(InvoicePdfService.fileName(payment.getInvoiceNo()),
+                        new org.springframework.core.io.ByteArrayResource(pdf), "application/pdf");
+            }
             mailSender.send(message);
             log.info("Da gui hoa don {} toi {}", payment.getInvoiceNo(), booking.getGuestEmail());
             return true;
@@ -477,6 +486,10 @@ public class EmailService {
                 && booking.getDiscountAmount().signum() > 0) {
             rows.append(invoiceRow("Giảm giá (mã " + booking.getDiscountCode().getCode() + ")", "",
                     "-" + money(booking.getDiscountAmount())));
+        }
+        if (booking.getPointsUsed() != null && booking.getPointsUsed() > 0) {
+            rows.append(invoiceRow("Trừ điểm thưởng (" + booking.getPointsUsed() + " điểm)", "",
+                    "-" + money(booking.getPointsDiscountAmount())));
         }
         for (BookingCharge charge : charges) {
             rows.append(invoiceRow("Phụ phí: " + charge.getLabel(), "1", money(charge.getAmount())));

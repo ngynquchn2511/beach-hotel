@@ -19,7 +19,10 @@
 <div class="container py-4 no-print" style="max-width: 800px;">
     <div class="d-flex justify-content-between">
         <a th:href="@{${backUrl}}" class="btn btn-outline-secondary btn-sm">&laquo; Quay lại</a>
-        <button type="button" class="btn btn-primary btn-sm" onclick="window.print()">In / Lưu PDF</button>
+        <div class="d-flex gap-2">
+            <a th:href="@{${backUrl} + '/invoice.pdf'}" class="btn btn-outline-primary btn-sm" target="_blank">Tải PDF</a>
+            <button type="button" class="btn btn-primary btn-sm" onclick="window.print()">In</button>
+        </div>
     </div>
 </div>
 

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<!-- Hoa don PDF (openhtmltopdf): phai la XHTML hop le (the dong day du), CSS 2.1, khong dung flex / @{...} -->
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8"/>
+    <title th:text="'Hóa đơn ' + ${invoiceNo}">Hóa đơn</title>
+    <style>
+        @page { size: A4; margin: 18mm 16mm; }
+        body { font-family: 'Be Vietnam Pro'; font-size: 10.5pt; color: #1f2933; }
+        h1 { font-size: 18pt; margin: 0 0 2pt 0; color: #1c7ed6; }
+        h2 { font-size: 14pt; margin: 0 0 4pt 0; }
+        .muted { color: #6b7785; font-size: 9pt; }
+        .head td { vertical-align: top; }
+        .right { text-align: right; }
+        .bold { font-weight: 700; }
+        table { width: 100%; border-collapse: collapse; }
+        .items { margin-top: 14pt; }
+        .items th { background: #e7f5ff; text-align: left; padding: 6pt; font-weight: 700; border-bottom: 1pt solid #a5d8ff; }
+        .items td { padding: 6pt; border-bottom: 0.5pt solid #dee2e6; }
+        .items th.right, .items td.right { text-align: right; }
+        .total td { font-weight: 700; font-size: 12pt; border-bottom: none; border-top: 1pt solid #1f2933; }
+        .info td { padding: 2pt 0; vertical-align: top; }
+        .box { margin-top: 14pt; }
+        .thanks { margin-top: 28pt; text-align: center; color: #6b7785; font-size: 9pt; }
+    </style>
+</head>
+<body>
+<table class="head">
+    <tr>
+        <td>
+            <h1>Sóng Xanh Resort</h1>
+            <div class="muted">Đường Hạ Long, phường Bãi Cháy, Hạ Long, Quảng Ninh</div>
+        </td>
+        <td class="right">
+            <h2>HÓA ĐƠN THANH TOÁN</h2>
+            <div>Số: <span class="bold" th:text="${invoiceNo}"></span></div>
+            <div>Ngày: <span th:text="${#temporals.format(payment.paymentDate, 'dd/MM/yyyy HH:mm')}"></span></div>
+        </td>
+    </tr>
+</table>
+
+<table class="info box">
+    <tr>
+        <td style="width: 50%">
+            <div class="bold">Khách hàng</div>
+            <div th:text="${booking.guestName != null} ? ${booking.guestName} : ${booking.customer.fullName}"></div>
+            <div th:text="${booking.guestPhone != null} ? ${booking.guestPhone} : ${booking.customer.phoneNumber}"></div>
+            <div th:text="${booking.guestEmail != null} ? ${booking.guestEmail} : ${booking.customer.email}"></div>
+        </td>
+        <td class="right">
+            <div class="bold">Đơn đặt phòng #<span th:text="${booking.id}"></span></div>
+            <div th:text="'Phòng ' + ${booking.room.roomNumber} + ' - ' + ${booking.room.roomType.name}"></div>
+            <div th:text="'Nhận phòng: ' + ${#temporals.format(booking.checkInDate, 'dd/MM/yyyy')} + ' ' + ${booking.checkInTime}"></div>
+            <div th:text="'Trả phòng: ' + ${#temporals.format(booking.checkOutDate, 'dd/MM/yyyy')} + ' ' + ${booking.checkOutTime}"></div>
+        </td>
+    </tr>
+</table>
+
+<table class="items">
+    <thead>
+    <tr>
+        <th>Nội dung</th>
+        <th class="right">Đơn giá</th>
+        <th class="right">SL</th>
+        <th class="right">Thành tiền</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+        <td th:text="'Tiền phòng ' + ${booking.room.roomNumber} + ' (' + ${booking.room.roomType.name} + ')'"></td>
+        <td class="right" th:text="${#numbers.formatDecimal(roomUnitPrice, 1, 'POINT', 0, 'COMMA')}"></td>
+        <td class="right" th:text="${nights} + ' đêm'"></td>
+        <td class="right" th:text="${#numbers.formatDecimal(roomAmount, 1, 'POINT', 0, 'COMMA')}"></td>
+    </tr>
+    <tr th:if="${booking.combo != null}">
+        <td th:text="'Combo: ' + ${booking.combo.name}"></td>
+        <td class="right" th:text="${#numbers.formatDecimal(booking.combo.price, 1, 'POINT', 0, 'COMMA')}"></td>
+        <td class="right">1</td>
+        <td class="right" th:text="${#numbers.formatDecimal(booking.combo.price, 1, 'POINT', 0, 'COMMA')}"></td>
+    </tr>
+    <tr th:if="${booking.discountCode != null and booking.discountAmount != null}">
+        <td colspan="3" th:text="'Giảm giá (mã ' + ${booking.discountCode.code} + ')'"></td>
+        <td class="right" th:text="'-' + ${#numbers.formatDecimal(booking.discountAmount, 1, 'POINT', 0, 'COMMA')}"></td>
+    </tr>
+    <tr th:if="${booking.pointsUsed != null and booking.pointsUsed > 0}">
+        <td colspan="3" th:text="'Trừ điểm thưởng (' + ${booking.pointsUsed} + ' điểm)'"></td>
+        <td class="right" th:text="'-' + ${#numbers.formatDecimal(booking.pointsDiscount, 1, 'POINT', 0, 'COMMA')}"></td>
+    </tr>
+    <tr th:each="c : ${charges}">
+        <td th:text="'Phụ phí: ' + ${c.label}"></td>
+        <td class="right" th:text="${#numbers.formatDecimal(c.amount, 1, 'POINT', 0, 'COMMA')}"></td>
+        <td class="right">1</td>
+        <td class="right" th:text="${#numbers.formatDecimal(c.amount, 1, 'POINT', 0, 'COMMA')}"></td>
+    </tr>
+    <th:block th:if="${depositPaid.signum() > 0}">
+        <tr>
+            <td colspan="3" class="right">Tổng giá trị đơn</td>
+            <td class="right" th:text="${#numbers.formatDecimal(grandTotal, 1, 'POINT', 0, 'COMMA')}"></td>
+        </tr>
+        <tr>
+            <td colspan="3" class="right">Đã đặt cọc</td>
+            <td class="right" th:text="'-' + ${#numbers.formatDecimal(depositPaid, 1, 'POINT', 0, 'COMMA')}"></td>
+        </tr>
+    </th:block>
+    <tr class="total">
+        <td colspan="3" class="right" th:text="${depositPaid.signum() > 0} ? 'Thanh toán khi trả phòng' : 'Tổng thanh toán'">Tổng thanh toán</td>
+        <td class="right" th:text="${#numbers.formatDecimal(payment.amount, 1, 'POINT', 0, 'COMMA')} + ' VND'"></td>
+    </tr>
+    </tbody>
+</table>
+
+<table class="info box">
+    <tr>
+        <td style="width: 50%">
+            <div>Phương thức: <span class="bold" th:text="${payment.paymentMethod.vietnameseLabel}"></span></div>
+            <div>Trạng thái: <span class="bold" th:text="${payment.status.vietnameseLabel}"></span></div>
+            <div th:if="${booking.pointsEarned != null and booking.pointsEarned > 0}"
+                 th:text="'Điểm thưởng được cộng: ' + ${booking.pointsEarned} + ' điểm'"></div>
+        </td>
+        <td class="right">
+            <div class="bold">Nhân viên thu ngân</div>
+            <div class="muted">(Ký, ghi rõ họ tên)</div>
+        </td>
+    </tr>
+</table>
+
+<div class="thanks">Cảm ơn quý khách đã sử dụng dịch vụ! Hẹn gặp lại bên vịnh Hạ Long.</div>
+</body>
+</html>
