@@ -118,6 +118,26 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Phong tuong tu: cung loai / gia gan nhat, con trong dung ngay khach da chon (neu co) -->
+            <div class="bg-white p-4 rounded shadow-sm mt-4" id="phong-tuong-tu" th:if="${not #lists.isEmpty(similarRooms)}">
+                <h5 class="fw-bold mb-1"><i class="bi bi-grid me-2"></i><span th:text="#{similar.title}">Phòng tương tự</span></h5>
+                <p class="small text-muted mb-3" th:text="${checkIn != null and checkOut != null} ? #{similar.leadDates} : #{similar.lead}"></p>
+                <div class="row g-3">
+                    <div class="col-sm-4" th:each="s : ${similarRooms}">
+                        <a class="similar-room card h-100 text-decoration-none text-reset"
+                           th:href="@{/customer/rooms/{id}(id=${s.id}, checkIn=${checkIn}, checkOut=${checkOut}, guests=${guests})}">
+                            <img th:if="${s.coverImageUrl}" th:src="${s.coverImageUrl}" class="card-img-top" th:alt="#{common.roomPhoto}"
+                                 style="height: 120px; object-fit: cover;" loading="lazy">
+                            <div class="card-body p-2">
+                                <div class="fw-bold" th:text="#{common.room(${s.roomNumber})}"></div>
+                                <div class="small text-muted" th:text="${s.roomType.localizedName}"></div>
+                                <div class="small fw-bold text-primary" th:text="#{common.pricePerNight(${#numbers.formatDecimal(s.price, 1, 'POINT', 0, 'COMMA')})}"></div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="col-md-5">

@@ -69,6 +69,29 @@ public class RoomService {
         return roomRepository.findAvailableRooms(checkIn, checkOut, roomTypeId, guests);
     }
 
+    // "Phong tuong tu" o trang chi tiet: uu tien cung loai phong, roi gia gan nhat. Khach da chon ngay hop le
+    // thi chi goi y phong con trong dung khoang ngay do (va du cho so khach), khong bao gio goi y phong dang bao tri
+    @Transactional(readOnly = true)
+    public List<Room> findSimilarRooms(Room room, LocalDate checkIn, LocalDate checkOut, Integer guests, int limit) {
+        boolean validDates = checkIn != null && checkOut != null
+                && !checkIn.isBefore(LocalDate.now()) && checkOut.isAfter(checkIn);
+        List<Room> candidates = validDates
+                ? roomRepository.findAvailableRooms(checkIn, checkOut, null, guests)
+                : roomRepository.findAll().stream()
+                        .filter(r -> r.getStatus() != RoomStatus.MAINTENANCE)
+                        .filter(r -> guests == null || r.getRoomType().getMaxGuests() == null
+                                || r.getRoomType().getMaxGuests() >= guests)
+                        .toList();
+        Long typeId = room.getRoomType().getId();
+        return candidates.stream()
+                .filter(r -> !r.getId().equals(room.getId()))
+                .sorted(Comparator.comparing((Room r) -> !r.getRoomType().getId().equals(typeId))
+                        .thenComparing(r -> r.getPrice().subtract(room.getPrice()).abs())
+                        .thenComparing(Room::getRoomNumber))
+                .limit(limit)
+                .toList();
+    }
+
     // Dung khi xem chi tiet phong de xac nhan phong con trong hay khong (BR-01, BR-03)
     public boolean isAvailableForDates(Long roomId, LocalDate checkIn, LocalDate checkOut) {
         Room room = findById(roomId);

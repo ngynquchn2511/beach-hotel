@@ -21,6 +21,9 @@ import java.util.List;
 @Controller
 public class CustomerController {
 
+    // So phong goi y o muc "Phong tuong tu" duoi trang chi tiet
+    static final int SIMILAR_ROOMS = 3;
+
     private final RoomService roomService;
     private final RoomTypeRepository roomTypeRepository;
     private final ComboService comboService;
@@ -100,6 +103,7 @@ public class CustomerController {
         // Danh gia cua khach da o cung loai phong (diem trung binh + 5 nhan xet moi nhat)
         model.addAttribute("ratingStats", reviewService.statsForRoomType(room.getRoomType().getId()));
         model.addAttribute("roomReviews", reviewService.findLatestForRoomType(room.getRoomType().getId(), 5));
+        model.addAttribute("similarRooms", roomService.findSimilarRooms(room, checkIn, checkOut, guests, SIMILAR_ROOMS));
 
         if (checkIn != null && checkOut != null) {
             try {
