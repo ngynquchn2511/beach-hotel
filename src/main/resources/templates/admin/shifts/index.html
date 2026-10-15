@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Sổ quỹ ca</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+</head>
+<body class="eaut eaut-admin">
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="container py-5">
+    <div class="row g-4">
+        <div class="col-md-3">
+            <div th:replace="~{fragments/admin-sidebar :: sidebar}"></div>
+        </div>
+        <div class="col-md-9">
+            <h3 class="fw-bold mb-1">Sổ quỹ ca &amp; bàn giao</h3>
+            <p class="text-muted small">Nhận ca: đếm tiền mặt trong ngăn kéo. Đóng ca: đếm lại, nộp két, ghi chú việc dở dang cho ca sau.</p>
+
+            <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+            <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+
+            <!-- Chua co ca mo: nhan ca, xem ban giao cua ca truoc -->
+            <div th:if="${current == null}" class="bg-white p-4 rounded shadow-sm mb-4">
+                <h5 class="fw-bold">Nhận ca</h5>
+                <div th:if="${lastClosed != null}" class="alert alert-info small">
+                    <div th:text="'Ca trước: ' + ${lastClosed.closedBy.fullName} + ' đóng lúc ' + ${#temporals.format(lastClosed.closedAt, 'HH:mm dd/MM')}
+                                  + ' - để lại ngăn kéo ' + ${#numbers.formatDecimal(lastClosed.leftCash, 1, 'POINT', 0, 'COMMA')} + ' đ'"></div>
+                    <div class="mt-1" th:if="${lastClosed.handoverNote != null}"><b>Bàn giao:</b>
+                        <span style="white-space: pre-line" th:text="${lastClosed.handoverNote}"></span></div>
+                </div>
+                <form method="post" th:action="@{/admin/shifts/open}" class="row g-2 align-items-end">
+                    <div class="col-md-4"><label class="form-label small">Tiền mặt đếm được khi nhận ca (đ)</label>
+                        <input type="number" name="openingCash" class="form-control" min="0" step="1000" required
+                               th:value="${lastClosed != null} ? ${lastClosed.leftCash.longValue()} : 0"></div>
+                    <div class="col-md-3"><button type="submit" class="btn btn-primary">Nhận ca</button></div>
+                </form>
+            </div>
+
+            <!-- Ca dang mo -->
+            <div th:if="${current != null}">
+                <div class="bg-white p-4 rounded shadow-sm mb-4">
+                    <h5 class="fw-bold" th:text="'Ca đang trực: ' + ${current.openedBy.fullName} + ' từ ' + ${#temporals.format(current.openedAt, 'HH:mm dd/MM')}"></h5>
+                    <div class="small text-warning" th:if="${current.openingDifference != null and current.openingDifference.signum() != 0}"
+                         th:text="'Lúc nhận ca lệch ' + ${#numbers.formatDecimal(current.openingDifference, 1, 'POINT', 0, 'COMMA')} + ' đ so với ca trước để lại'"></div>
+                    <div class="row g-3 my-2 text-center">
+                        <div class="col-6 col-md-3"><div class="small text-muted">Tiền mặt đầu ca</div>
+                            <div class="fw-bold" th:text="${#numbers.formatDecimal(current.openingCash, 1, 'POINT', 0, 'COMMA')}"></div></div>
+                        <div class="col-6 col-md-3" th:each="t : ${totals}"><div class="small text-muted" th:text="${t.key.vietnameseLabel}"></div>
+                            <div class="fw-bold" th:text="${#numbers.formatDecimal(t.value, 1, 'POINT', 0, 'COMMA')}"></div></div>
+                    </div>
+                    <div class="alert alert-light border small mb-0">Tiền mặt phải có trong ngăn kéo:
+                        <b th:text="${#numbers.formatDecimal(expectedCash, 1, 'POINT', 0, 'COMMA')} + ' đ'" id="expectedCash"></b></div>
+                </div>
+
+                <div class="bg-white p-4 rounded shadow-sm mb-4">
+                    <h6 class="fw-bold">Thu / chi trong ca</h6>
+                <table class="table table-sm align-middle mb-0">
+                    <thead><tr><th>Giờ</th><th>Khoản</th><th>Phương thức</th><th class="text-end">Số tiền</th></tr></thead>
+                    <tbody>
+                    <tr th:each="e : ${ledger}">
+                        <td class="text-nowrap" th:text="${#temporals.format(e.time, 'HH:mm dd/MM')}"></td>
+                        <td><a th:if="${e.bookingId != null}" th:href="@{/admin/bookings/{id}(id=${e.bookingId})}" th:text="${e.label}"></a>
+                            <span th:if="${e.bookingId == null}" th:text="${e.label}"></span></td>
+                        <td th:text="${e.method.vietnameseLabel}"></td>
+                        <td class="text-end" th:classappend="${e.amount.signum() < 0} ? 'text-danger'"
+                            th:text="${#numbers.formatDecimal(e.amount, 1, 'POINT', 0, 'COMMA')}"></td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(ledger)}"><td colspan="4" class="text-muted small">Chưa có khoản thu / chi nào.</td></tr>
+                    </tbody>
+                </table>
+                </div>
+
+                <div class="bg-white p-4 rounded shadow-sm mb-4">
+                    <h5 class="fw-bold">Đóng ca &amp; bàn giao</h5>
+                    <form method="post" th:action="@{/admin/shifts/{id}/close(id=${current.id})}" class="row g-2">
+                        <div class="col-md-4"><label class="form-label small">Tiền mặt đếm được (đ)</label>
+                            <input type="number" name="countedCash" class="form-control" min="0" step="1000" required></div>
+                        <div class="col-md-4"><label class="form-label small">Nộp két / ngân hàng (đ)</label>
+                            <input type="number" name="cashToSafe" class="form-control" min="0" step="1000" value="0"></div>
+                        <div class="col-12"><label class="form-label small"
+                                th:text="'Ghi chú bàn giao (bắt buộc nếu tiền mặt lệch từ ' + ${#numbers.formatDecimal(noteRequiredDiff, 1, 'POINT', 0, 'COMMA')} + ' đ)'"></label>
+                            <textarea name="handoverNote" class="form-control" rows="3" maxlength="1000"
+                                      placeholder="VD: Phòng 305 khách xin trả muộn 14h; chờ khách đoàn #120 chuyển cọc..."></textarea></div>
+                        <div class="col-12"><button type="submit" class="btn btn-warning">Đóng ca</button></div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded shadow-sm" th:unless="${#lists.isEmpty(history)}">
+                <h6 class="fw-bold">Các ca đã đóng</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead><tr><th>Ca</th><th>Người trực</th><th class="text-end">Tiền mặt thu</th><th class="text-end">Lệch</th><th></th></tr></thead>
+                        <tbody>
+                        <tr th:each="s : ${history}">
+                            <td class="small" th:text="${#temporals.format(s.openedAt, 'HH:mm dd/MM')} + ' → ' + ${#temporals.format(s.closedAt, 'HH:mm dd/MM')}"></td>
+                            <td th:text="${s.openedBy.fullName} + (${s.closedBy.id != s.openedBy.id} ? ' / ' + ${s.closedBy.fullName} : '')"></td>
+                            <td class="text-end" th:text="${#numbers.formatDecimal(s.cashIn, 1, 'POINT', 0, 'COMMA')}"></td>
+                            <td class="text-end fw-bold" th:classappend="${s.cashDifference.signum() < 0} ? 'text-danger' : (${s.cashDifference.signum() > 0} ? 'text-warning' : 'text-success')"
+                                th:text="${#numbers.formatDecimal(s.cashDifference, 1, 'POINT', 0, 'COMMA')}"></td>
+                            <td><a th:href="@{/admin/shifts/{id}(id=${s.id})}" class="btn btn-sm btn-outline-secondary">Xem</a></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div th:replace="~{fragments/pagination :: pager(${pager})}"></div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

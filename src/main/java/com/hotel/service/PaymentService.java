@@ -296,33 +296,52 @@ public class PaymentService {
     // Gom ca tien coc (chuyen khoan / VNPay) tinh theo ngay nhan coc - ke ca don sau do bi huy ma resort giu coc,
     // tru di tien coc da hoan lai cho khach (tinh theo ngay hoan)
     public Map<PaymentMethod, BigDecimal> getPaidRevenueByMethod(LocalDate fromDate, LocalDate toDate) {
-        Map<PaymentMethod, BigDecimal> result = new LinkedHashMap<>();
-        result.put(PaymentMethod.CASH, BigDecimal.ZERO);
-        result.put(PaymentMethod.BANK_TRANSFER, BigDecimal.ZERO);
-        result.put(PaymentMethod.ONLINE, BigDecimal.ZERO);
-        LocalDateTime from = fromDate.atStartOfDay();
-        LocalDateTime to = toDate.plusDays(1).atStartOfDay().minusNanos(1);
+        return totalsByMethod(ledger(fromDate.atStartOfDay(), toDate.plusDays(1).atStartOfDay().minusNanos(1)));
+    }
+
+    // Mot dong so quy: khoan thu (duong) hoac chi (am) - bookingId null voi ban the qua tang
+    public record LedgerEntry(LocalDateTime time, Long bookingId, String label, PaymentMethod method, BigDecimal amount) {
+    }
+
+    // So quy chi tiet trong khoang thoi gian (dung cho doanh thu theo phuong thuc va so quy ca le tan)
+    @Transactional(readOnly = true)
+    public List<LedgerEntry> ledger(LocalDateTime from, LocalDateTime to) {
+        List<LedgerEntry> entries = new ArrayList<>();
         for (Payment p : paymentRepository.findByStatusAndPaymentDateBetween(PaymentStatus.PAID, from, to)) {
-            result.merge(p.getPaymentMethod(), p.getAmount(), BigDecimal::add);
+            entries.add(new LedgerEntry(p.getPaymentDate(), p.getBooking().getId(), "Thanh toán đơn #" + p.getBooking().getId(),
+                    p.getPaymentMethod(), p.getAmount()));
         }
         // Coc tra qua VNPay tinh vao "online", coc chuyen khoan QR tinh vao "chuyen khoan"
         for (Booking b : bookingRepository.findByDepositPaidAtBetween(from, to)) {
-            result.merge(b.isDepositPaidOnline() ? PaymentMethod.ONLINE : PaymentMethod.BANK_TRANSFER,
-                    b.getDepositPaidAmount(), BigDecimal::add);
+            entries.add(new LedgerEntry(b.getDepositPaidAt(), b.getId(), "Đặt cọc đơn #" + b.getId(),
+                    b.isDepositPaidOnline() ? PaymentMethod.ONLINE : PaymentMethod.BANK_TRANSFER, b.getDepositPaidAmount()));
         }
         // Ban the qua tang: tinh doanh thu luc khach tra tien the (VNPay -> online, chuyen khoan -> chuyen khoan)
         if (giftVoucherRepository != null) {
             for (com.hotel.entity.GiftVoucher v : giftVoucherRepository.findByPaidAtBetween(from, to)) {
-                result.merge(v.getOnlineRef() != null ? PaymentMethod.ONLINE : PaymentMethod.BANK_TRANSFER, v.getAmount(), BigDecimal::add);
+                entries.add(new LedgerEntry(v.getPaidAt(), null, "Bán thẻ quà tặng " + v.getCode(),
+                        v.getOnlineRef() != null ? PaymentMethod.ONLINE : PaymentMethod.BANK_TRANSFER, v.getAmount()));
             }
         }
         // Tien coc da chuyen tra lai khach (don huy) - tru theo ngay hoan
         for (Booking b : bookingRepository.findByRefundedAtBetween(from, to)) {
             if (b.getRefundAmount() != null) {
                 // Hoan qua VNPay tru vao muc online, hoan bang chuyen khoan tay tru vao muc chuyen khoan
-                result.merge(b.getRefundOnlineRef() != null ? PaymentMethod.ONLINE : PaymentMethod.BANK_TRANSFER,
-                        b.getRefundAmount().negate(), BigDecimal::add);
+                entries.add(new LedgerEntry(b.getRefundedAt(), b.getId(), "Hoàn cọc đơn #" + b.getId(),
+                        b.getRefundOnlineRef() != null ? PaymentMethod.ONLINE : PaymentMethod.BANK_TRANSFER, b.getRefundAmount().negate()));
             }
+        }
+        entries.sort(Comparator.comparing(LedgerEntry::time));
+        return entries;
+    }
+
+    public static Map<PaymentMethod, BigDecimal> totalsByMethod(List<LedgerEntry> entries) {
+        Map<PaymentMethod, BigDecimal> result = new LinkedHashMap<>();
+        result.put(PaymentMethod.CASH, BigDecimal.ZERO);
+        result.put(PaymentMethod.BANK_TRANSFER, BigDecimal.ZERO);
+        result.put(PaymentMethod.ONLINE, BigDecimal.ZERO);
+        for (LedgerEntry e : entries) {
+            result.merge(e.method(), e.amount(), BigDecimal::add);
         }
         return result;
     }
