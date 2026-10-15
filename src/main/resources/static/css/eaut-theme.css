@@ -363,3 +363,9 @@ body.eaut .login-card .badge-icon {
     transform: rotate(-4deg);
 }
 body.eaut .login-card .eyebrow-text { color: var(--ink-soft); letter-spacing: .14em; }
+
+/* Nut trai tim "Yeu thich" phong */
+.btn-favorite { color: #d63a5a; border: 1.5px solid #f2b8c4; background: #fff; line-height: 1; }
+.btn-favorite:hover, .btn-favorite:focus-visible { color: #fff; background: #d63a5a; border-color: #d63a5a; }
+.btn-favorite.is-favorite { color: #fff; background: #d63a5a; border-color: #d63a5a; }
+.btn-favorite.is-favorite:hover { background: #b82c49; }

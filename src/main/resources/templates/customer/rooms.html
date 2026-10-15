@@ -118,6 +118,7 @@
                         <p class="fw-bold text-primary mb-2" th:text="#{common.pricePerNight(${#numbers.formatDecimal(room.price, 1, 'POINT', 0, 'COMMA')})}"></p>
                         <a th:href="@{/customer/rooms/{id}(id=${room.id}, checkIn=${checkIn}, checkOut=${checkOut}, guests=${guests})}"
                            class="btn btn-primary btn-sm" th:text="#{common.viewDetails}">Xem chi tiết</a>
+                        <th:block th:replace="~{fragments/favorite :: heart(${room}, 'btn-sm ms-1')}"></th:block>
                     </div>
                 </div>
             </div>

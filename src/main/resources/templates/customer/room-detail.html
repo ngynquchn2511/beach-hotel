@@ -126,6 +126,7 @@
                     <h3 class="fw-bold" th:text="#{common.room(${room.roomNumber})}"></h3>
                     <!-- Chia se phong: dien thoai mo bang chia se cua may (Zalo, Messenger...), may tinh thi sao chep link -->
                     <div class="d-flex gap-1 flex-shrink-0">
+                        <th:block th:replace="~{fragments/favorite :: heart(${room}, 'btn-sm')}"></th:block>
                         <button type="button" id="shareRoom" class="btn btn-sm btn-outline-primary"
                                 th:attr="data-url=${siteBaseUrl + '/customer/rooms/' + room.id}, data-title=#{common.room(${room.roomNumber})} + ' - ' + ${room.roomType.localizedName},
                                          data-copied=#{share.copied}">
@@ -135,6 +136,10 @@
                            th:href="'https://www.facebook.com/sharer/sharer.php?u=' + ${#uris.escapeQueryParam(siteBaseUrl + '/customer/rooms/' + room.id)}">
                             <i class="bi bi-facebook"></i></a>
                     </div>
+                </div>
+                <div th:if="${favoriteMessage}" class="alert alert-success py-2 small mb-2" role="status">
+                    <span th:text="${favoriteMessage}"></span>
+                    <a th:href="@{/customer/favorites}" class="ms-1" th:text="#{favorite.viewList}">Xem danh sách</a>
                 </div>
                 <p class="text-muted mb-1" th:text="${room.roomType.localizedName}"></p>
                 <a th:if="${ratingStats.count > 0}" href="#danh-gia-phong" class="d-inline-flex align-items-center gap-1 mb-3 small text-decoration-none">

@@ -1,0 +1,16 @@
+<!-- Nut trai tim "Yeu thich": khach da dang nhap bam de luu / bo luu, khach chua dang nhap -> sang trang dang nhap.
+     Can model: favoriteRoomIds, currentUrl (FavoriteModelAdvice) -->
+<th:block th:fragment="heart(room, btnClass)" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+    <form sec:authorize="hasRole('CUSTOMER')" th:action="@{/customer/favorites/{id}/toggle(id=${room.id})}" method="post"
+          class="d-inline m-0 favorite-form" th:with="fav=${favoriteRoomIds != null and favoriteRoomIds.contains(room.id)}">
+        <input type="hidden" name="back" th:value="${currentUrl}">
+        <button type="submit" th:class="'btn btn-favorite ' + ${btnClass}" th:classappend="${fav} ? 'is-favorite'"
+                th:title="${fav} ? #{favorite.remove} : #{favorite.add}" th:attr="aria-pressed=${fav}">
+            <i th:class="${fav} ? 'bi bi-heart-fill' : 'bi bi-heart'"></i>
+            <span class="visually-hidden" th:text="${fav} ? #{favorite.remove} : #{favorite.add}"></span>
+        </button>
+    </form>
+    <a sec:authorize="isAnonymous()" th:href="@{/login}" th:class="'btn btn-favorite ' + ${btnClass}" th:title="#{favorite.loginToSave}">
+        <i class="bi bi-heart"></i><span class="visually-hidden" th:text="#{favorite.loginToSave}"></span>
+    </a>
+</th:block>
