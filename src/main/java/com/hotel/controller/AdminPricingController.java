@@ -2,7 +2,9 @@ package com.hotel.controller;
 
 import com.hotel.entity.SpecialRate;
 import com.hotel.exception.BusinessException;
+import com.hotel.entity.PromotionRule;
 import com.hotel.service.PricingService;
+import com.hotel.service.PromotionService;
 import com.hotel.util.PaginationUtil;
 import com.hotel.util.Pager;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -19,9 +21,11 @@ import java.time.LocalDate;
 public class AdminPricingController {
 
     private final PricingService pricingService;
+    private final PromotionService promotionService;
 
-    public AdminPricingController(PricingService pricingService) {
+    public AdminPricingController(PricingService pricingService, PromotionService promotionService) {
         this.pricingService = pricingService;
+        this.promotionService = promotionService;
     }
 
     @GetMapping
@@ -31,6 +35,8 @@ public class AdminPricingController {
         model.addAttribute("pager", pager);
         model.addAttribute("specialRates", pager.items());
         model.addAttribute("today", LocalDate.now());
+        model.addAttribute("promotions", promotionService.findAll());
+        model.addAttribute("promotionTypes", PromotionRule.Type.values());
         return "admin/pricing/index";
     }
 
@@ -82,5 +88,40 @@ public class AdminPricingController {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
         return "redirect:/admin/pricing#ngay-le";
+    }
+
+    // ===== Khuyen mai tu dong =====
+
+    @PostMapping("/promotions")
+    public String createPromotion(@RequestParam(required = false) String name,
+                                  @RequestParam(required = false) String nameEn,
+                                  @RequestParam(required = false) PromotionRule.Type type,
+                                  @RequestParam(required = false) Integer threshold,
+                                  @RequestParam(required = false) Integer discountPercent,
+                                  RedirectAttributes redirectAttributes) {
+        try {
+            promotionService.create(name, nameEn, type, threshold, discountPercent);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã thêm khuyến mãi tự động");
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "redirect:/admin/pricing#khuyen-mai";
+    }
+
+    @PostMapping("/promotions/{id}/toggle")
+    public String togglePromotion(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            promotionService.toggle(id);
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "redirect:/admin/pricing#khuyen-mai";
+    }
+
+    @PostMapping("/promotions/{id}/delete")
+    public String deletePromotion(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        promotionService.delete(id);
+        redirectAttributes.addFlashAttribute("successMessage", "Đã xóa khuyến mãi. Đơn đã đặt giữ nguyên mức giảm");
+        return "redirect:/admin/pricing#khuyen-mai";
     }
 }

@@ -54,6 +54,8 @@
             </tbody>
         </table>
         <p class="mb-1 fw-bold"><span th:text="#{detail.roomAmount}">Tiền phòng:</span> <span th:text="${#numbers.formatDecimal(roomAmount, 1, 'POINT', 0, 'COMMA')} + ' VND'"></span></p>
+        <p class="mb-1 text-success" th:if="${promotion != null}"
+           th:text="#{promo.line(${promotion.nameEn != null and #locale.language == 'en' ? promotion.nameEn : promotion.name}, ${promotion.percent}, ${#numbers.formatDecimal(promotion.amount, 1, 'POINT', 0, 'COMMA')})}"></p>
         <p class="mb-1" th:if="${combo != null}"><span th:text="#{confirm.comboChosen}">Combo đã chọn:</span> <span th:text="${combo.localizedName}"></span> (+<span th:text="${#numbers.formatDecimal(combo.price, 1, 'POINT', 0, 'COMMA')}"></span> VND)</p>
 
         <div class="alert alert-warning small mt-3 mb-0" th:if="${estimatedDeposit != null and estimatedDeposit.signum() > 0}">

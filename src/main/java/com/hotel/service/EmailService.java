@@ -492,6 +492,10 @@ public class EmailService {
             rows.append(invoiceRow("Giảm giá (mã " + booking.getDiscountCode().getCode() + ")", "",
                     "-" + money(booking.getDiscountAmount())));
         }
+        if (booking.getPromotionAmountOrZero().signum() > 0) {
+            rows.append(invoiceRow("Khuyến mãi: " + booking.getPromotionName() + " (-" + booking.getPromotionPercent() + "%)", "",
+                    "-" + money(booking.getPromotionAmountOrZero())));
+        }
         if (booking.getPointsUsed() != null && booking.getPointsUsed() > 0) {
             rows.append(invoiceRow("Trừ điểm thưởng (" + booking.getPointsUsed() + " điểm)", "",
                     "-" + money(booking.getPointsDiscountAmount())));

@@ -49,14 +49,16 @@ public class BookingService {
     private final AirportTransferRepository transferRepository;
 
     private final LoyaltyService loyaltyService;
+    private final PromotionService promotionService;
 
     public BookingService(BookingRepository bookingRepository, RoomRepository roomRepository,
                            ComboRepository comboRepository, DiscountCodeRepository discountCodeRepository,
                            EmailService emailService, BookingChargeRepository chargeRepository,
                            PricingService pricingService, BookingGuestRepository guestRepository,
                            TourBookingRepository tourBookingRepository, AirportTransferRepository transferRepository,
-                           LoyaltyService loyaltyService) {
+                           LoyaltyService loyaltyService, PromotionService promotionService) {
         this.loyaltyService = loyaltyService;
+        this.promotionService = promotionService;
         this.bookingRepository = bookingRepository;
         this.roomRepository = roomRepository;
         this.comboRepository = comboRepository;
@@ -233,6 +235,10 @@ public class BookingService {
                                   String guestEmail, int pointsToUse) {
         Booking booking = buildBooking(customer, roomId, checkInDate, checkOutDate, checkInTime, checkOutTime,
                 guests, comboId, discountCodeStr, guestName, guestPhone, guestEmail);
+        // Khuyen mai tu dong (chi dat online): giam % tien phong theo luat co loi nhat
+        applyPromotion(booking, promotionService.best(booking.getRoomAmount(), checkInDate, checkOutDate, LocalDate.now())
+                .orElse(null));
+        booking.setTotalAmount(booking.getTotalAmount().subtract(booking.getPromotionAmountOrZero()).max(BigDecimal.ZERO));
         if (pointsToUse > 0) {
             BigDecimal pointsDiscount = loyaltyService.redeemDiscount(customer, pointsToUse, booking.getTotalAmount());
             booking.setPointsUsed(pointsToUse);
@@ -251,6 +257,13 @@ public class BookingService {
         loyaltyService.recordRedeem(savedBooking);
         emailService.sendBookingConfirmation(savedBooking);
         return savedBooking;
+    }
+
+    private static void applyPromotion(Booking booking, PromotionService.Applied promo) {
+        booking.setPromotionName(promo != null ? promo.name() : null);
+        booking.setPromotionNameEn(promo != null ? promo.nameEn() : null);
+        booking.setPromotionPercent(promo != null ? promo.percent() : null);
+        booking.setPromotionAmount(promo != null ? promo.amount() : null);
     }
 
     // Han chuyen coc = luc dat + so gio cai dat, nhung khong muon hon 6 tieng truoc gio nhan phong
@@ -461,8 +474,9 @@ public class BookingService {
         BigDecimal subtotal = roomAmount.add(comboAmount);
 
         BigDecimal discountAmount = discountFor(booking.getDiscountCode(), subtotal);
-        // Tien da tru bang diem thuong luc dat giu nguyen
-        BigDecimal totalAmount = subtotal.subtract(discountAmount).subtract(booking.getPointsDiscountAmount()).max(BigDecimal.ZERO);
+        // Tien da tru bang diem thuong / khuyen mai luc dat giu nguyen (tien phong khong doi)
+        BigDecimal totalAmount = subtotal.subtract(discountAmount).subtract(booking.getPointsDiscountAmount())
+                .subtract(booking.getPromotionAmountOrZero()).max(BigDecimal.ZERO);
 
         booking.setCombo(newCombo);
         booking.setDiscountAmount(discountAmount);
@@ -492,7 +506,7 @@ public class BookingService {
     // difference = tong moi - tong cu (> 0: tra them khi tra phong, < 0: duoc giam)
     public record DateChangeQuote(LocalDate checkIn, LocalDate checkOut, long nights, BigDecimal roomAmount,
                                   BigDecimal discountAmount, BigDecimal totalAmount, BigDecimal difference,
-                                  BigDecimal depositAmount, boolean depositPaid) {
+                                  BigDecimal depositAmount, boolean depositPaid, PromotionService.Applied promotion) {
     }
 
     // Xem truoc (khong luu) - nem BusinessException neu khong doi duoc
@@ -512,6 +526,7 @@ public class BookingService {
         booking.setCheckOutDate(newCheckOut);
         booking.setRoomAmount(quote.roomAmount());
         booking.setDiscountAmount(quote.discountAmount());
+        applyPromotion(booking, quote.promotion());
         booking.setTotalAmount(quote.totalAmount());
         if (booking.isDepositRequired() && !booking.isDepositPaid()) {
             booking.setDepositAmount(quote.depositAmount());
@@ -560,13 +575,20 @@ public class BookingService {
         BigDecimal roomAmount = pricingService.roomAmount(room.getPrice(), newCheckIn, newCheckOut);
         BigDecimal subtotal = roomAmount.add(booking.getCombo() != null ? booking.getCombo().getPrice() : BigDecimal.ZERO);
         BigDecimal discountAmount = discountFor(booking.getDiscountCode(), subtotal);
+        // Khuyen mai tu dong xet lai theo ngay moi (dieu kien dat som / o dai tinh tu ngay khach dat), chi don online
+        PromotionService.Applied promotion = booking.getEffectiveChannel() == BookingChannel.ONLINE
+                ? promotionService.best(roomAmount, newCheckIn, newCheckOut,
+                        booking.getCreatedAt() != null ? booking.getCreatedAt().toLocalDate() : LocalDate.now()).orElse(null)
+                : null;
+        BigDecimal promotionAmount = promotion != null ? promotion.amount() : BigDecimal.ZERO;
         // Tien da tru bang diem thuong luc dat giu nguyen
-        BigDecimal totalAmount = subtotal.subtract(discountAmount).subtract(booking.getPointsDiscountAmount()).max(BigDecimal.ZERO);
+        BigDecimal totalAmount = subtotal.subtract(discountAmount).subtract(promotionAmount)
+                .subtract(booking.getPointsDiscountAmount()).max(BigDecimal.ZERO);
         BigDecimal deposit = booking.isDepositRequired() && !booking.isDepositPaid()
                 ? pricingService.depositFor(totalAmount) : booking.getDepositPaidAmount();
         return new DateChangeQuote(newCheckIn, newCheckOut, ChronoUnit.DAYS.between(newCheckIn, newCheckOut),
                 roomAmount, discountAmount, totalAmount, totalAmount.subtract(booking.getTotalAmount()),
-                deposit, booking.isDepositPaid());
+                deposit, booking.isDepositPaid(), promotion);
     }
 
     // Tour lan / xe dua don da dat (chua huy) phai con nam trong ngay luu tru moi - khong thi khach huy dich vu truoc

@@ -64,6 +64,7 @@ public class CustomerBookingController {
     private final TransferRateService transferRateService;
     private final VnPayService vnPayService;
     private final GuestRegistrationService guestRegistrationService;
+    private final com.hotel.service.PromotionService promotionService;
 
     public CustomerBookingController(BookingService bookingService, RoomService roomService,
                                       ComboService comboService, DiscountCodeService discountCodeService,
@@ -72,8 +73,10 @@ public class CustomerBookingController {
                                       PricingService pricingService, UserMessages userMessages,
                                       ServiceOrderService serviceOrderService, DivingTourService divingTourService,
                                       TransferRateService transferRateService, VnPayService vnPayService,
-                                      GuestRegistrationService guestRegistrationService) {
+                                      GuestRegistrationService guestRegistrationService,
+                                      com.hotel.service.PromotionService promotionService) {
         this.guestRegistrationService = guestRegistrationService;
+        this.promotionService = promotionService;
         this.userMessages = userMessages;
         this.vnPayService = vnPayService;
         this.serviceOrderService = serviceOrderService;
@@ -511,6 +514,12 @@ public class CustomerBookingController {
         model.addAttribute("depositPercent", settings.getDepositPercent());
         model.addAttribute("depositDeadlineHours", settings.getDepositDeadlineHours());
         model.addAttribute("refundPolicy", settings);
+        // Khuyen mai tu dong ap tren tien phong (truoc ma giam gia / diem thuong)
+        var promotion = promotionService.best(roomAmount, checkIn, checkOut, LocalDate.now()).orElse(null);
+        model.addAttribute("promotion", promotion);
+        if (promotion != null) {
+            subtotal = subtotal.subtract(promotion.amount());
+        }
         // Uoc tinh truoc khi ap ma giam gia - so chinh xac hien o trang don sau khi dat
         model.addAttribute("estimatedDeposit", pricingService.depositFor(subtotal));
         model.addAttribute("subtotal", subtotal);

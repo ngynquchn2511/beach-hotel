@@ -130,6 +130,27 @@ public class Booking {
     @Column(name = "discount_amount", precision = 12, scale = 2)
     private java.math.BigDecimal discountAmount;
 
+    // Khuyen mai tu dong da ap luc dat (ten luu lai vi luat co the bi sua / xoa sau); null = khong co
+    @Column(name = "promotion_name", length = 100)
+    private String promotionName;
+
+    @Column(name = "promotion_name_en", length = 100)
+    private String promotionNameEn;
+
+    @Column(name = "promotion_percent")
+    private Integer promotionPercent;
+
+    @Column(name = "promotion_amount", precision = 12, scale = 2)
+    private java.math.BigDecimal promotionAmount;
+
+    public java.math.BigDecimal getPromotionAmountOrZero() {
+        return promotionAmount != null ? promotionAmount : java.math.BigDecimal.ZERO;
+    }
+
+    public String getLocalizedPromotionName() {
+        return com.hotel.util.Texts.pick(promotionName, promotionNameEn);
+    }
+
     // Diem thuong khach dung de tru tien luc dat (pointsDiscount = so tien da tru); null = khong dung
     @Column(name = "points_used")
     private Integer pointsUsed;

@@ -6,6 +6,7 @@ import com.hotel.repository.RoomTypeRepository;
 import com.hotel.service.BookingService;
 import com.hotel.service.ComboService;
 import com.hotel.service.PricingService;
+import com.hotel.service.PromotionService;
 import com.hotel.service.ReviewService;
 import com.hotel.service.RoomService;
 import com.hotel.service.UserMessages;
@@ -35,6 +36,7 @@ public class CustomerController {
     static final int ROOMS_PER_PAGE = 10;
 
     private final RoomService roomService;
+    private final PromotionService promotionService;
     private final RoomTypeRepository roomTypeRepository;
     private final ComboService comboService;
     private final ReviewService reviewService;
@@ -44,7 +46,9 @@ public class CustomerController {
 
     public CustomerController(RoomService roomService, RoomTypeRepository roomTypeRepository,
                                ComboService comboService, ReviewService reviewService,
-                               BookingService bookingService, PricingService pricingService, UserMessages userMessages) {
+                               BookingService bookingService, PricingService pricingService, UserMessages userMessages,
+                               PromotionService promotionService) {
+        this.promotionService = promotionService;
         this.userMessages = userMessages;
         this.roomService = roomService;
         this.roomTypeRepository = roomTypeRepository;
@@ -126,6 +130,8 @@ public class CustomerController {
         model.addAttribute("ratingStats", reviewService.statsForRoomType(room.getRoomType().getId()));
         model.addAttribute("roomReviews", reviewService.findLatestForRoomType(room.getRoomType().getId(), 5));
         model.addAttribute("similarRooms", roomService.findSimilarRooms(room, checkIn, checkOut, guests, SIMILAR_ROOMS));
+        // Bang ron cac khuyen mai dang chay (dat online thoa dieu kien la tu giam)
+        model.addAttribute("activePromotions", promotionService.findActive());
         // Form "Bao toi khi phong trong lai" dien san email khach da dang nhap
         model.addAttribute("alertEmail", userDetails != null ? userDetails.getUser().getEmail() : null);
         // Chi noi "con trong dung ngay ban chon" khi ngay hop le (ngay sai thi goi y khong loc theo ngay)
@@ -151,7 +157,11 @@ public class CustomerController {
                     model.addAttribute("selectedCombo", combo);
                 }
 
-                var totalAmount = roomAmount.add(comboAmount);
+                // Khuyen mai tu dong (o dai ngay / dat som / gio chot) - giong luc dat online
+                var promotion = promotionService.best(roomAmount, checkIn, checkOut, LocalDate.now()).orElse(null);
+                model.addAttribute("promotion", promotion);
+                var totalAmount = roomAmount.add(comboAmount)
+                        .subtract(promotion != null ? promotion.amount() : java.math.BigDecimal.ZERO);
                 // Kiem tra chi tiet: bao tri / trung don (cho xac nhan hay da xac nhan) / phong trong lai tu luc nao
                 BookingService.Availability availability = bookingService.checkAvailability(room, checkIn, checkOut);
                 boolean available = availability.isAvailable();

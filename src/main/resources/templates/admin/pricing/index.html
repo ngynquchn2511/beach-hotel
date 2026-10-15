@@ -85,6 +85,63 @@
             </div>
 
             <!-- Gia ngay le -->
+            <div class="bg-white p-4 rounded shadow-sm mb-4" id="khuyen-mai">
+                <h5 class="fw-bold mb-1">Khuyến mãi tự động</h5>
+                <p class="text-muted small mb-3">Khách đặt online thỏa điều kiện thì tự giảm % tiền phòng, không cần mã.
+                    Nhiều khuyến mãi cùng thỏa thì chỉ áp mức giảm cao nhất. Áp trước mã giảm giá và điểm thưởng.</p>
+
+                <form th:action="@{/admin/pricing/promotions}" method="post" class="row g-2 align-items-end mb-3">
+                    <div class="col-md-3">
+                        <label class="form-label small">Tên hiển thị</label>
+                        <input type="text" name="name" class="form-control" maxlength="100" required placeholder="VD: Ở dài ngày">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small">Tên tiếng Anh</label>
+                        <input type="text" name="nameEn" class="form-control" maxlength="100" placeholder="Long stay">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small">Loại</label>
+                        <select name="type" class="form-select" required>
+                            <option th:each="t : ${promotionTypes}" th:value="${t}" th:text="${t.vietnameseLabel}"></option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small" title="Ở dài ngày: số đêm tối thiểu · Đặt sớm: số ngày đặt trước tối thiểu · Giờ chót: nhận phòng trong số ngày tới">Điều kiện (đêm / ngày)</label>
+                        <input type="number" name="threshold" class="form-control" min="0" max="365" required placeholder="3">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small">Giảm (%)</label>
+                        <input type="number" name="discountPercent" class="form-control" min="1" max="50" required placeholder="10">
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Thêm khuyến mãi</button>
+                    </div>
+                </form>
+
+                <div th:if="${#lists.isEmpty(promotions)}" class="alert alert-info mb-0">Chưa có khuyến mãi tự động nào.</div>
+                <table class="table align-middle mb-0" th:unless="${#lists.isEmpty(promotions)}">
+                    <thead><tr><th>Khuyến mãi</th><th>Điều kiện</th><th>Giảm</th><th>Trạng thái</th><th></th></tr></thead>
+                    <tbody>
+                    <tr th:each="p : ${promotions}" th:classappend="${!p.active} ? 'text-muted'">
+                        <td class="fw-semibold"><span th:text="${p.name}"></span>
+                            <span th:if="${p.nameEn != null}" class="text-muted small" th:text="'/ ' + ${p.nameEn}"></span></td>
+                        <td th:text="${p.type.describe(p.threshold)}"></td>
+                        <td th:text="'-' + ${p.discountPercent} + '%'"></td>
+                        <td><span class="badge" th:classappend="${p.active} ? 'bg-success' : 'bg-secondary'" th:text="${p.active} ? 'Đang chạy' : 'Tạm dừng'"></span></td>
+                        <td class="text-end text-nowrap">
+                            <form th:action="@{/admin/pricing/promotions/{id}/toggle(id=${p.id})}" method="post" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-outline-secondary" th:text="${p.active} ? 'Tạm dừng' : 'Bật lại'"></button>
+                            </form>
+                            <form th:action="@{/admin/pricing/promotions/{id}/delete(id=${p.id})}" method="post" class="d-inline"
+                                  onsubmit="return confirm('Xóa khuyến mãi này? Đơn đã đặt giữ nguyên mức giảm.')">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Xóa</button>
+                            </form>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
             <div class="bg-white p-4 rounded shadow-sm" id="ngay-le">
                 <h5 class="fw-bold mb-1">Giá ngày lễ, Tết, cao điểm</h5>
                 <p class="text-muted small mb-3">Các đêm trong giai đoạn được phụ thu theo % riêng, ưu tiên hơn phụ thu cuối tuần.

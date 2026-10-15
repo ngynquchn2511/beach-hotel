@@ -82,6 +82,15 @@
                     <span th:if="${room.roomType.area}" th:text="#{detail.area(${room.roomType.area})}"></span>
                 </div>
 
+                <!-- Khuyen mai tu dong dang chay: dat online thoa dieu kien thi tu giam, khong can ma -->
+                <div class="alert alert-success py-2 small" th:unless="${#lists.isEmpty(activePromotions)}">
+                    <i class="bi bi-gift me-1"></i><b th:text="#{promo.banner}">Ưu đãi tự động:</b>
+                    <span th:each="p, st : ${activePromotions}">
+                        <span th:text="${p.localizedName} + ' -' + ${p.discountPercent} + '%'"></span>
+                        <span class="text-muted" th:text="'(' + #{'promo.rule.' + ${p.type}(${p.threshold})} + ')'"></span><span th:unless="${st.last}"> · </span>
+                    </span>
+                </div>
+
                 <h5 class="fw-bold mb-2" th:text="${room.roomType.localizedName}"></h5>
                 <p th:if="${room.localizedDescription}" th:text="${room.localizedDescription}"></p>
                 <p th:if="${room.roomType.localizedDescription}" class="text-muted" th:text="${room.roomType.localizedDescription}"></p>
@@ -241,6 +250,8 @@
                     <p class="mb-1"><span th:text="#{detail.checkOut}">Ngày trả phòng:</span> <span th:text="${#temporals.format(checkOut, 'dd/MM/yyyy')}"></span></p>
                     <p class="mb-1"><span th:text="#{detail.nights}">Số đêm:</span> <span th:text="${nights}"></span></p>
                     <p class="mb-1"><span th:text="#{detail.roomAmount}">Tiền phòng:</span> <span th:text="${#numbers.formatDecimal(roomAmount, 1, 'POINT', 0, 'COMMA')} + 'VND'"></span></p>
+                    <p class="mb-1 text-success" th:if="${promotion != null}"
+                       th:text="#{promo.line(${promotion.nameEn != null and #locale.language == 'en' ? promotion.nameEn : promotion.name}, ${promotion.percent}, ${#numbers.formatDecimal(promotion.amount, 1, 'POINT', 0, 'COMMA')})}"></p>
                     <p class="mb-1" th:if="${selectedCombo != null}"><span th:text="#{detail.comboLine(${selectedCombo.localizedName})}">Combo:</span> <span th:text="${#numbers.formatDecimal(comboAmount, 1, 'POINT', 0, 'COMMA')} + 'VND'"></span></p>
                     <p class="fw-bold mb-3"><span th:text="#{detail.total}">Tổng tiền:</span> <span th:text="${#numbers.formatDecimal(totalAmount, 1, 'POINT', 0, 'COMMA')} + 'VND'"></span></p>
 
