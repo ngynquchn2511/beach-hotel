@@ -3,6 +3,7 @@ package com.hotel.controller;
 import com.hotel.service.BookingService;
 import com.hotel.service.ContactMessageService;
 import com.hotel.service.FrontDeskService;
+import com.hotel.service.HousekeepingService;
 import com.hotel.service.ServiceOrderService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -28,7 +29,8 @@ import org.springframework.web.bind.annotation.ModelAttribute;
         AdminGuestRegistrationController.class,
         AdminDivingTourController.class,
         AdminServiceOrderController.class,
-        AdminContactMessageController.class
+        AdminContactMessageController.class,
+        AdminHousekeepingController.class
 })
 public class AdminSidebarModelAdvice {
 
@@ -36,13 +38,22 @@ public class AdminSidebarModelAdvice {
     private final ServiceOrderService serviceOrderService;
     private final FrontDeskService frontDeskService;
     private final ContactMessageService contactMessageService;
+    private final HousekeepingService housekeepingService;
 
     public AdminSidebarModelAdvice(BookingService bookingService, ServiceOrderService serviceOrderService,
-                                   FrontDeskService frontDeskService, ContactMessageService contactMessageService) {
+                                   FrontDeskService frontDeskService, ContactMessageService contactMessageService,
+                                   HousekeepingService housekeepingService) {
+        this.housekeepingService = housekeepingService;
         this.bookingService = bookingService;
         this.serviceOrderService = serviceOrderService;
         this.frontDeskService = frontDeskService;
         this.contactMessageService = contactMessageService;
+    }
+
+    // So phong chua sach (cho don + dang don) - hien so o muc "Don phong"
+    @ModelAttribute("dirtyRoomCount")
+    public long dirtyRoomCount() {
+        return housekeepingService.countDirty();
     }
 
     // So tin lien he khach gui ma chua ai xu ly - hien so o muc "Hop thu lien he"

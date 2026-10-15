@@ -21,6 +21,12 @@
     </a>
     <a th:href="@{/admin/room-calendar}" class="list-group-item list-group-item-action"
        th:classappend="${p.startsWith('/admin/room-calendar')} ? 'active'"><i class="bi bi-calendar3-range"></i>Lịch phòng</a>
+    <a th:href="@{/admin/housekeeping}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+       th:classappend="${p.startsWith('/admin/housekeeping')} ? 'active'">
+        <span><i class="bi bi-stars"></i>Dọn phòng</span>
+        <span th:if="${dirtyRoomCount != null and dirtyRoomCount > 0}" class="badge rounded-pill bg-info"
+              th:text="${dirtyRoomCount}" title="Phòng chưa sạch"></span>
+    </a>
     <a th:href="@{/admin/guest-registrations}" class="list-group-item list-group-item-action"
        th:classappend="${p.startsWith('/admin/guest-registrations')} ? 'active'"><i class="bi bi-person-vcard"></i>Khai báo lưu trú</a>
     <a th:href="@{/admin/service-orders}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"

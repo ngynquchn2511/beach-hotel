@@ -228,11 +228,22 @@ public class RoomService {
     // Nhan vien/admin xac nhan da don dep xong sau khi khach checkout: NOT_READY -> AVAILABLE
     @Transactional
     public void markReady(Long id) {
+        markReady(id, null);
+    }
+
+    // cleanedBy: ten nhan vien bam "Xong" (null = khong ro, VD bam tu man hinh cu)
+    @Transactional
+    public void markReady(Long id, String cleanedBy) {
         Room room = findById(id);
         if (room.getStatus() != RoomStatus.NOT_READY) {
             throw new BusinessException("Phòng này hiện không ở trạng thái chờ dọn dẹp");
         }
         room.setStatus(RoomStatus.AVAILABLE);
+        room.setLastCleanedAt(java.time.LocalDateTime.now());
+        room.setLastCleanedBy(cleanedBy != null ? cleanedBy : room.getCleaningBy());
+        room.setDirtySince(null);
+        room.setCleaningBy(null);
+        room.setCleaningStartedAt(null);
         roomRepository.save(room);
     }
 

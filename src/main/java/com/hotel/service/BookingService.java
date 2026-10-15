@@ -729,6 +729,11 @@ public class BookingService {
         if (guestRepository.countByBookingId(bookingId) == 0) {
             throw new BusinessException("Vui lòng khai báo lưu trú (nhập giấy tờ ít nhất 1 khách) trước khi check-in");
         }
+        // Khach truoc vua tra phong: phai don xong (bang "Don phong") moi giao phong cho khach moi
+        if (booking.getRoom().getStatus() == RoomStatus.NOT_READY) {
+            throw new BusinessException("Phòng " + booking.getRoom().getRoomNumber()
+                    + " chưa dọn xong sau khách trước. Vui lòng hoàn tất ở mục Dọn phòng rồi mới nhận phòng");
+        }
         booking.setStatus(BookingStatus.CHECKED_IN);
 
         Room room = booking.getRoom();
@@ -752,6 +757,9 @@ public class BookingService {
 
         Room room = booking.getRoom();
         room.setStatus(RoomStatus.NOT_READY);
+        room.setDirtySince(LocalDateTime.now());
+        room.setCleaningBy(null);
+        room.setCleaningStartedAt(null);
         roomRepository.save(room);
 
         Booking checkedOutBooking = bookingRepository.save(booking);

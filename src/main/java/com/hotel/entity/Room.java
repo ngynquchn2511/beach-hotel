@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "rooms")
@@ -47,6 +48,29 @@ public class Room {
     // Mo ta theo ngon ngu khach dang chon (dung tren trang khach)
     public String getLocalizedDescription() {
         return Texts.pick(description, descriptionEn);
+    }
+
+    // ===== Don phong (bang "Don phong" cua le tan) =====
+    // Khach tra phong luc nao -> phong bat dau can don (NOT_READY)
+    @Column(name = "dirty_since")
+    private LocalDateTime dirtySince;
+
+    // Nhan vien dang don va bat dau luc nao (NOT_READY + co nguoi nhan = "Dang don")
+    @Column(name = "cleaning_by", length = 100)
+    private String cleaningBy;
+
+    @Column(name = "cleaning_started_at")
+    private LocalDateTime cleaningStartedAt;
+
+    // Lan don xong gan nhat
+    @Column(name = "last_cleaned_at")
+    private LocalDateTime lastCleanedAt;
+
+    @Column(name = "last_cleaned_by", length = 100)
+    private String lastCleanedBy;
+
+    public boolean isBeingCleaned() {
+        return status == RoomStatus.NOT_READY && cleaningStartedAt != null;
     }
 
     @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
