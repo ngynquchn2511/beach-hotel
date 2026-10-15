@@ -104,6 +104,8 @@ public class CustomerController {
         model.addAttribute("ratingStats", reviewService.statsForRoomType(room.getRoomType().getId()));
         model.addAttribute("roomReviews", reviewService.findLatestForRoomType(room.getRoomType().getId(), 5));
         model.addAttribute("similarRooms", roomService.findSimilarRooms(room, checkIn, checkOut, guests, SIMILAR_ROOMS));
+        // Chi noi "con trong dung ngay ban chon" khi ngay hop le (ngay sai thi goi y khong loc theo ngay)
+        model.addAttribute("similarByDates", RoomService.isValidStay(checkIn, checkOut));
 
         if (checkIn != null && checkOut != null) {
             try {

@@ -11,6 +11,7 @@ import com.hotel.exception.BusinessException;
 import com.hotel.repository.BookingRepository;
 import com.hotel.repository.RoomImageRepository;
 import com.hotel.repository.RoomRepository;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -69,27 +70,20 @@ public class RoomService {
         return roomRepository.findAvailableRooms(checkIn, checkOut, roomTypeId, guests);
     }
 
+    // Khach da chon khoang ngay dat duoc chua (khong o qua khu, tra phong sau nhan phong)
+    public static boolean isValidStay(LocalDate checkIn, LocalDate checkOut) {
+        return checkIn != null && checkOut != null
+                && !checkIn.isBefore(LocalDate.now()) && checkOut.isAfter(checkIn);
+    }
+
     // "Phong tuong tu" o trang chi tiet: uu tien cung loai phong, roi gia gan nhat. Khach da chon ngay hop le
     // thi chi goi y phong con trong dung khoang ngay do (va du cho so khach), khong bao gio goi y phong dang bao tri
     @Transactional(readOnly = true)
     public List<Room> findSimilarRooms(Room room, LocalDate checkIn, LocalDate checkOut, Integer guests, int limit) {
-        boolean validDates = checkIn != null && checkOut != null
-                && !checkIn.isBefore(LocalDate.now()) && checkOut.isAfter(checkIn);
-        List<Room> candidates = validDates
-                ? roomRepository.findAvailableRooms(checkIn, checkOut, null, guests)
-                : roomRepository.findAll().stream()
-                        .filter(r -> r.getStatus() != RoomStatus.MAINTENANCE)
-                        .filter(r -> guests == null || r.getRoomType().getMaxGuests() == null
-                                || r.getRoomType().getMaxGuests() >= guests)
-                        .toList();
-        Long typeId = room.getRoomType().getId();
-        return candidates.stream()
-                .filter(r -> !r.getId().equals(room.getId()))
-                .sorted(Comparator.comparing((Room r) -> !r.getRoomType().getId().equals(typeId))
-                        .thenComparing(r -> r.getPrice().subtract(room.getPrice()).abs())
-                        .thenComparing(Room::getRoomNumber))
-                .limit(limit)
-                .toList();
+        boolean byDates = isValidStay(checkIn, checkOut);
+        LocalDate today = LocalDate.now();
+        return roomRepository.findSimilarRooms(room.getId(), room.getRoomType().getId(), room.getPrice(), guests,
+                byDates, byDates ? checkIn : today, byDates ? checkOut : today, PageRequest.of(0, limit));
     }
 
     // Dung khi xem chi tiet phong de xac nhan phong con trong hay khong (BR-01, BR-03)
