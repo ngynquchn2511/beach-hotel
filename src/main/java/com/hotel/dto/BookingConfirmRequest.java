@@ -16,6 +16,9 @@ public class BookingConfirmRequest {
     // So diem thuong muon dung (khach da dang nhap); null / 0 = khong dung
     private Integer pointsToUse;
 
+    // Ma the qua tang (khong bat buoc)
+    private String giftCode;
+
     @NotBlank(message = "{val.guestName.required}")
     private String guestName;
 

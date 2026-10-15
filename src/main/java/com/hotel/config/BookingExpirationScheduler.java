@@ -26,9 +26,11 @@ public class BookingExpirationScheduler {
     private final BookingRepository bookingRepository;
     private final EmailService emailService;
     private final LoyaltyService loyaltyService;
+    private final com.hotel.service.GiftVoucherService giftVoucherService;
 
     public BookingExpirationScheduler(BookingRepository bookingRepository, EmailService emailService,
-                                      LoyaltyService loyaltyService) {
+                                      LoyaltyService loyaltyService, com.hotel.service.GiftVoucherService giftVoucherService) {
+        this.giftVoucherService = giftVoucherService;
         this.bookingRepository = bookingRepository;
         this.emailService = emailService;
         this.loyaltyService = loyaltyService;
@@ -54,6 +56,7 @@ public class BookingExpirationScheduler {
                 booking.setCancelledAt(now);
                 // Don tu huy da dung diem thuong -> tra lai diem cho khach
                 loyaltyService.refundUsed(booking);
+                giftVoucherService.refund(booking);
                 bookingRepository.save(booking);
                 if (depositOverdue) {
                     // Bao cho khach biet don bi huy vi chua chuyen coc (khach co the dat lai)

@@ -37,7 +37,11 @@ public class VnPayService {
     public enum Outcome { SUCCESS, ALREADY_PAID, PAYMENT_FAILED, INVALID_SIGNATURE, NOT_FOUND, WRONG_AMOUNT, NOT_AWAITING, PAID_BUT_ROOM_TAKEN }
 
     // Ket qua xu ly 1 lan VNPay bao ve; bookingId = null khi khong doc duoc ma don
-    public record Result(Outcome outcome, Long bookingId) {
+    // voucherId != null: giao dich mua the qua tang (vnp_TxnRef bat dau bang "V")
+    public record Result(Outcome outcome, Long bookingId, Long voucherId) {
+        public Result(Outcome outcome, Long bookingId) {
+            this(outcome, bookingId, null);
+        }
     }
 
     private final BookingService bookingService;
@@ -55,6 +59,13 @@ public class VnPayService {
         this.tmnCode = tmnCode == null ? "" : tmnCode.trim();
         this.hashSecret = hashSecret == null ? "" : hashSecret.trim();
         this.payUrl = payUrl;
+    }
+
+    private GiftVoucherService giftVoucherService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setGiftVoucherService(GiftVoucherService giftVoucherService) {
+        this.giftVoucherService = giftVoucherService;
     }
 
     @org.springframework.beans.factory.annotation.Autowired
@@ -177,11 +188,42 @@ public class VnPayService {
         return payUrl + "?" + query + "&vnp_SecureHash=" + hmacSha512(query);
     }
 
+    // Link thanh toan the qua tang (het han sau 15 phut)
+    public String createVoucherPaymentUrl(com.hotel.entity.GiftVoucher voucher, String clientIp, String returnUrl, boolean english) {
+        if (!isEnabled()) {
+            throw new BusinessException("Thanh toán online chưa được bật");
+        }
+        if (voucher.getStatus() != com.hotel.entity.GiftVoucher.Status.PENDING_PAYMENT) {
+            throw new BusinessException("Thẻ này không ở trạng thái chờ thanh toán");
+        }
+        ZonedDateTime now = ZonedDateTime.now(VN_ZONE);
+        Map<String, String> params = new TreeMap<>();
+        params.put("vnp_Version", "2.1.0");
+        params.put("vnp_Command", "pay");
+        params.put("vnp_TmnCode", tmnCode);
+        params.put("vnp_Amount", voucher.getAmount().setScale(0, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100)).toPlainString());
+        params.put("vnp_CurrCode", "VND");
+        params.put("vnp_TxnRef", "V" + voucher.getId() + "_" + now.toEpochSecond());
+        params.put("vnp_OrderInfo", "Mua the qua tang QT" + voucher.getId());
+        params.put("vnp_OrderType", "other");
+        params.put("vnp_Locale", english ? "en" : "vn");
+        params.put("vnp_ReturnUrl", returnUrl);
+        params.put("vnp_IpAddr", clientIp == null || clientIp.isBlank() ? "127.0.0.1" : clientIp);
+        params.put("vnp_CreateDate", now.format(VNP_TIME));
+        params.put("vnp_ExpireDate", now.plusMinutes(LINK_MINUTES).format(VNP_TIME));
+        String query = canonicalQuery(params);
+        return payUrl + "?" + query + "&vnp_SecureHash=" + hmacSha512(query);
+    }
+
     // Xu ly tham so VNPay gui ve (trang tra ve hoac IPN): kiem chu ky -> ghi nhan coc neu giao dich thanh cong
     public Result handleCallback(Map<String, String> params) {
         if (!isEnabled() || !verifySignature(params)) {
             log.warn("VNPay: chu ky khong hop le, txnRef={}", params.get("vnp_TxnRef"));
             return new Result(Outcome.INVALID_SIGNATURE, null);
+        }
+        String txnRef = params.get("vnp_TxnRef");
+        if (txnRef != null && txnRef.startsWith("V")) {
+            return handleVoucherCallback(params, parseBookingId(txnRef.substring(1)));
         }
         Long bookingId = parseBookingId(params.get("vnp_TxnRef"));
         if (bookingId == null || !tmnCode.equals(params.get("vnp_TmnCode"))) {
@@ -211,6 +253,28 @@ public class VnPayService {
                     params.get("vnp_TransactionNo"));
         }
         return new Result(outcome, bookingId);
+    }
+
+    private Result handleVoucherCallback(Map<String, String> params, Long voucherId) {
+        if (voucherId == null || giftVoucherService == null || !tmnCode.equals(params.get("vnp_TmnCode"))) {
+            return new Result(Outcome.NOT_FOUND, null, voucherId);
+        }
+        if (!"00".equals(params.get("vnp_ResponseCode")) || !"00".equals(params.get("vnp_TransactionStatus"))) {
+            return new Result(Outcome.PAYMENT_FAILED, null, voucherId);
+        }
+        BigDecimal amount;
+        try {
+            amount = new BigDecimal(params.get("vnp_Amount")).divide(BigDecimal.valueOf(100));
+        } catch (RuntimeException ex) {
+            return new Result(Outcome.WRONG_AMOUNT, null, voucherId);
+        }
+        Outcome outcome = switch (giftVoucherService.confirmOnlinePayment(voucherId, amount, params.get("vnp_TransactionNo"))) {
+            case PAID -> Outcome.SUCCESS;
+            case ALREADY_PAID -> Outcome.ALREADY_PAID;
+            case NOT_FOUND -> Outcome.NOT_FOUND;
+            case WRONG_AMOUNT -> Outcome.WRONG_AMOUNT;
+        };
+        return new Result(outcome, null, voucherId);
     }
 
     // Chu ky = HMAC-SHA512(hashSecret, cac tham so vnp_* tru 2 truong hash, sap xep theo ten, ma hoa URL)

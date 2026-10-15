@@ -34,6 +34,12 @@ public class PaymentService {
     private final BookingChargeRepository chargeRepository;
     private final BookingRepository bookingRepository;
     private final InvoicePdfService invoicePdfService;
+    private com.hotel.repository.GiftVoucherRepository giftVoucherRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setGiftVoucherRepository(com.hotel.repository.GiftVoucherRepository giftVoucherRepository) {
+        this.giftVoucherRepository = giftVoucherRepository;
+    }
 
     @Value("${app.payment.bank-id:MB}")
     private String bankId;
@@ -85,6 +91,11 @@ public class PaymentService {
     // Anh QR VietQR (chuan Napas) - app ngan hang nao quet cung tu dien san so tien va noi dung chuyen khoan
     public String buildQrUrl(Booking booking) {
         return vietQrUrl(amountDue(booking), transferContent(booking));
+    }
+
+    // QR tra tien the qua tang, noi dung "QT<id>"
+    public String buildGiftVoucherQrUrl(com.hotel.entity.GiftVoucher voucher) {
+        return vietQrUrl(voucher.getAmount(), "QT" + voucher.getId());
     }
 
     // QR chuyen coc gop ca nhom dat nhieu phong, noi dung "HB G12 COC"
@@ -298,6 +309,12 @@ public class PaymentService {
         for (Booking b : bookingRepository.findByDepositPaidAtBetween(from, to)) {
             result.merge(b.isDepositPaidOnline() ? PaymentMethod.ONLINE : PaymentMethod.BANK_TRANSFER,
                     b.getDepositPaidAmount(), BigDecimal::add);
+        }
+        // Ban the qua tang: tinh doanh thu luc khach tra tien the (VNPay -> online, chuyen khoan -> chuyen khoan)
+        if (giftVoucherRepository != null) {
+            for (com.hotel.entity.GiftVoucher v : giftVoucherRepository.findByPaidAtBetween(from, to)) {
+                result.merge(v.getOnlineRef() != null ? PaymentMethod.ONLINE : PaymentMethod.BANK_TRANSFER, v.getAmount(), BigDecimal::add);
+            }
         }
         // Tien coc da chuyen tra lai khach (don huy) - tru theo ngay hoan
         for (Booking b : bookingRepository.findByRefundedAtBetween(from, to)) {

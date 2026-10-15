@@ -151,6 +151,8 @@ public class SecurityConfig {
         http
                 .addFilterAfter(csrfTokenEagerLoadFilter(), CsrfFilter.class)
                 .authorizeHttpRequests(auth -> auth
+                        // Mua the qua tang khong can dang nhap (trang thanh toan kiem tra ?token=)
+                        .requestMatchers("/gift-vouchers", "/gift-vouchers/**").permitAll()
                         .requestMatchers("/", "/home", "/about", "/services", "/rooms", "/rooms/**", "/login", "/register",
                                 "/forgot-password", "/reset-password", "/verify-email", "/contact", "/resend-verification", "/robots.txt", "/sitemap.xml",
                                 "/css/**", "/js/**", "/images/**", "/uploads/**", "/page-images/**").permitAll()

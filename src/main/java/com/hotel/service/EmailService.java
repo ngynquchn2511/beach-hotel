@@ -188,6 +188,46 @@ public class EmailService {
         return queue(booking, "Sóng Xanh Resort - Đã đổi ngày lưu trú đơn #" + booking.getId(), body, "doi ngay");
     }
 
+    // The qua tang da thanh toan: gui ma cho nguoi nhan (kem loi nhan) va bao nguoi mua
+    public boolean sendGiftVoucher(com.hotel.entity.GiftVoucher v) {
+        if (!isConfigured()) {
+            log.warn("Chua dat MAIL_USERNAME va MAIL_PASSWORD - chua gui duoc the qua tang #{}", v.getId());
+            return false;
+        }
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        StringBuilder sb = new StringBuilder();
+        sb.append("Xin chào ").append(v.getRecipientName()).append(",\n\n");
+        sb.append(v.getPurchaserName()).append(" vừa tặng bạn thẻ quà tặng Sóng Xanh Resort trị giá ")
+                .append(money(v.getAmount())).append(" VND.\n");
+        if (v.getMessage() != null) {
+            sb.append("\nLời nhắn: \"").append(v.getMessage()).append("\"\n");
+        }
+        sb.append("\nMã thẻ: ").append(v.getCode()).append("\n");
+        sb.append("Hạn dùng: ").append(v.getExpiresAt().format(fmt)).append("\n");
+        sb.append("Cách dùng: khi đặt phòng trên website, nhập mã ở ô \"Thẻ quà tặng\" - tiền được trừ thẳng vào đơn, số dư còn lại dùng tiếp lần sau.\n");
+        if (baseUrl != null && !baseUrl.isBlank()) {
+            sb.append("Đặt phòng: ").append(baseUrl.replaceAll("/+$", "")).append("/rooms\n");
+        }
+        sb.append("\nHẹn gặp bạn bên vịnh Hạ Long!\nSóng Xanh Resort");
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom("Sóng Xanh Resort <" + senderEmail + ">");
+        message.setTo(v.getRecipientEmail());
+        if (!v.getRecipientEmail().equalsIgnoreCase(v.getPurchaserEmail())) {
+            message.setCc(v.getPurchaserEmail());
+        }
+        message.setSubject("Sóng Xanh Resort - Thẻ quà tặng " + money(v.getAmount()) + " VND từ " + v.getPurchaserName());
+        message.setText(sb.toString());
+        Long id = v.getId();
+        deliverAfterCommit(() -> {
+            try {
+                mailSender.send(message);
+            } catch (Exception ex) {
+                log.error("Gui the qua tang #{} that bai", id, ex);
+            }
+        });
+        return true;
+    }
+
     // Nhac chuyen coc truoc khi het han (don se tu huy)
     public boolean sendDepositReminder(Booking booking) {
         if (!canEmail(booking)) {
@@ -630,6 +670,9 @@ public class EmailService {
         if (booking.getPromotionAmountOrZero().signum() > 0) {
             rows.append(invoiceRow("Khuyến mãi: " + booking.getPromotionName() + " (-" + booking.getPromotionPercent() + "%)", "",
                     "-" + money(booking.getPromotionAmountOrZero())));
+        }
+        if (booking.getGiftVoucherAmountOrZero().signum() > 0) {
+            rows.append(invoiceRow("Thẻ quà tặng " + booking.getGiftVoucherCode(), "", "-" + money(booking.getGiftVoucherAmountOrZero())));
         }
         if (booking.getPointsUsed() != null && booking.getPointsUsed() > 0) {
             rows.append(invoiceRow("Trừ điểm thưởng (" + booking.getPointsUsed() + " điểm)", "",

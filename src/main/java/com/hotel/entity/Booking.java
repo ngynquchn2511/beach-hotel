@@ -134,6 +134,17 @@ public class Booking {
     @Column(name = "discount_amount", precision = 12, scale = 2)
     private java.math.BigDecimal discountAmount;
 
+    // The qua tang dung tru tien don (ma + so tien da tru); null = khong dung
+    @Column(name = "gift_voucher_code", length = 20)
+    private String giftVoucherCode;
+
+    @Column(name = "gift_voucher_amount", precision = 12, scale = 2)
+    private java.math.BigDecimal giftVoucherAmount;
+
+    public java.math.BigDecimal getGiftVoucherAmountOrZero() {
+        return giftVoucherAmount != null ? giftVoucherAmount : java.math.BigDecimal.ZERO;
+    }
+
     // Thuoc nhom dat nhieu phong (null = don le)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "group_id")

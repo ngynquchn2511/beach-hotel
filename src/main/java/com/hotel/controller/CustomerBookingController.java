@@ -183,7 +183,8 @@ public class CustomerBookingController {
                     customer, roomId, checkIn, checkOut,
                     request.getCheckInTime(), request.getCheckOutTime(),
                     guests, comboId, request.getDiscountCode(),
-                    request.getGuestName(), request.getGuestPhone(), request.getGuestEmail(), points
+                    request.getGuestName(), request.getGuestPhone(), request.getGuestEmail(), points,
+                    request.getGiftCode()
             );
             // Kem ma truy cap de khach vang lai xem lai duoc don (khong can dang nhap)
             return "redirect:/customer/bookings/" + booking.getId() + "?token=" + booking.getAccessToken();

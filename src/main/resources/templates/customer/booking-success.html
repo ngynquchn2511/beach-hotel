@@ -202,6 +202,8 @@
            th:text="#{success.discount(${booking.discountCode.code}, ${#numbers.formatDecimal(booking.discountAmount, 1, 'POINT', 0, 'COMMA')})}"></p>
         <p class="mb-1" th:if="${booking.promotionAmount != null and booking.promotionAmount.signum() > 0}"
            th:text="#{promo.line(${booking.localizedPromotionName}, ${booking.promotionPercent}, ${#numbers.formatDecimal(booking.promotionAmount, 1, 'POINT', 0, 'COMMA')})}"></p>
+        <p class="mb-1" th:if="${booking.giftVoucherAmount != null and booking.giftVoucherAmount.signum() > 0}"
+           th:text="#{gv.usedLine(${booking.giftVoucherCode}, ${#numbers.formatDecimal(booking.giftVoucherAmount, 1, 'POINT', 0, 'COMMA')})}"></p>
         <p class="mb-1" th:if="${booking.pointsUsed != null and booking.pointsUsed > 0}"
            th:text="#{points.usedLine(${booking.pointsUsed}, ${#numbers.formatDecimal(booking.pointsDiscount, 1, 'POINT', 0, 'COMMA')})}"></p>
         <p class="mb-1 text-success" th:if="${booking.pointsEarned != null and booking.pointsEarned > 0}"

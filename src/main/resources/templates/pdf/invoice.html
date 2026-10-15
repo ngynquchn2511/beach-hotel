@@ -86,6 +86,10 @@
         <td colspan="3" th:text="'Khuyến mãi: ' + ${booking.promotionName} + ' (-' + ${booking.promotionPercent} + '%)'"></td>
         <td class="right" th:text="'-' + ${#numbers.formatDecimal(booking.promotionAmount, 1, 'POINT', 0, 'COMMA')}"></td>
     </tr>
+    <tr th:if="${booking.giftVoucherAmount != null and booking.giftVoucherAmount.signum() > 0}">
+        <td colspan="3" th:text="'Thẻ quà tặng ' + ${booking.giftVoucherCode}"></td>
+        <td class="right" th:text="'-' + ${#numbers.formatDecimal(booking.giftVoucherAmount, 1, 'POINT', 0, 'COMMA')}"></td>
+    </tr>
     <tr th:if="${booking.pointsUsed != null and booking.pointsUsed > 0}">
         <td colspan="3" th:text="'Trừ điểm thưởng (' + ${booking.pointsUsed} + ' điểm)'"></td>
         <td class="right" th:text="'-' + ${#numbers.formatDecimal(booking.pointsDiscount, 1, 'POINT', 0, 'COMMA')}"></td>

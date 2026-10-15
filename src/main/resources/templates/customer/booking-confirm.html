@@ -121,6 +121,12 @@
                 <div id="discountCheckResult" class="small mt-1"></div>
             </div>
 
+            <!-- The qua tang: tru vao tien don, so du con lai dung tiep -->
+            <div class="mb-3">
+                <label class="form-label" for="giftCode" th:text="#{gv.useLabel}">Thẻ quà tặng (nếu có)</label>
+                <input type="text" th:field="*{giftCode}" id="giftCode" class="form-control text-uppercase" maxlength="20" placeholder="QT-XXXX-XXXX">
+            </div>
+
             <!-- Diem thuong: 1 diem = 1.000d, toi da 50% tien don (kiem tra lai khi bam dat) -->
             <div class="mb-3" th:if="${pointsBalance != null}">
                 <label class="form-label" for="pointsToUse" th:text="#{points.use}">Dùng điểm thưởng</label>

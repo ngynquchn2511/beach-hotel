@@ -64,6 +64,8 @@
                 </p>
                 <p class="mb-1" th:if="${booking.promotionAmount != null and booking.promotionAmount.signum() > 0}"
                    th:text="'Khuyến mãi ' + ${booking.promotionName} + ' (-' + ${booking.promotionPercent} + '%): giảm ' + ${#numbers.formatDecimal(booking.promotionAmount, 1, 'POINT', 0, 'COMMA')} + ' VND'"></p>
+                <p class="mb-1" th:if="${booking.giftVoucherAmount != null and booking.giftVoucherAmount.signum() > 0}"
+                   th:text="'Thẻ quà tặng ' + ${booking.giftVoucherCode} + ': trừ ' + ${#numbers.formatDecimal(booking.giftVoucherAmount, 1, 'POINT', 0, 'COMMA')} + ' VND'"></p>
                 <p class="mb-1" th:if="${booking.pointsUsed != null and booking.pointsUsed > 0}"
                    th:text="'Dùng ' + ${booking.pointsUsed} + ' điểm thưởng (giảm ' + ${#numbers.formatDecimal(booking.pointsDiscount, 1, 'POINT', 0, 'COMMA')} + ' VND)'"></p>
                 <p class="mb-1 text-success" th:if="${booking.pointsEarned != null and booking.pointsEarned > 0}"

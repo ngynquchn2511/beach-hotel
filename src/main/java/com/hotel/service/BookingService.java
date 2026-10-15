@@ -51,6 +51,12 @@ public class BookingService {
     private final LoyaltyService loyaltyService;
     private final PromotionService promotionService;
     private com.hotel.repository.BookingGroupRepository bookingGroupRepository;
+    private GiftVoucherService giftVoucherService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setGiftVoucherService(@org.springframework.context.annotation.Lazy GiftVoucherService giftVoucherService) {
+        this.giftVoucherService = giftVoucherService;
+    }
 
     @org.springframework.beans.factory.annotation.Autowired
     void setBookingGroupRepository(com.hotel.repository.BookingGroupRepository bookingGroupRepository) {
@@ -240,14 +246,24 @@ public class BookingService {
                                   Long comboId, String discountCodeStr, String guestName, String guestPhone,
                                   String guestEmail, int pointsToUse) {
         return placeOnline(customer, roomId, checkInDate, checkOutDate, checkInTime, checkOutTime, guests, comboId,
-                discountCodeStr, guestName, guestPhone, guestEmail, pointsToUse, null);
+                discountCodeStr, guestName, guestPhone, guestEmail, pointsToUse, null, null);
+    }
+
+    // giftCode: ma the qua tang tru vao tien don (sau khuyen mai + diem thuong), tien coc tinh tren so con lai
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public Booking createBooking(User customer, Long roomId, LocalDate checkInDate, LocalDate checkOutDate,
+                                  LocalTime checkInTime, LocalTime checkOutTime, Integer guests,
+                                  Long comboId, String discountCodeStr, String guestName, String guestPhone,
+                                  String guestEmail, int pointsToUse, String giftCode) {
+        return placeOnline(customer, roomId, checkInDate, checkOutDate, checkInTime, checkOutTime, guests, comboId,
+                discountCodeStr, guestName, guestPhone, guestEmail, pointsToUse, giftCode, null);
     }
 
     // group != null: 1 phong trong nhom dat nhieu phong (khong gui email tung don - gui 1 email tong hop)
     private Booking placeOnline(User customer, Long roomId, LocalDate checkInDate, LocalDate checkOutDate,
                                 LocalTime checkInTime, LocalTime checkOutTime, Integer guests,
                                 Long comboId, String discountCodeStr, String guestName, String guestPhone,
-                                String guestEmail, int pointsToUse, BookingGroup group) {
+                                String guestEmail, int pointsToUse, String giftCode, BookingGroup group) {
         requireStandardTimes(checkInTime, checkOutTime);
         Booking booking = buildBooking(customer, roomId, checkInDate, checkOutDate, checkInTime, checkOutTime,
                 guests, comboId, discountCodeStr, guestName, guestPhone, guestEmail);
@@ -261,6 +277,12 @@ public class BookingService {
             booking.setPointsDiscount(pointsDiscount);
             booking.setTotalAmount(booking.getTotalAmount().subtract(pointsDiscount).max(BigDecimal.ZERO));
         }
+        if (giftCode != null && !giftCode.isBlank()) {
+            BigDecimal voucherAmount = giftVoucherService.quote(giftCode, booking.getTotalAmount());
+            booking.setGiftVoucherCode(giftCode.trim().toUpperCase());
+            booking.setGiftVoucherAmount(voucherAmount);
+            booking.setTotalAmount(booking.getTotalAmount().subtract(voucherAmount).max(BigDecimal.ZERO));
+        }
 
         booking.setChannel(BookingChannel.ONLINE);
         BigDecimal deposit = pricingService.depositFor(booking.getTotalAmount());
@@ -272,6 +294,9 @@ public class BookingService {
         booking.setGroup(group);
         Booking savedBooking = bookingRepository.save(booking);
         loyaltyService.recordRedeem(savedBooking);
+        if (savedBooking.getGiftVoucherCode() != null) {
+            giftVoucherService.apply(savedBooking);
+        }
         if (group == null) {
             emailService.sendBookingConfirmation(savedBooking);
         }
@@ -305,7 +330,7 @@ public class BookingService {
                 throw BusinessException.of("group.error.guests", room.getRoomNumber(), room.getRoomType().getMaxGuests());
             }
             bookings.add(placeOnline(customer, roomId, checkInDate, checkOutDate, checkInTime, checkOutTime, guests,
-                    null, null, guestName, guestPhone, guestEmail, 0, group));
+                    null, null, guestName, guestPhone, guestEmail, 0, null, group));
         }
         emailService.sendGroupBooking(group, bookings, false);
         return group;
@@ -846,6 +871,7 @@ public class BookingService {
         BigDecimal discountAmount = discountFor(booking.getDiscountCode(), subtotal);
         // Tien da tru bang diem thuong / khuyen mai luc dat giu nguyen (tien phong khong doi)
         BigDecimal totalAmount = subtotal.subtract(discountAmount).subtract(booking.getPointsDiscountAmount())
+                .subtract(booking.getGiftVoucherAmountOrZero())
                 .subtract(booking.getPromotionAmountOrZero()).max(BigDecimal.ZERO);
 
         booking.setCombo(newCombo);
@@ -953,7 +979,7 @@ public class BookingService {
         BigDecimal promotionAmount = promotion != null ? promotion.amount() : BigDecimal.ZERO;
         // Tien da tru bang diem thuong luc dat giu nguyen
         BigDecimal totalAmount = subtotal.subtract(discountAmount).subtract(promotionAmount)
-                .subtract(booking.getPointsDiscountAmount()).max(BigDecimal.ZERO);
+                .subtract(booking.getPointsDiscountAmount()).subtract(booking.getGiftVoucherAmountOrZero()).max(BigDecimal.ZERO);
         BigDecimal deposit = booking.isDepositRequired() && !booking.isDepositPaid()
                 ? pricingService.depositFor(totalAmount) : booking.getDepositPaidAmount();
         return new DateChangeQuote(newCheckIn, newCheckOut, ChronoUnit.DAYS.between(newCheckIn, newCheckOut),
@@ -1001,6 +1027,10 @@ public class BookingService {
         booking.setStatus(BookingStatus.CANCELLED);
         booking.setCancelledAt(now);
         loyaltyService.refundUsed(booking);
+        // Unit test khoi tao BookingService bang constructor nen co the chua co (setter injection)
+        if (giftVoucherService != null) {
+            giftVoucherService.refund(booking);
+        }
         if (booking.isDepositRequired() && booking.isDepositPaid()) {
             int percent = fullRefund ? 100 : pricingService.refundPercent(checkInDateTime(booking), now);
             booking.setRefundPercent(percent);

@@ -28,6 +28,9 @@
                     <li class="list-inline-item mx-2">
                         <a th:href="@{/rooms}" class="link-light link-opacity-75 link-opacity-100-hover text-decoration-none" th:text="#{nav.rooms}">Danh sách phòng</a>
                     </li>
+                    <li class="list-inline-item mx-2">
+                        <a th:href="@{/gift-vouchers}" class="link-light link-opacity-75 link-opacity-100-hover text-decoration-none" th:text="#{gv.title}">Thẻ quà tặng</a>
+                    </li>
                     <li class="list-inline-item mx-2" sec:authorize="hasRole('CUSTOMER')">
                         <a th:href="@{/customer/bookings}" class="link-light link-opacity-75 link-opacity-100-hover text-decoration-none" th:text="#{nav.history}">Lịch sử đặt phòng</a>
                     </li>

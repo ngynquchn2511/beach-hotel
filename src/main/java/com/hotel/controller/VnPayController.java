@@ -55,6 +55,12 @@ public class VnPayController {
     @GetMapping("/payment/vnpay/return")
     public String paymentReturn(@RequestParam Map<String, String> params, RedirectAttributes redirectAttributes) {
         VnPayService.Result result = vnPayService.handleCallback(params);
+        if (result.voucherId() != null && result.outcome() != VnPayService.Outcome.INVALID_SIGNATURE) {
+            boolean ok = result.outcome() == VnPayService.Outcome.SUCCESS || result.outcome() == VnPayService.Outcome.ALREADY_PAID;
+            redirectAttributes.addFlashAttribute(ok ? "successMessage" : "errorMessage",
+                    messages.get(ok ? "gv.paid" : "vnpay.failed"));
+            return "redirect:/gift-vouchers/" + result.voucherId() + "/paid";
+        }
         if (result.outcome() == VnPayService.Outcome.INVALID_SIGNATURE || result.bookingId() == null) {
             redirectAttributes.addFlashAttribute("errorMessage", messages.get("vnpay.invalid"));
             return "redirect:/";
