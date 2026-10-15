@@ -228,6 +228,24 @@ public class EmailService {
         return true;
     }
 
+    // Bao khach de quen do (lien he le tan de nhan lai / gui buu dien)
+    public boolean sendLostItemFound(com.hotel.entity.LostItem item) {
+        Booking booking = item.getBooking();
+        if (booking == null || !canEmail(booking)) {
+            return false;
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append("Xin chào ").append(booking.getGuestName()).append(",\n\n");
+        sb.append("Sau kỳ lưu trú (đơn #").append(booking.getId()).append(", phòng ").append(booking.getRoom().getRoomNumber())
+                .append("), nhân viên Sóng Xanh Resort tìm thấy đồ có thể là của bạn:\n\n- ").append(item.getDescription()).append("\n\n");
+        sb.append("Chúng tôi đang giữ cẩn thận. Bạn hãy trả lời email này");
+        if (zaloPhone != null && !zaloPhone.isBlank()) {
+            sb.append(" hoặc nhắn Zalo ").append(zaloPhone);
+        }
+        sb.append(" để hẹn lấy lại hoặc nhờ gửi bưu điện (phí gửi do bạn chi trả).\n\nSóng Xanh Resort");
+        return queue(booking, "Sóng Xanh Resort - Bạn có để quên đồ? (đơn #" + booking.getId() + ")", sb.toString(), "do that lac");
+    }
+
     // Nhac chuyen coc truoc khi het han (don se tu huy)
     public boolean sendDepositReminder(Booking booking) {
         if (!canEmail(booking)) {
