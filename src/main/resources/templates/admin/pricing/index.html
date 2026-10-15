@@ -85,6 +85,21 @@
             </div>
 
             <!-- Gia ngay le -->
+            <div class="bg-white p-4 rounded shadow-sm mb-4" id="gia-thanh-vien">
+                <h5 class="fw-bold mb-1">Giá thành viên</h5>
+                <p class="text-muted small mb-3">Khách đăng nhập khi đặt online được giảm thêm % tiền phòng (sau khuyến mãi tự động) theo hạng khách.
+                    Khách vãng lai thấy lời mời đăng nhập. Đặt 0 để tắt.</p>
+                <form th:action="@{/admin/pricing/member-discounts}" method="post" class="d-flex gap-2 align-items-end flex-wrap">
+                    <div><label class="form-label small">Khách mới (%)</label>
+                        <input type="number" name="memberNew" class="form-control" min="0" max="30" required th:value="${settings.memberDiscountFor(T(com.hotel.entity.CustomerType).NEW)}"></div>
+                    <div><label class="form-label small">Khách quen (%)</label>
+                        <input type="number" name="memberRegular" class="form-control" min="0" max="30" required th:value="${settings.memberDiscountFor(T(com.hotel.entity.CustomerType).REGULAR)}"></div>
+                    <div><label class="form-label small">VIP (%)</label>
+                        <input type="number" name="memberVip" class="form-control" min="0" max="30" required th:value="${settings.memberDiscountFor(T(com.hotel.entity.CustomerType).VIP)}"></div>
+                    <button type="submit" class="btn btn-primary">Lưu giá thành viên</button>
+                </form>
+            </div>
+
             <div class="bg-white p-4 rounded shadow-sm mb-4" id="ty-gia">
                 <h5 class="fw-bold mb-1">Tỷ giá USD</h5>
                 <p class="text-muted small mb-3">Dùng để hiện giá tham khảo "≈ US$" cho khách xem trang tiếng Anh. Khách vẫn thanh toán bằng VND.</p>

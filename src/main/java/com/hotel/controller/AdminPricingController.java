@@ -128,6 +128,18 @@ public class AdminPricingController {
         return "redirect:/admin/pricing#khuyen-mai";
     }
 
+    @PostMapping("/member-discounts")
+    public String memberDiscounts(@RequestParam(required = false) Integer memberNew, @RequestParam(required = false) Integer memberRegular,
+                                  @RequestParam(required = false) Integer memberVip, RedirectAttributes redirectAttributes) {
+        try {
+            pricingService.updateMemberDiscounts(memberNew, memberRegular, memberVip);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã lưu giá thành viên. Áp dụng cho các đơn đặt từ bây giờ.");
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "redirect:/admin/pricing#gia-thanh-vien";
+    }
+
     @PostMapping("/usd-rate")
     public String updateUsdRate(@RequestParam(required = false) Integer usdRate, RedirectAttributes redirectAttributes) {
         try {

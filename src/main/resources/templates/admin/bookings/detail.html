@@ -62,6 +62,8 @@
                     Mã giảm giá: <span th:text="${booking.discountCode.code}"></span>
                     (giảm <span th:text="${#numbers.formatDecimal(booking.discountAmount, 1, 'POINT', 0, 'COMMA')} + 'VND'"></span>)
                 </p>
+                <p class="mb-1" th:if="${booking.memberDiscountAmount != null and booking.memberDiscountAmount.signum() > 0}"
+                   th:text="'Giá thành viên (-' + ${booking.memberDiscountPercent} + '%): giảm ' + ${#numbers.formatDecimal(booking.memberDiscountAmount, 1, 'POINT', 0, 'COMMA')} + ' VND'"></p>
                 <p class="mb-1" th:if="${booking.promotionAmount != null and booking.promotionAmount.signum() > 0}"
                    th:text="'Khuyến mãi ' + ${booking.promotionName} + ' (-' + ${booking.promotionPercent} + '%): giảm ' + ${#numbers.formatDecimal(booking.promotionAmount, 1, 'POINT', 0, 'COMMA')} + ' VND'"></p>
                 <p class="mb-1" th:if="${booking.giftVoucherAmount != null and booking.giftVoucherAmount.signum() > 0}"

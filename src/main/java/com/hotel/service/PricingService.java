@@ -203,6 +203,38 @@ public class PricingService {
         return settingsRepository.save(settings);
     }
 
+    public static final int MAX_MEMBER_DISCOUNT = 30;
+
+    // % gia thanh vien cua khach (0 neu chua bat)
+    public int memberDiscountPercent(com.hotel.entity.User customer) {
+        return customer == null ? 0 : getSettings().memberDiscountFor(customer.getCustomerType());
+    }
+
+    // Tien giam = % tren tien phong sau khuyen mai tu dong
+    public static BigDecimal memberDiscountAmount(BigDecimal roomAmountAfterPromotion, int percent) {
+        if (percent <= 0 || roomAmountAfterPromotion == null || roomAmountAfterPromotion.signum() <= 0) {
+            return BigDecimal.ZERO;
+        }
+        return roomAmountAfterPromotion.multiply(BigDecimal.valueOf(percent)).divide(HUNDRED, 0, RoundingMode.HALF_UP);
+    }
+
+    @Transactional
+    public PricingSettings updateMemberDiscounts(Integer newPercent, Integer regularPercent, Integer vipPercent) {
+        for (Integer p : new Integer[]{newPercent, regularPercent, vipPercent}) {
+            if (p == null || p < 0 || p > MAX_MEMBER_DISCOUNT) {
+                throw new BusinessException("Mức giảm thành viên phải từ 0 đến " + MAX_MEMBER_DISCOUNT + "%");
+            }
+        }
+        if (newPercent > regularPercent || regularPercent > vipPercent) {
+            throw new BusinessException("Mức giảm nên tăng dần: Khách mới ≤ Khách quen ≤ VIP");
+        }
+        PricingSettings settings = getSettings();
+        settings.setMemberDiscountNew(newPercent);
+        settings.setMemberDiscountRegular(regularPercent);
+        settings.setMemberDiscountVip(vipPercent);
+        return settingsRepository.save(settings);
+    }
+
     // Ty gia USD (chi de hien gia tham khao cho khach nuoc ngoai, khach van tra bang VND)
     @Transactional
     public PricingSettings updateUsdRate(Integer usdRate) {

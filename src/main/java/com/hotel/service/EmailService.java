@@ -685,6 +685,10 @@ public class EmailService {
             rows.append(invoiceRow("Giảm giá (mã " + booking.getDiscountCode().getCode() + ")", "",
                     "-" + money(booking.getDiscountAmount())));
         }
+        if (booking.getMemberDiscountAmountOrZero().signum() > 0) {
+            rows.append(invoiceRow("Giá thành viên (-" + booking.getMemberDiscountPercent() + "%)", "",
+                    "-" + money(booking.getMemberDiscountAmountOrZero())));
+        }
         if (booking.getPromotionAmountOrZero().signum() > 0) {
             rows.append(invoiceRow("Khuyến mãi: " + booking.getPromotionName() + " (-" + booking.getPromotionPercent() + "%)", "",
                     "-" + money(booking.getPromotionAmountOrZero())));

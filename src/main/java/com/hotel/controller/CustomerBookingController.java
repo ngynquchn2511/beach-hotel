@@ -196,7 +196,7 @@ public class CustomerBookingController {
                     request.getCheckInTime(), request.getCheckOutTime(),
                     guests, comboId, request.getDiscountCode(),
                     request.getGuestName(), request.getGuestPhone(), request.getGuestEmail(), points,
-                    request.getGiftCode()
+                    request.getGiftCode(), userDetails != null
             );
             if (companyInfo != null) {
                 companyInvoiceService.save(booking, companyInfo);
@@ -666,6 +666,7 @@ public class CustomerBookingController {
 
     // O "Dung diem thuong" tren trang xac nhan: so du moi nhat va so diem toi da dung duoc cho don nay
     private void addPointsModel(Model model, CustomUserDetails userDetails) {
+        addMemberModel(model, userDetails);
         if (userDetails == null) {
             return;
         }
@@ -675,6 +676,25 @@ public class CustomerBookingController {
         model.addAttribute("maxPoints", LoyaltyService.maxRedeemable(fresh, subtotal));
         model.addAttribute("minRedeemPoints", LoyaltyService.MIN_REDEEM_POINTS);
         model.addAttribute("vndPerPoint", LoyaltyService.VND_PER_REDEEMED_POINT);
+    }
+
+    // Gia thanh vien: khach dang nhap thay tien giam du kien, khach vang lai thay loi moi dang nhap
+    private void addMemberModel(Model model, CustomUserDetails userDetails) {
+        if (userDetails == null) {
+            int max = pricingService.getSettings().getMaxMemberDiscount();
+            if (max > 0) {
+                model.addAttribute("memberMaxPercent", max);
+            }
+            return;
+        }
+        int percent = pricingService.memberDiscountPercent(customerManagementService.findById(userDetails.getUser().getId()));
+        BigDecimal roomAmount = (BigDecimal) model.getAttribute("roomAmount");
+        if (percent > 0 && roomAmount != null) {
+            Object promo = model.getAttribute("promotion");
+            BigDecimal promoAmount = promo instanceof com.hotel.service.PromotionService.Applied a ? a.amount() : BigDecimal.ZERO;
+            model.addAttribute("memberPercent", percent);
+            model.addAttribute("memberAmount", com.hotel.service.PricingService.memberDiscountAmount(roomAmount.subtract(promoAmount), percent));
+        }
     }
 
     // Gio da duoc duyet ngoai khung (nhan som / tra muon) van phai co trong danh sach de form giu dung gia tri

@@ -222,6 +222,17 @@ public class Booking {
     @Column(name = "promotion_amount", precision = 12, scale = 2)
     private java.math.BigDecimal promotionAmount;
 
+    // Gia thanh vien (khach dang nhap luc dat): % va so tien giam tren tien phong sau khuyen mai
+    @Column(name = "member_discount_percent")
+    private Integer memberDiscountPercent;
+
+    @Column(name = "member_discount_amount", precision = 12, scale = 2)
+    private java.math.BigDecimal memberDiscountAmount;
+
+    public java.math.BigDecimal getMemberDiscountAmountOrZero() {
+        return memberDiscountAmount != null ? memberDiscountAmount : java.math.BigDecimal.ZERO;
+    }
+
     public java.math.BigDecimal getPromotionAmountOrZero() {
         return promotionAmount != null ? promotionAmount : java.math.BigDecimal.ZERO;
     }

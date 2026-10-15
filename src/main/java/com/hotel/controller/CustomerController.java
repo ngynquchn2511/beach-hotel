@@ -112,6 +112,17 @@ public class CustomerController {
 
         var room = roomService.findById(id);
         model.addAttribute("room", room);
+        // Gia thanh vien: khach dang nhap thay gia cua minh, khach vang lai thay muc giam toi da neu dang nhap
+        if (userDetails != null && userDetails.getUser().getRole() == com.hotel.entity.UserRole.CUSTOMER) {
+            int percent = pricingService.memberDiscountPercent(userDetails.getUser());
+            if (percent > 0) {
+                model.addAttribute("memberPercent", percent);
+                model.addAttribute("memberPrice", room.getPrice().subtract(
+                        com.hotel.service.PricingService.memberDiscountAmount(room.getPrice(), percent)));
+            }
+        } else if (userDetails == null && pricingService.getSettings().getMaxMemberDiscount() > 0) {
+            model.addAttribute("memberMaxPercent", pricingService.getSettings().getMaxMemberDiscount());
+        }
         model.addAttribute("unavailableDates", roomService.findUnavailableDates(id).stream()
                 .map(LocalDate::toString)
                 .toList());

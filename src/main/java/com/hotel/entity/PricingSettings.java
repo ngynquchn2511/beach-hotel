@@ -80,6 +80,31 @@ public class PricingSettings {
         return refundPartialPercent != null ? refundPartialPercent : DEFAULT_REFUND_PARTIAL_PERCENT;
     }
 
+    // Gia thanh vien: khach dang nhap khi dat online duoc giam them % tien phong theo hang (null = 0, tat)
+    @Column(name = "member_discount_new")
+    private Integer memberDiscountNew;
+
+    @Column(name = "member_discount_regular")
+    private Integer memberDiscountRegular;
+
+    @Column(name = "member_discount_vip")
+    private Integer memberDiscountVip;
+
+    public int memberDiscountFor(CustomerType type) {
+        Integer pct = switch (type == null ? CustomerType.NEW : type) {
+            case NEW -> memberDiscountNew;
+            case REGULAR -> memberDiscountRegular;
+            case VIP -> memberDiscountVip;
+        };
+        return pct == null ? 0 : pct;
+    }
+
+    // Muc cao nhat (de moi khach vang lai dang nhap / dang ky)
+    public int getMaxMemberDiscount() {
+        return Math.max(memberDiscountFor(CustomerType.NEW), Math.max(memberDiscountFor(CustomerType.REGULAR),
+                memberDiscountFor(CustomerType.VIP)));
+    }
+
     public static PricingSettings defaults() {
         return PricingSettings.builder()
                 .id(SINGLETON_ID)
