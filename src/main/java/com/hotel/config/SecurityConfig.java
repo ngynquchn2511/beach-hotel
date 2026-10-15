@@ -112,6 +112,8 @@ public class SecurityConfig {
                         .requestMatchers("/admin/pricing", "/admin/pricing/**").hasRole("ADMIN")
                         // Link lich iCal lo ra la ai cung xem duoc lich phong -> chi ADMIN lay link / doi ma
                         .requestMatchers("/admin/ical", "/admin/ical/**").hasRole("ADMIN")
+                        // Le tan giao mon duoc, sua thuc don chi ADMIN
+                        .requestMatchers("/admin/room-service/menu", "/admin/room-service/menu/**").hasRole("ADMIN")
                         // Cac chuc nang con lai (don dat phong, check-in/out, trang thai phong, doanh thu...) - ca STAFF va ADMIN
                         .requestMatchers("/admin/**").hasAnyRole("ADMIN", "STAFF")
                         .requestMatchers("/staff/**").hasAnyRole("STAFF", "ADMIN")
@@ -170,6 +172,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/customer/bookings/*/guests", "/customer/bookings/*/guests/*/delete").permitAll()
                         // Xin nhan phong som / tra phong muon (kiem tra chu don / ma truy cap nhu tren)
                         .requestMatchers(HttpMethod.POST, "/customer/bookings/*/stay-time", "/customer/bookings/*/stay-time/withdraw").permitAll()
+                        // Khach dang o goi mon len phong (kiem tra chu don / ma truy cap nhu tren)
+                        .requestMatchers(HttpMethod.POST, "/customer/bookings/*/room-service", "/customer/bookings/*/room-service/*/cancel").permitAll()
                         // "Bao toi khi phong trong lai" o trang chi tiet phong - khach chua dang nhap cung dung duoc
                         .requestMatchers(HttpMethod.POST, "/customer/rooms/*/alerts").permitAll()
                         // Lich .ics cho Google Calendar / Booking.com - kiem tra ma bi mat ?key= trong IcalController

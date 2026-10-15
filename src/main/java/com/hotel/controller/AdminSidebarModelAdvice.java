@@ -4,6 +4,7 @@ import com.hotel.service.BookingService;
 import com.hotel.service.ContactMessageService;
 import com.hotel.service.FrontDeskService;
 import com.hotel.service.HousekeepingService;
+import com.hotel.service.RoomServiceService;
 import com.hotel.service.ServiceOrderService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -31,7 +32,8 @@ import org.springframework.web.bind.annotation.ModelAttribute;
         AdminServiceOrderController.class,
         AdminContactMessageController.class,
         AdminHousekeepingController.class,
-        AdminIcalController.class
+        AdminIcalController.class,
+        AdminRoomServiceController.class
 })
 public class AdminSidebarModelAdvice {
 
@@ -40,15 +42,23 @@ public class AdminSidebarModelAdvice {
     private final FrontDeskService frontDeskService;
     private final ContactMessageService contactMessageService;
     private final HousekeepingService housekeepingService;
+    private final RoomServiceService roomServiceService;
 
     public AdminSidebarModelAdvice(BookingService bookingService, ServiceOrderService serviceOrderService,
                                    FrontDeskService frontDeskService, ContactMessageService contactMessageService,
-                                   HousekeepingService housekeepingService) {
+                                   HousekeepingService housekeepingService, RoomServiceService roomServiceService) {
         this.housekeepingService = housekeepingService;
+        this.roomServiceService = roomServiceService;
         this.bookingService = bookingService;
         this.serviceOrderService = serviceOrderService;
         this.frontDeskService = frontDeskService;
         this.contactMessageService = contactMessageService;
+    }
+
+    // So yeu cau goi mon len phong dang cho giao - hien so o muc "Goi len phong"
+    @ModelAttribute("pendingRoomServiceCount")
+    public long pendingRoomServiceCount() {
+        return roomServiceService.countPending();
     }
 
     // So phong chua sach (cho don + dang don) - hien so o muc "Don phong"

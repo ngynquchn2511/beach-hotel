@@ -66,6 +66,7 @@ public class CustomerBookingController {
     private final VnPayService vnPayService;
     private final GuestRegistrationService guestRegistrationService;
     private final com.hotel.service.PromotionService promotionService;
+    private final com.hotel.service.RoomServiceService roomServiceService;
 
     public CustomerBookingController(BookingService bookingService, RoomService roomService,
                                       ComboService comboService, DiscountCodeService discountCodeService,
@@ -75,7 +76,9 @@ public class CustomerBookingController {
                                       ServiceOrderService serviceOrderService, DivingTourService divingTourService,
                                       TransferRateService transferRateService, VnPayService vnPayService,
                                       GuestRegistrationService guestRegistrationService,
-                                      com.hotel.service.PromotionService promotionService) {
+                                      com.hotel.service.PromotionService promotionService,
+                                      com.hotel.service.RoomServiceService roomServiceService) {
+        this.roomServiceService = roomServiceService;
         this.guestRegistrationService = guestRegistrationService;
         this.promotionService = promotionService;
         this.userMessages = userMessages;
@@ -267,6 +270,10 @@ public class CustomerBookingController {
         model.addAttribute("earlyOptions", StayTimePolicy.earlyOptions());
         model.addAttribute("lateOptions", StayTimePolicy.lateOptions());
         model.addAttribute("nightlyRate", StayTimePolicy.nightlyRate(booking));
+        // Goi mon len phong khi dang o
+        model.addAttribute("canRoomService", roomServiceService.canOrder(booking));
+        model.addAttribute("roomServiceMenu", roomServiceService.menuByCategory());
+        model.addAttribute("roomServiceOrders", roomServiceService.ordersOf(id));
         // Khai bao luu tru online truoc khi den (le tan doi chieu giay to khi nhan phong)
         model.addAttribute("declaredGuests", guestRegistrationService.findByBooking(id));
         model.addAttribute("canDeclareOnline", guestRegistrationService.canDeclareOnline(booking));
@@ -427,6 +434,47 @@ public class CustomerBookingController {
             redirectAttributes.addFlashAttribute("stayTimeError", userMessages.of(ex));
         }
         return backTo(id, token, "#gio-linh-hoat");
+    }
+
+    // Khach dang o goi mon len phong: so luong gui len o tham so qty_<id mon>
+    @PostMapping("/{id}/room-service")
+    public String orderRoomService(@PathVariable Long id, @RequestParam(required = false) String token,
+                                   @RequestParam(required = false) String note,
+                                   @RequestParam Map<String, String> params,
+                                   @AuthenticationPrincipal CustomUserDetails userDetails,
+                                   RedirectAttributes redirectAttributes) {
+        Booking booking = bookingService.findForViewing(id, token, userDetails != null ? userDetails.getUser().getId() : null);
+        Map<Long, Integer> quantities = new HashMap<>();
+        params.forEach((key, value) -> {
+            if (key.startsWith("qty_") && value != null && !value.isBlank()) {
+                try {
+                    quantities.put(Long.valueOf(key.substring(4)), Integer.valueOf(value.trim()));
+                } catch (NumberFormatException ignored) {
+                    // bo qua gia tri la
+                }
+            }
+        });
+        try {
+            roomServiceService.place(booking, quantities, note);
+            redirectAttributes.addFlashAttribute("roomServiceSuccess", userMessages.get("rs.sent"));
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("roomServiceError", userMessages.of(ex));
+        }
+        return backTo(id, token, "#goi-phong");
+    }
+
+    @PostMapping("/{id}/room-service/{orderId}/cancel")
+    public String cancelRoomService(@PathVariable Long id, @PathVariable Long orderId,
+                                    @RequestParam(required = false) String token,
+                                    @AuthenticationPrincipal CustomUserDetails userDetails,
+                                    RedirectAttributes redirectAttributes) {
+        Booking booking = bookingService.findForViewing(id, token, userDetails != null ? userDetails.getUser().getId() : null);
+        try {
+            roomServiceService.cancelByGuest(booking, orderId);
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("roomServiceError", userMessages.of(ex));
+        }
+        return backTo(id, token, "#goi-phong");
     }
 
     private static LocalTime parseTime(String value) {

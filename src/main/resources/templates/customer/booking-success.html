@@ -136,6 +136,48 @@
         </form>
     </div>
 
+    <!-- Goi mon len phong khi dang o: le tan giao xong moi cong tien vao hoa don -->
+    <div class="bg-white p-4 rounded shadow-sm mb-4" id="goi-phong"
+         th:if="${canRoomService or not #lists.isEmpty(roomServiceOrders)}">
+        <h5 class="fw-bold mb-1"><i class="bi bi-cup-hot me-2"></i><span th:text="#{rs.title}">Gọi dịch vụ lên phòng</span></h5>
+        <p class="small text-muted" th:text="#{rs.lead}"></p>
+        <div th:if="${roomServiceSuccess}" class="alert alert-success small py-2" th:text="${roomServiceSuccess}"></div>
+        <div th:if="${roomServiceError}" class="alert alert-danger small py-2" th:text="${roomServiceError}"></div>
+
+        <ul class="list-group mb-3" th:unless="${#lists.isEmpty(roomServiceOrders)}">
+            <li th:each="o : ${roomServiceOrders}" class="list-group-item d-flex justify-content-between align-items-center gap-2">
+                <span>
+                    <span class="badge me-1" th:classappend="${o.status.name() == 'DELIVERED'} ? 'bg-success' : (${o.status.name() == 'PENDING'} ? 'bg-warning text-dark' : 'bg-secondary')"
+                          th:text="#{'rs.status.' + ${o.status}}"></span>
+                    <span th:text="${o.summary}"></span>
+                    <span class="small text-muted" th:text="' · ' + ${#numbers.formatDecimal(o.totalAmount, 1, 'POINT', 0, 'COMMA')} + ' VND · ' + ${#temporals.format(o.createdAt, 'HH:mm dd/MM')}"></span>
+                </span>
+                <form th:if="${o.pending}" method="post" th:action="@{/customer/bookings/{id}/room-service/{oid}/cancel(id=${booking.id}, oid=${o.id})}">
+                    <input type="hidden" name="token" th:if="${accessToken}" th:value="${accessToken}">
+                    <button type="submit" class="btn btn-sm btn-outline-danger" th:text="#{rs.cancel}">Hủy</button>
+                </form>
+            </li>
+        </ul>
+
+        <form method="post" th:if="${canRoomService and not #maps.isEmpty(roomServiceMenu)}"
+              th:action="@{/customer/bookings/{id}/room-service(id=${booking.id})}">
+            <input type="hidden" name="token" th:if="${accessToken}" th:value="${accessToken}">
+            <th:block th:each="entry : ${roomServiceMenu}">
+                <h6 class="fw-bold mt-2 mb-1" th:text="#{'rs.category.' + ${entry.key}}"></h6>
+                <div th:each="i : ${entry.value}" class="d-flex justify-content-between align-items-center border-bottom py-1 gap-2">
+                    <label class="flex-grow-1 mb-0" th:for="'qty_' + ${i.id}">
+                        <span th:text="${i.localizedName}"></span>
+                        <span class="small text-muted" th:text="' · ' + ${#numbers.formatDecimal(i.price, 1, 'POINT', 0, 'COMMA')} + ' VND'"></span>
+                    </label>
+                    <input type="number" class="form-control form-control-sm" style="width: 72px" min="0" max="20" value="0"
+                           th:id="'qty_' + ${i.id}" th:name="'qty_' + ${i.id}">
+                </div>
+            </th:block>
+            <input type="text" name="note" class="form-control form-control-sm mt-2" maxlength="200" th:placeholder="#{rs.note}">
+            <button type="submit" class="btn btn-primary btn-sm mt-2"><i class="bi bi-send me-1"></i><span th:text="#{rs.send}">Gửi yêu cầu</span></button>
+        </form>
+    </div>
+
     <div class="bg-white p-4 rounded shadow-sm mb-4 ticket">
         <div class="d-flex justify-content-between align-items-start mb-3">
             <h4 class="fw-bold m-0" th:text="#{success.bookingNo(${booking.id.toString()})}"></h4>
