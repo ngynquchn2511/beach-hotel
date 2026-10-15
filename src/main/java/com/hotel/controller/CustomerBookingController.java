@@ -23,6 +23,7 @@ import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.util.UriComponentsBuilder;
 import com.hotel.service.UserMessages;
+import com.hotel.service.VnPayService;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.ui.Model;
@@ -59,6 +60,7 @@ public class CustomerBookingController {
     private final ServiceOrderService serviceOrderService;
     private final DivingTourService divingTourService;
     private final TransferRateService transferRateService;
+    private final VnPayService vnPayService;
 
     public CustomerBookingController(BookingService bookingService, RoomService roomService,
                                       ComboService comboService, DiscountCodeService discountCodeService,
@@ -66,8 +68,9 @@ public class CustomerBookingController {
                                       PaymentService paymentService, ReviewService reviewService,
                                       PricingService pricingService, UserMessages userMessages,
                                       ServiceOrderService serviceOrderService, DivingTourService divingTourService,
-                                      TransferRateService transferRateService) {
+                                      TransferRateService transferRateService, VnPayService vnPayService) {
         this.userMessages = userMessages;
+        this.vnPayService = vnPayService;
         this.serviceOrderService = serviceOrderService;
         this.divingTourService = divingTourService;
         this.transferRateService = transferRateService;
@@ -240,6 +243,7 @@ public class CustomerBookingController {
             model.addAttribute("bankId", paymentService.getBankId());
             model.addAttribute("accountNo", paymentService.getAccountNo());
             model.addAttribute("accountName", paymentService.getAccountName());
+            model.addAttribute("vnpayEnabled", vnPayService.isEnabled());
         }
         model.addAttribute("timeOptions", generateTimeOptions());
         model.addAttribute("combos", comboService.findActive());

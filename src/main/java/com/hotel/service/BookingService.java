@@ -671,6 +671,53 @@ public class BookingService {
         return confirmedBooking;
     }
 
+    public enum OnlineDepositResult { CONFIRMED, ALREADY_PAID, NOT_FOUND, WRONG_AMOUNT, NOT_AWAITING, PAID_BUT_ROOM_TAKEN }
+
+    // Cong thanh toan (VNPay) bao khach da tra coc thanh cong -> ghi nhan coc + xac nhan don, khong can nhan vien.
+    // Goi lap lai (trang tra ve + IPN cua VNPay cung bao 1 giao dich) chi ghi nhan 1 lan.
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public OnlineDepositResult confirmOnlineDeposit(Long bookingId, BigDecimal paidAmount, String transactionRef) {
+        Booking booking = bookingRepository.findById(bookingId).orElse(null);
+        if (booking == null || !booking.isDepositRequired()) {
+            return OnlineDepositResult.NOT_FOUND;
+        }
+        if (booking.isDepositPaid()) {
+            return OnlineDepositResult.ALREADY_PAID;
+        }
+        if (paidAmount == null || paidAmount.compareTo(booking.getDepositAmount()) != 0) {
+            return OnlineDepositResult.WRONG_AMOUNT;
+        }
+        if (booking.getStatus() != BookingStatus.PENDING) {
+            return OnlineDepositResult.NOT_AWAITING;
+        }
+        booking.setDepositPaidAt(LocalDateTime.now());
+        booking.setDepositOnlineRef(transactionRef);
+        try {
+            ensureNoConfirmedConflict(booking);
+        } catch (BusinessException roomTaken) {
+            // Tien da tru cua khach nhung phong vua bi don khac giu: ghi nhan da coc, de don o Cho xac nhan
+            // de le tan lien he khach (doi phong hoac huy + hoan coc 100%)
+            bookingRepository.save(booking);
+            return OnlineDepositResult.PAID_BUT_ROOM_TAKEN;
+        }
+        booking.setStatus(BookingStatus.CONFIRMED);
+        Booking confirmedBooking = bookingRepository.save(booking);
+        emailService.sendBookingConfirmation(confirmedBooking);
+        return OnlineDepositResult.CONFIRMED;
+    }
+
+    // Truoc khi chuyen khach sang cong thanh toan: don con cho coc, chua qua han, phong chua bi don khac giu
+    @Transactional(readOnly = true)
+    public void ensureCanPayDepositOnline(Booking booking) {
+        if (!booking.isAwaitingDeposit()) {
+            throw new BusinessException("Đơn này không còn chờ đặt cọc");
+        }
+        if (booking.getDepositDeadline() != null && !booking.getDepositDeadline().isAfter(LocalDateTime.now())) {
+            throw new BusinessException("Đã quá hạn chuyển cọc cho đơn này");
+        }
+        ensureNoConfirmedConflict(booking);
+    }
+
     // BR-04: chi booking da CONFIRMED moi duoc check-in
     // Khai bao luu tru: phai nhap giay to it nhat 1 khach truoc khi cho nhan phong
     @Transactional

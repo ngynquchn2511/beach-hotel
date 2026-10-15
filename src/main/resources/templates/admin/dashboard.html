@@ -75,22 +75,28 @@
             </form>
 
             <div class="row g-3 mt-2">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="bg-white p-3 rounded shadow-sm text-center h-100">
                         <div class="text-muted small">Tiền đã thu (theo ngày thanh toán)</div>
                         <div class="fs-3 fw-bold text-success" th:text="${#numbers.formatDecimal(paidTotal, 1, 'POINT', 0, 'COMMA')} + ' VND'"></div>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="bg-white p-3 rounded shadow-sm text-center h-100">
                         <div class="text-muted small">Thu bằng tiền mặt</div>
                         <div class="fs-4 fw-bold" th:text="${#numbers.formatDecimal(paidCash, 1, 'POINT', 0, 'COMMA')} + ' VND'"></div>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="bg-white p-3 rounded shadow-sm text-center h-100">
                         <div class="text-muted small">Thu bằng chuyển khoản</div>
                         <div class="fs-4 fw-bold text-primary" th:text="${#numbers.formatDecimal(paidTransfer, 1, 'POINT', 0, 'COMMA')} + ' VND'"></div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="bg-white p-3 rounded shadow-sm text-center h-100">
+                        <div class="text-muted small">Cọc online qua VNPay</div>
+                        <div class="fs-4 fw-bold text-info" th:text="${#numbers.formatDecimal(paidOnline, 1, 'POINT', 0, 'COMMA')} + ' VND'"></div>
                     </div>
                 </div>
             </div>

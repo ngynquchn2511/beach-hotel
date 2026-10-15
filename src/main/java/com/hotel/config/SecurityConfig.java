@@ -161,6 +161,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/customer/bookings/*/cancel", "/customer/bookings/*/change-dates",
                                 "/customer/bookings/*/edit-time", "/customer/bookings/*/edit-combo").permitAll()
                         .requestMatchers(HttpMethod.GET, "/customer/bookings/*/change-dates/quote").permitAll()
+                        // Dat coc qua VNPay: nut tren trang don (kiem tra chu don / ma truy cap nhu tren);
+                        // trang tra ve + IPN do VNPay goi, an toan nho kiem tra chu ky HMAC
+                        .requestMatchers(HttpMethod.POST, "/customer/bookings/*/vnpay").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/payment/vnpay/return", "/payment/vnpay/ipn").permitAll()
                         // Con lai (lich su dat phong, tai khoan, hoa don...) can dang nhap
                         .requestMatchers("/customer/**").hasRole("CUSTOMER")
                         .anyRequest().authenticated()

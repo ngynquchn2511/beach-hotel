@@ -89,6 +89,7 @@ public class RevenueExportService {
         r = labelValue(sheet, r, "Tổng đã thu (VND)", paidTotal, styles.moneyBold);
         r = labelValue(sheet, r, "Tiền mặt (VND)", paid.get(PaymentMethod.CASH), styles.money);
         r = labelValue(sheet, r, "Chuyển khoản (VND)", paid.get(PaymentMethod.BANK_TRANSFER), styles.money);
+        r = labelValue(sheet, r, "Cọc online qua VNPay (VND)", paid.get(PaymentMethod.ONLINE), styles.money);
         r++;
 
         Map<String, BigDecimal> byRoomType = bookingService.getRevenueByRoomType(fromDate, toDate);

@@ -64,7 +64,7 @@
                 <!-- Dat coc -->
                 <div class="mt-2" th:if="${booking.depositRequired}">
                     <span th:if="${booking.depositPaid}" class="badge bg-info"
-                          th:text="'Đã nhận cọc ' + ${#numbers.formatDecimal(booking.depositAmount, 1, 'POINT', 0, 'COMMA')} + ' VND · ' + ${#temporals.format(booking.depositPaidAt, 'dd/MM/yyyy HH:mm')}"></span>
+                          th:text="'Đã nhận cọc ' + ${#numbers.formatDecimal(booking.depositAmount, 1, 'POINT', 0, 'COMMA')} + ' VND · ' + ${#temporals.format(booking.depositPaidAt, 'dd/MM/yyyy HH:mm')} + (${booking.depositPaidOnline} ? ' · VNPay, mã GD ' + ${booking.depositOnlineRef} : '')"></span>
                     <th:block th:if="${booking.awaitingDeposit}">
                         <span class="badge bg-warning" th:text="'Chờ cọc ' + ${#numbers.formatDecimal(booking.depositAmount, 1, 'POINT', 0, 'COMMA')} + ' VND'"></span>
                         <span class="small text-muted ms-1">

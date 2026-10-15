@@ -78,6 +78,11 @@ public class Booking {
     @Column(name = "deposit_paid_at")
     private LocalDateTime depositPaidAt;
 
+    // Coc tra online qua cong VNPay: ma giao dich phia VNPay (vnp_TransactionNo).
+    // null = coc chuyen khoan thuong, nhan vien doi chieu roi xac nhan tay
+    @Column(name = "deposit_online_ref", length = 40)
+    private String depositOnlineRef;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private BookingStatus status;
@@ -176,6 +181,10 @@ public class Booking {
 
     public boolean isDepositPaid() {
         return depositPaidAt != null;
+    }
+
+    public boolean isDepositPaidOnline() {
+        return depositPaidAt != null && depositOnlineRef != null;
     }
 
     // Dang cho khach chuyen coc: co yeu cau coc, chua nhan, don van dang cho xac nhan

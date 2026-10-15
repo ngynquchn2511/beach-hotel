@@ -93,6 +93,7 @@ public class AdminController {
         model.addAttribute("paidTotal", paidByMethod.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add));
         model.addAttribute("paidCash", paidByMethod.get(PaymentMethod.CASH));
         model.addAttribute("paidTransfer", paidByMethod.get(PaymentMethod.BANK_TRANSFER));
+        model.addAttribute("paidOnline", paidByMethod.get(PaymentMethod.ONLINE));
 
         // Huy don & hoan coc: so don cho hoan (hien tai) va tien coc giu lai trong khoang ngay
         model.addAttribute("pendingRefunds", bookingService.countPendingRefunds());

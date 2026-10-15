@@ -256,19 +256,22 @@ public class PaymentService {
     }
 
     // Thong ke tien DA THU theo phuong thuc, loc theo ngay thanh toan trong [fromDate, toDate]
-    // Gom ca tien coc (chuyen khoan) tinh theo ngay nhan coc - ke ca don sau do bi huy ma resort giu coc,
+    // Gom ca tien coc (chuyen khoan / VNPay) tinh theo ngay nhan coc - ke ca don sau do bi huy ma resort giu coc,
     // tru di tien coc da hoan lai cho khach (tinh theo ngay hoan)
     public Map<PaymentMethod, BigDecimal> getPaidRevenueByMethod(LocalDate fromDate, LocalDate toDate) {
         Map<PaymentMethod, BigDecimal> result = new LinkedHashMap<>();
         result.put(PaymentMethod.CASH, BigDecimal.ZERO);
         result.put(PaymentMethod.BANK_TRANSFER, BigDecimal.ZERO);
+        result.put(PaymentMethod.ONLINE, BigDecimal.ZERO);
         LocalDateTime from = fromDate.atStartOfDay();
         LocalDateTime to = toDate.plusDays(1).atStartOfDay().minusNanos(1);
         for (Payment p : paymentRepository.findByStatusAndPaymentDateBetween(PaymentStatus.PAID, from, to)) {
             result.merge(p.getPaymentMethod(), p.getAmount(), BigDecimal::add);
         }
+        // Coc tra qua VNPay tinh vao "online", coc chuyen khoan QR tinh vao "chuyen khoan"
         for (Booking b : bookingRepository.findByDepositPaidAtBetween(from, to)) {
-            result.merge(PaymentMethod.BANK_TRANSFER, b.getDepositPaidAmount(), BigDecimal::add);
+            result.merge(b.isDepositPaidOnline() ? PaymentMethod.ONLINE : PaymentMethod.BANK_TRANSFER,
+                    b.getDepositPaidAmount(), BigDecimal::add);
         }
         // Tien coc da chuyen tra lai khach (don huy) - tru theo ngay hoan
         for (Booking b : bookingRepository.findByRefundedAtBetween(from, to)) {
