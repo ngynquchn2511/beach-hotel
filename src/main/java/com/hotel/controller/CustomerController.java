@@ -1,6 +1,7 @@
 package com.hotel.controller;
 
 import com.hotel.exception.BusinessException;
+import com.hotel.security.CustomUserDetails;
 import com.hotel.repository.RoomTypeRepository;
 import com.hotel.service.BookingService;
 import com.hotel.service.ComboService;
@@ -10,6 +11,7 @@ import com.hotel.service.RoomService;
 import com.hotel.service.UserMessages;
 import com.hotel.util.Pager;
 import com.hotel.util.RoomListing;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -101,6 +103,7 @@ public class CustomerController {
             @RequestParam(required = false) LocalDate checkOut,
             @RequestParam(required = false) Integer guests,
             @RequestParam(required = false) Long comboId,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             Model model) {
 
         var room = roomService.findById(id);
@@ -123,6 +126,8 @@ public class CustomerController {
         model.addAttribute("ratingStats", reviewService.statsForRoomType(room.getRoomType().getId()));
         model.addAttribute("roomReviews", reviewService.findLatestForRoomType(room.getRoomType().getId(), 5));
         model.addAttribute("similarRooms", roomService.findSimilarRooms(room, checkIn, checkOut, guests, SIMILAR_ROOMS));
+        // Form "Bao toi khi phong trong lai" dien san email khach da dang nhap
+        model.addAttribute("alertEmail", userDetails != null ? userDetails.getUser().getEmail() : null);
         // Chi noi "con trong dung ngay ban chon" khi ngay hop le (ngay sai thi goi y khong loc theo ngay)
         model.addAttribute("similarByDates", RoomService.isValidStay(checkIn, checkOut));
 

@@ -148,7 +148,9 @@
         </div>
 
         <div class="col-md-5">
-            <div class="bg-white p-4 rounded shadow-sm" style="position: sticky; top: 1rem;">
+            <div class="bg-white p-4 rounded shadow-sm" id="dat-phong" style="position: sticky; top: 1rem;">
+                <div th:if="${alertSuccess}" class="alert alert-success small" th:text="${alertSuccess}"></div>
+                <div th:if="${alertError}" class="alert alert-danger small" th:text="${alertError}"></div>
                 <div class="d-flex justify-content-between align-items-start gap-2">
                     <h3 class="fw-bold" th:text="#{common.room(${room.roomNumber})}"></h3>
                     <!-- Chia se phong: dien thoai mo bang chia se cua may (Zalo, Messenger...), may tinh thi sao chep link -->
@@ -257,6 +259,19 @@
                                th:href="@{/customer/rooms/{id}(id=${room.id}, checkIn=${suggestCheckIn}, checkOut=${suggestCheckOut}, guests=${guests}, comboId=${selectedComboId})}"
                                th:text="#{detail.suggest(${#temporals.format(suggestCheckIn, 'dd/MM')}, ${#temporals.format(suggestCheckOut, 'dd/MM')})}"></a>
                         </div>
+                        <!-- Bao toi khi phong trong lai: don huy / doi ngay / het bao tri thi gui email 1 lan -->
+                        <form method="post" class="border-top border-warning-subtle pt-2 mt-2"
+                              th:action="@{/customer/rooms/{id}/alerts(id=${room.id})}">
+                            <input type="hidden" name="checkIn" th:value="${checkIn}">
+                            <input type="hidden" name="checkOut" th:value="${checkOut}">
+                            <input type="hidden" name="guests" th:if="${guests != null}" th:value="${guests}">
+                            <label class="form-label small mb-1" for="alertEmail" th:text="#{alert.prompt}">Báo tôi qua email khi phòng trống lại đúng những ngày này:</label>
+                            <div class="input-group input-group-sm">
+                                <input type="email" id="alertEmail" name="email" class="form-control" required maxlength="100"
+                                       th:value="${alertEmail}" th:placeholder="#{alert.placeholder}">
+                                <button type="submit" class="btn btn-warning"><i class="bi bi-bell me-1"></i><span th:text="#{alert.submit}">Báo tôi</span></button>
+                            </div>
+                        </form>
                     </div>
 
                     <a th:if="${available}"

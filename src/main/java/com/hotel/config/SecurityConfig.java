@@ -164,6 +164,8 @@ public class SecurityConfig {
                         // Dat coc qua VNPay: nut tren trang don (kiem tra chu don / ma truy cap nhu tren);
                         // trang tra ve + IPN do VNPay goi, an toan nho kiem tra chu ky HMAC
                         .requestMatchers(HttpMethod.POST, "/customer/bookings/*/vnpay").permitAll()
+                        // "Bao toi khi phong trong lai" o trang chi tiet phong - khach chua dang nhap cung dung duoc
+                        .requestMatchers(HttpMethod.POST, "/customer/rooms/*/alerts").permitAll()
                         .requestMatchers(HttpMethod.GET, "/payment/vnpay/return", "/payment/vnpay/ipn").permitAll()
                         // Con lai (lich su dat phong, tai khoan, hoa don...) can dang nhap
                         .requestMatchers("/customer/**").hasRole("CUSTOMER")

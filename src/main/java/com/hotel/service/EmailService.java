@@ -255,6 +255,60 @@ public class EmailService {
         return true;
     }
 
+    // "Bao toi khi phong trong lai": phong khach theo doi da trong dung khoang ngay -> gui link dat ngay
+    public boolean sendRoomAvailable(com.hotel.entity.RoomAlert alert) {
+        if (senderEmail == null || senderEmail.isBlank() || senderPassword == null || senderPassword.isBlank()) {
+            log.warn("Chua dat MAIL_USERNAME va MAIL_PASSWORD - chua gui duoc email bao phong trong #{}", alert.getId());
+            return false;
+        }
+        boolean en = "en".equals(alert.getLanguage());
+        java.time.format.DateTimeFormatter fmt = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        // Gui tu tac vu dinh ky (khong co ngon ngu cua request) -> chon ten theo ngon ngu luu trong yeu cau
+        com.hotel.entity.RoomType type = alert.getRoom().getRoomType();
+        String room = alert.getRoom().getRoomNumber() + " - "
+                + (en && type.getNameEn() != null && !type.getNameEn().isBlank() ? type.getNameEn() : type.getName());
+        String dates = alert.getCheckIn().format(fmt) + " - " + alert.getCheckOut().format(fmt);
+        String link = null;
+        if (baseUrl != null && !baseUrl.isBlank()) {
+            link = baseUrl.replaceAll("/+$", "") + "/customer/rooms/" + alert.getRoom().getId()
+                    + "?checkIn=" + alert.getCheckIn() + "&checkOut=" + alert.getCheckOut()
+                    + (alert.getGuests() != null ? "&guests=" + alert.getGuests() : "");
+        }
+        StringBuilder sb = new StringBuilder();
+        if (en) {
+            sb.append("Hello,\n\nGood news: room ").append(room).append(" is now available for ").append(dates).append(".\n");
+            sb.append("Rooms go fast - book soon to secure it.\n\n");
+            if (link != null) {
+                sb.append("Book now: ").append(link).append("\n\n");
+            }
+            sb.append("You received this email because you asked to be notified. We will not email you again about this request.\n\n");
+            sb.append("Song Xanh Resort");
+        } else {
+            sb.append("Xin chào,\n\nTin vui: phòng ").append(room).append(" đã trống lại cho ngày ").append(dates).append(".\n");
+            sb.append("Phòng có thể được người khác đặt bất cứ lúc nào - bạn nên đặt sớm để giữ phòng.\n\n");
+            if (link != null) {
+                sb.append("Đặt ngay: ").append(link).append("\n\n");
+            }
+            sb.append("Bạn nhận email này vì đã bấm \"Báo tôi khi phòng trống lại\". Chúng tôi chỉ gửi 1 lần cho yêu cầu này.\n\n");
+            sb.append("Sóng Xanh Resort");
+        }
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom("Sóng Xanh Resort <" + senderEmail + ">");
+        message.setTo(alert.getEmail());
+        message.setSubject(en ? "Song Xanh Resort - The room you wanted is available" : "Sóng Xanh Resort - Phòng bạn chờ đã trống");
+        message.setText(sb.toString());
+        Long id = alert.getId();
+        deliverAfterCommit(() -> {
+            try {
+                mailSender.send(message);
+                log.info("Da gui email bao phong trong #{}", id);
+            } catch (Exception ex) {
+                log.error("Gui email bao phong trong #{} that bai", id, ex);
+            }
+        });
+        return true;
+    }
+
     private boolean canEmail(Booking booking) {
         if (booking.getGuestEmail() == null || booking.getGuestEmail().isBlank()
                 || booking.getGuestEmail().endsWith("@khachvanglai.local")) {
