@@ -15,3 +15,24 @@
         </li>
     </ul>
 </nav>
+
+<!-- Thanh phan trang cho com.hotel.util.Pager: giu nguyen cac tham so loc tren URL, chi doi so trang -->
+<nav th:fragment="pager(pager)" th:if="${pager != null and pager.hasPages()}" th:aria-label="#{pager.label}"
+     xmlns:th="http://www.thymeleaf.org">
+    <ul class="pagination justify-content-center flex-wrap mt-3 mb-0">
+        <li class="page-item" th:classappend="${pager.currentPage <= 1} ? 'disabled'">
+            <a class="page-link" th:href="${pager.url(pager.currentPage - 1)}" th:aria-label="#{pager.prev}">&laquo;</a>
+        </li>
+        <li th:each="p : ${pager.pageNumbers}" class="page-item"
+            th:classappend="${p == 0} ? 'disabled' : (${p == pager.currentPage} ? 'active')">
+            <span th:if="${p == 0}" class="page-link">&hellip;</span>
+            <a th:unless="${p == 0}" class="page-link" th:href="${pager.url(p)}" th:text="${p}"
+               th:attrappend="aria-current=${p == pager.currentPage} ? 'page'"></a>
+        </li>
+        <li class="page-item" th:classappend="${pager.currentPage >= pager.totalPages} ? 'disabled'">
+            <a class="page-link" th:href="${pager.url(pager.currentPage + 1)}" th:aria-label="#{pager.next}">&raquo;</a>
+        </li>
+    </ul>
+    <p class="text-center small text-muted mt-2 mb-0"
+       th:text="#{pager.summary(${pager.offset() + 1}, ${pager.offset() + #lists.size(pager.items)}, ${pager.totalItems})}"></p>
+</nav>

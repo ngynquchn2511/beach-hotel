@@ -10,8 +10,13 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -43,5 +48,45 @@ class MoreRoomsSeederIT {
                 .andExpect(content().string(containsString("Penthouse toàn cảnh vịnh")));
         mockMvc.perform(get("/page-images/rooms/penthouse-1.jpg"))
                 .andExpect(status().isOk());
+    }
+
+    // 60 phong -> danh sach phong phai chia trang, loc gia / sap xep tinh tren toan bo roi moi cat trang
+    @Test
+    void publicRoomList_isPaginatedAndPriceFilterAppliesToAllRooms() throws Exception {
+        mockMvc.perform(get("/rooms"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("rooms", hasSize(9)))
+                .andExpect(content().string(containsString("Hiển thị 1–9 trên tổng 60")))
+                .andExpect(content().string(containsString("href=\"/rooms?page=7\"")));
+        mockMvc.perform(get("/rooms").param("page", "7"))
+                .andExpect(model().attribute("rooms", hasSize(6)))
+                .andExpect(content().string(containsString("Hiển thị 55–60 trên tổng 60")));
+
+        // Tren 3 trieu: 2 bungalow + penthouse, nam o trang khac nhau neu loc o trinh duyet
+        var result = mockMvc.perform(get("/rooms").param("price", "r4"))
+                .andExpect(content().string(not(containsString("Hiển thị"))))
+                .andReturn();
+        @SuppressWarnings("unchecked")
+        List<Room> rooms = (List<Room>) result.getModelAndView().getModel().get("rooms");
+        assertThat(rooms).extracting(Room::getRoomNumber).containsExactly("601", "B01", "B02");
+    }
+
+    @Test
+    void customerSearch_sortsAllResultsThenPagesKeepingSearchParams() throws Exception {
+        String in = LocalDate.now().plusDays(30).toString();
+        String out = LocalDate.now().plusDays(32).toString();
+        var result = mockMvc.perform(get("/customer/rooms").param("checkIn", in).param("checkOut", out)
+                        .param("sort", "price-desc"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("rooms", hasSize(10)))
+                .andExpect(content().string(containsString("checkIn=" + in + "&amp;checkOut=" + out + "&amp;sort=price-desc&amp;page=2")))
+                .andReturn();
+        @SuppressWarnings("unchecked")
+        List<Room> rooms = (List<Room>) result.getModelAndView().getModel().get("rooms");
+        assertThat(rooms.get(0).getRoomNumber()).isEqualTo("601");
+
+        mockMvc.perform(get("/customer/rooms").param("checkIn", in).param("checkOut", out).param("page", "6"))
+                .andExpect(model().attribute("rooms", hasSize(10)))
+                .andExpect(content().string(containsString("Hiển thị 51–60 trên tổng 60")));
     }
 }

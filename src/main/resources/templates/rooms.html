@@ -30,6 +30,7 @@
         <div class="col-md-9">
             <div class="bg-white p-3 rounded shadow-sm mb-4">
                 <form th:action="@{/rooms}" method="get" class="d-flex gap-2 align-items-end">
+                    <input type="hidden" name="price" th:if="${not #strings.isEmpty(price)}" th:value="${price}">
                     <div>
                         <label class="form-label mb-1" th:text="#{common.roomType}">Loại phòng</label>
                         <select name="roomTypeId" class="form-select" onchange="this.form.submit()">
@@ -38,16 +39,16 @@
                                     th:selected="${rt.id == roomTypeId}"></option>
                         </select>
                     </div>
-                    <a th:if="${roomTypeId != null}" th:href="@{/rooms}" class="btn btn-outline-secondary" th:text="#{common.clearFilter}">Bỏ lọc</a>
+                    <a th:if="${roomTypeId != null or not #strings.isEmpty(price)}" th:href="@{/rooms}" class="btn btn-outline-secondary" th:text="#{common.clearFilter}">Bỏ lọc</a>
                 </form>
             </div>
 
-            <div th:if="${#lists.isEmpty(rooms)}" class="alert alert-info" th:text="#{rooms.empty}">
+            <div th:if="${pager.totalItems == 0}" class="alert alert-info" th:text="#{rooms.empty}">
                 Không có phòng nào phù hợp.
             </div>
 
             <div class="row g-4" id="roomsGrid">
-                <div class="col-md-4" th:each="room : ${rooms}" th:attr="data-price=${room.price}">
+                <div class="col-md-4" th:each="room : ${rooms}">
                     <div class="card h-100 room-card" th:attr="data-detail-url=@{/customer/rooms/{id}(id=${room.id})}">
                         <img th:if="${room.coverImageUrl}" th:src="${room.coverImageUrl}" class="card-img-top" style="height: 180px; object-fit: cover;" th:alt="#{common.roomPhoto}">
                         <div class="card-body">
@@ -63,36 +64,12 @@
                     </div>
                 </div>
             </div>
+
+            <div th:replace="~{fragments/pagination :: pager(${pager})}"></div>
         </div>
 
         <div class="col-md-3">
-            <div class="bg-white p-3 rounded shadow-sm">
-                <h6 class="fw-bold mb-3" th:text="#{price.title}">Tìm theo giá</h6>
-                <div class="form-check">
-                    <input class="form-check-input price-filter" type="radio" name="priceRange" value="0-0" id="priceAll" checked>
-                    <label class="form-check-label" for="priceAll" th:text="#{common.all}">Tất cả</label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input price-filter" type="radio" name="priceRange" value="100000-200000" id="price1">
-                    <label class="form-check-label" for="price1" th:text="#{price.r1}">100.000 - 200.000 VND</label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input price-filter" type="radio" name="priceRange" value="250000-400000" id="price2">
-                    <label class="form-check-label" for="price2" th:text="#{price.r2}">250.000 - 400.000 VND</label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input price-filter" type="radio" name="priceRange" value="450000-700000" id="price3">
-                    <label class="form-check-label" for="price3" th:text="#{price.r3}">450.000 - 700.000 VND</label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input price-filter" type="radio" name="priceRange" value="750000-1200000" id="price4">
-                    <label class="form-check-label" for="price4" th:text="#{price.r4}">750.000 - 1.200.000 VND</label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input price-filter" type="radio" name="priceRange" value="1300000-999999999" id="price5">
-                    <label class="form-check-label" for="price5" th:text="#{price.r5}">Từ 1.300.000 VND</label>
-                </div>
-            </div>
+            <div th:replace="~{fragments/price-filter :: filter(${priceRanges}, ${price})}"></div>
         </div>
     </div>
 </main>
@@ -106,19 +83,6 @@
         });
     });
 
-    // Loc theo khoang gia ngay tren trinh duyet, khong can goi lai server
-    document.querySelectorAll('.price-filter').forEach(function (radio) {
-        radio.addEventListener('change', function () {
-            const parts = this.value.split('-').map(Number);
-            const min = parts[0];
-            const max = parts[1];
-            document.querySelectorAll('#roomsGrid > [data-price]').forEach(function (col) {
-                const price = Number(col.getAttribute('data-price'));
-                const match = (min === 0 && max === 0) || (price >= min && price <= max);
-                col.style.display = match ? '' : 'none';
-            });
-        });
-    });
 </script>
 
 <div th:replace="~{fragments/chatbot-widget :: widget}"></div>

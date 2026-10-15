@@ -90,24 +90,26 @@
 
     <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
 
-    <div th:if="${searched and rooms != null and #lists.isEmpty(rooms)}" class="alert alert-info" th:text="#{search.empty}">
+    <div th:if="${searched and pager != null and pager.totalItems == 0 and #strings.isEmpty(price)}" class="alert alert-info" th:text="#{search.empty}">
         Không tìm thấy phòng trống phù hợp với ngày và tiêu chí bạn chọn.
     </div>
 
-    <div class="row g-4" th:if="${rooms != null and not #lists.isEmpty(rooms)}">
+    <div class="row g-4" th:if="${pager != null and (pager.totalItems > 0 or not #strings.isEmpty(price))}">
         <div class="col-md-9">
             <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="text-muted" th:text="#{search.found(${#lists.size(rooms)})}"></span>
+                <span class="text-muted" th:text="#{search.found(${pager.totalItems})}"></span>
                 <select id="sortSelect" class="form-select form-select-sm" style="width: auto;">
-                    <option value="default" th:text="#{search.sort}">Sắp xếp theo</option>
-                    <option value="price-asc" th:text="#{search.sortAsc}">Giá tăng dần</option>
-                    <option value="price-desc" th:text="#{search.sortDesc}">Giá giảm dần</option>
+                    <option value="" th:text="#{search.sort}">Sắp xếp theo</option>
+                    <option value="price-asc" th:text="#{search.sortAsc}" th:selected="${sort == 'price-asc'}">Giá tăng dần</option>
+                    <option value="price-desc" th:text="#{search.sortDesc}" th:selected="${sort == 'price-desc'}">Giá giảm dần</option>
                 </select>
             </div>
 
-            <div class="room-results-box" id="roomResultsBox">
+            <div th:if="${pager.totalItems == 0}" class="alert alert-info" th:text="#{rooms.empty}">Không có phòng nào phù hợp.</div>
+
+            <div class="room-results-box" id="roomResultsBox" th:if="${pager.totalItems > 0}">
                 <div class="room-row" th:each="room : ${rooms}"
-                     th:attr="data-price=${room.price},data-detail-url=@{/customer/rooms/{id}(id=${room.id}, checkIn=${checkIn}, checkOut=${checkOut}, guests=${guests})}">
+                     th:attr="data-detail-url=@{/customer/rooms/{id}(id=${room.id}, checkIn=${checkIn}, checkOut=${checkOut}, guests=${guests})}">
                     <img th:if="${room.coverImageUrl}" th:src="${room.coverImageUrl}" th:alt="#{common.roomPhoto}">
                     <div th:unless="${room.coverImageUrl}" class="no-image" th:text="#{common.noPhoto}">Chưa có ảnh</div>
 
@@ -122,75 +124,29 @@
                     </div>
                 </div>
             </div>
+
+            <div th:replace="~{fragments/pagination :: pager(${pager})}"></div>
         </div>
 
         <div class="col-md-3">
-            <div class="bg-white p-3 rounded shadow-sm">
-                <h6 class="fw-bold mb-3" th:text="#{price.title}">Tìm theo giá</h6>
-                <div class="form-check">
-                    <input class="form-check-input price-filter" type="radio" name="priceRange" value="0-0" id="priceAll" checked>
-                    <label class="form-check-label" for="priceAll" th:text="#{common.all}">Tất cả</label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input price-filter" type="radio" name="priceRange" value="100000-200000" id="price1">
-                    <label class="form-check-label" for="price1" th:text="#{price.r1}">100.000 - 200.000 VND</label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input price-filter" type="radio" name="priceRange" value="250000-400000" id="price2">
-                    <label class="form-check-label" for="price2" th:text="#{price.r2}">250.000 - 400.000 VND</label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input price-filter" type="radio" name="priceRange" value="450000-700000" id="price3">
-                    <label class="form-check-label" for="price3" th:text="#{price.r3}">450.000 - 700.000 VND</label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input price-filter" type="radio" name="priceRange" value="750000-1200000" id="price4">
-                    <label class="form-check-label" for="price4" th:text="#{price.r4}">750.000 - 1.200.000 VND</label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input price-filter" type="radio" name="priceRange" value="1300000-999999999" id="price5">
-                    <label class="form-check-label" for="price5" th:text="#{price.r5}">Từ 1.300.000 VND</label>
-                </div>
-            </div>
+            <div th:replace="~{fragments/price-filter :: filter(${priceRanges}, ${price})}"></div>
         </div>
     </div>
 </main>
 
 <script th:inline="javascript">
-    const box = document.getElementById('roomResultsBox');
-
-    // Loc theo khoang gia (chi loc tren ket qua da tim duoc, khong goi lai server)
-    document.querySelectorAll('.price-filter').forEach(function (radio) {
-        radio.addEventListener('change', function () {
-            if (!box) return;
-            const parts = this.value.split('-').map(Number);
-            const min = parts[0];
-            const max = parts[1];
-            box.querySelectorAll('.room-row').forEach(function (row) {
-                const price = Number(row.getAttribute('data-price'));
-                if (min === 0 && max === 0) {
-                    row.style.display = '';
-                } else if (price >= min && price <= max) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-        });
-    });
-
-    // Sap xep theo gia
+    // Sap xep theo gia: sap xep o server tren toan bo ket qua, ve lai trang 1
     const sortSelect = document.getElementById('sortSelect');
     if (sortSelect) {
         sortSelect.addEventListener('change', function () {
-            if (!box) return;
-            const rows = Array.from(box.querySelectorAll('.room-row'));
-            if (this.value === 'price-asc') {
-                rows.sort((a, b) => Number(a.getAttribute('data-price')) - Number(b.getAttribute('data-price')));
-            } else if (this.value === 'price-desc') {
-                rows.sort((a, b) => Number(b.getAttribute('data-price')) - Number(a.getAttribute('data-price')));
+            const url = new URL(window.location.href);
+            if (this.value) {
+                url.searchParams.set('sort', this.value);
+            } else {
+                url.searchParams.delete('sort');
             }
-            rows.forEach(row => box.appendChild(row));
+            url.searchParams.delete('page');
+            window.location.href = url.toString();
         });
     }
 

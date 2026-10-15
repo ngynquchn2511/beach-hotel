@@ -8,6 +8,8 @@ import com.hotel.service.PricingService;
 import com.hotel.service.ReviewService;
 import com.hotel.service.RoomService;
 import com.hotel.service.UserMessages;
+import com.hotel.util.Pager;
+import com.hotel.util.RoomListing;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,6 +25,9 @@ public class CustomerController {
 
     // So phong goi y o muc "Phong tuong tu" duoi trang chi tiet
     static final int SIMILAR_ROOMS = 3;
+
+    // So phong moi trang ket qua tim phong
+    static final int ROOMS_PER_PAGE = 10;
 
     private final RoomService roomService;
     private final RoomTypeRepository roomTypeRepository;
@@ -51,9 +56,15 @@ public class CustomerController {
             @RequestParam(required = false) LocalDate checkOut,
             @RequestParam(required = false) Integer guests,
             @RequestParam(required = false) Long roomTypeId,
+            @RequestParam(required = false) String price,
+            @RequestParam(required = false) String sort,
+            @RequestParam(defaultValue = "1") int page,
             Model model) {
 
         model.addAttribute("roomTypes", roomTypeRepository.findAll());
+        model.addAttribute("price", price);
+        model.addAttribute("sort", sort);
+        model.addAttribute("priceRanges", RoomListing.PriceRange.values());
         model.addAttribute("checkIn", checkIn);
         model.addAttribute("checkOut", checkOut);
         model.addAttribute("guests", guests);
@@ -66,7 +77,10 @@ public class CustomerController {
         if (searched) {
             try {
                 List<com.hotel.entity.Room> rooms = roomService.searchAvailableRooms(checkIn, checkOut, guests, roomTypeId);
-                model.addAttribute("rooms", rooms);
+                // Loc gia + sap xep tren toan bo ket qua roi moi cat trang
+                Pager<com.hotel.entity.Room> pager = Pager.of(RoomListing.apply(rooms, price, sort), page, ROOMS_PER_PAGE);
+                model.addAttribute("pager", pager);
+                model.addAttribute("rooms", pager.items());
             } catch (BusinessException ex) {
                 model.addAttribute("errorMessage", userMessages.of(ex));
             }

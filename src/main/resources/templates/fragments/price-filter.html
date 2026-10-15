@@ -1,0 +1,29 @@
+<!-- Loc theo khoang gia (thanh ben trang danh sach phong): loc o server tren toan bo ket qua, chon xong ve trang 1 -->
+<div th:fragment="filter(priceRanges, price)" class="bg-white p-3 rounded shadow-sm" xmlns:th="http://www.thymeleaf.org">
+    <h6 class="fw-bold mb-3" th:text="#{price.title}">Tìm theo giá</h6>
+    <div class="form-check">
+        <input class="form-check-input price-filter" type="radio" name="priceRange" value="" id="priceAll"
+               th:checked="${price == null or price == ''}">
+        <label class="form-check-label" for="priceAll" th:text="#{common.all}">Tất cả</label>
+    </div>
+    <div class="form-check" th:each="r, st : ${priceRanges}">
+        <input class="form-check-input price-filter" type="radio" name="priceRange" th:value="${r.param()}"
+               th:id="'price' + ${st.count}" th:checked="${r.param() == price}">
+        <label class="form-check-label" th:for="'price' + ${st.count}" th:text="#{'price.' + ${r.param()}}"></label>
+    </div>
+    <script>
+        // Doi tham so tren URL (giu cac bo loc khac), bo so trang de quay ve trang 1
+        document.querySelectorAll('.price-filter').forEach(function (radio) {
+            radio.addEventListener('change', function () {
+                const url = new URL(window.location.href);
+                if (this.value) {
+                    url.searchParams.set('price', this.value);
+                } else {
+                    url.searchParams.delete('price');
+                }
+                url.searchParams.delete('page');
+                window.location.href = url.toString();
+            });
+        });
+    </script>
+</div>
