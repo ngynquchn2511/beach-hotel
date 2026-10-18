@@ -92,6 +92,17 @@ public class Booking {
     @Column(name = "cancelled_at")
     private LocalDateTime cancelledAt;
 
+    // Khach khong den (no-show): don dong nhu huy (status CANCELLED) nhung khong hoan coc, danh dau de theo doi khach
+    @Column(name = "no_show")
+    private Boolean noShow;
+
+    @Column(name = "no_show_at")
+    private LocalDateTime noShowAt;
+
+    public boolean isNoShow() {
+        return Boolean.TRUE.equals(noShow);
+    }
+
     // Ty le (%) va so tien coc phai hoan cho khach, chot luc huy theo chinh sach hoan coc.
     // null = don chua coc (khong co gi de hoan); 0 = khach mat coc
     @Column(name = "refund_percent")

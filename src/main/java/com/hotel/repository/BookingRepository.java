@@ -25,6 +25,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     long countByNewBookingTrue();
 
+    long countByCustomerIdAndNoShowTrue(Long customerId);
+
     // So lan luu tru hoan tat cua khach (khach than thiet)
     long countByCustomerIdAndStatus(Long customerId, BookingStatus status);
 

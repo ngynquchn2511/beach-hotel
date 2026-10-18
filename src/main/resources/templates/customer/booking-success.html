@@ -298,8 +298,9 @@
              th:utext="#{refund.pending(${#numbers.formatDecimal(booking.refundAmount, 1, 'POINT', 0, 'COMMA')}, ${booking.refundPercent})}"></div>
         <div class="alert alert-success small mt-2 mb-0" th:if="${booking.refunded}"
              th:utext="#{refund.done(${#numbers.formatDecimal(booking.refundAmount, 1, 'POINT', 0, 'COMMA')}, ${#temporals.format(booking.refundedAt, 'dd/MM/yyyy')})}"></div>
+        <div class="alert alert-secondary small mt-2 mb-0" th:if="${booking.noShow}" th:text="#{noShow.customer}"></div>
         <div class="alert alert-secondary small mt-2 mb-0"
-             th:if="${booking.status.name() == 'CANCELLED' and booking.refundPercent != null and booking.refundPercent == 0}"
+             th:if="${booking.status.name() == 'CANCELLED' and booking.refundPercent != null and booking.refundPercent == 0 and !booking.noShow}"
              th:text="#{refund.none}"></div>
         <p class="mb-0 mt-2">
             <span th:if="${payment != null and payment.status.name() == 'PAID'}" class="badge bg-success"

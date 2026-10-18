@@ -95,6 +95,10 @@ public class AdminBookingController {
         }
         // Tien hoan coc du kien neu huy ngay bay gio (null = chua coc / khong huy duoc)
         model.addAttribute("refundQuote", bookingService.refundQuoteIfCancelledNow(booking));
+        model.addAttribute("canMarkNoShow", bookingService.canMarkNoShow(booking));
+        // So lan khach nay khong den o cac don KHAC (canh bao nen yeu cau coc)
+        long noShows = booking.getCustomer() != null ? bookingService.noShowCount(booking.getCustomer().getId()) : 0;
+        model.addAttribute("otherNoShows", noShows - (booking.isNoShow() ? 1 : 0));
         // Dich vu them (tour lan / xe dua don) cua don + form le tan dat ho khach
         model.addAttribute("tourOrders", serviceOrderService.toursOf(id));
         model.addAttribute("transferOrders", serviceOrderService.transfersOf(id));
@@ -383,6 +387,21 @@ public class AdminBookingController {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
         return "redirect:/admin/bookings/" + id;
+    }
+
+    // Khach khong den: dong don, giu coc. back=today -> quay lai man hinh "Hom nay"
+    @PostMapping("/{id}/no-show")
+    public String noShow(@PathVariable Long id, @RequestParam(required = false) String back, RedirectAttributes redirectAttributes) {
+        try {
+            Booking booking = bookingService.markNoShow(id);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã đánh dấu khách không đến đơn #" + id + ", phòng "
+                    + booking.getRoom().getRoomNumber() + " đã trả lại để bán"
+                    + (booking.getDepositPaidAmount().signum() > 0
+                    ? ". Giữ cọc " + com.hotel.util.Money.format(booking.getDepositPaidAmount()) + " VND" : ""));
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "today".equals(back) ? "redirect:/admin/today" : "redirect:/admin/bookings/" + id;
     }
 
     // fullRefund: tick "Resort huy - hoan 100% coc" (het phong, su co phia khach san) thay vi ap chinh sach huy

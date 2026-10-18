@@ -119,7 +119,11 @@
                         <span th:text="${b.guestName}"></span> chưa đến nhận phòng từ
                         <span th:text="${#temporals.format(b.checkInDate, 'dd/MM')}"></span>
                         (phòng <span th:text="${b.room.roomNumber}"></span>, SĐT <span th:text="${b.guestPhone}"></span>) —
-                        <a th:href="@{/admin/bookings/{id}(id=${b.id})}">Xem đơn</a> để gọi khách hoặc hủy
+                        <a th:href="@{/admin/bookings/{id}(id=${b.id})}">Xem đơn</a> để gọi khách, hoặc
+                        <form method="post" class="d-inline" th:action="@{/admin/bookings/{id}/no-show(id=${b.id}, back='today')}"
+                              onsubmit="return confirm('Đánh dấu khách không đến? Đơn sẽ đóng, phòng trả lại để bán, tiền cọc không hoàn.')">
+                            <button type="submit" class="btn btn-link btn-sm p-0 align-baseline no-print">đánh dấu không đến</button>
+                        </form>
                     </li>
                 </ul>
             </div>

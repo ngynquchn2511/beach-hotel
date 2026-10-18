@@ -1482,6 +1482,48 @@ public class BookingService {
         return cancelledBooking;
     }
 
+    // ===== Khach khong den (no-show) =====
+
+    // Danh dau duoc khi da qua gio nhan phong cua don ma khach chua den (don dang cho / da xac nhan)
+    public boolean canMarkNoShow(Booking booking) {
+        return (booking.getStatus() == BookingStatus.PENDING || booking.getStatus() == BookingStatus.CONFIRMED)
+                && !LocalDateTime.now().isBefore(checkInDateTime(booking));
+    }
+
+    // Dong don: tra phong de ban lai, giu toan bo coc (0% hoan), hoan diem / the qua tang da dung nhu khi huy.
+    // Tien coc da ghi vao so quy tu ngay nhan coc nen khong ghi them gi
+    @Transactional
+    public Booking markNoShow(Long bookingId) {
+        Booking booking = findById(bookingId);
+        if (booking.getStatus() != BookingStatus.PENDING && booking.getStatus() != BookingStatus.CONFIRMED) {
+            throw new BusinessException("Chỉ đánh dấu không đến cho đơn đang chờ hoặc đã xác nhận");
+        }
+        if (!canMarkNoShow(booking)) {
+            throw new BusinessException("Chưa tới giờ nhận phòng (" + booking.getCheckInTime().format(TIME_FMT) + " "
+                    + booking.getCheckInDate().format(DAY_FMT) + ") - chưa thể đánh dấu khách không đến");
+        }
+        applyCancellation(booking, false);
+        if (booking.isDepositRequired() && booking.isDepositPaid()) {
+            booking.setRefundPercent(0);
+            booking.setRefundAmount(BigDecimal.ZERO);
+        }
+        booking.setNoShow(true);
+        booking.setNoShowAt(booking.getCancelledAt());
+        return bookingRepository.save(booking);
+    }
+
+    public long noShowCount(Long customerId) {
+        return customerId == null ? 0 : bookingRepository.countByCustomerIdAndNoShowTrue(customerId);
+    }
+
+    // Don qua gio nhan phong hom nay (hoac truoc do) ma khach chua den - dung cho nhac le tan cuoi ngay
+    public List<Booking> overdueArrivals(LocalDateTime now) {
+        return bookingRepository.findByStatusOrderByCreatedAtDesc(BookingStatus.CONFIRMED).stream()
+                .filter(b -> !now.isBefore(checkInDateTime(b)))
+                .sorted(java.util.Comparator.comparing(Booking::getCheckInDate))
+                .toList();
+    }
+
     // Nhan vien da chuyen tra tien hoan coc cho khach -> ghi nhan (kem ghi chu ma giao dich neu co)
     @Transactional
     public Booking confirmRefund(Long bookingId, String note) {
