@@ -154,4 +154,23 @@ class GroupBookingExtrasIT extends ItFixtures {
         assertThat(rooms.get(1).getTotalAmount()).isEqualByComparingTo("1200000");
         assertThat(voucherRepository.findById(v.getId()).orElseThrow().getBalance()).isEqualByComparingTo("0");
     }
+
+    @Test
+    void nonRefundableGroup_eachRoomDiscounted_prepaidInFull_cancelKeepsAll() throws Exception {
+        PricingSettings settings = PricingSettings.defaults();
+        settings.setDepositPercent(30);
+        settings.setNonRefundablePercent(10);
+        settingsRepository.save(settings);
+        mockMvc.perform(get("/customer/bookings/group/new").param("checkIn", in.toString()).param("checkOut", out.toString())
+                        .param("roomIds", a.getId().toString()).param("roomIds", b.getId().toString()))
+                .andExpect(content().string(containsString("Giá không hoàn tiền - giảm thêm 10% (khoảng 320.000 VND)")));
+
+        create(null, "nonRefundable", "true").andExpect(status().is3xxRedirection());
+        List<Booking> rooms = latestGroupBookings();
+        assertThat(rooms).hasSize(2).allSatisfy(bk -> {
+            assertThat(bk.isNonRefundable()).isTrue();
+            assertThat(bk.getTotalAmount()).isEqualByComparingTo("1440000");
+            assertThat(bk.getDepositAmount()).isEqualByComparingTo("1440000");
+        });
+    }
 }

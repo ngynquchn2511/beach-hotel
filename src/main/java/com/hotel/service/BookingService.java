@@ -343,7 +343,7 @@ public class BookingService {
             booking.setMemberDiscountAmount(memberAmount);
             booking.setTotalAmount(booking.getTotalAmount().subtract(memberAmount).max(BigDecimal.ZERO));
         }
-        if (group == null && nonRefundable) {
+        if (nonRefundable) {
             int percent = pricingService.getSettings().getEffectiveNonRefundablePercent();
             if (percent <= 0) {
                 throw BusinessException.of("err.nonRef.off");
@@ -426,6 +426,18 @@ public class BookingService {
                                            java.util.Map<Long, Integer> guestsByRoom,
                                            String guestName, String guestPhone, String guestEmail,
                                            String discountCodeStr, int pointsToUse, String giftCode, boolean member) {
+        return createGroupBooking(customer, roomIds, checkInDate, checkOutDate, checkInTime, checkOutTime, guestsByRoom,
+                guestName, guestPhone, guestEmail, discountCodeStr, pointsToUse, giftCode, member, false);
+    }
+
+    // nonRefundable: ca doan chon gia khong hoan tien (moi phong giam %, coc = tong tien phong do, huy khong hoan)
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public BookingGroup createGroupBooking(User customer, List<Long> roomIds, LocalDate checkInDate, LocalDate checkOutDate,
+                                           LocalTime checkInTime, LocalTime checkOutTime,
+                                           java.util.Map<Long, Integer> guestsByRoom,
+                                           String guestName, String guestPhone, String guestEmail,
+                                           String discountCodeStr, int pointsToUse, String giftCode, boolean member,
+                                           boolean nonRefundable) {
         GroupBudget budget = new GroupBudget();
         if (discountCodeStr != null && !discountCodeStr.isBlank()) {
             budget.discountCode = discountCodeStr.trim().toUpperCase();
@@ -463,7 +475,7 @@ public class BookingService {
                 throw BusinessException.of("group.error.guests", room.getRoomNumber(), room.getRoomType().getMaxGuests());
             }
             bookings.add(placeOnline(customer, roomId, checkInDate, checkOutDate, checkInTime, checkOutTime, guests,
-                    null, null, guestName, guestPhone, guestEmail, 0, null, group, member, budget, false));
+                    null, null, guestName, guestPhone, guestEmail, 0, null, group, member, budget, nonRefundable));
         }
         if (budget.points > 0) {
             // Con diem chua chia duoc -> vuot 50% tien cac phong: bao so toi da (giao dich rollback, khong tao don nao)

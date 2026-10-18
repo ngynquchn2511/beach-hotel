@@ -86,7 +86,8 @@ public class CustomerGroupBookingController {
                          @RequestParam(required = false) String guestName, @RequestParam(required = false) String guestPhone,
                          @RequestParam(required = false) String guestEmail,
                          @RequestParam(required = false) String discountCode, @RequestParam(required = false) String giftCode,
-                         @RequestParam(required = false) Integer pointsToUse, @RequestParam Map<String, String> params,
+                         @RequestParam(required = false) Integer pointsToUse, @RequestParam(required = false) Boolean nonRefundable,
+                         @RequestParam Map<String, String> params,
                          @AuthenticationPrincipal CustomUserDetails userDetails, Model model) {
         Map<Long, Integer> guests = new HashMap<>();
         params.forEach((k, v) -> {
@@ -105,7 +106,8 @@ public class CustomerGroupBookingController {
                     checkInTime != null ? checkInTime : StayTimePolicy.STANDARD_CHECK_IN,
                     checkOutTime != null ? checkOutTime : StayTimePolicy.STANDARD_CHECK_OUT,
                     guests, guestName, guestPhone, guestEmail, discountCode,
-                    userDetails != null && pointsToUse != null ? pointsToUse : 0, giftCode, userDetails != null);
+                    userDetails != null && pointsToUse != null ? pointsToUse : 0, giftCode, userDetails != null,
+                    Boolean.TRUE.equals(nonRefundable));
             return "redirect:/customer/bookings/group/" + group.getId() + "?token=" + group.getAccessToken();
         } catch (BusinessException ex) {
             model.addAttribute("errorMessage", userMessages.of(ex));
@@ -113,6 +115,7 @@ public class CustomerGroupBookingController {
             model.addAttribute("discountCode", discountCode);
             model.addAttribute("giftCode", giftCode);
             model.addAttribute("pointsToUse", pointsToUse);
+            model.addAttribute("nonRefundableChosen", Boolean.TRUE.equals(nonRefundable));
             model.addAttribute("guestName", guestName);
             model.addAttribute("guestPhone", guestPhone);
             model.addAttribute("guestEmail", guestEmail);
@@ -179,6 +182,13 @@ public class CustomerGroupBookingController {
             lines.put(id, new Line(room, amount, promo, memberAmount, amount.subtract(promo).subtract(memberAmount).max(BigDecimal.ZERO)));
         }
         List<Line> list = new ArrayList<>(lines.values());
+        // Gia khong hoan tien cho ca doan (uoc tinh tren tong tien phong sau khuyen mai + gia thanh vien)
+        int nonRefPercent = pricingService.getSettings().getEffectiveNonRefundablePercent();
+        if (nonRefPercent > 0) {
+            BigDecimal base = list.stream().map(Line::total).reduce(BigDecimal.ZERO, BigDecimal::add);
+            model.addAttribute("nonRefPercent", nonRefPercent);
+            model.addAttribute("nonRefAmount", PricingService.memberDiscountAmount(base, nonRefPercent));
+        }
         if (member != null) {
             model.addAttribute("memberPercent", memberPercent > 0 ? memberPercent : null);
             model.addAttribute("pointsBalance", member.getPointsBalance());

@@ -77,6 +77,20 @@
                        th:id="'g' + ${l.room.id}" th:name="'guests_' + ${l.room.id}" th:value="${l.room.roomType.maxGuests}" required>
             </div>
         </div>
+        <div class="mb-3 p-3 border rounded" th:if="${nonRefPercent != null}">
+            <div class="fw-semibold mb-2" th:text="#{nonRef.choose}">Chọn loại giá</div>
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="nonRefundable" value="false" id="gFlex" th:checked="${nonRefundableChosen == null or !nonRefundableChosen}">
+                <label class="form-check-label" for="gFlex" th:text="#{nonRef.flexible}">Giá linh hoạt</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="nonRefundable" value="true" id="gNonRef" th:checked="${nonRefundableChosen != null and nonRefundableChosen}">
+                <label class="form-check-label" for="gNonRef"
+                       th:text="#{nonRef.option(${nonRefPercent}, ${#numbers.formatDecimal(nonRefAmount, 1, 'POINT', 0, 'COMMA')})}"></label>
+            </div>
+            <div class="small text-muted mt-1" th:text="#{nonRef.terms}"></div>
+        </div>
+
         <h6 class="fw-bold" th:text="#{group.extras}">Ưu đãi cho cả đoàn</h6>
         <div class="row g-3 mb-3">
             <div class="col-md-6">
