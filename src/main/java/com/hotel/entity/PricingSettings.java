@@ -68,6 +68,14 @@ public class PricingSettings {
     @Column(name = "max_advance_days")
     private Integer maxAdvanceDays;
 
+    // Chi phi: phi cong thanh toan online (% tren tien thu qua VNPay) va chi phi bien doi moi phong-dem co khach
+    // (giat la, do dung, nang luong...) - dung cho bao cao lai lo
+    @Column(name = "payment_fee_percent", precision = 5, scale = 2)
+    private java.math.BigDecimal paymentFeePercent;
+
+    @Column(name = "variable_cost_per_night", precision = 12, scale = 2)
+    private java.math.BigDecimal variableCostPerNight;
+
     // Nang hang phong: uu dai % tren phan chenh lech (null = 0) va tu gui loi moi truoc ngay den (null = tat)
     @Column(name = "upgrade_discount_percent")
     private Integer upgradeDiscountPercent;

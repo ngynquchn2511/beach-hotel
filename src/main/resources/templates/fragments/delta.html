@@ -1,0 +1,8 @@
+<!-- Chenh lech %: tang la tot (doanh thu, lai) hoac xau (chi phi, costUp = true) -->
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="delta(value, label, costUp)">
+    <span th:if="${value == null}" class="text-muted" th:text="'— ' + ${label}"></span>
+    <span th:if="${value != null}"
+          th:with="good=${costUp ? value <= 0 : value >= 0}"
+          th:classappend="${good} ? 'text-success' : 'text-danger'"
+          th:text="(${value >= 0} ? '▲ +' : '▼ ') + ${value} + '% ' + ${label}"></span>
+</th:block>
