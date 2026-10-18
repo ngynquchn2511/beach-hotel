@@ -140,6 +140,7 @@ public class SecurityConfig {
                         // Bao cao cuoi ngay: le tan / ke toan xem, gui email ngay chi ADMIN
                         .requestMatchers(HttpMethod.POST, "/admin/reports/daily/send").hasRole("ADMIN")
                         .requestMatchers("/admin/reports/daily").hasAnyRole("ADMIN", "STAFF", "ACCOUNTANT")
+                        .requestMatchers("/admin/reports/cancellations", "/admin/reports/cancellations/**").hasAnyRole("ADMIN", "STAFF", "ACCOUNTANT")
                         // Bao cao ke toan: so quy thang, doi soat VNPay
                         .requestMatchers("/admin/accounting", "/admin/accounting/**").hasAnyRole("ADMIN", "ACCOUNTANT")
                         .requestMatchers(HttpMethod.GET, "/admin/dashboard", "/admin/dashboard/export", "/admin/forecast",
