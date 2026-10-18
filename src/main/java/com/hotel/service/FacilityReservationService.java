@@ -191,6 +191,26 @@ public class FacilityReservationService {
         return new RatingStat(round(((Number) rows.get(0)[0]).doubleValue()), ((Number) rows.get(0)[1]).longValue());
     }
 
+    // 1 gop y hien cong khai: chi ten goi + chu cai dau ho (VD "Lan N."), khong lo ho ten day du
+    public record Testimonial(int rating, String feedback, String guest, String service, LocalDateTime ratedAt) {
+    }
+
+    public List<Testimonial> featuredFeedback(int limit) {
+        return repository.findFeatured(org.springframework.data.domain.PageRequest.of(0, limit)).stream()
+                .map(r -> new Testimonial(r.getRating(), r.getFeedback(), shortName(r.getBooking().getGuestName()),
+                        r.isSpa() && r.getSpaPackage() != null ? r.getSpaPackage().getLocalizedName() : null, r.getRatedAt()))
+                .toList();
+    }
+
+    static String shortName(String fullName) {
+        if (fullName == null || fullName.isBlank()) {
+            return "";
+        }
+        String[] parts = fullName.trim().split("\\s+");
+        String given = parts[parts.length - 1];
+        return parts.length > 1 ? given + " " + parts[0].charAt(0) + "." : given;
+    }
+
     public List<FacilityReservation> recentRatings(int limit) {
         return repository.findRated(org.springframework.data.domain.PageRequest.of(0, limit));
     }

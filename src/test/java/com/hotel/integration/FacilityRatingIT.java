@@ -106,4 +106,24 @@ class FacilityRatingIT extends ItFixtures {
             assertThat(n.message()).isEqualTo("Món ra chậm, đồ nguội");
         });
     }
+
+    @Test
+    void publicServicesPage_showsPackagesRatingsAndShortGuestNames() throws Exception {
+        stay.setGuestName("Nguyễn Thị Lan");
+        bookingRepository.save(stay);
+        FacilityReservation done = reservation(FacilityReservation.Kind.SPA, LocalDate.now().minusDays(1), LocalTime.of(10, 0), ServiceStatus.CONFIRMED);
+        rate(done, "5", "Chuyên viên tay nghề rất tốt");
+        FacilityReservation meh = reservation(FacilityReservation.Kind.RESTAURANT, LocalDate.now().minusDays(1), LocalTime.of(12, 0), ServiceStatus.CONFIRMED);
+        rate(meh, "3", "Bình thường");
+
+        mockMvc.perform(get("/services"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Chăm sóc da mặt")))
+                .andExpect(content().string(containsString("★ 5.0")))
+                .andExpect(content().string(containsString("Chuyên viên tay nghề rất tốt")))
+                .andExpect(content().string(containsString("Lan N.")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(containsString("Nguyễn Thị Lan"))))
+                // Gop y 3 sao khong dua len trang cong khai
+                .andExpect(content().string(org.hamcrest.Matchers.not(containsString("Bình thường"))));
+    }
 }

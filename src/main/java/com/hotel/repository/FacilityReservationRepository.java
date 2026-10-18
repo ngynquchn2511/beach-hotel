@@ -43,4 +43,9 @@ public interface FacilityReservationRepository extends JpaRepository<FacilityRes
     @Query("select r from FacilityReservation r join fetch r.booking b join fetch b.room left join fetch r.spaPackage "
             + "where r.rating is not null order by r.ratedAt desc")
     List<FacilityReservation> findRated(org.springframework.data.domain.Pageable pageable);
+
+    // Gop y tieu bieu cho trang cong khai: tu 4 sao, co loi gop y
+    @Query("select r from FacilityReservation r join fetch r.booking left join fetch r.spaPackage "
+            + "where r.rating >= 4 and r.feedback is not null order by r.ratedAt desc")
+    List<FacilityReservation> findFeatured(org.springframework.data.domain.Pageable pageable);
 }

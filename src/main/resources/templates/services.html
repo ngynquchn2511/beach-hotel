@@ -76,6 +76,52 @@
     </section>
 
     <!-- Dua don san bay -->
+    <section id="spa-nha-hang" class="mb-5" th:if="${spaPackages != null}">
+        <h2 class="fw-bold mb-1"><i class="bi bi-flower1 me-2"></i><span th:text="#{svc.spa.title}">Spa &amp; nhà hàng</span></h2>
+        <p class="text-muted" th:text="#{svc.spa.lead}"></p>
+        <div class="row g-4">
+            <div class="col-lg-7">
+                <div class="bg-white p-4 rounded shadow-sm h-100">
+                    <h5 class="fw-bold" th:text="#{fac.spa}">Spa</h5>
+                    <p class="small text-muted mb-2" th:text="#{svc.spa.hours(${spaHours})}"></p>
+                    <div th:if="${#lists.isEmpty(spaPackages)}" class="text-muted small" th:text="#{svc.spa.none}"></div>
+                    <table class="table table-sm align-middle mb-0" th:unless="${#lists.isEmpty(spaPackages)}">
+                        <tbody>
+                        <tr th:each="p : ${spaPackages}">
+                            <td class="fw-semibold" th:text="${p.localizedName}"></td>
+                            <td class="small text-muted text-nowrap" th:text="${p.minutes} + #{fac.minutes}"></td>
+                            <td class="small text-nowrap">
+                                <span th:if="${spaRatings[p.id] != null}" class="text-warning" th:text="'★ ' + ${spaRatings[p.id].average}"></span>
+                                <span th:if="${spaRatings[p.id] != null}" class="text-muted" th:text="'(' + ${spaRatings[p.id].count} + ')'"></span>
+                            </td>
+                            <td class="text-end text-nowrap"><span class="fw-bold" th:text="${#numbers.formatDecimal(p.price, 1, 'POINT', 0, 'COMMA')} + 'đ'"></span>
+                                <span class="small text-muted" th:text="#{svc.tour.perPerson}">/ người</span></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="col-lg-5">
+                <div class="bg-white p-4 rounded shadow-sm mb-3">
+                    <h5 class="fw-bold" th:text="#{fac.restaurant}">Nhà hàng</h5>
+                    <p class="small mb-1" th:text="#{svc.restaurant.hours}"></p>
+                    <p class="small mb-0" th:if="${restaurantRating.count > 0}">
+                        <span class="text-warning" th:text="'★ ' + ${restaurantRating.average} + ' / 5'"></span>
+                        <span class="text-muted" th:text="#{svc.rating.count(${restaurantRating.count})}"></span></p>
+                </div>
+                <div class="bg-white p-4 rounded shadow-sm" th:unless="${#lists.isEmpty(testimonials)}">
+                    <h6 class="fw-bold" th:text="#{svc.testimonials}">Khách nói gì</h6>
+                    <blockquote th:each="t : ${testimonials}" class="small border-start ps-2 mb-2">
+                        <div class="text-warning" th:text="${#strings.repeat('★', t.rating)}"></div>
+                        <div class="fst-italic" th:text="'“' + ${t.feedback} + '”'"></div>
+                        <div class="text-muted" th:text="'- ' + ${t.guest} + (${t.service != null} ? ' · ' + ${t.service} : '')"></div>
+                    </blockquote>
+                </div>
+            </div>
+        </div>
+        <p class="small text-muted mt-2" th:text="#{svc.spa.howTo}"></p>
+    </section>
+
     <section id="dua-don" class="bg-white p-4 rounded shadow-sm">
         <h2 class="fw-bold mb-2"><i class="bi bi-airplane me-2"></i><span th:text="#{svc.transfer.title}">Đưa đón sân bay</span></h2>
         <p class="text-muted" th:text="#{svc.transfer.lead}"></p>

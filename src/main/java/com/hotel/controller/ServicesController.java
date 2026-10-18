@@ -39,6 +39,15 @@ public class ServicesController {
         this.serviceOrderService = serviceOrderService;
     }
 
+    private com.hotel.service.FacilityReservationService facilityService;
+    private com.hotel.service.SpaPackageService spaPackageService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setFacility(com.hotel.service.FacilityReservationService facilityService, com.hotel.service.SpaPackageService spaPackageService) {
+        this.facilityService = facilityService;
+        this.spaPackageService = spaPackageService;
+    }
+
     // So tour moi trang o muc "Tour lan bien" (luoi 3 cot)
     static final int TOURS_PER_PAGE = 6;
 
@@ -52,6 +61,15 @@ public class ServicesController {
         model.addAttribute("rates", transferRateService.priceTable());
         model.addAttribute("tourLeadHours", ServiceOrderService.TOUR_LEAD_HOURS);
         model.addAttribute("transferLeadHours", ServiceOrderService.TRANSFER_LEAD_HOURS);
+        // Spa & nha hang: goi dang ban, diem khach cham, gop y tieu bieu
+        if (facilityService != null && spaPackageService != null) {
+            model.addAttribute("spaPackages", spaPackageService.active());
+            model.addAttribute("spaRatings", facilityService.spaRatings());
+            model.addAttribute("restaurantRating", facilityService.restaurantRating());
+            model.addAttribute("testimonials", facilityService.featuredFeedback(3));
+            var spaSlots = com.hotel.service.FacilityReservationService.SPA_SLOTS;
+            model.addAttribute("spaHours", spaSlots.get(0) + " - " + spaSlots.get(spaSlots.size() - 1));
+        }
         return "services";
     }
 
