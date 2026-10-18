@@ -86,6 +86,10 @@
             <td colspan="3" th:text="'Giảm giá (mã ' + ${booking.discountCode.code} + ')'"></td>
             <td class="text-end" th:text="'-' + ${#numbers.formatDecimal(booking.discountAmount, 1, 'POINT', 0, 'COMMA')}"></td>
         </tr>
+        <tr th:if="${booking.nonRefundable}">
+            <td colspan="3" th:text="'Giá không hoàn tiền (-' + ${booking.nonRefundablePercent} + '%)'"></td>
+            <td class="text-end" th:text="'-' + ${#numbers.formatDecimal(booking.nonRefundableAmountOrZero, 1, 'POINT', 0, 'COMMA')}"></td>
+        </tr>
         <tr th:if="${booking.memberDiscountAmount != null and booking.memberDiscountAmount.signum() > 0}">
             <td colspan="3" th:text="'Giá thành viên (-' + ${booking.memberDiscountPercent} + '%)'"></td>
             <td class="text-end" th:text="'-' + ${#numbers.formatDecimal(booking.memberDiscountAmount, 1, 'POINT', 0, 'COMMA')}"></td>

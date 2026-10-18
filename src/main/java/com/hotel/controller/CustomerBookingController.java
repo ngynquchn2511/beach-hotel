@@ -209,7 +209,7 @@ public class CustomerBookingController {
                     request.getCheckInTime(), request.getCheckOutTime(),
                     guests, comboId, request.getDiscountCode(),
                     request.getGuestName(), request.getGuestPhone(), request.getGuestEmail(), points,
-                    request.getGiftCode(), userDetails != null
+                    request.getGiftCode(), userDetails != null, Boolean.TRUE.equals(request.getNonRefundable())
             );
             if (companyInfo != null) {
                 companyInvoiceService.save(booking, companyInfo);
@@ -281,6 +281,7 @@ public class CustomerBookingController {
         // findForViewing da xac thuc nguoi xem la chu don (dang nhap) hoac co ma truy cap (link trong email moi danh gia)
         model.addAttribute("canReview", reviewService.canReview(booking));
         model.addAttribute("canModify", bookingService.canModify(booking));
+        model.addAttribute("canChangeDates", bookingService.canModify(booking) && !booking.isNonRefundable());
         // Da coc: bao truoc tien duoc hoan neu huy ngay bay gio
         model.addAttribute("refundQuote", bookingService.refundQuoteIfCancelledNow(booking));
         if (booking.isAwaitingDeposit()) {
@@ -727,6 +728,13 @@ public class CustomerBookingController {
         }
         // Uoc tinh truoc khi ap ma giam gia - so chinh xac hien o trang don sau khi dat
         model.addAttribute("estimatedDeposit", pricingService.depositFor(subtotal));
+        // Lua chon gia khong hoan tien (uoc tinh tren tien phong sau khuyen mai, truoc gia thanh vien)
+        int nonRefPercent = settings.getEffectiveNonRefundablePercent();
+        if (nonRefPercent > 0) {
+            BigDecimal base = roomAmount.subtract(promotion != null ? promotion.amount() : BigDecimal.ZERO);
+            model.addAttribute("nonRefPercent", nonRefPercent);
+            model.addAttribute("nonRefAmount", com.hotel.service.PricingService.memberDiscountAmount(base, nonRefPercent));
+        }
         model.addAttribute("subtotal", subtotal);
     }
 

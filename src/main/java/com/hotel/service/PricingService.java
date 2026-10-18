@@ -235,6 +235,19 @@ public class PricingService {
         return settingsRepository.save(settings);
     }
 
+    public static final int MAX_NON_REFUNDABLE_PERCENT = 50;
+
+    // 0 = tat. Chi co tac dung khi resort co nhan coc (khong nhan coc thi khong co gi de giu khi khach huy)
+    @Transactional
+    public PricingSettings updateNonRefundablePercent(Integer percent) {
+        if (percent == null || percent < 0 || percent > MAX_NON_REFUNDABLE_PERCENT) {
+            throw new BusinessException("Mức giảm giá không hoàn tiền từ 0 (tắt) đến " + MAX_NON_REFUNDABLE_PERCENT + "%");
+        }
+        PricingSettings settings = getSettings();
+        settings.setNonRefundablePercent(percent == 0 ? null : percent);
+        return settingsRepository.save(settings);
+    }
+
     // Ty gia USD (chi de hien gia tham khao cho khach nuoc ngoai, khach van tra bang VND)
     @Transactional
     public PricingSettings updateUsdRate(Integer usdRate) {

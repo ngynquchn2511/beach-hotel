@@ -68,6 +68,15 @@ public class PricingSettings {
     @Column(name = "max_advance_days")
     private Integer maxAdvanceDays;
 
+    // Gia khong hoan tien: % giam tien phong (null / 0 = khong ban)
+    @Column(name = "non_refundable_percent")
+    private Integer nonRefundablePercent;
+
+    public int getEffectiveNonRefundablePercent() {
+        return nonRefundablePercent != null && nonRefundablePercent > 0 && getDepositPercent() != null && getDepositPercent() > 0
+                ? nonRefundablePercent : 0;
+    }
+
     public int getEffectiveUsdRate() {
         return usdRate != null && usdRate > 0 ? usdRate : DEFAULT_USD_RATE;
     }

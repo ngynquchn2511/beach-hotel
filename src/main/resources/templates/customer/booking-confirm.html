@@ -118,6 +118,23 @@
                 <div class="text-muted small mt-1" th:text="#{confirm.timesHint}">Giờ mặc định theo thông lệ của resort — chọn lại trong danh sách nếu muốn đổi</div>
             </div>
 
+            <!-- Gia khong hoan tien: giam them %, tra truoc toan bo -->
+            <div class="mb-3 p-3 border rounded" th:if="${nonRefPercent != null}">
+                <div class="fw-semibold mb-2" th:text="#{nonRef.choose}">Chọn loại giá</div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="nonRefundable" value="false" id="rateFlexible"
+                           th:checked="${bookingConfirmRequest.nonRefundable == null or !bookingConfirmRequest.nonRefundable}">
+                    <label class="form-check-label" for="rateFlexible" th:text="#{nonRef.flexible}">Giá linh hoạt</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="nonRefundable" value="true" id="rateNonRef"
+                           th:checked="${bookingConfirmRequest.nonRefundable != null and bookingConfirmRequest.nonRefundable}">
+                    <label class="form-check-label" for="rateNonRef"
+                           th:text="#{nonRef.option(${nonRefPercent}, ${#numbers.formatDecimal(nonRefAmount, 1, 'POINT', 0, 'COMMA')})}">Giá không hoàn tiền</label>
+                </div>
+                <div class="small text-muted mt-1" th:text="#{nonRef.terms}"></div>
+            </div>
+
             <div class="mb-3">
                 <label class="form-label" th:text="#{confirm.discount}">Mã giảm giá (nếu có)</label>
                 <div class="d-flex gap-2">

@@ -124,6 +124,18 @@ public class AdminPricingController {
         return "redirect:/admin/pricing#luat-ban-phong";
     }
 
+    @PostMapping("/non-refundable")
+    public String nonRefundable(@RequestParam(required = false) Integer nonRefundablePercent, RedirectAttributes redirectAttributes) {
+        try {
+            pricingService.updateNonRefundablePercent(nonRefundablePercent);
+            redirectAttributes.addFlashAttribute("successMessage", nonRefundablePercent != null && nonRefundablePercent > 0
+                    ? "Đã bật giá không hoàn tiền: giảm " + nonRefundablePercent + "% tiền phòng" : "Đã tắt giá không hoàn tiền");
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "redirect:/admin/pricing#luat-ban-phong";
+    }
+
     @PostMapping("/max-advance")
     public String maxAdvance(@RequestParam(required = false) Integer maxAdvanceDays, RedirectAttributes redirectAttributes) {
         try {

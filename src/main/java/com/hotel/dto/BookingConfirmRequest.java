@@ -19,6 +19,9 @@ public class BookingConfirmRequest {
     // Ma the qua tang (khong bat buoc)
     private String giftCode;
 
+    // Gia khong hoan tien (giam them %, tra truoc toan bo)
+    private Boolean nonRefundable;
+
     @NotBlank(message = "{val.guestName.required}")
     private String guestName;
 

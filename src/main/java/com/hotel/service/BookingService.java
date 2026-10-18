@@ -274,7 +274,7 @@ public class BookingService {
                                   Long comboId, String discountCodeStr, String guestName, String guestPhone,
                                   String guestEmail, int pointsToUse) {
         return placeOnline(customer, roomId, checkInDate, checkOutDate, checkInTime, checkOutTime, guests, comboId,
-                discountCodeStr, guestName, guestPhone, guestEmail, pointsToUse, null, null, false, null);
+                discountCodeStr, guestName, guestPhone, guestEmail, pointsToUse, null, null, false, null, false);
     }
 
     // giftCode: ma the qua tang tru vao tien don (sau khuyen mai + diem thuong), tien coc tinh tren so con lai
@@ -284,7 +284,7 @@ public class BookingService {
                                   Long comboId, String discountCodeStr, String guestName, String guestPhone,
                                   String guestEmail, int pointsToUse, String giftCode) {
         return placeOnline(customer, roomId, checkInDate, checkOutDate, checkInTime, checkOutTime, guests, comboId,
-                discountCodeStr, guestName, guestPhone, guestEmail, pointsToUse, giftCode, null, false, null);
+                discountCodeStr, guestName, guestPhone, guestEmail, pointsToUse, giftCode, null, false, null, false);
     }
 
     // member = khach dang nhap (khong phai tai khoan tu tao cho khach vang lai) -> duoc gia thanh vien theo hang
@@ -294,7 +294,17 @@ public class BookingService {
                                   Long comboId, String discountCodeStr, String guestName, String guestPhone,
                                   String guestEmail, int pointsToUse, String giftCode, boolean member) {
         return placeOnline(customer, roomId, checkInDate, checkOutDate, checkInTime, checkOutTime, guests, comboId,
-                discountCodeStr, guestName, guestPhone, guestEmail, pointsToUse, giftCode, null, member, null);
+                discountCodeStr, guestName, guestPhone, guestEmail, pointsToUse, giftCode, null, member, null, false);
+    }
+
+    // nonRefundable: khach chon gia khong hoan tien (giam them %, tra truoc toan bo, huy khong hoan)
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public Booking createBooking(User customer, Long roomId, LocalDate checkInDate, LocalDate checkOutDate,
+                                  LocalTime checkInTime, LocalTime checkOutTime, Integer guests,
+                                  Long comboId, String discountCodeStr, String guestName, String guestPhone,
+                                  String guestEmail, int pointsToUse, String giftCode, boolean member, boolean nonRefundable) {
+        return placeOnline(customer, roomId, checkInDate, checkOutDate, checkInTime, checkOutTime, guests, comboId,
+                discountCodeStr, guestName, guestPhone, guestEmail, pointsToUse, giftCode, null, member, null, nonRefundable);
     }
 
     // group != null: 1 phong trong nhom dat nhieu phong (khong gui email tung don - gui 1 email tong hop)
@@ -303,7 +313,7 @@ public class BookingService {
                                 LocalTime checkInTime, LocalTime checkOutTime, Integer guests,
                                 Long comboId, String discountCodeStr, String guestName, String guestPhone,
                                 String guestEmail, int pointsToUse, String giftCode, BookingGroup group, boolean member,
-                                GroupBudget budget) {
+                                GroupBudget budget, boolean nonRefundable) {
         requireStandardTimes(checkInTime, checkOutTime);
         checkStayRules(roomId, checkInDate, checkOutDate);
         boolean sameGroupCode = false;
@@ -326,6 +336,18 @@ public class BookingService {
             booking.setMemberDiscountAmount(memberAmount);
             booking.setTotalAmount(booking.getTotalAmount().subtract(memberAmount).max(BigDecimal.ZERO));
         }
+        if (group == null && nonRefundable) {
+            int percent = pricingService.getSettings().getEffectiveNonRefundablePercent();
+            if (percent <= 0) {
+                throw BusinessException.of("err.nonRef.off");
+            }
+            BigDecimal amount = PricingService.memberDiscountAmount(booking.getRoomAmount().subtract(booking.getPromotionAmountOrZero())
+                    .subtract(booking.getMemberDiscountAmountOrZero()).max(BigDecimal.ZERO), percent);
+            booking.setNonRefundable(true);
+            booking.setNonRefundablePercent(percent);
+            booking.setNonRefundableAmount(amount);
+            booking.setTotalAmount(booking.getTotalAmount().subtract(amount).max(BigDecimal.ZERO));
+        }
         if (budget != null) {
             pointsToUse = budget.takePoints(booking.getTotalAmount());
             giftCode = budget.giftCode != null && giftVoucherService.balanceOf(budget.giftCode).signum() > 0 ? budget.giftCode : null;
@@ -345,7 +367,9 @@ public class BookingService {
         }
 
         booking.setChannel(BookingChannel.ONLINE);
-        BigDecimal deposit = pricingService.depositFor(booking.getTotalAmount());
+        // Gia khong hoan tien: tra truoc toan bo tien don qua coc
+        BigDecimal deposit = booking.isNonRefundable() ? booking.getTotalAmount().setScale(0, java.math.RoundingMode.HALF_UP)
+                : pricingService.depositFor(booking.getTotalAmount());
         booking.setDepositAmount(deposit);
         if (deposit.signum() > 0) {
             booking.setDepositDeadline(depositDeadline(checkInDate, checkInTime));
@@ -432,7 +456,7 @@ public class BookingService {
                 throw BusinessException.of("group.error.guests", room.getRoomNumber(), room.getRoomType().getMaxGuests());
             }
             bookings.add(placeOnline(customer, roomId, checkInDate, checkOutDate, checkInTime, checkOutTime, guests,
-                    null, null, guestName, guestPhone, guestEmail, 0, null, group, member, budget));
+                    null, null, guestName, guestPhone, guestEmail, 0, null, group, member, budget, false));
         }
         if (budget.points > 0) {
             // Con diem chua chia duoc -> vuot 50% tien cac phong: bao so toi da (giao dich rollback, khong tao don nao)
@@ -1047,14 +1071,15 @@ public class BookingService {
         // Tien da tru bang diem thuong / khuyen mai luc dat giu nguyen (tien phong khong doi)
         BigDecimal totalAmount = subtotal.subtract(discountAmount).subtract(booking.getPointsDiscountAmount())
                 .subtract(booking.getGiftVoucherAmountOrZero()).subtract(booking.getMemberDiscountAmountOrZero())
-                .subtract(booking.getPromotionAmountOrZero()).max(BigDecimal.ZERO);
+                .subtract(booking.getPromotionAmountOrZero()).subtract(booking.getNonRefundableAmountOrZero()).max(BigDecimal.ZERO);
 
         booking.setCombo(newCombo);
         booking.setDiscountAmount(discountAmount);
         booking.setTotalAmount(totalAmount);
         // Chua chuyen coc thi tinh lai tien coc theo tong tien moi; da coc roi thi giu nguyen
         if (booking.isDepositRequired() && !booking.isDepositPaid()) {
-            booking.setDepositAmount(pricingService.depositFor(totalAmount));
+            booking.setDepositAmount(booking.isNonRefundable() ? totalAmount.setScale(0, java.math.RoundingMode.HALF_UP)
+                    : pricingService.depositFor(totalAmount));
         }
 
         return bookingRepository.save(booking);
@@ -1121,6 +1146,9 @@ public class BookingService {
     private DateChangeQuote validateAndQuoteDateChange(Booking booking, LocalDate newCheckIn, LocalDate newCheckOut) {
         if (!canModify(booking)) {
             throw BusinessException.of("err.changeDatesClosed", EDIT_CUTOFF_HOURS);
+        }
+        if (booking.isNonRefundable()) {
+            throw BusinessException.of("err.nonRef.noChange");
         }
         if (newCheckIn == null || newCheckOut == null) {
             throw BusinessException.of("err.datesRequired");
@@ -1212,7 +1240,7 @@ public class BookingService {
             giftVoucherService.refund(booking);
         }
         if (booking.isDepositRequired() && booking.isDepositPaid()) {
-            int percent = fullRefund ? 100 : pricingService.refundPercent(checkInDateTime(booking), now);
+            int percent = fullRefund ? 100 : booking.isNonRefundable() ? 0 : pricingService.refundPercent(checkInDateTime(booking), now);
             booking.setRefundPercent(percent);
             booking.setRefundAmount(PricingService.refundAmount(booking.getDepositAmount(), percent));
         }
@@ -1229,7 +1257,7 @@ public class BookingService {
                 || !booking.isDepositRequired() || !booking.isDepositPaid()) {
             return null;
         }
-        int percent = pricingService.refundPercent(checkInDateTime(booking), LocalDateTime.now());
+        int percent = booking.isNonRefundable() ? 0 : pricingService.refundPercent(checkInDateTime(booking), LocalDateTime.now());
         return new PricingService.RefundQuote(percent, PricingService.refundAmount(booking.getDepositAmount(), percent));
     }
 

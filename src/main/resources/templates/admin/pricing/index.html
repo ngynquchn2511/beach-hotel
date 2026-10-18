@@ -229,6 +229,17 @@
                 <p class="text-muted small mb-3">Áp cho khách tự đặt online, đặt theo đoàn và khách tự đổi ngày. Lễ tân đặt tại quầy không bị chặn.
                     Số đêm tối thiểu tính theo ngày nhận phòng; đóng bán chặn mọi đêm trong khoảng.</p>
 
+                <form th:action="@{/admin/pricing/non-refundable}" method="post" class="row g-2 align-items-end mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label small">Giá không hoàn tiền: giảm (% tiền phòng)</label>
+                        <input type="number" name="nonRefundablePercent" class="form-control" min="0" max="50"
+                               th:value="${settings.nonRefundablePercent != null ? settings.nonRefundablePercent : 0}">
+                        <div class="form-text">0 = tắt. Khách chọn giá này trả trước toàn bộ, hủy không hoàn, không tự đổi ngày.
+                            <span th:if="${settings.depositPercent == null or settings.depositPercent == 0}" class="text-danger">Cần bật đặt cọc mới có tác dụng.</span></div>
+                    </div>
+                    <div class="col-md-2"><button type="submit" class="btn btn-outline-primary">Lưu</button></div>
+                </form>
+
                 <form th:action="@{/admin/pricing/max-advance}" method="post" class="row g-2 align-items-end mb-4">
                     <div class="col-md-4">
                         <label class="form-label small">Nhận đặt trước tối đa (ngày)</label>

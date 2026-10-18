@@ -240,6 +240,24 @@ public class Booking {
     @Column(name = "member_discount_amount", precision = 12, scale = 2)
     private java.math.BigDecimal memberDiscountAmount;
 
+    // Gia khong hoan tien: khach chon luc dat, giam them % tien phong, tra truoc 100% (coc = tong tien), huy khong hoan
+    @Column(name = "non_refundable")
+    private Boolean nonRefundable;
+
+    @Column(name = "non_refundable_percent")
+    private Integer nonRefundablePercent;
+
+    @Column(name = "non_refundable_amount", precision = 12, scale = 2)
+    private java.math.BigDecimal nonRefundableAmount;
+
+    public boolean isNonRefundable() {
+        return Boolean.TRUE.equals(nonRefundable);
+    }
+
+    public java.math.BigDecimal getNonRefundableAmountOrZero() {
+        return nonRefundableAmount != null ? nonRefundableAmount : java.math.BigDecimal.ZERO;
+    }
+
     public java.math.BigDecimal getMemberDiscountAmountOrZero() {
         return memberDiscountAmount != null ? memberDiscountAmount : java.math.BigDecimal.ZERO;
     }

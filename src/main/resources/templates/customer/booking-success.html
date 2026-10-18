@@ -278,6 +278,8 @@
            th:text="#{success.discount(${booking.discountCode.code}, ${#numbers.formatDecimal(booking.discountAmount, 1, 'POINT', 0, 'COMMA')})}"></p>
         <p class="mb-1" th:if="${booking.memberDiscountAmount != null and booking.memberDiscountAmount.signum() > 0}"
            th:text="#{member.line(${booking.memberDiscountPercent}, ${#numbers.formatDecimal(booking.memberDiscountAmount, 1, 'POINT', 0, 'COMMA')})}"></p>
+        <p class="mb-1 text-success" th:if="${booking.nonRefundable}"
+           th:text="#{nonRef.line(${booking.nonRefundablePercent}, ${#numbers.formatDecimal(booking.nonRefundableAmountOrZero, 1, 'POINT', 0, 'COMMA')})}"></p>
         <p class="mb-1" th:if="${booking.promotionAmount != null and booking.promotionAmount.signum() > 0}"
            th:text="#{promo.line(${booking.localizedPromotionName}, ${booking.promotionPercent}, ${#numbers.formatDecimal(booking.promotionAmount, 1, 'POINT', 0, 'COMMA')})}"></p>
         <p class="mb-1" th:if="${booking.giftVoucherAmount != null and booking.giftVoucherAmount.signum() > 0}"
@@ -387,7 +389,7 @@
 
     <div>
         <!-- Doi ngay luu tru: kiem tra phong trong + gia moi truoc (GET .../change-dates/quote) roi moi cho luu -->
-        <div class="bg-white p-4 rounded shadow-sm mb-4 section-anchor" id="doi-ngay" th:if="${canModify}">
+        <div class="bg-white p-4 rounded shadow-sm mb-4 section-anchor" id="doi-ngay" th:if="${canChangeDates}">
             <h5 class="fw-bold mb-1" th:text="#{changeDates.title}">Đổi ngày lưu trú</h5>
             <p class="text-muted small mb-3" th:text="#{changeDates.lead}"></p>
             <form id="changeDatesForm" th:action="@{/customer/bookings/{id}/change-dates(id=${booking.id})}" method="post"
