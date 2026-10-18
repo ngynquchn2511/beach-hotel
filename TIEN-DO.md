@@ -1,7 +1,7 @@
 # Tiến độ dự án Sóng Xanh Resort (beach-hotel)
 
 > File bàn giao giữa các phiên làm việc với Claude. Mở phiên mới, bảo Claude: **"đọc file TIEN-DO.md"**.
-> Cập nhật lần cuối: 18/10/2026, sau commit `ca45ae8`, 1870 test xanh.
+> Cập nhật lần cuối: 19/10/2026, sau đợt 6 (7 chức năng), 1885 test xanh.
 
 ## 1. Dự án
 
@@ -32,6 +32,17 @@
    - MockMvc đọc JSON không charset là ISO-8859-1: dùng `getContentAsString(StandardCharsets.UTF_8)`.
 
 ## 3. Đã làm (theo thứ tự gần nhất trước)
+
+### Đợt 6 (19/10/2026)
+| Commit | Chức năng |
+|---|---|
+| `61ce31d` | Lịch sử dọn / kiểm phòng (`housekeeping_logs`), thống kê theo nhân viên `/admin/housekeeping/stats` (phòng dọn xong, phút TB, tỷ lệ kiểm chưa đạt) |
+| `fa10a65` | Giá không hoàn tiền cho đơn đoàn |
+| `a637b9c` | Nhắn tin khách ↔ lễ tân theo đơn (`booking_messages`): khách nhắn trên trang đơn, lễ tân trả lời kèm email, hộp `/admin/messages` + badge chưa đọc. Sửa: các trang admin mới của đợt 4-5 giờ đã có trong `AdminSidebarModelAdvice` (badge sidebar hiện đúng) |
+| `61e6da1` | Yêu cầu đặc biệt (`GuestRequestTag` + ghi thêm) khi đặt / sửa trên trang đơn; ghi chú sở thích khách (`users.staff_notes`); hiện ở trang đơn admin, "Hôm nay", bảng dọn phòng |
+| `5f90be7` | Báo cáo hủy & không đến `/admin/reports/cancellations`: theo tháng / kênh, hủy sát ngày, cọc giữ lại, khách hủy nhiều lần, Excel |
+| `1cff672` | Bán nâng hạng phòng (`upgrade_offers`): lời mời lên loại cao hơn còn trống, ưu đãi % trên chênh lệch, khách nhận trên trang đơn → đổi phòng + cộng tiền; tự gửi 2 ngày trước khi đến; `/admin/upgrades` |
+| `11d906a` | Mã giảm giá có giới hạn: thời hạn, tổng số lượt (đoàn tính 1), đơn tối thiểu, trần giảm cho mã %; thống kê từng mã; chatbot chỉ giới thiệu mã còn dùng được |
 
 ### Đợt 5 (18/10/2026)
 | Commit | Chức năng |
@@ -69,7 +80,7 @@
 
 ## 4. Lưu ý khi deploy lên server
 
-- Chạy **tất cả** các file trong `sql/` theo thứ tự tên file (`2026-10-10_*`, `2026-10-15_*`, `2026-10-16_*`, rồi `2026-10-18_*`) **trước khi** chạy bản mới.
+- Chạy **tất cả** các file trong `sql/` theo thứ tự tên file (`2026-10-10_*`, `2026-10-15_*`, `2026-10-16_*`, `2026-10-18_*`, rồi `2026-10-19_*`) **trước khi** chạy bản mới.
   - `2026-10-18_goi-spa.sql` vừa tạo bảng vừa **chuyển dữ liệu** lịch spa cũ (cột `treatment`) sang `spa_package_id`; cột `treatment` cũ được giữ lại, app không đọc nữa.
   - `2026-10-18_thoi-luong-spa-theo-lich.sql` phải chạy **sau** `2026-10-18_goi-spa.sql` (thứ tự tên file đã đúng) vì điền thời lượng từ bảng gói.
 - Biến môi trường:
@@ -84,16 +95,18 @@
 - Đơn đoàn: mã giảm giá số tiền cố định chỉ trừ vào phòng đầu tiên (tối đa bằng tiền phòng đó).
 - Công suất các kỳ cũ được tính theo số phòng hiện tại.
 - Đối soát VNPay nhận cột theo các tiêu đề thường gặp; chưa thử với file thật của cổng merchant (chưa có tài khoản). Nếu không nhận được, sửa danh sách tiêu đề trong `AccountingService.refScore` / `detectColumns`.
-- Giá không hoàn tiền chưa áp cho đơn đoàn.
+- Giới hạn số lượt mã giảm giá không khóa dòng: 2 khách bấm đặt đúng cùng lúc ở lượt cuối có thể cùng được nhận.
+- Nâng hạng chỉ mời loại phòng có giá gốc (`basePrice`) cao hơn; giá mời là chênh lệch theo bảng giá các đêm của đơn.
+- Lịch sử dọn phòng chỉ có từ khi triển khai đợt 6 (lượt dọn trước đó không có số liệu).
 - No-show không tự động: lễ tân bấm "Khách không đến" (hệ thống chỉ nhắc lúc 23h).
 - Gửi lại email thẻ quà tặng giới hạn 1 lần / 10 phút / thẻ, lưu trong bộ nhớ (khởi động lại app thì đếm lại).
 
 ## 6. Gợi ý việc làm tiếp (chưa làm)
 
 1. Thử VNPay sandbox thật theo checklist mục 7 (cần chủ dự án đăng ký tài khoản sandbox), kèm thử đối soát với file sao kê thật.
-2. Giá không hoàn tiền cho đơn đoàn.
-3. Báo cáo no-show / hủy theo kênh và theo tháng (tỷ lệ, tiền cọc giữ lại).
-4. Lịch sử kiểm phòng (ai kiểm, bao nhiêu lần chưa đạt) để đánh giá nhân viên buồng.
+2. Gửi tin nhắn kèm ảnh (khách chụp chỗ hỏng / đồ cần hỗ trợ).
+3. Khóa dòng khi kiểm tra lượt mã giảm giá cuối (tránh vượt `maxUses` khi 2 người đặt cùng lúc).
+4. Mẫu trả lời nhanh cho lễ tân (giờ đón xe, wifi, giờ ăn sáng).
 
 ## 7. Checklist thử VNPay sandbox (chưa chạy - cần tài khoản)
 
