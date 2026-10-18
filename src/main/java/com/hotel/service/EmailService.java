@@ -320,6 +320,17 @@ public class EmailService {
         return queue(booking, "Sóng Xanh Resort - Đổi phòng cho đơn #" + booking.getId(), body, "doi phong");
     }
 
+    // Le tan tra loi tin nhan cua khach tren don
+    public boolean sendStaffMessage(Booking booking, String body) {
+        if (!canEmail(booking)) {
+            return false;
+        }
+        String link = bookingLink(booking, "#tin-nhan");
+        String text = "Xin chào " + booking.getGuestName() + ",\n\nLễ tân Sóng Xanh Resort đã trả lời tin nhắn về đơn #" + booking.getId() + ":\n\n"
+                + body + "\n\n" + (link != null ? "Xem và nhắn tiếp: " + link : "Mở trang đơn của bạn để nhắn tiếp.") + "\n\nSóng Xanh Resort";
+        return queue(booking, "Sóng Xanh Resort - Trả lời tin nhắn đơn #" + booking.getId(), text, "tin nhan");
+    }
+
     // Loi moi nang hang phong (truoc ngay den): danh sach loai phong + gia them, link toi trang don de dong y
     public boolean sendUpgradeOffer(Booking booking, List<com.hotel.entity.UpgradeOffer> offers) {
         if (!canEmail(booking) || offers.isEmpty()) {

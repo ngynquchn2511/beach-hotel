@@ -79,6 +79,13 @@ public class CustomerBookingController {
 
     private com.hotel.service.UpgradeService upgradeService;
 
+    private com.hotel.service.BookingMessageService messageService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setMessageService(com.hotel.service.BookingMessageService messageService) {
+        this.messageService = messageService;
+    }
+
     @org.springframework.beans.factory.annotation.Autowired
     void setUpgradeService(com.hotel.service.UpgradeService upgradeService) {
         this.upgradeService = upgradeService;
@@ -294,6 +301,11 @@ public class CustomerBookingController {
         model.addAttribute("canModify", bookingService.canModify(booking));
         model.addAttribute("canChangeDates", bookingService.canModify(booking) && !booking.isNonRefundable());
         model.addAttribute("canEditRequests", bookingService.canEditRequests(booking, true));
+        if (messageService != null) {
+            model.addAttribute("messages", messageService.thread(id));
+            model.addAttribute("canMessage", messageService.canGuestMessage(booking));
+            messageService.markReadByGuest(id);
+        }
         model.addAttribute("requestTagOptions", com.hotel.entity.GuestRequestTag.values());
         // Da coc: bao truoc tien duoc hoan neu huy ngay bay gio
         model.addAttribute("refundQuote", bookingService.refundQuoteIfCancelledNow(booking));
@@ -529,6 +541,21 @@ public class CustomerBookingController {
             redirectAttributes.addFlashAttribute("facilityError", userMessages.of(ex));
         }
         return backTo(id, token, "#spa-nha-hang");
+    }
+
+    // Khach nhan tin cho le tan
+    @PostMapping("/{id}/messages")
+    public String sendMessage(@PathVariable Long id, @RequestParam(required = false) String token,
+                              @RequestParam(required = false) String body,
+                              @AuthenticationPrincipal CustomUserDetails userDetails, RedirectAttributes redirectAttributes) {
+        Booking booking = bookingService.findForViewing(id, token, userDetails != null ? userDetails.getUser().getId() : null);
+        try {
+            messageService.guestSend(booking, body);
+            redirectAttributes.addFlashAttribute("messageSuccess", userMessages.get("msg.sent"));
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("messageError", userMessages.of(ex));
+        }
+        return backTo(id, token, "#tin-nhan");
     }
 
     // Khach sua yeu cau dac biet tren trang don (truoc khi nhan phong)

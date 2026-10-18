@@ -213,7 +213,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/customer/bookings/*/facility", "/customer/bookings/*/facility/*/cancel",
                                 "/customer/bookings/*/facility/*/rate").permitAll()
                         .requestMatchers(HttpMethod.POST, "/customer/bookings/*/upgrade/*/accept", "/customer/bookings/*/upgrade/*/decline").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/customer/bookings/*/requests").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/customer/bookings/*/requests", "/customer/bookings/*/messages").permitAll()
                         // Dat nhieu phong 1 lan (khach vang lai dung ?token= cua nhom)
                         .requestMatchers("/customer/bookings/group/new", "/customer/bookings/group/*",
                                 "/customer/bookings/group/*/cancel").permitAll()

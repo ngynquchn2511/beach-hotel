@@ -98,6 +98,8 @@ public class AdminBookingController {
         model.addAttribute("canMarkNoShow", bookingService.canMarkNoShow(booking));
         model.addAttribute("upgradeOffers", upgradeService.offersOf(id));
         model.addAttribute("requestTagOptions", com.hotel.entity.GuestRequestTag.values());
+        model.addAttribute("messages", messageService.thread(id));
+        messageService.markReadByStaff(id);
         model.addAttribute("upgradeCandidates", upgradeService.candidates(booking));
         // So lan khach nay khong den o cac don KHAC (canh bao nen yeu cau coc)
         long noShows = booking.getCustomer() != null ? bookingService.noShowCount(booking.getCustomer().getId()) : 0;
@@ -390,6 +392,27 @@ public class AdminBookingController {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
         return "redirect:/admin/bookings/" + id;
+    }
+
+    // Le tan tra loi tin nhan cua khach
+    @PostMapping("/{id}/messages")
+    public String replyMessage(@PathVariable Long id, @RequestParam(required = false) String body,
+                               @org.springframework.security.core.annotation.AuthenticationPrincipal com.hotel.security.CustomUserDetails user,
+                               RedirectAttributes redirectAttributes) {
+        try {
+            messageService.staffReply(bookingService.findById(id), body, user != null ? user.getUser().getFullName() : null);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã gửi trả lời - khách nhận email kèm link đơn");
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "redirect:/admin/bookings/" + id + "#tin-nhan";
+    }
+
+    private com.hotel.service.BookingMessageService messageService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setMessageService(com.hotel.service.BookingMessageService messageService) {
+        this.messageService = messageService;
     }
 
     // Le tan sua yeu cau dac biet cua don

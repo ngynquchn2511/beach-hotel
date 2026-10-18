@@ -116,6 +116,12 @@
     </a>
     <a th:href="@{/admin/customers}" class="list-group-item list-group-item-action"
        th:classappend="${p.startsWith('/admin/customers')} ? 'active'"><i class="bi bi-people"></i>Khách hàng</a>
+    <a th:href="@{/admin/messages}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+       th:classappend="${p.startsWith('/admin/messages')} ? 'active'">
+        <span><i class="bi bi-chat-dots"></i>Tin nhắn khách</span>
+        <span th:if="${unreadMessageCount != null and unreadMessageCount > 0}" class="badge rounded-pill bg-danger"
+              th:text="${unreadMessageCount}" title="Tin nhắn chưa đọc"></span>
+    </a>
     <a th:href="@{/admin/contact-messages}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
        th:classappend="${p.startsWith('/admin/contact-messages')} ? 'active'">
         <span><i class="bi bi-envelope-paper"></i>Hộp thư liên hệ</span>

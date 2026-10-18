@@ -137,6 +137,25 @@
     </div>
 
     <!-- Goi mon len phong khi dang o: le tan giao xong moi cong tien vao hoa don -->
+    <div class="bg-white p-4 rounded shadow-sm mb-4" id="tin-nhan" th:if="${messages != null and (canMessage or !#lists.isEmpty(messages))}">
+        <h5 class="fw-bold mb-1"><i class="bi bi-chat-dots me-2"></i><span th:text="#{msg.title}">Nhắn lễ tân</span></h5>
+        <p class="small text-muted" th:text="#{msg.lead}"></p>
+        <div th:if="${messageSuccess}" class="alert alert-success small py-2" th:text="${messageSuccess}"></div>
+        <div th:if="${messageError}" class="alert alert-danger small py-2" th:text="${messageError}"></div>
+        <div th:each="m : ${messages}" class="d-flex mb-2" th:classappend="${m.fromGuest} ? 'justify-content-end' : ''">
+            <div class="p-2 rounded small" style="max-width: 80%" th:classappend="${m.fromGuest} ? 'bg-primary-subtle' : 'bg-light border'">
+                <div style="white-space: pre-line" th:text="${m.body}"></div>
+                <div class="text-muted" style="font-size: .75rem"
+                     th:text="(${m.fromGuest} ? #{msg.you} : #{msg.frontDesk}) + ' · ' + ${#temporals.format(m.createdAt, 'dd/MM HH:mm')}"></div>
+            </div>
+        </div>
+        <form th:if="${canMessage}" method="post" th:action="@{/customer/bookings/{id}/messages(id=${booking.id})}" class="d-flex gap-2">
+            <input type="hidden" name="token" th:if="${accessToken != null}" th:value="${accessToken}">
+            <textarea name="body" class="form-control form-control-sm" rows="2" maxlength="1000" required th:placeholder="#{msg.placeholder}"></textarea>
+            <button type="submit" class="btn btn-sm btn-primary align-self-end" th:text="#{msg.send}">Gửi</button>
+        </form>
+    </div>
+
     <div class="bg-white p-4 rounded shadow-sm mb-4" id="yeu-cau" th:if="${canEditRequests or booking.hasSpecialRequests}">
         <h5 class="fw-bold mb-1"><i class="bi bi-chat-heart me-2"></i><span th:text="#{req.title}">Yêu cầu đặc biệt</span></h5>
         <div th:if="${requestsSuccess}" class="alert alert-success small py-2" th:text="${requestsSuccess}"></div>

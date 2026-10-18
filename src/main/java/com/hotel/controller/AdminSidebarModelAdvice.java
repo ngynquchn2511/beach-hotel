@@ -43,7 +43,13 @@ import org.springframework.web.bind.annotation.ModelAttribute;
         AdminLostItemController.class,
         AdminCompanyInvoiceController.class,
         AdminCashShiftController.class,
-        AdminFacilityController.class
+        AdminFacilityController.class,
+        AdminSpaPackageController.class,
+        AdminAccountingController.class,
+        AdminDailyReportController.class,
+        AdminUpgradeController.class,
+        AdminCancellationReportController.class,
+        AdminMessageController.class
 })
 public class AdminSidebarModelAdvice {
 
@@ -62,6 +68,18 @@ public class AdminSidebarModelAdvice {
     }
 
     // Lich spa / ban nha hang cho le tan xac nhan
+    private com.hotel.service.BookingMessageService messageService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setMessageService(com.hotel.service.BookingMessageService messageService) {
+        this.messageService = messageService;
+    }
+
+    @ModelAttribute("unreadMessageCount")
+    public long unreadMessageCount() {
+        return messageService != null ? messageService.unreadForStaff() : 0;
+    }
+
     @ModelAttribute("pendingFacilityCount")
     public long pendingFacilityCount() {
         return facilityService != null ? facilityService.countPending() : 0;
