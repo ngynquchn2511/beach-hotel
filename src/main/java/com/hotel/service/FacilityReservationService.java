@@ -127,6 +127,7 @@ public class FacilityReservationService {
             throw BusinessException.of("err.svc.note");
         }
         FacilityReservation saved = repository.save(FacilityReservation.builder().booking(booking).kind(kind).spaPackage(treatment)
+                .durationMinutes(spa ? treatment.getMinutes() : null)
                 .reservedDate(date).reservedTime(time).people(people)
                 .totalPrice(spa ? treatment.getPrice().multiply(BigDecimal.valueOf(people)) : null)
                 .note(text).status(ServiceStatus.PENDING).build());

@@ -52,6 +52,10 @@ public class FacilityReservation {
     @Column(nullable = false)
     private Integer people;
 
+    // Spa: thoi luong chot luc dat (admin doi thoi luong goi sau do khong anh huong lich da dat)
+    @Column(name = "duration_minutes")
+    private Integer durationMinutes;
+
     // Spa: gia chot luc dat; nha hang: null (tra tai nha hang)
     @Column(name = "total_price", precision = 12, scale = 2)
     private BigDecimal totalPrice;
@@ -93,7 +97,11 @@ public class FacilityReservation {
 
     // Spa: chiem giuong den het thoi luong goi
     public LocalDateTime getEndAt() {
-        return getStartAt().plusMinutes(isSpa() && spaPackage != null ? spaPackage.getMinutes() : 0);
+        if (!isSpa()) {
+            return getStartAt();
+        }
+        int minutes = durationMinutes != null ? durationMinutes : spaPackage != null ? spaPackage.getMinutes() : 0;
+        return getStartAt().plusMinutes(minutes);
     }
 
     // Danh gia duoc: lich da xac nhan, chua danh gia, buoi hen da xong (nha hang: sau 1 tieng),

@@ -175,4 +175,22 @@ class FacilityReservationIT extends ItFixtures {
         reserve(booking, customer, "SPA", "Herbal steam", day, "16:00", 1)
                 .andExpect(flash().attribute("facilityError", containsString("tạm ngừng")));
     }
+
+    @Test
+    void durationLockedAtBooking_editingPackageDoesNotChangeExistingSlots() throws Exception {
+        LocalDate day = booking.getCheckInDate();
+        SpaPackage body = pkg("Aromatherapy body massage");
+        for (int i = 0; i < 3; i++) {
+            Booking other = persistBooking(persistUser(UserRole.CUSTOMER, CustomerType.NEW), persistRoom(room.getRoomType(), 900_000,
+                    RoomStatus.AVAILABLE), BookingStatus.CONFIRMED, 10, 3);
+            reserve(other, other.getCustomer(), "SPA", "Aromatherapy body massage", day, "10:00", 1)
+                    .andExpect(flash().attributeExists("facilitySuccess"));
+        }
+        assertThat(latest().getDurationMinutes()).isEqualTo(90);
+        // Admin rut goi xuong 60 phut: 3 luot da dat van chiem den 11:30
+        body.setMinutes(60);
+        spaPackageRepository.save(body);
+        reserve(booking, customer, "SPA", "Facial care", day, "11:00", 1)
+                .andExpect(flash().attribute("facilityError", containsString("kín lịch")));
+    }
 }
