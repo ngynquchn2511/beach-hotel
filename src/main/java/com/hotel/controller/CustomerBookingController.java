@@ -75,6 +75,13 @@ public class CustomerBookingController {
         this.facilityService = facilityService;
     }
 
+    private com.hotel.service.SpaPackageService spaPackageService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setSpaPackageService(com.hotel.service.SpaPackageService spaPackageService) {
+        this.spaPackageService = spaPackageService;
+    }
+
     @org.springframework.beans.factory.annotation.Autowired
     void setCompanyInvoiceService(com.hotel.service.CompanyInvoiceService companyInvoiceService) {
         this.companyInvoiceService = companyInvoiceService;
@@ -296,7 +303,7 @@ public class CustomerBookingController {
         model.addAttribute("canRoomService", roomServiceService.canOrder(booking));
         model.addAttribute("facilityReservations", facilityService.ofBooking(id));
         model.addAttribute("canFacility", facilityService.canReserve(booking));
-        model.addAttribute("spaTreatments", com.hotel.entity.SpaTreatment.values());
+        model.addAttribute("spaPackages", spaPackageService != null ? spaPackageService.active() : java.util.List.of());
         model.addAttribute("spaSlots", com.hotel.service.FacilityReservationService.SPA_SLOTS);
         model.addAttribute("restaurantSlots", com.hotel.service.FacilityReservationService.RESTAURANT_SLOTS);
         model.addAttribute("canEditCompanyInvoice", companyInvoiceService.canEdit(booking)
@@ -493,13 +500,13 @@ public class CustomerBookingController {
     @PostMapping("/{id}/facility")
     public String reserveFacility(@PathVariable Long id, @RequestParam(required = false) String token,
                                   @RequestParam(required = false) com.hotel.entity.FacilityReservation.Kind kind,
-                                  @RequestParam(required = false) com.hotel.entity.SpaTreatment treatment,
+                                  @RequestParam(required = false) Long spaPackageId,
                                   @RequestParam(required = false) LocalDate date, @RequestParam(required = false) LocalTime time,
                                   @RequestParam(required = false) Integer people, @RequestParam(required = false) String note,
                                   @AuthenticationPrincipal CustomUserDetails userDetails, RedirectAttributes redirectAttributes) {
         Booking booking = bookingService.findForViewing(id, token, userDetails != null ? userDetails.getUser().getId() : null);
         try {
-            facilityService.reserve(booking, kind, treatment, date, time, people, note);
+            facilityService.reserve(booking, kind, spaPackageId, date, time, people, note);
             redirectAttributes.addFlashAttribute("facilitySuccess", userMessages.get("fac.reserved"));
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("facilityError", userMessages.of(ex));

@@ -14,16 +14,17 @@ public interface FacilityReservationRepository extends JpaRepository<FacilityRes
 
     List<FacilityReservation> findByBookingIdOrderByReservedDateAscReservedTimeAsc(Long bookingId);
 
-    // So luot spa / so khach nha hang da giu o 1 khung gio (chua huy)
-    @Query("select count(r) from FacilityReservation r where r.kind = :kind and r.reservedDate = :date "
-            + "and r.reservedTime = :time and r.status <> com.hotel.entity.ServiceStatus.CANCELLED")
-    long countActive(@Param("kind") FacilityReservation.Kind kind, @Param("date") LocalDate date, @Param("time") LocalTime time);
+    // Luot spa chua huy trong ngay (kem goi de biet thoi luong)
+    @Query("select r from FacilityReservation r join fetch r.spaPackage where r.kind = com.hotel.entity.FacilityReservation.Kind.SPA "
+            + "and r.reservedDate = :date and r.status <> com.hotel.entity.ServiceStatus.CANCELLED")
+    List<FacilityReservation> findActiveSpaOn(@Param("date") LocalDate date);
 
+    // So khach nha hang da giu o 1 khung gio (chua huy)
     @Query("select coalesce(sum(r.people), 0) from FacilityReservation r where r.kind = :kind and r.reservedDate = :date "
             + "and r.reservedTime = :time and r.status <> com.hotel.entity.ServiceStatus.CANCELLED")
     long sumPeople(@Param("kind") FacilityReservation.Kind kind, @Param("date") LocalDate date, @Param("time") LocalTime time);
 
-    @Query("select r from FacilityReservation r join fetch r.booking b join fetch b.room where r.reservedDate >= :from "
+    @Query("select r from FacilityReservation r join fetch r.booking b join fetch b.room left join fetch r.spaPackage where r.reservedDate >= :from "
             + "and (:status is null or r.status = :status) order by r.reservedDate, r.reservedTime")
     List<FacilityReservation> findForStaff(@Param("from") LocalDate from, @Param("status") ServiceStatus status);
 

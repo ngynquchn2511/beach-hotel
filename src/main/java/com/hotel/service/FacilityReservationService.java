@@ -42,12 +42,14 @@ public class FacilityReservationService {
     private final FacilityReservationRepository repository;
     private final BookingChargeRepository chargeRepository;
     private final ServiceOrderService serviceOrderService;
+    private final SpaPackageService spaPackageService;
 
     public FacilityReservationService(FacilityReservationRepository repository, BookingChargeRepository chargeRepository,
-                                      ServiceOrderService serviceOrderService) {
+                                      ServiceOrderService serviceOrderService, SpaPackageService spaPackageService) {
         this.repository = repository;
         this.chargeRepository = chargeRepository;
         this.serviceOrderService = serviceOrderService;
+        this.spaPackageService = spaPackageService;
     }
 
     private static List<LocalTime> slots(LocalTime from, LocalTime to, int stepMinutes) {
@@ -75,13 +77,17 @@ public class FacilityReservationService {
     }
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
-    public FacilityReservation reserve(Booking booking, FacilityReservation.Kind kind, SpaTreatment treatment,
+    public FacilityReservation reserve(Booking booking, FacilityReservation.Kind kind, Long spaPackageId,
                                        LocalDate date, LocalTime time, Integer people, String note) {
         if (!canReserve(booking)) {
             throw BusinessException.of("err.svc.bookingClosed");
         }
-        if (kind == null || date == null || time == null || people == null || (kind == FacilityReservation.Kind.SPA && treatment == null)) {
+        if (kind == null || date == null || time == null || people == null || (kind == FacilityReservation.Kind.SPA && spaPackageId == null)) {
             throw BusinessException.of("err.svc.required");
+        }
+        SpaPackage treatment = kind == FacilityReservation.Kind.SPA ? spaPackageService.find(spaPackageId) : null;
+        if (treatment != null && !treatment.isOpen()) {
+            throw BusinessException.of("err.fac.packageClosed");
         }
         if (date.isBefore(booking.getCheckInDate()) || date.isAfter(booking.getCheckOutDate())) {
             throw BusinessException.of("err.fac.date", booking.getCheckInDate().format(DAY), booking.getCheckOutDate().format(DAY));
@@ -97,7 +103,7 @@ public class FacilityReservationService {
         if (people < 1 || people > maxPeople) {
             throw BusinessException.of("err.fac.people", maxPeople);
         }
-        if (spa && repository.countActive(kind, date, time) >= SPA_BEDS) {
+        if (spa && !spaBedFree(date, time, treatment.getMinutes())) {
             throw BusinessException.of("err.fac.spaFull", time.toString(), date.format(DAY));
         }
         if (!spa && repository.sumPeople(kind, date, time) + people > RESTAURANT_SEATS) {
@@ -107,10 +113,31 @@ public class FacilityReservationService {
         if (text != null && text.length() > 300) {
             throw BusinessException.of("err.svc.note");
         }
-        return repository.save(FacilityReservation.builder().booking(booking).kind(kind).treatment(spa ? treatment : null)
+        return repository.save(FacilityReservation.builder().booking(booking).kind(kind).spaPackage(treatment)
                 .reservedDate(date).reservedTime(time).people(people)
                 .totalPrice(spa ? treatment.getPrice().multiply(BigDecimal.valueOf(people)) : null)
                 .note(text).status(ServiceStatus.PENDING).build());
+    }
+
+    // Con giuong trong suot [time, time + minutes)? So luot dang lam chi tang tai gio bat dau cua 1 luot,
+    // nen chi can dem tai gio bat dau moi va gio bat dau cua cac luot da dat roi vao khoang do
+    boolean spaBedFree(LocalDate date, LocalTime time, int minutes) {
+        LocalDateTime start = LocalDateTime.of(date, time);
+        LocalDateTime end = start.plusMinutes(minutes);
+        List<FacilityReservation> booked = repository.findActiveSpaOn(date);
+        List<LocalDateTime> points = new ArrayList<>(List.of(start));
+        for (FacilityReservation r : booked) {
+            if (r.getStartAt().isAfter(start) && r.getStartAt().isBefore(end)) {
+                points.add(r.getStartAt());
+            }
+        }
+        for (LocalDateTime p : points) {
+            long busy = booked.stream().filter(r -> !r.getStartAt().isAfter(p) && r.getEndAt().isAfter(p)).count();
+            if (busy >= SPA_BEDS) {
+                return false;
+            }
+        }
+        return true;
     }
 
     // Le tan xac nhan: spa -> tien vao phu phi don phong
@@ -124,7 +151,7 @@ public class FacilityReservationService {
             throw new BusinessException("Đơn phòng đã hủy hoặc đã trả phòng");
         }
         if (r.isSpa()) {
-            String label = "Spa " + r.getTreatment().getName() + " - " + r.getReservedDate().format(DateTimeFormatter.ofPattern("dd/MM"))
+            String label = "Spa " + r.getSpaPackage().getName() + " - " + r.getReservedDate().format(DateTimeFormatter.ofPattern("dd/MM"))
                     + " " + r.getReservedTime() + " - " + r.getPeople() + " người";
             r.setCharge(chargeRepository.save(BookingCharge.builder().booking(r.getBooking()).type(ChargeType.SPA)
                     .description(label.length() > 200 ? label.substring(0, 200) : label).amount(r.getTotalPrice()).build()));

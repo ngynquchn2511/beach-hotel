@@ -64,6 +64,10 @@
         <span th:if="${pendingFacilityCount != null and pendingFacilityCount > 0}" class="badge rounded-pill bg-warning text-dark"
               th:text="${pendingFacilityCount}" title="Lịch chờ xác nhận"></span>
     </a>
+    <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin/spa-packages}" class="list-group-item list-group-item-action"
+       th:classappend="${p.startsWith('/admin/spa-packages')} ? 'active'">
+        <i class="bi bi-droplet-half"></i>Gói spa
+    </a>
     <a th:href="@{/admin/shifts}" class="list-group-item list-group-item-action"
        th:classappend="${p.startsWith('/admin/shifts')} ? 'active'"><i class="bi bi-cash-coin"></i>Sổ quỹ ca</a>
     <a th:href="@{/admin/company-invoices}" class="list-group-item list-group-item-action"

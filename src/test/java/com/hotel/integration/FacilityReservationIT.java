@@ -3,6 +3,7 @@ package com.hotel.integration;
 import com.hotel.entity.*;
 import com.hotel.repository.BookingChargeRepository;
 import com.hotel.repository.FacilityReservationRepository;
+import com.hotel.repository.SpaPackageRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,7 @@ class FacilityReservationIT extends ItFixtures {
 
     @Autowired private FacilityReservationRepository reservationRepository;
     @Autowired private BookingChargeRepository chargeRepository;
+    @Autowired private SpaPackageRepository spaPackageRepository;
 
     private User customer;
     private User staff;
@@ -41,9 +43,14 @@ class FacilityReservationIT extends ItFixtures {
         var req = post("/customer/bookings/{id}/facility", b.getId()).with(csrf()).with(as(who))
                 .param("kind", kind).param("date", date.toString()).param("time", time).param("people", String.valueOf(people));
         if (treatment != null) {
-            req.param("treatment", treatment);
+            req.param("spaPackageId", String.valueOf(pkg(treatment).getId()));
         }
         return mockMvc.perform(req);
+    }
+
+    // Goi mac dinh (DataInitializer) theo ten tieng Anh
+    private SpaPackage pkg(String nameEn) {
+        return spaPackageRepository.findAll().stream().filter(p -> nameEn.equals(p.getNameEn())).findFirst().orElseThrow();
     }
 
     private FacilityReservation latest() {
@@ -55,7 +62,7 @@ class FacilityReservationIT extends ItFixtures {
         LocalDate day = booking.getCheckInDate().plusDays(1);
         mockMvc.perform(get("/customer/bookings/{id}", booking.getId()).with(as(customer)))
                 .andExpect(content().string(containsString("Đặt lịch spa")));
-        reserve(booking, customer, "SPA", "BODY_MASSAGE", day, "10:00", 2)
+        reserve(booking, customer, "SPA", "Aromatherapy body massage", day, "10:00", 2)
                 .andExpect(flash().attribute("facilitySuccess", containsString("Đã gửi yêu cầu")));
         FacilityReservation r = latest();
         assertThat(r.getStatus()).isEqualTo(ServiceStatus.PENDING);
@@ -83,10 +90,10 @@ class FacilityReservationIT extends ItFixtures {
         for (int i = 0; i < 3; i++) {
             Booking other = persistBooking(persistUser(UserRole.CUSTOMER, CustomerType.NEW), persistRoom(room.getRoomType(), 900_000,
                     RoomStatus.AVAILABLE), BookingStatus.CONFIRMED, 10, 3);
-            reserve(other, other.getCustomer(), "SPA", "FACIAL", day, "15:00", 1)
+            reserve(other, other.getCustomer(), "SPA", "Facial care", day, "15:00", 1)
                     .andExpect(flash().attributeExists("facilitySuccess"));
         }
-        reserve(booking, customer, "SPA", "FACIAL", day, "15:00", 1)
+        reserve(booking, customer, "SPA", "Facial care", day, "15:00", 1)
                 .andExpect(flash().attribute("facilityError", containsString("kín lịch")));
         // Nha hang 40 cho / khung gio
         reserve(booking, customer, "RESTAURANT", null, day, "19:00", 20).andExpect(flash().attributeExists("facilitySuccess"));
@@ -96,9 +103,9 @@ class FacilityReservationIT extends ItFixtures {
         // Ngoai ngay o, sai khung gio, qua so nguoi
         reserve(booking, customer, "RESTAURANT", null, booking.getCheckOutDate().plusDays(1), "19:00", 2)
                 .andExpect(flash().attribute("facilityError", containsString("thời gian lưu trú")));
-        reserve(booking, customer, "SPA", "FACIAL", day, "10:30", 1)
+        reserve(booking, customer, "SPA", "Facial care", day, "10:30", 1)
                 .andExpect(flash().attribute("facilityError", containsString("Khung giờ")));
-        reserve(booking, customer, "SPA", "FACIAL", day, "11:00", 3)
+        reserve(booking, customer, "SPA", "Facial care", day, "11:00", 3)
                 .andExpect(flash().attribute("facilityError", containsString("từ 1 đến 2")));
         assertThat(reservationRepository.findAll().stream().filter(r -> r.getStatus() != ServiceStatus.CANCELLED)).hasSize(5);
     }
@@ -112,5 +119,60 @@ class FacilityReservationIT extends ItFixtures {
         reserve(booking, stranger, "RESTAURANT", null, booking.getCheckInDate(), "19:00", 2);
         assertThat(reservationRepository.count()).isZero();
         mockMvc.perform(get("/admin/facility-reservations").with(as(customer))).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void spa_longTreatmentBlocksBedInNextSlot() throws Exception {
+        LocalDate day = booking.getCheckInDate();
+        // 3 luot massage body 90 phut luc 10:00 -> 11:00 van con dang lam, 11:30 moi het
+        for (int i = 0; i < 3; i++) {
+            Booking other = persistBooking(persistUser(UserRole.CUSTOMER, CustomerType.NEW), persistRoom(room.getRoomType(), 900_000,
+                    RoomStatus.AVAILABLE), BookingStatus.CONFIRMED, 10, 3);
+            reserve(other, other.getCustomer(), "SPA", "Aromatherapy body massage", day, "10:00", 1)
+                    .andExpect(flash().attributeExists("facilitySuccess"));
+        }
+        reserve(booking, customer, "SPA", "Facial care", day, "11:00", 1)
+                .andExpect(flash().attribute("facilityError", containsString("kín lịch")));
+        // Goi 60 phut luc 09:00 xong dung 10:00 -> khong chong
+        reserve(booking, customer, "SPA", "Facial care", day, "09:00", 1)
+                .andExpect(flash().attributeExists("facilitySuccess"));
+        reserve(booking, customer, "SPA", "Facial care", day, "12:00", 1)
+                .andExpect(flash().attributeExists("facilitySuccess"));
+    }
+
+    @Test
+    void adminManagesPackages_pausedHiddenFromGuest_priceLockedForOldReservations() throws Exception {
+        User admin = persistUser(UserRole.ADMIN, null);
+        mockMvc.perform(get("/admin/spa-packages").with(as(admin)))
+                .andExpect(status().isOk()).andExpect(content().string(containsString("Massage đá nóng")));
+        mockMvc.perform(get("/admin/spa-packages").with(as(staff))).andExpect(status().isForbidden());
+
+        mockMvc.perform(post("/admin/spa-packages").with(csrf()).with(as(admin))
+                        .param("name", "Xông hơi thảo mộc").param("nameEn", "Herbal steam").param("minutes", "45").param("price", "300000"))
+                .andExpect(flash().attribute("successMessage", containsString("Đã thêm")));
+        SpaPackage steam = pkg("Herbal steam");
+        assertThat(steam.getMinutes()).isEqualTo(45);
+        mockMvc.perform(post("/admin/spa-packages").with(csrf()).with(as(admin))
+                        .param("name", "Sai").param("minutes", "50").param("price", "300000"))
+                .andExpect(flash().attribute("errorMessage", containsString("bội số của 15")));
+
+        LocalDate day = booking.getCheckInDate().plusDays(1);
+        reserve(booking, customer, "SPA", "Herbal steam", day, "14:00", 2).andExpect(flash().attributeExists("facilitySuccess"));
+        FacilityReservation r = latest();
+        assertThat(r.getTotalPrice()).isEqualByComparingTo("600000");
+
+        // Sua gia: lich da dat giu gia cu
+        mockMvc.perform(post("/admin/spa-packages/{id}", steam.getId()).with(csrf()).with(as(admin))
+                        .param("name", "Xông hơi thảo mộc").param("nameEn", "Herbal steam").param("minutes", "45").param("price", "400000"))
+                .andExpect(flash().attribute("successMessage", containsString("Đã lưu")));
+        assertThat(spaPackageRepository.findById(steam.getId()).orElseThrow().getPrice()).isEqualByComparingTo("400000");
+        assertThat(reservationRepository.findById(r.getId()).orElseThrow().getTotalPrice()).isEqualByComparingTo("600000");
+
+        // Tam ngung: an khoi trang khach, khong dat duoc
+        mockMvc.perform(post("/admin/spa-packages/{id}/toggle", steam.getId()).with(csrf()).with(as(admin)));
+        mockMvc.perform(get("/customer/bookings/{id}", booking.getId()).with(as(customer)))
+                .andExpect(content().string(org.hamcrest.Matchers.not(containsString("Xông hơi thảo mộc - 45"))));
+        reserve(booking, customer, "SPA", "Herbal steam", day, "16:00", 1)
+                .andExpect(flash().attribute("facilityError", containsString("tạm ngừng")));
     }
 }

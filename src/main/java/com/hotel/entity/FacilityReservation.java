@@ -39,9 +39,9 @@ public class FacilityReservation {
     private Kind kind;
 
     // Chi voi spa
-    @Enumerated(EnumType.STRING)
-    @Column(length = 20)
-    private SpaTreatment treatment;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "spa_package_id")
+    private SpaPackage spaPackage;
 
     @Column(name = "reserved_date", nullable = false)
     private LocalDate reservedDate;
@@ -82,11 +82,16 @@ public class FacilityReservation {
         return LocalDateTime.of(reservedDate, reservedTime);
     }
 
+    // Spa: chiem giuong den het thoi luong goi
+    public LocalDateTime getEndAt() {
+        return getStartAt().plusMinutes(isSpa() && spaPackage != null ? spaPackage.getMinutes() : 0);
+    }
+
     public boolean isSpa() {
         return kind == Kind.SPA;
     }
 
     public String getSummary() {
-        return isSpa() ? "Spa: " + treatment.getName() + " - " + people + " người" : "Bàn nhà hàng - " + people + " khách";
+        return isSpa() ? "Spa: " + spaPackage.getName() + " - " + people + " người" : "Bàn nhà hàng - " + people + " khách";
     }
 }

@@ -149,7 +149,7 @@
                 <span>
                     <span class="badge me-1" th:classappend="${r.status.name() == 'CONFIRMED'} ? 'bg-success' : (${r.status.name() == 'PENDING'} ? 'bg-warning text-dark' : 'bg-secondary')"
                           th:text="#{'fac.status.' + ${r.status}}"></span>
-                    <span th:text="${r.spa} ? #{fac.spaLine(${r.treatment.localizedName}, ${r.people})} : #{fac.tableLine(${r.people})}"></span>
+                    <span th:text="${r.spa} ? #{fac.spaLine(${r.spaPackage.localizedName}, ${r.people})} : #{fac.tableLine(${r.people})}"></span>
                     <span class="text-muted" th:text="' · ' + ${#temporals.format(r.reservedDate, 'dd/MM')} + ' ' + ${r.reservedTime}"></span>
                     <span class="text-muted" th:if="${r.totalPrice != null}" th:text="' · ' + ${#numbers.formatDecimal(r.totalPrice, 1, 'POINT', 0, 'COMMA')} + ' VND'"></span>
                 </span>
@@ -165,8 +165,8 @@
                 <input type="hidden" name="token" th:if="${accessToken != null}" th:value="${accessToken}">
                 <input type="hidden" name="kind" value="SPA">
                 <h6 class="fw-bold" th:text="#{fac.spa}">Spa</h6>
-                <select name="treatment" class="form-select form-select-sm mb-2" required>
-                    <option th:each="t : ${spaTreatments}" th:value="${t}"
+                <select name="spaPackageId" class="form-select form-select-sm mb-2" required>
+                    <option th:each="t : ${spaPackages}" th:value="${t.id}"
                             th:text="${t.localizedName} + ' - ' + ${t.minutes} + #{fac.minutes} + ' - ' + ${#numbers.formatDecimal(t.price, 1, 'POINT', 0, 'COMMA')} + ' VND'"></option>
                 </select>
                 <div class="d-flex gap-2 mb-2">
