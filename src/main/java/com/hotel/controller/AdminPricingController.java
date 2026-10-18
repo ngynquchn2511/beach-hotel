@@ -40,6 +40,11 @@ public class AdminPricingController {
         model.addAttribute("today", LocalDate.now());
         model.addAttribute("promotions", promotionService.findAll());
         model.addAttribute("promotionTypes", PromotionRule.Type.values());
+        if (stayRuleService != null) {
+            model.addAttribute("stayRules", stayRuleService.all());
+            model.addAttribute("maxAdvanceDays", stayRuleService.maxAdvanceDays());
+            model.addAttribute("roomTypes", roomTypeRepository.findAll());
+        }
         return "admin/pricing/index";
     }
 
@@ -80,6 +85,55 @@ public class AdminPricingController {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
         return "redirect:/admin/pricing#ngay-le";
+    }
+
+    // ===== Luat ban phong =====
+
+    private com.hotel.service.StayRuleService stayRuleService;
+    private com.hotel.repository.RoomTypeRepository roomTypeRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setStayRuleService(com.hotel.service.StayRuleService stayRuleService, com.hotel.repository.RoomTypeRepository roomTypeRepository) {
+        this.stayRuleService = stayRuleService;
+        this.roomTypeRepository = roomTypeRepository;
+    }
+
+    @PostMapping("/stay-rules")
+    public String createStayRule(@RequestParam(required = false) String name, @RequestParam(required = false) String nameEn,
+                                 @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+                                 @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+                                 @RequestParam(required = false) Long roomTypeId, @RequestParam(required = false) Integer minNights,
+                                 @RequestParam(defaultValue = "false") boolean stopSell, RedirectAttributes redirectAttributes) {
+        try {
+            stayRuleService.create(name, nameEn, startDate, endDate, roomTypeId, minNights, stopSell);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã thêm luật bán phòng. Đơn đã đặt không bị ảnh hưởng");
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "redirect:/admin/pricing#luat-ban-phong";
+    }
+
+    @PostMapping("/stay-rules/{id}/delete")
+    public String deleteStayRule(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            stayRuleService.delete(id);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã xóa luật bán phòng");
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "redirect:/admin/pricing#luat-ban-phong";
+    }
+
+    @PostMapping("/max-advance")
+    public String maxAdvance(@RequestParam(required = false) Integer maxAdvanceDays, RedirectAttributes redirectAttributes) {
+        try {
+            stayRuleService.updateMaxAdvanceDays(maxAdvanceDays);
+            redirectAttributes.addFlashAttribute("successMessage", maxAdvanceDays == null || maxAdvanceDays == 0
+                    ? "Đã bỏ giới hạn đặt trước" : "Khách chỉ đặt được trước tối đa " + maxAdvanceDays + " ngày");
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "redirect:/admin/pricing#luat-ban-phong";
     }
 
     @PostMapping("/special-rates/{id}/delete")

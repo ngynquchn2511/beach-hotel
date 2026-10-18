@@ -41,6 +41,21 @@ public class BookingService {
         this.staffNotifier = staffNotifier;
     }
 
+    private com.hotel.service.StayRuleService stayRuleService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setStayRuleService(com.hotel.service.StayRuleService stayRuleService) {
+        this.stayRuleService = stayRuleService;
+    }
+
+    // Luat ban phong (so dem toi thieu / dong ban / dat truoc toi da) - chi kenh khach tu dat
+    private void checkStayRules(Long roomId, LocalDate checkIn, LocalDate checkOut) {
+        if (stayRuleService == null || roomId == null) {
+            return;
+        }
+        roomRepository.findById(roomId).ifPresent(room -> stayRuleService.check(room.getRoomType(), checkIn, checkOut));
+    }
+
     private void notifyStaff(String kind, com.hotel.service.StaffNotificationService.Level level, String title, String message, String url) {
         if (staffNotifier != null) {
             staffNotifier.notify(kind, level, title, message, url);
@@ -290,6 +305,7 @@ public class BookingService {
                                 String guestEmail, int pointsToUse, String giftCode, BookingGroup group, boolean member,
                                 GroupBudget budget) {
         requireStandardTimes(checkInTime, checkOutTime);
+        checkStayRules(roomId, checkInDate, checkOutDate);
         boolean sameGroupCode = false;
         if (budget != null) {
             discountCodeStr = budget.codeForNextRoom();
@@ -1123,6 +1139,7 @@ public class BookingService {
         if (room.getStatus() == RoomStatus.MAINTENANCE) {
             throw BusinessException.of("err.roomMaintenance");
         }
+        checkStayRules(room.getId(), newCheckIn, newCheckOut);
         Availability availability = checkAvailability(room, newCheckIn, newCheckOut, booking.getId());
         if (!availability.conflicts().isEmpty()) {
             throw BusinessException.rendered(availability::describe);

@@ -89,6 +89,9 @@
     </div>
 
     <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+    <div th:if="${ruleNotices != null and !#sets.isEmpty(ruleNotices)}" class="alert alert-warning">
+        <div th:each="n : ${ruleNotices}"><i class="bi bi-info-circle me-1"></i><span th:text="${n}"></span></div>
+    </div>
 
     <div th:if="${searched and pager != null and pager.totalItems == 0 and #strings.isEmpty(price)}" class="alert alert-info" th:text="#{search.empty}">
         Không tìm thấy phòng trống phù hợp với ngày và tiêu chí bạn chọn.

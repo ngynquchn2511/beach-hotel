@@ -64,6 +64,10 @@ public class PricingSettings {
     @Column(name = "usd_rate")
     private Integer usdRate;
 
+    // Khach dat online truoc toi da bao nhieu ngay (null = khong gioi han)
+    @Column(name = "max_advance_days")
+    private Integer maxAdvanceDays;
+
     public int getEffectiveUsdRate() {
         return usdRate != null && usdRate > 0 ? usdRate : DEFAULT_USD_RATE;
     }

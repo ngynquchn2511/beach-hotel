@@ -58,6 +58,13 @@ public class CustomerController {
         this.pricingService = pricingService;
     }
 
+    private com.hotel.service.StayRuleService stayRuleService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setStayRuleService(com.hotel.service.StayRuleService stayRuleService) {
+        this.stayRuleService = stayRuleService;
+    }
+
     // Trang tim phong - hien form tim kiem, neu co du checkIn/checkOut thi hien ket qua
     @GetMapping("/customer/rooms")
     public String searchRooms(
@@ -86,6 +93,19 @@ public class CustomerController {
         if (searched) {
             try {
                 List<com.hotel.entity.Room> rooms = roomService.searchAvailableRooms(checkIn, checkOut, guests, roomTypeId);
+                // Luat ban phong: an loai phong khong dat duoc cho ngay nay va bao ly do (VD dip le can o toi thieu 2 dem)
+                if (stayRuleService != null) {
+                    java.util.Map<Long, java.util.Optional<BusinessException>> byType = new java.util.HashMap<>();
+                    java.util.Set<String> notices = new java.util.LinkedHashSet<>();
+                    LocalDate today = LocalDate.now();
+                    rooms = rooms.stream().filter(r -> {
+                        var v = byType.computeIfAbsent(r.getRoomType().getId(),
+                                id -> stayRuleService.violation(r.getRoomType(), checkIn, checkOut, today));
+                        v.ifPresent(ex -> notices.add(userMessages.of(ex)));
+                        return v.isEmpty();
+                    }).toList();
+                    model.addAttribute("ruleNotices", notices);
+                }
                 // Loc gia + sap xep tren toan bo ket qua roi moi cat trang
                 Pager<com.hotel.entity.Room> pager = Pager.of(RoomListing.apply(rooms, price, sort), page, ROOMS_PER_PAGE);
                 model.addAttribute("pager", pager);

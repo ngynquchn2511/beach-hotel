@@ -223,6 +223,68 @@
                 </table>
                 <div th:replace="~{fragments/pagination :: pager(${pager})}"></div>
             </div>
+
+            <div class="bg-white p-4 rounded shadow-sm mt-4" id="luat-ban-phong" th:if="${stayRules != null}">
+                <h5 class="fw-bold">Luật bán phòng</h5>
+                <p class="text-muted small mb-3">Áp cho khách tự đặt online, đặt theo đoàn và khách tự đổi ngày. Lễ tân đặt tại quầy không bị chặn.
+                    Số đêm tối thiểu tính theo ngày nhận phòng; đóng bán chặn mọi đêm trong khoảng.</p>
+
+                <form th:action="@{/admin/pricing/max-advance}" method="post" class="row g-2 align-items-end mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label small">Nhận đặt trước tối đa (ngày)</label>
+                        <input type="number" name="maxAdvanceDays" class="form-control" min="0" max="730" th:value="${maxAdvanceDays}">
+                        <div class="form-text">0 = không giới hạn</div>
+                    </div>
+                    <div class="col-md-2"><button type="submit" class="btn btn-outline-primary">Lưu</button></div>
+                </form>
+
+                <form th:action="@{/admin/pricing/stay-rules}" method="post" class="row g-2 align-items-end mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label small">Tên dịp</label>
+                        <input type="text" name="name" class="form-control" maxlength="100" required placeholder="VD: Lễ 2/9">
+                        <input type="text" name="nameEn" class="form-control form-control-sm mt-1" maxlength="100" placeholder="Tên tiếng Anh (không bắt buộc)">
+                    </div>
+                    <div class="col-md-2"><label class="form-label small">Từ ngày</label><input type="date" name="startDate" class="form-control" required></div>
+                    <div class="col-md-2"><label class="form-label small">Đến ngày</label><input type="date" name="endDate" class="form-control" required></div>
+                    <div class="col-md-2">
+                        <label class="form-label small">Loại phòng</label>
+                        <select name="roomTypeId" class="form-select">
+                            <option value="">Tất cả</option>
+                            <option th:each="rt : ${roomTypes}" th:value="${rt.id}" th:text="${rt.name}"></option>
+                        </select>
+                    </div>
+                    <div class="col-md-2"><label class="form-label small">Tối thiểu (đêm)</label>
+                        <input type="number" name="minNights" class="form-control" min="2" max="30" placeholder="2"></div>
+                    <div class="col-12 d-flex gap-3 align-items-center">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="stopSell" value="true" id="stopSell">
+                            <label class="form-check-label" for="stopSell">Đóng bán (không nhận đặt các đêm này)</label>
+                        </div>
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Thêm luật</button>
+                    </div>
+                </form>
+
+                <div th:if="${#lists.isEmpty(stayRules)}" class="alert alert-info mb-0">Chưa có luật nào - khách đặt tự do.</div>
+                <table class="table align-middle mb-0" th:unless="${#lists.isEmpty(stayRules)}">
+                    <thead><tr><th>Dịp</th><th>Khoảng ngày</th><th>Loại phòng</th><th>Luật</th><th></th></tr></thead>
+                    <tbody>
+                    <tr th:each="r : ${stayRules}" th:classappend="${r.endDate.isBefore(today)} ? 'text-muted'">
+                        <td class="fw-semibold"><span th:text="${r.name}"></span>
+                            <span th:if="${r.endDate.isBefore(today)}" class="badge bg-secondary ms-1">Đã qua</span></td>
+                        <td th:text="${#temporals.format(r.startDate, 'dd/MM/yyyy')} + ' - ' + ${#temporals.format(r.endDate, 'dd/MM/yyyy')}"></td>
+                        <td th:text="${r.roomType != null} ? ${r.roomType.name} : 'Tất cả'"></td>
+                        <td><span th:if="${r.closed}" class="badge bg-danger">Đóng bán</span>
+                            <span th:if="${r.minNights != null}" class="badge bg-info text-dark" th:text="'Tối thiểu ' + ${r.minNights} + ' đêm'"></span></td>
+                        <td class="text-end">
+                            <form th:action="@{/admin/pricing/stay-rules/{id}/delete(id=${r.id})}" method="post"
+                                  onsubmit="return confirm('Xóa luật này?')">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Xóa</button>
+                            </form>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </main>
