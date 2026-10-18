@@ -68,6 +68,13 @@ public class PricingSettings {
     @Column(name = "max_advance_days")
     private Integer maxAdvanceDays;
 
+    // Nang hang phong: uu dai % tren phan chenh lech (null = 0) va tu gui loi moi truoc ngay den (null = tat)
+    @Column(name = "upgrade_discount_percent")
+    private Integer upgradeDiscountPercent;
+
+    @Column(name = "upgrade_auto_offer")
+    private Boolean upgradeAutoOffer;
+
     // Buong phong don xong phai cho le tan / quan ly kiem moi thanh "sach" (null = khong)
     @Column(name = "housekeeping_inspection")
     private Boolean housekeepingInspection;

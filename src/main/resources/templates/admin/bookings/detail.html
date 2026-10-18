@@ -187,6 +187,24 @@
                     <button type="submit" class="btn btn-outline-secondary">Gửi hóa đơn qua email</button>
                 </form>
 
+                <div class="border rounded p-3 my-3" id="nang-hang" th:if="${!#lists.isEmpty(upgradeCandidates) or !#lists.isEmpty(upgradeOffers)}">
+                    <div class="fw-semibold mb-1"><i class="bi bi-arrow-up-circle me-1"></i>Nâng hạng phòng</div>
+                    <ul class="small mb-2" th:unless="${#lists.isEmpty(upgradeOffers)}">
+                        <li th:each="o : ${upgradeOffers}">
+                            <span th:text="${o.room.roomType.name} + ' (phòng ' + ${o.room.roomNumber} + ') +' + ${#numbers.formatDecimal(o.price, 1, 'POINT', 0, 'COMMA')} + ' VND'"></span>
+                            <span class="badge" th:classappend="${o.status.name() == 'ACCEPTED'} ? 'bg-success' : (${o.status.name() == 'OFFERED'} ? 'bg-info text-dark' : 'bg-secondary')"
+                                  th:text="${o.status.vietnameseLabel}"></span>
+                            <span class="text-muted" th:text="${#temporals.format(o.createdAt, 'dd/MM HH:mm')} + (${o.createdBy != null} ? ' · ' + ${o.createdBy} : '')"></span>
+                        </li>
+                    </ul>
+                    <form th:unless="${#lists.isEmpty(upgradeCandidates)}" method="post" th:action="@{/admin/bookings/{id}/upgrade-offers(id=${booking.id})}"
+                          class="d-flex gap-2 align-items-center flex-wrap">
+                        <span class="small text-muted">Có thể mời:
+                            <span th:each="c, st : ${upgradeCandidates}" th:text="${c.option.room.roomType.name} + ' +' + ${#numbers.formatDecimal(c.price, 1, 'POINT', 0, 'COMMA')} + (${st.last} ? '' : ', ')"></span></span>
+                        <button type="submit" class="btn btn-sm btn-outline-primary">Gửi lời mời nâng hạng</button>
+                    </form>
+                </div>
+
                 <form th:if="${canMarkNoShow}" th:action="@{/admin/bookings/{id}/no-show(id=${booking.id})}" method="post" class="d-inline"
                       onsubmit="return confirm('Đánh dấu khách không đến? Đơn sẽ đóng, phòng trả lại để bán, tiền cọc không hoàn.')">
                     <button type="submit" class="btn btn-outline-dark"><i class="bi bi-person-x me-1"></i>Khách không đến</button>

@@ -320,6 +320,31 @@ public class EmailService {
         return queue(booking, "Sóng Xanh Resort - Đổi phòng cho đơn #" + booking.getId(), body, "doi phong");
     }
 
+    // Loi moi nang hang phong (truoc ngay den): danh sach loai phong + gia them, link toi trang don de dong y
+    public boolean sendUpgradeOffer(Booking booking, List<com.hotel.entity.UpgradeOffer> offers) {
+        if (!canEmail(booking) || offers.isEmpty()) {
+            return false;
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append("Xin chào ").append(booking.getGuestName()).append(",\n\n");
+        sb.append("Kỳ nghỉ của bạn tại Sóng Xanh Resort (đơn #").append(booking.getId()).append(", nhận phòng ")
+                .append(booking.getCheckInDate().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")))
+                .append(") sắp đến. Resort còn phòng hạng cao hơn cho đúng các đêm của bạn:\n\n");
+        for (com.hotel.entity.UpgradeOffer o : offers) {
+            sb.append("- ").append(o.getRoom().getRoomType().getName()).append(": thêm ").append(money(o.getPrice()))
+                    .append(" cho cả kỳ nghỉ");
+            if (o.getSaving().signum() > 0) {
+                sb.append(" (đã giảm ").append(money(o.getSaving())).append(")");
+            }
+            sb.append("\n");
+        }
+        String link = bookingLink(booking, "#nang-hang");
+        sb.append("\n").append(link != null ? "Xem và nhận nâng hạng: " + link : "Mở trang đơn của bạn để nhận nâng hạng.")
+                .append("\nƯu đãi có hiệu lực đến giờ nhận phòng, tùy phòng còn trống.\n\nSóng Xanh Resort");
+        return queue(booking, "Sóng Xanh Resort - Nâng hạng phòng cho kỳ nghỉ của bạn (đơn #" + booking.getId() + ")",
+                sb.toString(), "nang hang");
+    }
+
     // Le tan duyet / tu choi yeu cau nhan phong som / tra phong muon
     public boolean sendStayTimeDecision(Booking booking, boolean approved) {
         if (!canEmail(booking)) {

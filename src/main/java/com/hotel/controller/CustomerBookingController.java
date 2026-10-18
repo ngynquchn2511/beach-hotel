@@ -77,6 +77,13 @@ public class CustomerBookingController {
 
     private com.hotel.service.SpaPackageService spaPackageService;
 
+    private com.hotel.service.UpgradeService upgradeService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setUpgradeService(com.hotel.service.UpgradeService upgradeService) {
+        this.upgradeService = upgradeService;
+    }
+
     @org.springframework.beans.factory.annotation.Autowired
     void setSpaPackageService(com.hotel.service.SpaPackageService spaPackageService) {
         this.spaPackageService = spaPackageService;
@@ -306,6 +313,7 @@ public class CustomerBookingController {
         model.addAttribute("canFacility", facilityService.canReserve(booking));
         model.addAttribute("now", java.time.LocalDateTime.now());
         model.addAttribute("spaRatings", facilityService.spaRatings());
+        model.addAttribute("upgradeOffers", upgradeService != null ? upgradeService.openOffersOf(id) : java.util.List.of());
         model.addAttribute("spaPackages", spaPackageService != null ? spaPackageService.active() : java.util.List.of());
         model.addAttribute("spaSlots", com.hotel.service.FacilityReservationService.SPA_SLOTS);
         model.addAttribute("restaurantSlots", com.hotel.service.FacilityReservationService.RESTAURANT_SLOTS);
@@ -515,6 +523,34 @@ public class CustomerBookingController {
             redirectAttributes.addFlashAttribute("facilityError", userMessages.of(ex));
         }
         return backTo(id, token, "#spa-nha-hang");
+    }
+
+    // Nang hang phong: khach dong y / tu choi loi moi
+    @PostMapping("/{id}/upgrade/{offerId}/accept")
+    public String acceptUpgrade(@PathVariable Long id, @PathVariable Long offerId, @RequestParam(required = false) String token,
+                                @AuthenticationPrincipal CustomUserDetails userDetails, RedirectAttributes redirectAttributes) {
+        Booking booking = bookingService.findForViewing(id, token, userDetails != null ? userDetails.getUser().getId() : null);
+        try {
+            Booking moved = upgradeService.accept(booking, offerId);
+            redirectAttributes.addFlashAttribute("upgradeSuccess", userMessages.get("upgrade.accepted",
+                    moved.getRoom().getRoomNumber(), moved.getRoom().getRoomType().getLocalizedName()));
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("upgradeError", userMessages.of(ex));
+        }
+        return backTo(id, token, "#nang-hang");
+    }
+
+    @PostMapping("/{id}/upgrade/{offerId}/decline")
+    public String declineUpgrade(@PathVariable Long id, @PathVariable Long offerId, @RequestParam(required = false) String token,
+                                 @AuthenticationPrincipal CustomUserDetails userDetails, RedirectAttributes redirectAttributes) {
+        Booking booking = bookingService.findForViewing(id, token, userDetails != null ? userDetails.getUser().getId() : null);
+        try {
+            upgradeService.decline(booking, offerId);
+            redirectAttributes.addFlashAttribute("upgradeSuccess", userMessages.get("upgrade.declined"));
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("upgradeError", userMessages.of(ex));
+        }
+        return backTo(id, token, "#nang-hang");
     }
 
     // Danh gia spa / nha hang sau khi dung

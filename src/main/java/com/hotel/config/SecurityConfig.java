@@ -125,6 +125,7 @@ public class SecurityConfig {
                         // Le tan giao mon duoc, sua thuc don chi ADMIN
                         .requestMatchers("/admin/room-service/menu", "/admin/room-service/menu/**").hasRole("ADMIN")
                         .requestMatchers("/admin/spa-packages", "/admin/spa-packages/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/admin/upgrades/settings").hasRole("ADMIN")
                         // Cac chuc nang con lai (don dat phong, check-in/out, trang thai phong, doanh thu...) - ca STAFF va ADMIN
                         // Buong phong: don phong, bao hong / bao tri, do that lac
                         // Phan cong / kiem phong / cai dat: le tan, quan ly
@@ -210,6 +211,7 @@ public class SecurityConfig {
                         // Dat / huy lich spa, ban nha hang tren trang don (kiem tra chu don / ma truy cap)
                         .requestMatchers(HttpMethod.POST, "/customer/bookings/*/facility", "/customer/bookings/*/facility/*/cancel",
                                 "/customer/bookings/*/facility/*/rate").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/customer/bookings/*/upgrade/*/accept", "/customer/bookings/*/upgrade/*/decline").permitAll()
                         // Dat nhieu phong 1 lan (khach vang lai dung ?token= cua nhom)
                         .requestMatchers("/customer/bookings/group/new", "/customer/bookings/group/*",
                                 "/customer/bookings/group/*/cancel").permitAll()

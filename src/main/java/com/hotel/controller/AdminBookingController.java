@@ -96,6 +96,8 @@ public class AdminBookingController {
         // Tien hoan coc du kien neu huy ngay bay gio (null = chua coc / khong huy duoc)
         model.addAttribute("refundQuote", bookingService.refundQuoteIfCancelledNow(booking));
         model.addAttribute("canMarkNoShow", bookingService.canMarkNoShow(booking));
+        model.addAttribute("upgradeOffers", upgradeService.offersOf(id));
+        model.addAttribute("upgradeCandidates", upgradeService.candidates(booking));
         // So lan khach nay khong den o cac don KHAC (canh bao nen yeu cau coc)
         long noShows = booking.getCustomer() != null ? bookingService.noShowCount(booking.getCustomer().getId()) : 0;
         model.addAttribute("otherNoShows", noShows - (booking.isNoShow() ? 1 : 0));
@@ -387,6 +389,26 @@ public class AdminBookingController {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
         return "redirect:/admin/bookings/" + id;
+    }
+
+    // Gui loi moi nang hang phong cho khach (email + hien tren trang don)
+    @PostMapping("/{id}/upgrade-offers")
+    public String sendUpgradeOffers(@PathVariable Long id, @org.springframework.security.core.annotation.AuthenticationPrincipal com.hotel.security.CustomUserDetails user,
+                                    RedirectAttributes redirectAttributes) {
+        try {
+            var offers = upgradeService.createOffers(id, user != null ? user.getUser().getFullName() : null);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã gửi " + offers.size() + " lời mời nâng hạng cho khách");
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "redirect:/admin/bookings/" + id + "#nang-hang";
+    }
+
+    private com.hotel.service.UpgradeService upgradeService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setUpgradeService(com.hotel.service.UpgradeService upgradeService) {
+        this.upgradeService = upgradeService;
     }
 
     // Khach khong den: dong don, giu coc. back=today -> quay lai man hinh "Hom nay"

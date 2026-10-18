@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>Nâng hạng phòng</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+</head>
+<body class="eaut eaut-admin">
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="container py-5">
+    <div class="row g-4">
+        <div class="col-md-3">
+            <div th:replace="~{fragments/admin-sidebar :: sidebar}"></div>
+        </div>
+
+        <div class="col-md-9">
+            <h3 class="fw-bold mb-1">Nâng hạng phòng</h3>
+            <p class="text-muted small">Mời khách lên loại phòng cao hơn còn trống đúng các đêm của đơn. Giá mời = chênh lệch tiền phòng trừ ưu đãi.
+                Khách nhận trên trang đơn: hệ thống đổi phòng và cộng tiền vào đơn. Gửi tay ở trang chi tiết đơn.</p>
+
+            <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+            <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-sm-4"><div class="bg-white p-3 rounded shadow-sm h-100"><div class="small text-muted">Đơn được mời</div>
+                    <div class="fw-bold fs-5" th:text="${bookingsOffered}"></div></div></div>
+                <div class="col-sm-4"><div class="bg-white p-3 rounded shadow-sm h-100"><div class="small text-muted">Khách nhận</div>
+                    <div class="fw-bold fs-5" th:text="${acceptedCount} + ' (' + ${acceptRate} + '%)'"></div></div></div>
+                <div class="col-sm-4"><div class="bg-white p-3 rounded shadow-sm h-100"><div class="small text-muted">Doanh thu thêm (VND)</div>
+                    <div class="fw-bold fs-5" th:text="${#numbers.formatDecimal(revenue, 1, 'POINT', 0, 'COMMA')}"></div></div></div>
+            </div>
+
+            <form sec:authorize="hasRole('ADMIN')" method="post" th:action="@{/admin/upgrades/settings}" class="bg-white p-3 rounded shadow-sm mb-4 row g-2 align-items-end">
+                <div class="col-md-4"><label class="form-label small">Ưu đãi trên phần chênh lệch (%)</label>
+                    <input type="number" name="discountPercent" class="form-control" min="0" max="70" th:value="${discountPercent}"></div>
+                <div class="col-md-5"><div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="auto" value="true" id="auto" th:checked="${autoEnabled}">
+                    <label class="form-check-label" for="auto" th:text="'Tự gửi lời mời ' + ${autoDays} + ' ngày trước ngày nhận phòng (đơn đã xác nhận)'"></label>
+                </div></div>
+                <div class="col-md-3"><button type="submit" class="btn btn-primary w-100">Lưu</button></div>
+            </form>
+
+            <div th:if="${#lists.isEmpty(offers)}" class="alert alert-info">Chưa có lời mời nào.</div>
+            <div class="bg-white p-3 rounded shadow-sm" th:unless="${#lists.isEmpty(offers)}">
+                <table class="table table-sm align-middle mb-0">
+                    <thead><tr><th>Đơn</th><th>Lên hạng</th><th class="text-end">Giá mời</th><th>Trạng thái</th><th>Gửi</th></tr></thead>
+                    <tbody>
+                    <tr th:each="o : ${offers}">
+                        <td><a th:href="@{/admin/bookings/{id}(id=${o.booking.id})}" th:text="'#' + ${o.booking.id}"></a>
+                            <div class="small text-muted" th:text="${o.booking.guestName} + ' · nhận ' + ${#temporals.format(o.booking.checkInDate, 'dd/MM')}"></div></td>
+                        <td th:text="${o.room.roomType.name} + ' (phòng ' + ${o.room.roomNumber} + ')'"></td>
+                        <td class="text-end"><span th:text="${#numbers.formatDecimal(o.price, 1, 'POINT', 0, 'COMMA')}"></span>
+                            <div class="small text-muted" th:if="${o.saving.signum() > 0}" th:text="'giảm ' + ${#numbers.formatDecimal(o.saving, 1, 'POINT', 0, 'COMMA')}"></div></td>
+                        <td><span class="badge" th:classappend="${o.status.name() == 'ACCEPTED'} ? 'bg-success' : (${o.status.name() == 'OFFERED'} ? 'bg-info text-dark' : 'bg-secondary')"
+                                  th:text="${o.status.vietnameseLabel}"></span></td>
+                        <td class="small" th:text="${#temporals.format(o.createdAt, 'dd/MM HH:mm')} + (${o.createdBy != null} ? ' · ' + ${o.createdBy} : '')"></td>
+                    </tr>
+                    </tbody>
+                </table>
+                <div th:replace="~{fragments/pagination :: pager(${pager})}"></div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

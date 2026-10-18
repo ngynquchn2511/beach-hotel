@@ -72,6 +72,8 @@
         <span th:if="${pendingFacilityCount != null and pendingFacilityCount > 0}" class="badge rounded-pill bg-warning text-dark"
               th:text="${pendingFacilityCount}" title="Lịch chờ xác nhận"></span>
     </a>
+    <a th:href="@{/admin/upgrades}" class="list-group-item list-group-item-action"
+       th:classappend="${p.startsWith('/admin/upgrades')} ? 'active'"><i class="bi bi-arrow-up-circle"></i>Nâng hạng phòng</a>
     <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin/spa-packages}" class="list-group-item list-group-item-action"
        th:classappend="${p.startsWith('/admin/spa-packages')} ? 'active'">
         <i class="bi bi-droplet-half"></i>Gói spa
