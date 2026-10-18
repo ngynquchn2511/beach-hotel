@@ -43,6 +43,13 @@ public class BookingService {
 
     private com.hotel.service.StayRuleService stayRuleService;
 
+    private com.hotel.service.DiscountCodeService discountCodeService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setDiscountCodeService(com.hotel.service.DiscountCodeService discountCodeService) {
+        this.discountCodeService = discountCodeService;
+    }
+
     @org.springframework.beans.factory.annotation.Autowired
     void setStayRuleService(com.hotel.service.StayRuleService stayRuleService) {
         this.stayRuleService = stayRuleService;
@@ -695,13 +702,12 @@ public class BookingService {
                     customer.getId(), discountCode.getId(), BookingStatus.CANCELLED)) {
                 throw BusinessException.of("err.discountUsed");
             }
-
-            if (discountCode.getDiscountType() == DiscountType.PERCENTAGE) {
-                discountAmount = subtotal.multiply(discountCode.getDiscountValue())
-                        .divide(BigDecimal.valueOf(100));
-            } else {
-                discountAmount = discountCode.getDiscountValue().min(subtotal);
+            // Thoi han / so luot / don toi thieu (phong thu 2+ cua doan da tinh chung 1 luot voi phong dau)
+            if (!sameGroupCode && discountCodeService != null) {
+                discountCodeService.checkUsable(discountCode, subtotal, LocalDate.now());
             }
+
+            discountAmount = discountCode.computeDiscount(subtotal);
         }
 
         BigDecimal totalAmount = subtotal.subtract(discountAmount);
@@ -1091,13 +1097,7 @@ public class BookingService {
 
     // Tien giam theo ma da ap dung luc dat (tinh lai khi tong tien thay doi: doi combo / doi ngay)
     private static BigDecimal discountFor(DiscountCode dc, BigDecimal subtotal) {
-        if (dc == null) {
-            return BigDecimal.ZERO;
-        }
-        if (dc.getDiscountType() == DiscountType.PERCENTAGE) {
-            return subtotal.multiply(dc.getDiscountValue()).divide(BigDecimal.valueOf(100));
-        }
-        return dc.getDiscountValue().min(subtotal);
+        return dc == null ? BigDecimal.ZERO : dc.computeDiscount(subtotal);
     }
 
     // ===== Khach tu doi ngay nhan / tra phong (giu nguyen phong, gio, combo, ma giam gia) =====

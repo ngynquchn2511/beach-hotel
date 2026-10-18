@@ -33,7 +33,22 @@ public class AdminDiscountCodeController {
         model.addAttribute("currentPage", Math.max(1, Math.min(page, totalPages)));
         model.addAttribute("totalPages", totalPages);
         model.addAttribute("pageNumbers", PaginationUtil.pageNumbersToShow(page, totalPages));
+        java.util.Map<Long, Long> uses = new java.util.HashMap<>();
+        all.forEach(dc -> uses.put(dc.getId(), discountCodeService.usageCount(dc)));
+        model.addAttribute("uses", uses);
+        model.addAttribute("today", java.time.LocalDate.now());
         return "admin/discount-codes/list";
+    }
+
+    // Thong ke 1 ma: so luot, tong tien da giam, doanh thu cac don dung ma
+    @GetMapping("/{id}/usage")
+    public String usage(@PathVariable Long id, @RequestParam(defaultValue = "1") int page, Model model) {
+        var stats = discountCodeService.stats(id);
+        var pager = com.hotel.util.Pager.of(stats.bookings(), page, PaginationUtil.DEFAULT_PAGE_SIZE);
+        model.addAttribute("stats", stats);
+        model.addAttribute("pager", pager);
+        model.addAttribute("bookings", pager.items());
+        return "admin/discount-codes/usage";
     }
 
     @GetMapping("/new")
@@ -73,6 +88,11 @@ public class AdminDiscountCodeController {
         request.setDiscountType(discountCode.getDiscountType());
         request.setDiscountValue(discountCode.getDiscountValue());
         request.setApplicableCustomerType(discountCode.getApplicableCustomerType());
+        request.setValidFrom(discountCode.getValidFrom());
+        request.setValidTo(discountCode.getValidTo());
+        request.setMaxUses(discountCode.getMaxUses());
+        request.setMinOrderAmount(discountCode.getMinOrderAmount());
+        request.setMaxDiscountAmount(discountCode.getMaxDiscountAmount());
 
         model.addAttribute("discountCodeRequest", request);
         model.addAttribute("discountCodeId", id);

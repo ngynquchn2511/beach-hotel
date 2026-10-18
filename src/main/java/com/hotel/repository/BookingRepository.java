@@ -27,6 +27,18 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     long countByCustomerIdAndNoShowTrue(Long customerId);
 
+    // Luot dung 1 ma: don le (khong thuoc doan) + so doan (moi doan tinh 1 luot), bo don da huy
+    @Query("select count(b) from Booking b where b.discountCode.id = :codeId and b.group is null "
+            + "and b.status <> com.hotel.entity.BookingStatus.CANCELLED")
+    long countSingleUses(@Param("codeId") Long codeId);
+
+    @Query("select count(distinct b.group.id) from Booking b where b.discountCode.id = :codeId and b.group is not null "
+            + "and b.status <> com.hotel.entity.BookingStatus.CANCELLED")
+    long countGroupUses(@Param("codeId") Long codeId);
+
+    @Query("select b from Booking b join fetch b.room left join fetch b.customer where b.discountCode.id = :codeId order by b.createdAt desc")
+    List<Booking> findByDiscountCodeIdForStats(@Param("codeId") Long codeId);
+
     List<Booking> findByCancelledAtBetween(java.time.LocalDateTime from, java.time.LocalDateTime to);
 
     // So lan luu tru hoan tat cua khach (khach than thiet)

@@ -22,6 +22,69 @@ public class DiscountCodeService {
         this.discountCodeRepository = discountCodeRepository;
     }
 
+    // Dem luot dung (unit test khoi tao bang constructor nen co the chua co - khi do bo qua gioi han luot)
+    private com.hotel.repository.BookingRepository bookingRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setBookingRepository(com.hotel.repository.BookingRepository bookingRepository) {
+        this.bookingRepository = bookingRepository;
+    }
+
+    public long usageCount(DiscountCode dc) {
+        if (bookingRepository == null || dc.getId() == null) {
+            return 0;
+        }
+        return bookingRepository.countSingleUses(dc.getId()) + bookingRepository.countGroupUses(dc.getId());
+    }
+
+    // Kiem tra thoi han / so luot / gia tri don toi thieu (khong kiem tra loai khach, ma da dung - noi goi tu lo)
+    public void checkUsable(DiscountCode dc, BigDecimal subtotal, java.time.LocalDate today) {
+        if (dc.isNotStarted(today)) {
+            throw BusinessException.of("err.discountNotYet", dc.getValidFrom().format(DAY));
+        }
+        if (dc.isExpired(today)) {
+            throw BusinessException.of("err.discountExpired", dc.getValidTo().format(DAY));
+        }
+        if (dc.getMaxUses() != null && usageCount(dc) >= dc.getMaxUses()) {
+            throw BusinessException.of("err.discountExhausted");
+        }
+        if (dc.getMinOrderAmount() != null && subtotal != null && subtotal.compareTo(dc.getMinOrderAmount()) < 0) {
+            throw BusinessException.of("err.discountMinOrder", com.hotel.util.Money.format(dc.getMinOrderAmount()));
+        }
+    }
+
+    // Ma dang bat, trong thoi han va con luot (chatbot / gioi thieu cho khach)
+    public boolean isAvailableNow(DiscountCode dc) {
+        java.time.LocalDate today = java.time.LocalDate.now();
+        return dc.isActive() && !dc.isNotStarted(today) && !dc.isExpired(today)
+                && (dc.getMaxUses() == null || usageCount(dc) < dc.getMaxUses());
+    }
+
+    // Thong ke 1 ma cho admin
+    public record UsageStats(DiscountCode code, long uses, BigDecimal discountTotal, BigDecimal revenue, List<com.hotel.entity.Booking> bookings) {
+    }
+
+    public UsageStats stats(Long id) {
+        DiscountCode dc = findById(id);
+        List<com.hotel.entity.Booking> bookings = bookingRepository == null ? List.of() : bookingRepository.findByDiscountCodeIdForStats(id);
+        List<com.hotel.entity.Booking> counted = bookings.stream()
+                .filter(b -> b.getStatus() != com.hotel.entity.BookingStatus.CANCELLED).toList();
+        return new UsageStats(dc, usageCount(dc),
+                counted.stream().map(b -> b.getDiscountAmount() != null ? b.getDiscountAmount() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add),
+                counted.stream().map(com.hotel.entity.Booking::getTotalAmount).reduce(BigDecimal.ZERO, BigDecimal::add), bookings);
+    }
+
+    private static final java.time.format.DateTimeFormatter DAY = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+    private static void applyLimits(DiscountCode dc, DiscountCodeRequest request) {
+        dc.setValidFrom(request.getValidFrom());
+        dc.setValidTo(request.getValidTo());
+        dc.setMaxUses(request.getMaxUses());
+        dc.setMinOrderAmount(request.getMinOrderAmount() != null && request.getMinOrderAmount().signum() > 0 ? request.getMinOrderAmount() : null);
+        // Tran giam chi co nghia voi ma %
+        dc.setMaxDiscountAmount(request.getDiscountType() == DiscountType.PERCENTAGE ? request.getMaxDiscountAmount() : null);
+    }
+
     public List<DiscountCode> findAll() {
         return discountCodeRepository.findAll();
     }
@@ -47,6 +110,7 @@ public class DiscountCodeService {
                 .applicableCustomerType(request.getApplicableCustomerType())
                 .active(true)
                 .build();
+        applyLimits(discountCode, request);
         return discountCodeRepository.save(discountCode);
     }
 
@@ -63,6 +127,7 @@ public class DiscountCodeService {
         discountCode.setDiscountType(request.getDiscountType());
         discountCode.setDiscountValue(request.getDiscountValue());
         discountCode.setApplicableCustomerType(request.getApplicableCustomerType());
+        applyLimits(discountCode, request);
         return discountCodeRepository.save(discountCode);
     }
 
@@ -93,11 +158,7 @@ public class DiscountCodeService {
         if (discount.getApplicableCustomerType() != null && discount.getApplicableCustomerType() != customerType) {
             throw BusinessException.of("err.discountCustomerType");
         }
-
-        if (discount.getDiscountType() == DiscountType.PERCENTAGE) {
-            return totalAmount.multiply(discount.getDiscountValue())
-                    .divide(BigDecimal.valueOf(100));
-        }
-        return discount.getDiscountValue().min(totalAmount);
+        checkUsable(discount, totalAmount, java.time.LocalDate.now());
+        return discount.computeDiscount(totalAmount);
     }
 }

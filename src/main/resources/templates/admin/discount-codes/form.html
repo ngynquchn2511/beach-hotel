@@ -65,6 +65,27 @@
                         </select>
                     </div>
 
+                    <h6 class="fw-bold mt-4">Giới hạn sử dụng <span class="small text-muted fw-normal">(để trống = không giới hạn)</span></h6>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6"><label class="form-label">Hiệu lực từ ngày</label>
+                            <input type="date" th:field="*{validFrom}" class="form-control"></div>
+                        <div class="col-md-6"><label class="form-label">Đến hết ngày</label>
+                            <input type="date" th:field="*{validTo}" class="form-control">
+                            <div class="text-danger small" th:if="${#fields.hasErrors('validityRangeValid')}" th:errors="*{validityRangeValid}"></div></div>
+                        <div class="col-md-4"><label class="form-label">Tổng số lượt tối đa</label>
+                            <input type="number" min="1" th:field="*{maxUses}" class="form-control">
+                            <div class="form-text">Mỗi đơn hoặc mỗi đoàn tính 1 lượt, đơn hủy không tính.</div>
+                            <div class="text-danger small" th:if="${#fields.hasErrors('maxUses')}" th:errors="*{maxUses}"></div></div>
+                        <div class="col-md-4"><label class="form-label">Đơn tối thiểu (VND)</label>
+                            <input type="number" min="0" step="1000" th:field="*{minOrderAmount}" class="form-control">
+                            <div class="form-text">Tiền phòng + combo.</div>
+                            <div class="text-danger small" th:if="${#fields.hasErrors('minOrderAmount')}" th:errors="*{minOrderAmount}"></div></div>
+                        <div class="col-md-4"><label class="form-label">Giảm tối đa (VND)</label>
+                            <input type="number" min="1000" step="1000" th:field="*{maxDiscountAmount}" class="form-control">
+                            <div class="form-text">Chỉ áp cho mã giảm theo %.</div>
+                            <div class="text-danger small" th:if="${#fields.hasErrors('maxDiscountAmount')}" th:errors="*{maxDiscountAmount}"></div></div>
+                    </div>
+
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-primary">Lưu</button>
                         <a th:href="@{/admin/discount-codes}" class="btn btn-outline-secondary">Hủy</a>

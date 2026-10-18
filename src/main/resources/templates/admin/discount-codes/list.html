@@ -35,6 +35,8 @@
                     <th>Loại giảm</th>
                     <th>Giá trị</th>
                     <th>Áp dụng cho</th>
+                    <th>Giới hạn</th>
+                    <th>Đã dùng</th>
                     <th>Trạng thái</th>
                     <th></th>
                 </tr>
@@ -45,9 +47,21 @@
                     <td th:text="${dc.discountType.vietnameseLabel}"></td>
                     <td th:text="${dc.discountType.name() == 'PERCENTAGE'} ? (${#numbers.formatDecimal(dc.discountValue, 1, 'POINT', 0, 'COMMA')} + ' %') : (${#numbers.formatDecimal(dc.discountValue, 1, 'POINT', 0, 'COMMA')} + 'VND')"></td>
                     <td th:text="${dc.applicableCustomerType != null} ? ${dc.applicableCustomerType.vietnameseLabel} : 'Tất cả khách hàng'"></td>
+                    <td class="small">
+                        <div th:if="${dc.validFrom != null or dc.validTo != null}"
+                             th:text="(${dc.validFrom != null} ? ${#temporals.format(dc.validFrom, 'dd/MM/yy')} : '...') + ' → ' + (${dc.validTo != null} ? ${#temporals.format(dc.validTo, 'dd/MM/yy')} : '...')"></div>
+                        <div th:if="${dc.minOrderAmount != null}" th:text="'Đơn từ ' + ${#numbers.formatDecimal(dc.minOrderAmount, 1, 'POINT', 0, 'COMMA')}"></div>
+                        <div th:if="${dc.maxDiscountAmount != null}" th:text="'Giảm tối đa ' + ${#numbers.formatDecimal(dc.maxDiscountAmount, 1, 'POINT', 0, 'COMMA')}"></div>
+                        <span th:if="${dc.validFrom == null and dc.validTo == null and dc.minOrderAmount == null and dc.maxDiscountAmount == null}" class="text-muted">-</span>
+                    </td>
+                    <td class="text-nowrap"><a th:href="@{/admin/discount-codes/{id}/usage(id=${dc.id})}"
+                           th:text="${uses[dc.id]} + (${dc.maxUses != null} ? ' / ' + ${dc.maxUses} : '')"></a></td>
                     <td>
                         <span class="badge" th:classappend="${dc.active} ? 'bg-success' : 'bg-secondary'"
                               th:text="${dc.active} ? 'Đang áp dụng' : 'Đã tắt'"></span>
+                        <span class="badge bg-dark" th:if="${dc.isExpired(today)}">Hết hạn</span>
+                        <span class="badge bg-info text-dark" th:if="${dc.isNotStarted(today)}">Chưa tới ngày</span>
+                        <span class="badge bg-danger" th:if="${dc.maxUses != null and uses[dc.id] >= dc.maxUses}">Hết lượt</span>
                     </td>
                     <td class="text-end">
                         <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin/discount-codes/{id}/edit(id=${dc.id})}" class="btn btn-sm btn-outline-secondary">Sửa</a>

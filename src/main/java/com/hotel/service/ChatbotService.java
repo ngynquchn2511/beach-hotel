@@ -41,6 +41,14 @@ import java.util.Set;
 @Service
 public class ChatbotService {
 
+    // Chi gioi thieu ma con dung duoc (trong thoi han, con luot)
+    private DiscountCodeService discountCodeService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setDiscountCodeService(DiscountCodeService discountCodeService) {
+        this.discountCodeService = discountCodeService;
+    }
+
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd/MM");
     private static final int AVAILABILITY_LOOKAHEAD_DAYS = 7;
 
@@ -452,6 +460,7 @@ public class ChatbotService {
             boolean askingForNew = containsAny(normalizedQuestion, "nguoi moi", "khach moi", "lan dau", "moi dang ky",
                     "khach hang moi", "new customer", "new guest", "first time");
             List<DiscountCode> relevant = discountCodeRepository.findByActiveTrue().stream()
+                    .filter(c -> discountCodeService == null || discountCodeService.isAvailableNow(c))
                     .filter(c -> !askingForNew || c.getApplicableCustomerType() == null
                             || c.getApplicableCustomerType() == CustomerType.NEW)
                     .toList();

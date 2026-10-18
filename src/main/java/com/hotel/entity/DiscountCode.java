@@ -53,4 +53,44 @@ public class DiscountCode {
 
     @Column(nullable = false)
     private boolean active;
+
+    // ===== Gioi han dung ma (null = khong gioi han) =====
+    // Hieu luc theo ngay khach dat (khong phai ngay nhan phong)
+    @Column(name = "valid_from")
+    private java.time.LocalDate validFrom;
+
+    @Column(name = "valid_to")
+    private java.time.LocalDate validTo;
+
+    // Tong so luot dung toi da (don le tinh 1, ca doan tinh 1; don da huy khong tinh)
+    @Column(name = "max_uses")
+    private Integer maxUses;
+
+    // Tien don (phong + combo) toi thieu de dung ma
+    @Column(name = "min_order_amount", precision = 12, scale = 2)
+    private BigDecimal minOrderAmount;
+
+    // Ma %: so tien giam toi da
+    @Column(name = "max_discount_amount", precision = 12, scale = 2)
+    private BigDecimal maxDiscountAmount;
+
+    // So tien giam cho don co tien (phong + combo) = subtotal, da ap tran giam toi da
+    public BigDecimal computeDiscount(BigDecimal subtotal) {
+        if (subtotal == null || subtotal.signum() <= 0) {
+            return BigDecimal.ZERO;
+        }
+        if (discountType == DiscountType.PERCENTAGE) {
+            BigDecimal amount = subtotal.multiply(discountValue).divide(BigDecimal.valueOf(100));
+            return maxDiscountAmount != null && maxDiscountAmount.signum() > 0 ? amount.min(maxDiscountAmount) : amount;
+        }
+        return discountValue.min(subtotal);
+    }
+
+    public boolean isExpired(java.time.LocalDate today) {
+        return validTo != null && today.isAfter(validTo);
+    }
+
+    public boolean isNotStarted(java.time.LocalDate today) {
+        return validFrom != null && today.isBefore(validFrom);
+    }
 }
