@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Phân tích quản trị</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+    <style>
+        .insight { border-left: 4px solid var(--bs-border-color); }
+        .insight.danger { border-left-color: #d03b3b; }
+        .insight.warning { border-left-color: #fab219; }
+        .insight.info { border-left-color: #2a78d6; }
+        .insight.success { border-left-color: #0ca30c; }
+        .rec-prio { font-size: .7rem; }
+    </style>
+</head>
+<body class="eaut eaut-admin">
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="container py-5">
+    <div class="row g-4">
+        <div class="col-md-3">
+            <div th:replace="~{fragments/admin-sidebar :: sidebar}"></div>
+        </div>
+
+        <div class="col-md-9">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                <div>
+                    <h3 class="fw-bold mb-1">Phân tích quản trị tháng <span th:text="${month.monthValue} + '/' + ${month.year}"></span></h3>
+                    <p class="text-muted small mb-0">Nhận định tự động từ số liệu lãi lỗ, công suất, hủy phòng - kèm phân tích và hỏi đáp bằng AI.</p>
+                </div>
+                <form method="get" class="d-flex gap-2">
+                    <input type="month" name="month" class="form-control form-control-sm" th:value="${month}">
+                    <button class="btn btn-sm btn-outline-primary">Xem</button>
+                    <a class="btn btn-sm btn-outline-secondary text-nowrap" th:href="@{/admin/accounting/pnl(month=${month})}"><i class="bi bi-graph-up me-1"></i>Lãi lỗ</a>
+                </form>
+            </div>
+
+            <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+            <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-sm-4"><div class="bg-white p-3 rounded shadow-sm h-100"><div class="small text-muted">Doanh thu</div>
+                    <div class="fw-bold fs-5" th:text="${#numbers.formatDecimal(pnl.totalRevenue, 1, 'POINT', 0, 'COMMA')}"></div></div></div>
+                <div class="col-sm-4"><div class="bg-white p-3 rounded shadow-sm h-100"><div class="small text-muted">Lãi vận hành</div>
+                    <div class="fw-bold fs-5" th:classappend="${pnl.operatingProfit.signum() < 0} ? 'text-danger'"
+                         th:text="${#numbers.formatDecimal(pnl.operatingProfit, 1, 'POINT', 0, 'COMMA')} + ' (' + ${pnl.margin} + '%)'"></div></div></div>
+                <div class="col-sm-4"><div class="bg-white p-3 rounded shadow-sm h-100"><div class="small text-muted">Khoản chi lớn nhất</div>
+                    <div class="small" th:each="e : ${topExpenses}" th:text="${e.key.label} + ': ' + ${#numbers.formatDecimal(e.value, 1, 'POINT', 0, 'COMMA')}"></div>
+                    <div class="small text-muted" th:if="${#lists.isEmpty(topExpenses)}">Chưa nhập chi phí</div></div></div>
+            </div>
+
+            <!-- Nhan dinh theo quy tac -->
+            <h5 class="fw-bold">Nhận định tự động</h5>
+            <div th:each="i : ${insights}" class="bg-white p-3 rounded shadow-sm mb-2 insight" th:classappend="${i.level.css}">
+                <div class="d-flex justify-content-between gap-2">
+                    <div class="fw-semibold" th:text="${i.title}"></div>
+                    <span class="badge" th:classappend="'bg-' + ${i.level.css} + (${i.level.name() == 'WARNING'} ? ' text-dark' : '')" th:text="${i.level.label}"></span>
+                </div>
+                <div class="small text-muted" th:text="${i.detail}"></div>
+                <div class="small mt-1" th:if="${i.recommendation != null}"><i class="bi bi-lightbulb me-1"></i><span th:text="${i.recommendation}"></span></div>
+            </div>
+
+            <!-- Phan tich AI -->
+            <div class="bg-white p-4 rounded shadow-sm mt-4" id="ai">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+                    <div>
+                        <h5 class="fw-bold mb-1"><i class="bi bi-stars me-1"></i>Phân tích bằng AI</h5>
+                        <div class="small text-muted">Gửi số liệu tổng hợp của tháng (không có thông tin cá nhân khách) cho Claude để nhận nhận định và khuyến nghị.
+                            Mỗi lần phân tích tốn phí API và được lưu lại.</div>
+                    </div>
+                    <form th:if="${aiEnabled}" method="post" th:action="@{/admin/accounting/insights/analyze(month=${month})}"
+                          onsubmit="this.querySelector('button').disabled = true; this.querySelector('button').innerText = 'Đang phân tích...';">
+                        <button class="btn btn-sm btn-primary text-nowrap" th:text="${analysis != null} ? 'Phân tích lại' : 'Phân tích tháng này'">Phân tích</button>
+                    </form>
+                </div>
+                <div th:unless="${aiEnabled}" class="alert alert-secondary small mb-0">
+                    AI chưa bật. Đặt biến môi trường <code>ANTHROPIC_API_KEY</code> (tạo tại console.anthropic.com) rồi khởi động lại ứng dụng.
+                    Các nhận định tự động ở trên vẫn hoạt động không cần AI.
+                </div>
+
+                <th:block th:if="${analysis != null}">
+                    <p class="mb-3" th:text="${analysis.summary}"></p>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <h6 class="fw-bold text-success"><i class="bi bi-arrow-up-circle me-1"></i>Điểm sáng</h6>
+                            <div th:each="f : ${analysis.highlights}" class="small mb-2"><b th:text="${f.title}"></b> - <span th:text="${f.detail}"></span></div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="fw-bold text-danger"><i class="bi bi-exclamation-triangle me-1"></i>Rủi ro</h6>
+                            <div th:each="f : ${analysis.risks}" class="small mb-2"><b th:text="${f.title}"></b> - <span th:text="${f.detail}"></span></div>
+                        </div>
+                    </div>
+                    <h6 class="fw-bold mt-3">Khuyến nghị</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle small">
+                            <thead><tr><th>Ưu tiên</th><th>Việc cần làm</th><th>Vì sao</th><th>Tác động dự kiến</th><th>Phụ trách</th></tr></thead>
+                            <tbody>
+                            <tr th:each="rc : ${analysis.recommendations}">
+                                <td><span class="badge rec-prio" th:classappend="${rc.priority == 'CAO'} ? 'bg-danger' : (${rc.priority == 'THAP'} ? 'bg-secondary' : 'bg-warning text-dark')"
+                                          th:text="${rc.priority == 'CAO'} ? 'Cao' : (${rc.priority == 'THAP'} ? 'Thấp' : 'Trung bình')"></span></td>
+                                <td class="fw-semibold" th:text="${rc.action}"></td>
+                                <td th:text="${rc.reason}"></td>
+                                <td th:text="${rc.expectedImpact}"></td>
+                                <td th:text="${rc.owner}"></td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="small mb-1" th:if="${analysis.outlook != null}"><b>Tháng tới:</b> <span th:text="${analysis.outlook}"></span></p>
+                    <div class="small text-muted" th:text="'Phân tích lúc ' + ${#temporals.format(analysisReport.createdAt, 'dd/MM/yyyy HH:mm')}
+                            + (${analysisReport.createdBy != null} ? ' bởi ' + ${analysisReport.createdBy} : '') + ' · ' + ${analysisReport.model}
+                            + ' · ' + ${analysisReport.inputTokens} + ' + ' + ${analysisReport.outputTokens} + ' token (~$' + ${analysisCost} + ')'"></div>
+                    <div class="small text-muted fst-italic mt-1">AI có thể sai - đối chiếu với số liệu ở trang Lãi lỗ trước khi quyết định.</div>
+                </th:block>
+            </div>
+
+            <!-- Hoi AI ve so lieu -->
+            <div class="bg-white p-4 rounded shadow-sm mt-4" id="hoi-ai" th:if="${aiEnabled or !#lists.isEmpty(questions)}">
+                <h5 class="fw-bold mb-2"><i class="bi bi-chat-square-text me-1"></i>Hỏi AI về số liệu tháng</h5>
+                <form th:if="${aiEnabled}" method="post" th:action="@{/admin/accounting/insights/ask(month=${month})}" class="d-flex gap-2 mb-3"
+                      onsubmit="this.querySelector('button').disabled = true;">
+                    <input type="text" name="question" class="form-control form-control-sm" maxlength="1000" required
+                           th:value="${lastQuestion}" placeholder="VD: Nếu tăng giá cuối tuần 10% thì lãi tháng thay đổi khoảng bao nhiêu?">
+                    <button class="btn btn-sm btn-primary text-nowrap">Hỏi</button>
+                </form>
+                <div th:each="q : ${questions}" class="border-top pt-2 mb-2">
+                    <div class="small fw-semibold"><i class="bi bi-person me-1"></i><span th:text="${q.question}"></span></div>
+                    <div class="small" style="white-space: pre-line" th:text="${q.content}"></div>
+                    <div class="text-muted" style="font-size: .75rem" th:text="${#temporals.format(q.createdAt, 'dd/MM HH:mm')} + (${q.createdBy != null} ? ' · ' + ${q.createdBy} : '')"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

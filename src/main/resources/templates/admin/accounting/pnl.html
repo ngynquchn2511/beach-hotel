@@ -38,6 +38,7 @@
                     <input type="month" name="month" class="form-control form-control-sm" th:value="${month}">
                     <button class="btn btn-sm btn-outline-primary">Xem</button>
                     <a class="btn btn-sm btn-success text-nowrap" th:href="@{/admin/accounting/pnl/export(month=${month})}"><i class="bi bi-file-earmark-excel me-1"></i>Excel</a>
+                    <a class="btn btn-sm btn-primary text-nowrap" th:href="@{/admin/accounting/insights(month=${month})}"><i class="bi bi-stars me-1"></i>Phân tích</a>
                 </form>
             </div>
 

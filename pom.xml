@@ -52,6 +52,12 @@
             <groupId>org.thymeleaf.extras</groupId>
             <artifactId>thymeleaf-extras-springsecurity6</artifactId>
         </dependency>
+        <!-- Tro ly phan tich quan tri bang AI (Claude) - chi goi khi co ANTHROPIC_API_KEY -->
+        <dependency>
+            <groupId>com.anthropic</groupId>
+            <artifactId>anthropic-java</artifactId>
+            <version>2.34.0</version>
+        </dependency>
         <!-- Xuat bao cao doanh thu ra file Excel (.xlsx) -->
         <dependency>
             <groupId>org.apache.poi</groupId>

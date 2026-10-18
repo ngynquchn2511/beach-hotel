@@ -24,6 +24,10 @@
            th:classappend="${p.startsWith('/admin/accounting/vnpay')} ? 'active'"><i class="bi bi-arrow-left-right"></i>Đối soát VNPay</a>
         <a th:href="@{/admin/accounting/expenses}" class="list-group-item list-group-item-action"
            th:classappend="${p.startsWith('/admin/accounting/expenses')} ? 'active'"><i class="bi bi-wallet2"></i>Chi phí vận hành</a>
+        <a th:href="@{/admin/accounting/pnl}" class="list-group-item list-group-item-action"
+           th:classappend="${p.startsWith('/admin/accounting/pnl')} ? 'active'"><i class="bi bi-graph-up"></i>Lãi lỗ</a>
+        <a th:href="@{/admin/accounting/insights}" class="list-group-item list-group-item-action"
+           th:classappend="${p.startsWith('/admin/accounting/insights')} ? 'active'"><i class="bi bi-stars"></i>Phân tích &amp; AI</a>
         <a th:href="@{/admin/reports/daily}" class="list-group-item list-group-item-action"
            th:classappend="${p.startsWith('/admin/reports/daily')} ? 'active'"><i class="bi bi-moon-stars"></i>Báo cáo cuối ngày</a>
         <a th:href="@{/admin/reports/cancellations}" class="list-group-item list-group-item-action"
@@ -95,6 +99,10 @@
        th:classappend="${p.startsWith('/admin/accounting/vnpay')} ? 'active'"><i class="bi bi-arrow-left-right"></i>Đối soát VNPay</a>
     <a th:href="@{/admin/accounting/expenses}" class="list-group-item list-group-item-action"
        th:classappend="${p.startsWith('/admin/accounting/expenses')} ? 'active'"><i class="bi bi-wallet2"></i>Chi phí vận hành</a>
+    <a th:href="@{/admin/accounting/pnl}" class="list-group-item list-group-item-action"
+       th:classappend="${p.startsWith('/admin/accounting/pnl')} ? 'active'"><i class="bi bi-graph-up"></i>Lãi lỗ</a>
+    <a th:href="@{/admin/accounting/insights}" class="list-group-item list-group-item-action"
+       th:classappend="${p.startsWith('/admin/accounting/insights')} ? 'active'"><i class="bi bi-stars"></i>Phân tích &amp; AI</a>
     </th:block>
     <a th:href="@{/admin/company-invoices}" class="list-group-item list-group-item-action"
        th:classappend="${p.startsWith('/admin/company-invoices')} ? 'active'"><i class="bi bi-building"></i>Hóa đơn công ty</a>
