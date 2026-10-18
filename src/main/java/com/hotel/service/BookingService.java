@@ -246,7 +246,7 @@ public class BookingService {
                                   Long comboId, String discountCodeStr, String guestName, String guestPhone,
                                   String guestEmail, int pointsToUse) {
         return placeOnline(customer, roomId, checkInDate, checkOutDate, checkInTime, checkOutTime, guests, comboId,
-                discountCodeStr, guestName, guestPhone, guestEmail, pointsToUse, null, null, false);
+                discountCodeStr, guestName, guestPhone, guestEmail, pointsToUse, null, null, false, null);
     }
 
     // giftCode: ma the qua tang tru vao tien don (sau khuyen mai + diem thuong), tien coc tinh tren so con lai
@@ -256,7 +256,7 @@ public class BookingService {
                                   Long comboId, String discountCodeStr, String guestName, String guestPhone,
                                   String guestEmail, int pointsToUse, String giftCode) {
         return placeOnline(customer, roomId, checkInDate, checkOutDate, checkInTime, checkOutTime, guests, comboId,
-                discountCodeStr, guestName, guestPhone, guestEmail, pointsToUse, giftCode, null, false);
+                discountCodeStr, guestName, guestPhone, guestEmail, pointsToUse, giftCode, null, false, null);
     }
 
     // member = khach dang nhap (khong phai tai khoan tu tao cho khach vang lai) -> duoc gia thanh vien theo hang
@@ -266,17 +266,24 @@ public class BookingService {
                                   Long comboId, String discountCodeStr, String guestName, String guestPhone,
                                   String guestEmail, int pointsToUse, String giftCode, boolean member) {
         return placeOnline(customer, roomId, checkInDate, checkOutDate, checkInTime, checkOutTime, guests, comboId,
-                discountCodeStr, guestName, guestPhone, guestEmail, pointsToUse, giftCode, null, member);
+                discountCodeStr, guestName, guestPhone, guestEmail, pointsToUse, giftCode, null, member, null);
     }
 
     // group != null: 1 phong trong nhom dat nhieu phong (khong gui email tung don - gui 1 email tong hop)
+    // budget != null: ma giam gia / diem / the qua tang dung chung cho ca doan, chia dan cho tung phong
     private Booking placeOnline(User customer, Long roomId, LocalDate checkInDate, LocalDate checkOutDate,
                                 LocalTime checkInTime, LocalTime checkOutTime, Integer guests,
                                 Long comboId, String discountCodeStr, String guestName, String guestPhone,
-                                String guestEmail, int pointsToUse, String giftCode, BookingGroup group, boolean member) {
+                                String guestEmail, int pointsToUse, String giftCode, BookingGroup group, boolean member,
+                                GroupBudget budget) {
         requireStandardTimes(checkInTime, checkOutTime);
+        boolean sameGroupCode = false;
+        if (budget != null) {
+            discountCodeStr = budget.codeForNextRoom();
+            sameGroupCode = budget.roomsPlaced > 0;
+        }
         Booking booking = buildBooking(customer, roomId, checkInDate, checkOutDate, checkInTime, checkOutTime,
-                guests, comboId, discountCodeStr, guestName, guestPhone, guestEmail);
+                guests, comboId, discountCodeStr, guestName, guestPhone, guestEmail, sameGroupCode);
         // Khuyen mai tu dong (chi dat online): giam % tien phong theo luat co loi nhat
         applyPromotion(booking, promotionService.best(booking.getRoomAmount(), checkInDate, checkOutDate, LocalDate.now())
                 .orElse(null));
@@ -289,6 +296,11 @@ public class BookingService {
             booking.setMemberDiscountPercent(memberPercent);
             booking.setMemberDiscountAmount(memberAmount);
             booking.setTotalAmount(booking.getTotalAmount().subtract(memberAmount).max(BigDecimal.ZERO));
+        }
+        if (budget != null) {
+            pointsToUse = budget.takePoints(booking.getTotalAmount());
+            giftCode = budget.giftCode != null && giftVoucherService.balanceOf(budget.giftCode).signum() > 0 ? budget.giftCode : null;
+            budget.roomsPlaced++;
         }
         if (pointsToUse > 0) {
             BigDecimal pointsDiscount = loyaltyService.redeemDiscount(customer, pointsToUse, booking.getTotalAmount());
@@ -333,6 +345,40 @@ public class BookingService {
                                            LocalTime checkInTime, LocalTime checkOutTime,
                                            java.util.Map<Long, Integer> guestsByRoom,
                                            String guestName, String guestPhone, String guestEmail) {
+        return createGroupBooking(customer, roomIds, checkInDate, checkOutDate, checkInTime, checkOutTime, guestsByRoom,
+                guestName, guestPhone, guestEmail, null, 0, null, false);
+    }
+
+    // Uu dai cho ca doan: ma giam gia % ap cho moi phong, ma tru tien co dinh tru 1 lan (phong dau);
+    // diem thuong chia dan tung phong (moi phong toi da 50% tien phong do); the qua tang tru dan den het so du;
+    // member = khach dang nhap -> gia thanh vien cho tung phong
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public BookingGroup createGroupBooking(User customer, List<Long> roomIds, LocalDate checkInDate, LocalDate checkOutDate,
+                                           LocalTime checkInTime, LocalTime checkOutTime,
+                                           java.util.Map<Long, Integer> guestsByRoom,
+                                           String guestName, String guestPhone, String guestEmail,
+                                           String discountCodeStr, int pointsToUse, String giftCode, boolean member) {
+        GroupBudget budget = new GroupBudget();
+        if (discountCodeStr != null && !discountCodeStr.isBlank()) {
+            budget.discountCode = discountCodeStr.trim().toUpperCase();
+            budget.fixedCode = discountCodeRepository.findByCodeAndActiveTrue(budget.discountCode)
+                    .map(dc -> dc.getDiscountType() != DiscountType.PERCENTAGE)
+                    .orElseThrow(() -> BusinessException.of("err.discountInvalid"));
+        }
+        if (pointsToUse > 0) {
+            if (pointsToUse < LoyaltyService.MIN_REDEEM_POINTS) {
+                throw BusinessException.of("points.error.min", LoyaltyService.MIN_REDEEM_POINTS);
+            }
+            int balance = loyaltyService.currentBalance(customer);
+            if (pointsToUse > balance) {
+                throw BusinessException.of("points.error.balance", balance);
+            }
+            budget.points = pointsToUse;
+        }
+        if (giftCode != null && !giftCode.isBlank()) {
+            giftVoucherService.quote(giftCode, BigDecimal.ONE);
+            budget.giftCode = giftCode.trim().toUpperCase();
+        }
         List<Long> distinct = roomIds == null ? List.of() : roomIds.stream().distinct().toList();
         if (distinct.size() < MIN_GROUP_ROOMS || distinct.size() > MAX_GROUP_ROOMS) {
             throw BusinessException.of("group.error.count", MIN_GROUP_ROOMS, MAX_GROUP_ROOMS);
@@ -349,10 +395,62 @@ public class BookingService {
                 throw BusinessException.of("group.error.guests", room.getRoomNumber(), room.getRoomType().getMaxGuests());
             }
             bookings.add(placeOnline(customer, roomId, checkInDate, checkOutDate, checkInTime, checkOutTime, guests,
-                    null, null, guestName, guestPhone, guestEmail, 0, null, group, false));
+                    null, null, guestName, guestPhone, guestEmail, 0, null, group, member, budget));
+        }
+        if (budget.points > 0) {
+            // Con diem chua chia duoc -> vuot 50% tien cac phong: bao so toi da (giao dich rollback, khong tao don nao)
+            throw BusinessException.of("points.error.groupCap", LoyaltyService.MAX_REDEEM_PERCENT, pointsToUse - budget.points);
         }
         emailService.sendGroupBooking(group, bookings, false);
         return group;
+    }
+
+    // So diem toi da ca doan dung duoc: moi phong 50% tien phong do (dung cho trang xac nhan)
+    public static int groupMaxPoints(int balance, List<BigDecimal> roomTotals) {
+        GroupBudget probe = new GroupBudget();
+        probe.points = balance;
+        int used = 0;
+        for (BigDecimal total : roomTotals) {
+            used += probe.takePoints(total);
+        }
+        return used >= LoyaltyService.MIN_REDEEM_POINTS ? used : 0;
+    }
+
+    // Uu dai dung chung cua 1 doan, chia dan khi tao tung phong
+    static final class GroupBudget {
+        String discountCode;
+        boolean fixedCode;
+        int points;
+        String giftCode;
+        int roomsPlaced;
+
+        // Ma % ap moi phong; ma tru tien co dinh chi ap phong dau
+        String codeForNextRoom() {
+            if (discountCode == null || (fixedCode && roomsPlaced > 0)) {
+                return null;
+            }
+            return discountCode;
+        }
+
+        // Diem dung cho phong co tien con lai = total: toi da 50%, moi lan it nhat MIN_REDEEM_POINTS,
+        // khong de lai phan du nho hon muc toi thieu (khong chia tiep duoc)
+        int takePoints(BigDecimal total) {
+            if (points <= 0 || total == null) {
+                return 0;
+            }
+            int cap = total.multiply(BigDecimal.valueOf(LoyaltyService.MAX_REDEEM_PERCENT))
+                    .divide(BigDecimal.valueOf(100L * LoyaltyService.VND_PER_REDEEMED_POINT), 0, java.math.RoundingMode.DOWN).intValue();
+            int chunk = Math.min(points, cap);
+            int rest = points - chunk;
+            if (rest > 0 && rest < LoyaltyService.MIN_REDEEM_POINTS) {
+                chunk -= LoyaltyService.MIN_REDEEM_POINTS - rest;
+            }
+            if (chunk < LoyaltyService.MIN_REDEEM_POINTS) {
+                return 0;
+            }
+            points -= chunk;
+            return chunk;
+        }
     }
 
     public List<Booking> groupBookings(Long groupId) {
@@ -452,6 +550,15 @@ public class BookingService {
                                  LocalTime checkInTime, LocalTime checkOutTime, Integer guests,
                                  Long comboId, String discountCodeStr, String guestName, String guestPhone,
                                  String guestEmail) {
+        return buildBooking(customer, roomId, checkInDate, checkOutDate, checkInTime, checkOutTime, guests, comboId,
+                discountCodeStr, guestName, guestPhone, guestEmail, false);
+    }
+
+    // sameGroupCode = true: phong thu 2 tro di cua 1 doan dung chung 1 ma -> khong tinh la "da dung ma"
+    private Booking buildBooking(User customer, Long roomId, LocalDate checkInDate, LocalDate checkOutDate,
+                                 LocalTime checkInTime, LocalTime checkOutTime, Integer guests,
+                                 Long comboId, String discountCodeStr, String guestName, String guestPhone,
+                                 String guestEmail, boolean sameGroupCode) {
 
         if (guestName == null || guestName.isBlank()) {
             throw BusinessException.of("err.guestName");
@@ -521,7 +628,7 @@ public class BookingService {
                 throw BusinessException.of("err.discountCustomerType");
             }
 
-            if (bookingRepository.existsByCustomerIdAndDiscountCodeIdAndStatusNot(
+            if (!sameGroupCode && bookingRepository.existsByCustomerIdAndDiscountCodeIdAndStatusNot(
                     customer.getId(), discountCode.getId(), BookingStatus.CANCELLED)) {
                 throw BusinessException.of("err.discountUsed");
             }

@@ -66,6 +66,11 @@ public class LoyaltyService {
         return max >= MIN_REDEEM_POINTS ? max : 0;
     }
 
+    // So du moi nhat trong DB (doi tuong trong phien dang nhap co the da cu)
+    public int currentBalance(User user) {
+        return userRepository.findById(user.getId()).map(User::getPointsBalance).orElse(0);
+    }
+
     // Kiem tra so diem khach muon dung -> so tien duoc tru (chua tru diem, goi recordRedeem sau khi luu don)
     public BigDecimal redeemDiscount(User user, int points, BigDecimal amount) {
         if (points <= 0) {

@@ -33,6 +33,8 @@
                     <div th:text="${#numbers.formatDecimal(l.total, 1, 'POINT', 0, 'COMMA')} + ' VND'"></div>
                     <div class="small text-success" th:if="${l.promotionAmount.signum() > 0}"
                          th:text="'-' + ${#numbers.formatDecimal(l.promotionAmount, 1, 'POINT', 0, 'COMMA')} + ' VND'"></div>
+                    <div class="small text-success" th:if="${l.memberAmount.signum() > 0}"
+                         th:text="#{group.memberLine(${memberPercent})} + ': -' + ${#numbers.formatDecimal(l.memberAmount, 1, 'POINT', 0, 'COMMA')} + ' VND'"></div>
                 </td>
             </tr>
             <tr class="fw-bold">
@@ -41,6 +43,10 @@
             </tr>
             </tbody>
         </table>
+        <p class="mb-0 mt-2 small" th:if="${memberMaxPercent != null}">
+            <i class="bi bi-person-check me-1"></i><span th:text="#{member.loginHint(${memberMaxPercent})}"></span>
+            <a th:href="@{/login}" th:text="#{member.loginLink}">Đăng nhập</a>
+        </p>
     </div>
 
     <form th:action="@{/customer/bookings/group/new}" method="post" class="bg-white p-4 rounded shadow-sm">
@@ -69,6 +75,31 @@
                 <label class="form-label small" th:for="'g' + ${l.room.id}" th:text="#{common.room(${l.room.roomNumber})}"></label>
                 <input type="number" class="form-control form-control-sm" min="1" th:max="${l.room.roomType.maxGuests}"
                        th:id="'g' + ${l.room.id}" th:name="'guests_' + ${l.room.id}" th:value="${l.room.roomType.maxGuests}" required>
+            </div>
+        </div>
+        <h6 class="fw-bold" th:text="#{group.extras}">Ưu đãi cho cả đoàn</h6>
+        <div class="row g-3 mb-3">
+            <div class="col-md-6">
+                <label class="form-label small" for="discountCode" th:text="#{confirm.discount}">Mã giảm giá (nếu có)</label>
+                <input type="text" name="discountCode" id="discountCode" class="form-control form-control-sm text-uppercase" maxlength="50"
+                       th:value="${discountCode}" th:placeholder="#{confirm.discountPlaceholder}">
+                <div class="form-text" th:text="#{group.discountHint}"></div>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small" for="giftCode" th:text="#{gv.useLabel}">Thẻ quà tặng (nếu có)</label>
+                <input type="text" name="giftCode" id="giftCode" class="form-control form-control-sm text-uppercase" maxlength="20"
+                       th:value="${giftCode}" placeholder="QT-XXXX-XXXX">
+                <div class="form-text" th:text="#{group.giftHint}"></div>
+            </div>
+            <div class="col-md-6" th:if="${pointsBalance != null}">
+                <label class="form-label small" for="pointsToUse" th:text="#{points.use}">Dùng điểm thưởng</label>
+                <th:block th:if="${maxPoints > 0}">
+                    <input type="number" name="pointsToUse" id="pointsToUse" class="form-control form-control-sm" step="1" placeholder="0"
+                           th:min="${minRedeemPoints}" th:max="${maxPoints}" th:value="${pointsToUse}">
+                    <div class="form-text" th:text="#{group.pointsHint(${pointsBalance}, ${maxPoints})}"></div>
+                </th:block>
+                <div th:unless="${maxPoints > 0}" class="small text-muted"
+                     th:text="#{points.notEnough(${pointsBalance}, ${minRedeemPoints})}"></div>
             </div>
         </div>
         <p class="small text-muted" th:text="#{group.note}"></p>

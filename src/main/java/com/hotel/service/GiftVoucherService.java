@@ -115,6 +115,13 @@ public class GiftVoucherService {
         return v.getBalance().min(amount == null ? BigDecimal.ZERO : amount).max(BigDecimal.ZERO);
     }
 
+    // So du con dung duoc (0 neu ma sai / het han / het tien) - khong bao loi
+    @Transactional(readOnly = true)
+    public BigDecimal balanceOf(String code) {
+        return repository.findByCodeIgnoreCase(code == null ? "" : code.trim())
+                .filter(GiftVoucher::isUsable).map(GiftVoucher::getBalance).orElse(BigDecimal.ZERO);
+    }
+
     // Tru so du the cho don vua luu
     @Transactional
     public void apply(Booking booking) {

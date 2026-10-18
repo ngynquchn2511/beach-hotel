@@ -56,8 +56,8 @@ public class CustomerGroupBookingController {
         this.userMessages = userMessages;
     }
 
-    // 1 phong tren trang xac nhan: tien phong (da tru khuyen mai tu dong neu co)
-    public record Line(Room room, BigDecimal roomAmount, BigDecimal promotionAmount, BigDecimal total) {
+    // 1 phong tren trang xac nhan: tien phong (da tru khuyen mai tu dong va gia thanh vien neu co)
+    public record Line(Room room, BigDecimal roomAmount, BigDecimal promotionAmount, BigDecimal memberAmount, BigDecimal total) {
     }
 
     @GetMapping("/customer/bookings/group/new")
@@ -71,7 +71,7 @@ public class CustomerGroupBookingController {
                     BookingService.MIN_GROUP_ROOMS, BookingService.MAX_GROUP_ROOMS));
             return "redirect:/customer/rooms?checkIn=" + checkIn + "&checkOut=" + checkOut;
         }
-        fillModel(model, ids, checkIn, checkOut);
+        fillModel(model, ids, checkIn, checkOut, userDetails);
         if (userDetails != null) {
             model.addAttribute("guestName", userDetails.getUser().getFullName());
             model.addAttribute("guestPhone", userDetails.getUser().getPhoneNumber());
@@ -84,7 +84,9 @@ public class CustomerGroupBookingController {
     public String create(@RequestParam List<Long> roomIds, @RequestParam LocalDate checkIn, @RequestParam LocalDate checkOut,
                          @RequestParam(required = false) LocalTime checkInTime, @RequestParam(required = false) LocalTime checkOutTime,
                          @RequestParam(required = false) String guestName, @RequestParam(required = false) String guestPhone,
-                         @RequestParam(required = false) String guestEmail, @RequestParam Map<String, String> params,
+                         @RequestParam(required = false) String guestEmail,
+                         @RequestParam(required = false) String discountCode, @RequestParam(required = false) String giftCode,
+                         @RequestParam(required = false) Integer pointsToUse, @RequestParam Map<String, String> params,
                          @AuthenticationPrincipal CustomUserDetails userDetails, Model model) {
         Map<Long, Integer> guests = new HashMap<>();
         params.forEach((k, v) -> {
@@ -102,11 +104,15 @@ public class CustomerGroupBookingController {
             BookingGroup group = bookingService.createGroupBooking(customer, roomIds, checkIn, checkOut,
                     checkInTime != null ? checkInTime : StayTimePolicy.STANDARD_CHECK_IN,
                     checkOutTime != null ? checkOutTime : StayTimePolicy.STANDARD_CHECK_OUT,
-                    guests, guestName, guestPhone, guestEmail);
+                    guests, guestName, guestPhone, guestEmail, discountCode,
+                    userDetails != null && pointsToUse != null ? pointsToUse : 0, giftCode, userDetails != null);
             return "redirect:/customer/bookings/group/" + group.getId() + "?token=" + group.getAccessToken();
         } catch (BusinessException ex) {
             model.addAttribute("errorMessage", userMessages.of(ex));
-            fillModel(model, roomIds.stream().distinct().toList(), checkIn, checkOut);
+            fillModel(model, roomIds.stream().distinct().toList(), checkIn, checkOut, userDetails);
+            model.addAttribute("discountCode", discountCode);
+            model.addAttribute("giftCode", giftCode);
+            model.addAttribute("pointsToUse", pointsToUse);
             model.addAttribute("guestName", guestName);
             model.addAttribute("guestPhone", guestPhone);
             model.addAttribute("guestEmail", guestEmail);
@@ -159,16 +165,29 @@ public class CustomerGroupBookingController {
         return "redirect:/customer/bookings/group/" + id + (token != null ? "?token=" + token : "");
     }
 
-    private void fillModel(Model model, List<Long> ids, LocalDate checkIn, LocalDate checkOut) {
+    private void fillModel(Model model, List<Long> ids, LocalDate checkIn, LocalDate checkOut, CustomUserDetails userDetails) {
+        User member = userDetails != null ? customerManagementService.findById(userDetails.getUser().getId()) : null;
+        int memberPercent = member != null ? pricingService.memberDiscountPercent(member) : 0;
         Map<Long, Line> lines = new LinkedHashMap<>();
         for (Long id : ids) {
             Room room = roomService.findById(id);
             BigDecimal amount = pricingService.roomAmount(room.getPrice(), checkIn, checkOut);
             BigDecimal promo = promotionService.best(amount, checkIn, checkOut, LocalDate.now())
                     .map(PromotionService.Applied::amount).orElse(BigDecimal.ZERO);
-            lines.put(id, new Line(room, amount, promo, amount.subtract(promo)));
+            BigDecimal memberAmount = memberPercent > 0 ? PricingService.memberDiscountAmount(amount.subtract(promo), memberPercent)
+                    : BigDecimal.ZERO;
+            lines.put(id, new Line(room, amount, promo, memberAmount, amount.subtract(promo).subtract(memberAmount).max(BigDecimal.ZERO)));
         }
         List<Line> list = new ArrayList<>(lines.values());
+        if (member != null) {
+            model.addAttribute("memberPercent", memberPercent > 0 ? memberPercent : null);
+            model.addAttribute("pointsBalance", member.getPointsBalance());
+            model.addAttribute("maxPoints", BookingService.groupMaxPoints(member.getPointsBalance(), list.stream().map(Line::total).toList()));
+            model.addAttribute("minRedeemPoints", com.hotel.service.LoyaltyService.MIN_REDEEM_POINTS);
+        } else {
+            int max = pricingService.getSettings().getMaxMemberDiscount();
+            model.addAttribute("memberMaxPercent", max > 0 ? max : null);
+        }
         model.addAttribute("lines", list);
         model.addAttribute("roomIds", ids);
         model.addAttribute("checkIn", checkIn);
