@@ -131,6 +131,9 @@ public class SecurityConfig {
                                 "/admin/lost-found", "/admin/lost-found/**").hasAnyRole("ADMIN", "STAFF", "HOUSEKEEPER")
                         // Ke toan: hoa don cong ty (ghi so HDDT), xem doanh thu / so quy ca / the qua tang / hoa don don phong
                         .requestMatchers("/admin/company-invoices", "/admin/company-invoices/**").hasAnyRole("ADMIN", "STAFF", "ACCOUNTANT")
+                        // Bao cao cuoi ngay: le tan / ke toan xem, gui email ngay chi ADMIN
+                        .requestMatchers(HttpMethod.POST, "/admin/reports/daily/send").hasRole("ADMIN")
+                        .requestMatchers("/admin/reports/daily").hasAnyRole("ADMIN", "STAFF", "ACCOUNTANT")
                         // Bao cao ke toan: so quy thang, doi soat VNPay
                         .requestMatchers("/admin/accounting", "/admin/accounting/**").hasAnyRole("ADMIN", "ACCOUNTANT")
                         .requestMatchers(HttpMethod.GET, "/admin/dashboard", "/admin/dashboard/export", "/admin/forecast",

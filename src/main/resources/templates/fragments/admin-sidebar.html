@@ -21,6 +21,8 @@
            th:classappend="${p.startsWith('/admin/accounting/ledger')} ? 'active'"><i class="bi bi-journal-text"></i>Sổ quỹ tháng</a>
         <a th:href="@{/admin/accounting/vnpay}" class="list-group-item list-group-item-action"
            th:classappend="${p.startsWith('/admin/accounting/vnpay')} ? 'active'"><i class="bi bi-arrow-left-right"></i>Đối soát VNPay</a>
+        <a th:href="@{/admin/reports/daily}" class="list-group-item list-group-item-action"
+           th:classappend="${p.startsWith('/admin/reports/daily')} ? 'active'"><i class="bi bi-moon-stars"></i>Báo cáo cuối ngày</a>
         <a th:href="@{/admin/gift-vouchers}" class="list-group-item list-group-item-action"
            th:classappend="${p.startsWith('/admin/gift-vouchers')} ? 'active'"><i class="bi bi-gift"></i>Thẻ quà tặng</a>
         <a th:href="@{/admin/forecast}" class="list-group-item list-group-item-action"
@@ -75,6 +77,8 @@
     </a>
     <a th:href="@{/admin/shifts}" class="list-group-item list-group-item-action"
        th:classappend="${p.startsWith('/admin/shifts')} ? 'active'"><i class="bi bi-cash-coin"></i>Sổ quỹ ca</a>
+    <a th:href="@{/admin/reports/daily}" class="list-group-item list-group-item-action"
+       th:classappend="${p.startsWith('/admin/reports/daily')} ? 'active'"><i class="bi bi-moon-stars"></i>Báo cáo cuối ngày</a>
     <th:block sec:authorize="hasRole('ADMIN')">
     <a th:href="@{/admin/accounting/ledger}" class="list-group-item list-group-item-action"
        th:classappend="${p.startsWith('/admin/accounting/ledger')} ? 'active'"><i class="bi bi-journal-text"></i>Sổ quỹ tháng</a>

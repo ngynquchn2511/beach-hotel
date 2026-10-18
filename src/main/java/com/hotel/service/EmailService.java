@@ -429,6 +429,28 @@ public class EmailService {
         return senderEmail != null && !senderEmail.isBlank() && senderPassword != null && !senderPassword.isBlank();
     }
 
+    // Bao cao cuoi ngay cho quan ly (van ban thuong)
+    public boolean sendDailyReport(List<String> to, String subject, String text) {
+        if (!isConfigured() || to == null || to.isEmpty()) {
+            log.warn("Chua cau hinh mail hoac chua co nguoi nhan - khong gui bao cao cuoi ngay");
+            return false;
+        }
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom("Sóng Xanh Resort <" + senderEmail + ">");
+        message.setTo(to.toArray(String[]::new));
+        message.setSubject(subject);
+        message.setText(text);
+        deliverAfterCommit(() -> {
+            try {
+                mailSender.send(message);
+                log.info("Da gui bao cao cuoi ngay toi {}", to);
+            } catch (Exception ex) {
+                log.error("Gui bao cao cuoi ngay that bai", ex);
+            }
+        });
+        return true;
+    }
+
     // Ma xac thuc 2 buoc khi dang nhap cong quan tri
     public boolean sendAdminOtp(String to, String fullName, String code, long validMinutes) {
         if (!isConfigured() || to == null || to.isBlank()) {

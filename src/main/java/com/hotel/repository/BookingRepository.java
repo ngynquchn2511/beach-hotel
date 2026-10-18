@@ -27,6 +27,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     long countByCustomerIdAndNoShowTrue(Long customerId);
 
+    List<Booking> findByCancelledAtBetween(java.time.LocalDateTime from, java.time.LocalDateTime to);
+
     // So lan luu tru hoan tat cua khach (khach than thiet)
     long countByCustomerIdAndStatus(Long customerId, BookingStatus status);
 
