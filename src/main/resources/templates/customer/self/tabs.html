@@ -1,0 +1,12 @@
+<!-- Thanh chuyen trang trong khu "Tai khoan": tai khoan / diem thuong / hoa don / the qua tang -->
+<ul th:fragment="tabs(active)" class="nav nav-pills flex-wrap gap-2 mb-4" xmlns:th="http://www.thymeleaf.org">
+    <li class="nav-item"><a class="nav-link" th:classappend="${active == 'account'} ? 'active'" th:href="@{/customer/account}"
+                            th:text="#{account.title}">Tài khoản của tôi</a></li>
+    <li class="nav-item"><a class="nav-link" th:classappend="${active == 'points'} ? 'active'" th:href="@{/customer/account/points}">
+        <i class="bi bi-coin me-1"></i><span th:text="#{self.points.title}">Điểm thưởng</span></a></li>
+    <li class="nav-item"><a class="nav-link" th:classappend="${active == 'invoices'} ? 'active'" th:href="@{/customer/account/invoices}">
+        <i class="bi bi-receipt me-1"></i><span th:text="#{self.invoices.title}">Hóa đơn</span></a></li>
+    <li class="nav-item"><a class="nav-link" th:classappend="${active == 'gift'} ? 'active'" th:href="@{/customer/account/gift-vouchers}">
+        <i class="bi bi-gift me-1"></i><span th:text="#{self.gv.title}">Thẻ quà tặng</span></a></li>
+    <li class="nav-item"><a class="nav-link" th:href="@{/customer/bookings}" th:text="#{nav.history}">Lịch sử đặt phòng</a></li>
+</ul>

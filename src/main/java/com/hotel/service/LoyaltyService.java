@@ -125,6 +125,10 @@ public class LoyaltyService {
     }
 
     @Transactional(readOnly = true)
+    public List<PointTransaction> fullHistory(Long userId) {
+        return transactionRepository.findRecent(userId, org.springframework.data.domain.Pageable.unpaged());
+    }
+
     public List<PointTransaction> history(Long userId, int limit) {
         return transactionRepository.findRecent(userId, PageRequest.of(0, limit));
     }

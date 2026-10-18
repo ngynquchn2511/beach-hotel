@@ -66,6 +66,35 @@ public class GiftVoucherService {
         return v;
     }
 
+    // ===== Trang "The qua tang cua toi" =====
+
+    public static final java.time.Duration RESEND_COOLDOWN = java.time.Duration.ofMinutes(10);
+    private final java.util.Map<Long, LocalDateTime> lastResent = new java.util.concurrent.ConcurrentHashMap<>();
+
+    public List<GiftVoucher> forEmail(String email) {
+        return email == null || email.isBlank() ? List.of() : repository.findForEmail(email.trim());
+    }
+
+    // Nguoi mua gui lai email ma the cho nguoi nhan (nguoi nhan bao chua thay thu). Toi da 1 lan / 10 phut / the
+    @Transactional(readOnly = true)
+    public void resendToRecipient(Long id, String purchaserEmail) {
+        GiftVoucher v = repository.findById(id).orElseThrow(() -> BusinessException.of("gv.error.invalid"));
+        if (purchaserEmail == null || !purchaserEmail.equalsIgnoreCase(v.getPurchaserEmail())) {
+            throw BusinessException.of("gv.error.invalid");
+        }
+        if (v.getStatus() != GiftVoucher.Status.ACTIVE) {
+            throw BusinessException.of("self.gv.notActive");
+        }
+        LocalDateTime last = lastResent.get(id);
+        if (last != null && last.plus(RESEND_COOLDOWN).isAfter(LocalDateTime.now())) {
+            throw BusinessException.of("self.gv.tooSoon", RESEND_COOLDOWN.toMinutes());
+        }
+        if (!emailService.sendGiftVoucher(v)) {
+            throw BusinessException.of("self.gv.mailFailed");
+        }
+        lastResent.put(id, LocalDateTime.now());
+    }
+
     public List<GiftVoucher> all() {
         return repository.findAllByOrderByCreatedAtDesc();
     }

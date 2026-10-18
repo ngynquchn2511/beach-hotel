@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="vi" th:lang="${#locale.language}" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{self.points.title}">Điểm thưởng của tôi</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+</head>
+<body class="eaut" th:style="'--page-bg: url(' + @{/page-images/lichsudatphong.jpg} + ')'">
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="container py-5 flex-grow-1" style="max-width: 900px;">
+    <div class="eaut-head">
+        <div class="eyebrow" th:text="#{history.eyebrow}">Tài khoản của bạn</div>
+        <h1 th:text="#{self.points.title}">Điểm thưởng của tôi</h1>
+        <div class="divider"></div>
+    </div>
+    <div th:replace="~{customer/self/tabs :: tabs('points')}"></div>
+
+    <div class="bg-white rounded shadow-sm p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-baseline flex-wrap gap-2">
+            <div class="text-muted" th:text="#{self.points.balance}">Số dư hiện tại</div>
+            <div class="fs-3 fw-bold text-primary" th:text="${account.pointsBalance}">0</div>
+        </div>
+        <div class="small text-muted" th:text="#{points.rule(${earnMultiplier})}"></div>
+        <div class="small text-success mt-2" th:if="${expectedPoints > 0}"
+             th:text="#{self.points.upcoming(${expectedPoints}, ${upcomingStays})}"></div>
+    </div>
+
+    <div th:if="${#lists.isEmpty(transactions)}" class="alert alert-info" th:text="#{self.points.empty}">Chưa có giao dịch điểm nào.</div>
+    <div class="bg-white rounded shadow-sm p-2 p-md-3 table-responsive" th:unless="${#lists.isEmpty(transactions)}">
+        <table class="table align-middle mb-0">
+            <thead><tr>
+                <th th:text="#{self.points.col.date}">Ngày</th>
+                <th th:text="#{self.points.col.type}">Loại</th>
+                <th th:text="#{self.points.col.booking}">Đơn</th>
+                <th class="text-end" th:text="#{self.points.col.points}">Điểm</th>
+                <th class="text-end" th:text="#{self.points.col.balance}">Số dư sau</th>
+            </tr></thead>
+            <tbody>
+            <tr th:each="t : ${transactions}">
+                <td class="text-nowrap" th:text="${#temporals.format(t.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
+                <td th:text="#{'points.type.' + ${t.type}}">Tích điểm</td>
+                <td><a th:if="${t.booking != null}" th:href="@{/customer/bookings/{id}(id=${t.booking.id})}" th:text="'#' + ${t.booking.id}"></a></td>
+                <td class="text-end fw-semibold" th:classappend="${t.points > 0} ? 'text-success' : 'text-danger'"
+                    th:text="${t.points > 0 ? '+' + t.points : t.points}"></td>
+                <td class="text-end" th:text="${t.balanceAfter}"></td>
+            </tr>
+            </tbody>
+        </table>
+        <div th:replace="~{fragments/pagination :: pager(${pager})}"></div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

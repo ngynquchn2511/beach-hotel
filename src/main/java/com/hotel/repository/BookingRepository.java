@@ -13,6 +13,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     List<Booking> findByCustomerIdOrderByCreatedAtDesc(Long customerId);
 
+    // Cac don da tru tien bang 1 the qua tang
+    List<Booking> findByGiftVoucherCodeIgnoreCaseOrderByCreatedAtDesc(String giftVoucherCode);
+
     List<Booking> findByStatusOrderByCreatedAtDesc(BookingStatus status);
 
     // Don da nhan coc trong khoang thoi gian - cong vao thong ke tien thu (coc luon nhan bang chuyen khoan)

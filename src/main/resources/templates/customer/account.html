@@ -33,6 +33,7 @@
         <h1 th:utext="#{account.heading}">Tài khoản <span class="gradient-text">của tôi</span></h1>
         <div class="divider"></div>
     </div>
+    <div th:replace="~{customer/self/tabs :: tabs('account')}"></div>
 
     <div class="row g-4">
         <!-- The thanh vien -->
@@ -78,6 +79,7 @@
                                   th:text="${t.points > 0 ? '+' + t.points : t.points}"></span>
                         </li>
                     </ul>
+                    <a th:href="@{/customer/account/points}" class="small d-inline-block mt-2" th:text="#{self.points.seeAll}">Xem toàn bộ lịch sử điểm</a>
                 </div>
                 <div class="info-row"><i class="bi bi-suitcase2"></i><div><div class="small text-muted" th:text="#{account.bookingCount}">Số đơn đã đặt</div><div class="fw-semibold" th:text="${bookingCount}"></div></div></div>
                 <a th:href="@{/customer/bookings}" class="btn btn-outline-primary w-100 mt-3"><i class="bi bi-clock-history me-1"></i><span th:text="#{nav.history}">Lịch sử đặt phòng</span></a>
