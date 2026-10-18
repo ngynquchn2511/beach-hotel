@@ -135,6 +135,69 @@ public class FacilityReservationService {
         return saved;
     }
 
+    // ===== Danh gia sau khi dung dich vu =====
+
+    public static final int FEEDBACK_MAX = 500;
+
+    @Transactional
+    public FacilityReservation rate(Booking booking, Long id, Integer rating, String feedback) {
+        FacilityReservation r = find(id);
+        if (!r.getBooking().getId().equals(booking.getId())) {
+            throw BusinessException.of("err.svc.notFound");
+        }
+        if (r.isRated()) {
+            throw BusinessException.of("fac.rate.already");
+        }
+        if (!r.isRateable(LocalDateTime.now())) {
+            throw BusinessException.of("fac.rate.notYet");
+        }
+        if (rating == null || rating < 1 || rating > 5) {
+            throw BusinessException.of("fac.rate.stars");
+        }
+        String text = feedback == null || feedback.isBlank() ? null : feedback.trim();
+        if (text != null && text.length() > FEEDBACK_MAX) {
+            throw BusinessException.of("fac.rate.tooLong", FEEDBACK_MAX);
+        }
+        r.setRating(rating);
+        r.setFeedback(text);
+        r.setRatedAt(LocalDateTime.now());
+        FacilityReservation saved = repository.save(r);
+        if (rating <= 2) {
+            notifyStaff("facility-rating", com.hotel.service.StaffNotificationService.Level.WARNING,
+                    "Khách chấm " + rating + " sao " + (r.isSpa() ? "spa" : "nhà hàng") + " · phòng " + booking.getRoom().getRoomNumber(),
+                    text != null ? (text.length() > 80 ? text.substring(0, 80) + "…" : text) : r.getSummary(), "/admin/facility-reservations");
+        }
+        return saved;
+    }
+
+    // Diem trung binh (lam tron 1 so le) + so luot theo goi spa
+    public record RatingStat(double average, long count) {
+    }
+
+    public java.util.Map<Long, RatingStat> spaRatings() {
+        java.util.Map<Long, RatingStat> map = new java.util.HashMap<>();
+        for (Object[] row : repository.spaRatingStats()) {
+            map.put((Long) row[0], new RatingStat(round(((Number) row[1]).doubleValue()), ((Number) row[2]).longValue()));
+        }
+        return map;
+    }
+
+    public RatingStat restaurantRating() {
+        List<Object[]> rows = repository.restaurantRatingStats();
+        if (rows.isEmpty() || rows.get(0)[0] == null) {
+            return new RatingStat(0, 0);
+        }
+        return new RatingStat(round(((Number) rows.get(0)[0]).doubleValue()), ((Number) rows.get(0)[1]).longValue());
+    }
+
+    public List<FacilityReservation> recentRatings(int limit) {
+        return repository.findRated(org.springframework.data.domain.PageRequest.of(0, limit));
+    }
+
+    private static double round(double v) {
+        return Math.round(v * 10) / 10.0;
+    }
+
     // Con giuong trong suot [time, time + minutes)? So luot dang lam chi tang tai gio bat dau cua 1 luot,
     // nen chi can dem tai gio bat dau moi va gio bat dau cua cac luot da dat roi vao khoang do
     boolean spaBedFree(LocalDate date, LocalTime time, int minutes) {

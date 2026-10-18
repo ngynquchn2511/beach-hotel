@@ -61,7 +61,12 @@
                         <div class="col-md-1"><button type="submit" class="btn btn-sm btn-outline-primary w-100" title="Lưu"><i class="bi bi-check-lg"></i></button></div>
                     </form>
                     <div class="d-flex justify-content-between align-items-center mt-2">
-                        <span class="badge" th:classappend="${sp.open} ? 'bg-success' : 'bg-secondary'" th:text="${sp.open} ? 'Đang bán' : 'Tạm ngừng'"></span>
+                        <span>
+                            <span class="badge" th:classappend="${sp.open} ? 'bg-success' : 'bg-secondary'" th:text="${sp.open} ? 'Đang bán' : 'Tạm ngừng'"></span>
+                            <span class="small ms-2" th:if="${ratings[sp.id] != null}"
+                                  th:text="'★ ' + ${ratings[sp.id].average} + ' / 5 · ' + ${ratings[sp.id].count} + ' đánh giá'"></span>
+                            <span class="small text-muted ms-2" th:if="${ratings[sp.id] == null}">Chưa có đánh giá</span>
+                        </span>
                         <form method="post" th:action="@{/admin/spa-packages/{id}/toggle(id=${sp.id})}">
                             <button type="submit" class="btn btn-sm btn-outline-secondary" th:text="${sp.open} ? 'Tạm ngừng' : 'Bán lại'"></button>
                         </form>

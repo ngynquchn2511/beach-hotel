@@ -40,6 +40,12 @@ public class AdminFacilityController {
         model.addAttribute("statuses", ServiceStatus.values());
         model.addAttribute("pager", pager);
         model.addAttribute("reservations", pager.items());
+        model.addAttribute("restaurantRating", facilityService.restaurantRating());
+        var spaRatings = facilityService.spaRatings();
+        long spaCount = spaRatings.values().stream().mapToLong(FacilityReservationService.RatingStat::count).sum();
+        double spaAvg = spaCount == 0 ? 0 : spaRatings.values().stream().mapToDouble(s -> s.average() * s.count()).sum() / spaCount;
+        model.addAttribute("spaRating", new FacilityReservationService.RatingStat(Math.round(spaAvg * 10) / 10.0, spaCount));
+        model.addAttribute("recentRatings", facilityService.recentRatings(5));
         return "admin/facility-reservations/list";
     }
 

@@ -29,4 +29,18 @@ public interface FacilityReservationRepository extends JpaRepository<FacilityRes
     List<FacilityReservation> findForStaff(@Param("from") LocalDate from, @Param("status") ServiceStatus status);
 
     long countByStatus(ServiceStatus status);
+
+    // Diem trung binh + so luot danh gia theo goi spa: [spaPackageId, avg, count]
+    @Query("select r.spaPackage.id, avg(r.rating), count(r) from FacilityReservation r where r.rating is not null "
+            + "and r.kind = com.hotel.entity.FacilityReservation.Kind.SPA group by r.spaPackage.id")
+    List<Object[]> spaRatingStats();
+
+    // [avg, count] cua nha hang
+    @Query("select avg(r.rating), count(r) from FacilityReservation r where r.rating is not null "
+            + "and r.kind = com.hotel.entity.FacilityReservation.Kind.RESTAURANT")
+    List<Object[]> restaurantRatingStats();
+
+    @Query("select r from FacilityReservation r join fetch r.booking b join fetch b.room left join fetch r.spaPackage "
+            + "where r.rating is not null order by r.ratedAt desc")
+    List<FacilityReservation> findRated(org.springframework.data.domain.Pageable pageable);
 }

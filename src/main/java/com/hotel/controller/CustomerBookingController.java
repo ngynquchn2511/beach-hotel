@@ -303,6 +303,8 @@ public class CustomerBookingController {
         model.addAttribute("canRoomService", roomServiceService.canOrder(booking));
         model.addAttribute("facilityReservations", facilityService.ofBooking(id));
         model.addAttribute("canFacility", facilityService.canReserve(booking));
+        model.addAttribute("now", java.time.LocalDateTime.now());
+        model.addAttribute("spaRatings", facilityService.spaRatings());
         model.addAttribute("spaPackages", spaPackageService != null ? spaPackageService.active() : java.util.List.of());
         model.addAttribute("spaSlots", com.hotel.service.FacilityReservationService.SPA_SLOTS);
         model.addAttribute("restaurantSlots", com.hotel.service.FacilityReservationService.RESTAURANT_SLOTS);
@@ -508,6 +510,21 @@ public class CustomerBookingController {
         try {
             facilityService.reserve(booking, kind, spaPackageId, date, time, people, note);
             redirectAttributes.addFlashAttribute("facilitySuccess", userMessages.get("fac.reserved"));
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("facilityError", userMessages.of(ex));
+        }
+        return backTo(id, token, "#spa-nha-hang");
+    }
+
+    // Danh gia spa / nha hang sau khi dung
+    @PostMapping("/{id}/facility/{reservationId}/rate")
+    public String rateFacility(@PathVariable Long id, @PathVariable Long reservationId, @RequestParam(required = false) String token,
+                               @RequestParam(required = false) Integer rating, @RequestParam(required = false) String feedback,
+                               @AuthenticationPrincipal CustomUserDetails userDetails, RedirectAttributes redirectAttributes) {
+        Booking booking = bookingService.findForViewing(id, token, userDetails != null ? userDetails.getUser().getId() : null);
+        try {
+            facilityService.rate(booking, reservationId, rating, feedback);
+            redirectAttributes.addFlashAttribute("facilitySuccess", userMessages.get("fac.rate.thanks"));
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("facilityError", userMessages.of(ex));
         }

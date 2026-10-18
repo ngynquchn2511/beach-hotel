@@ -200,7 +200,8 @@ public class SecurityConfig {
                         // Thong tin xuat hoa don cong ty tren trang don (kiem tra chu don / ma truy cap)
                         .requestMatchers(HttpMethod.POST, "/customer/bookings/*/company-invoice").permitAll()
                         // Dat / huy lich spa, ban nha hang tren trang don (kiem tra chu don / ma truy cap)
-                        .requestMatchers(HttpMethod.POST, "/customer/bookings/*/facility", "/customer/bookings/*/facility/*/cancel").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/customer/bookings/*/facility", "/customer/bookings/*/facility/*/cancel",
+                                "/customer/bookings/*/facility/*/rate").permitAll()
                         // Dat nhieu phong 1 lan (khach vang lai dung ?token= cua nhom)
                         .requestMatchers("/customer/bookings/group/new", "/customer/bookings/group/*",
                                 "/customer/bookings/group/*/cancel").permitAll()

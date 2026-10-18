@@ -19,14 +19,17 @@ import java.math.BigDecimal;
 public class AdminSpaPackageController {
 
     private final SpaPackageService spaPackageService;
+    private final com.hotel.service.FacilityReservationService facilityService;
 
-    public AdminSpaPackageController(SpaPackageService spaPackageService) {
+    public AdminSpaPackageController(SpaPackageService spaPackageService, com.hotel.service.FacilityReservationService facilityService) {
         this.spaPackageService = spaPackageService;
+        this.facilityService = facilityService;
     }
 
     @GetMapping
     public String page(Model model) {
         model.addAttribute("packages", spaPackageService.all());
+        model.addAttribute("ratings", facilityService.spaRatings());
         model.addAttribute("minMinutes", SpaPackageService.MIN_MINUTES);
         model.addAttribute("maxMinutes", SpaPackageService.MAX_MINUTES);
         return "admin/spa-packages/index";

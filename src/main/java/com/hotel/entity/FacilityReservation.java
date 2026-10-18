@@ -70,6 +70,15 @@ public class FacilityReservation {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    // Danh gia cua khach sau khi dung dich vu (1-5 sao, 1 lan)
+    private Integer rating;
+
+    @Column(length = 500)
+    private String feedback;
+
+    @Column(name = "rated_at")
+    private LocalDateTime ratedAt;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -85,6 +94,20 @@ public class FacilityReservation {
     // Spa: chiem giuong den het thoi luong goi
     public LocalDateTime getEndAt() {
         return getStartAt().plusMinutes(isSpa() && spaPackage != null ? spaPackage.getMinutes() : 0);
+    }
+
+    // Danh gia duoc: lich da xac nhan, chua danh gia, buoi hen da xong (nha hang: sau 1 tieng),
+    // va chua qua RATE_DAYS ngay sau ngay tra phong
+    public static final int RATE_DAYS = 7;
+
+    public boolean isRateable(LocalDateTime now) {
+        LocalDateTime done = isSpa() ? getEndAt() : getStartAt().plusHours(1);
+        return status == ServiceStatus.CONFIRMED && rating == null && !now.isBefore(done)
+                && !now.toLocalDate().isAfter(booking.getCheckOutDate().plusDays(RATE_DAYS));
+    }
+
+    public boolean isRated() {
+        return rating != null;
     }
 
     public boolean isSpa() {

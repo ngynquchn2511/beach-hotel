@@ -24,6 +24,26 @@
             <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
             <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
 
+            <div class="row g-3 mb-3">
+                <div class="col-sm-6"><div class="bg-white p-3 rounded shadow-sm h-100">
+                    <div class="small text-muted">Spa - điểm khách chấm</div>
+                    <div class="fw-bold" th:text="${spaRating.count > 0} ? '★ ' + ${spaRating.average} + ' / 5 (' + ${spaRating.count} + ' đánh giá)' : 'Chưa có đánh giá'"></div>
+                </div></div>
+                <div class="col-sm-6"><div class="bg-white p-3 rounded shadow-sm h-100">
+                    <div class="small text-muted">Nhà hàng - điểm khách chấm</div>
+                    <div class="fw-bold" th:text="${restaurantRating.count > 0} ? '★ ' + ${restaurantRating.average} + ' / 5 (' + ${restaurantRating.count} + ' đánh giá)' : 'Chưa có đánh giá'"></div>
+                </div></div>
+            </div>
+            <div class="bg-white p-3 rounded shadow-sm mb-3" th:unless="${#lists.isEmpty(recentRatings)}">
+                <div class="small fw-semibold mb-2">Đánh giá gần đây</div>
+                <div th:each="r : ${recentRatings}" class="small border-top py-1">
+                    <span class="text-warning" th:text="${#strings.repeat('★', r.rating)} + ${#strings.repeat('☆', 5 - r.rating)}"></span>
+                    <span th:text="${r.summary}"></span>
+                    <span class="text-muted" th:text="'· phòng ' + ${r.booking.room.roomNumber} + ' · ' + ${#temporals.format(r.ratedAt, 'dd/MM HH:mm')}"></span>
+                    <div th:if="${r.feedback != null}" class="fst-italic" th:text="'“' + ${r.feedback} + '”'"></div>
+                </div>
+            </div>
+
             <form method="get" class="d-flex gap-2 align-items-end mb-3 flex-wrap">
                 <div><label class="form-label small">Từ ngày</label><input type="date" name="from" class="form-control form-control-sm" th:value="${from}"></div>
                 <div><label class="form-label small">Trạng thái</label>
@@ -42,7 +62,9 @@
                             <td class="text-nowrap" th:text="${#temporals.format(r.reservedDate, 'dd/MM')} + ' ' + ${r.reservedTime}"></td>
                             <td><div th:text="${r.summary}"></div>
                                 <div class="small text-muted" th:if="${r.totalPrice != null}" th:text="${#numbers.formatDecimal(r.totalPrice, 1, 'POINT', 0, 'COMMA')} + ' VND'"></div>
-                                <div class="small text-muted" th:if="${r.note != null}" th:text="${r.note}"></div></td>
+                                <div class="small text-muted" th:if="${r.note != null}" th:text="${r.note}"></div>
+                                <div class="small" th:if="${r.rated}"><span class="text-warning" th:text="${#strings.repeat('★', r.rating)} + ${#strings.repeat('☆', 5 - r.rating)}"></span>
+                                    <span class="fst-italic" th:if="${r.feedback != null}" th:text="${r.feedback}"></span></div></td>
                             <td><a th:href="@{/admin/bookings/{id}(id=${r.booking.id})}" th:text="'#' + ${r.booking.id} + ' ' + ${r.booking.guestName}"></a>
                                 <div class="small text-muted" th:text="'Phòng ' + ${r.booking.room.roomNumber}"></div></td>
                             <td><span class="badge" th:classappend="${r.status.name() == 'CONFIRMED'} ? 'bg-success' : (${r.status.name() == 'PENDING'} ? 'bg-warning text-dark' : 'bg-secondary')"

@@ -153,9 +153,27 @@
                     <span class="text-muted" th:text="' · ' + ${#temporals.format(r.reservedDate, 'dd/MM')} + ' ' + ${r.reservedTime}"></span>
                     <span class="text-muted" th:if="${r.totalPrice != null}" th:text="' · ' + ${#numbers.formatDecimal(r.totalPrice, 1, 'POINT', 0, 'COMMA')} + ' VND'"></span>
                 </span>
-                <form th:if="${r.status.name() != 'CANCELLED'}" method="post" th:action="@{/customer/bookings/{id}/facility/{rid}/cancel(id=${booking.id}, rid=${r.id})}">
+                <form th:if="${r.status.name() != 'CANCELLED' and !r.rated and r.startAt.isAfter(now)}" method="post" th:action="@{/customer/bookings/{id}/facility/{rid}/cancel(id=${booking.id}, rid=${r.id})}">
                     <input type="hidden" name="token" th:if="${accessToken != null}" th:value="${accessToken}">
                     <button type="submit" class="btn btn-sm btn-outline-secondary" th:text="#{fac.cancel}">Hủy</button>
+                </form>
+                <span th:if="${r.rated}" class="text-warning text-nowrap" th:title="${r.feedback}"
+                      th:text="${#strings.repeat('★', r.rating)} + ${#strings.repeat('☆', 5 - r.rating)}"></span>
+            </li>
+            <li th:each="r : ${facilityReservations}" th:if="${r.isRateable(now)}" class="list-group-item bg-light">
+                <form method="post" th:action="@{/customer/bookings/{id}/facility/{rid}/rate(id=${booking.id}, rid=${r.id})}" class="row g-2 align-items-end">
+                    <input type="hidden" name="token" th:if="${accessToken != null}" th:value="${accessToken}">
+                    <div class="col-12 small fw-semibold"
+                         th:text="#{fac.rate.ask(${r.spa} ? ${r.spaPackage.localizedName} : #{fac.restaurant})}">Bạn thấy dịch vụ thế nào?</div>
+                    <div class="col-sm-3">
+                        <select name="rating" class="form-select form-select-sm" required th:attr="aria-label=#{fac.rate.starsLabel}">
+                            <option value="5">★★★★★</option><option value="4">★★★★☆</option><option value="3">★★★☆☆</option>
+                            <option value="2">★★☆☆☆</option><option value="1">★☆☆☆☆</option>
+                        </select>
+                    </div>
+                    <div class="col-sm-7"><input type="text" name="feedback" class="form-control form-control-sm" maxlength="500"
+                                                 th:placeholder="#{fac.rate.placeholder}"></div>
+                    <div class="col-sm-2"><button type="submit" class="btn btn-sm btn-primary w-100" th:text="#{fac.rate.submit}">Gửi</button></div>
                 </form>
             </li>
         </ul>
@@ -167,7 +185,8 @@
                 <h6 class="fw-bold" th:text="#{fac.spa}">Spa</h6>
                 <select name="spaPackageId" class="form-select form-select-sm mb-2" required>
                     <option th:each="t : ${spaPackages}" th:value="${t.id}"
-                            th:text="${t.localizedName} + ' - ' + ${t.minutes} + #{fac.minutes} + ' - ' + ${#numbers.formatDecimal(t.price, 1, 'POINT', 0, 'COMMA')} + ' VND'"></option>
+                            th:text="${t.localizedName} + ' - ' + ${t.minutes} + #{fac.minutes} + ' - ' + ${#numbers.formatDecimal(t.price, 1, 'POINT', 0, 'COMMA')} + ' VND'
+                                     + (${spaRatings[t.id] != null} ? ' - ★' + ${spaRatings[t.id].average} + ' (' + ${spaRatings[t.id].count} + ')' : '')"></option>
                 </select>
                 <div class="d-flex gap-2 mb-2">
                     <input type="date" name="date" class="form-control form-control-sm" required th:min="${booking.checkInDate}" th:max="${booking.checkOutDate}">
