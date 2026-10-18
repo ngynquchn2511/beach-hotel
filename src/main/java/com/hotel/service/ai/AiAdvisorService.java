@@ -26,9 +26,23 @@ import java.util.Optional;
 public class AiAdvisorService {
 
     public static final int QUESTION_MAX = 1000;
-    // Gia tham khao claude-opus-5-5 (USD / 1 trieu token) - chi de hien uoc tinh chi phi
-    static final double INPUT_USD_PER_MTOK = 4.0;
-    static final double OUTPUT_USD_PER_MTOK = 20.0;
+    // Gia tham khao (USD / 1 trieu token vao, ra) theo model - chi de hien uoc tinh chi phi.
+    // Haiku 5.5: gia nay ap cho prompt <= 100K token (so lieu 1 thang chi vai nghin token)
+    static double[] pricePerMTok(String model) {
+        if (model == null) {
+            return new double[]{4.0, 20.0};
+        }
+        if (model.startsWith("claude-haiku-5-5")) {
+            return new double[]{0.10, 0.50};
+        }
+        if (model.startsWith("claude-sonnet-5")) {
+            return new double[]{2.0, 10.0};
+        }
+        if (model.startsWith("claude-fable")) {
+            return new double[]{10.0, 50.0};
+        }
+        return new double[]{4.0, 20.0};
+    }
 
     static final String ANALYST_PROMPT = """
             Bạn là chuyên gia phân tích tài chính và vận hành cho một resort nghỉ dưỡng nhỏ ở Hạ Long, Việt Nam.
@@ -136,7 +150,8 @@ public class AiAdvisorService {
     public static double costUsd(AiReport r) {
         long in = r.getInputTokens() == null ? 0 : r.getInputTokens();
         long out = r.getOutputTokens() == null ? 0 : r.getOutputTokens();
-        return Math.round((in * INPUT_USD_PER_MTOK + out * OUTPUT_USD_PER_MTOK) / 1_000_000 * 1000) / 1000.0;
+        double[] price = pricePerMTok(r.getModel());
+        return Math.round((in * price[0] + out * price[1]) / 1_000_000 * 10000) / 10000.0;
     }
 
     // ===== So lieu gui AI (gon, chi so tong hop - khong co thong tin ca nhan cua khach) =====

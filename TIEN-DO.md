@@ -41,7 +41,7 @@
 | `e509dee` | Dự báo doanh thu phòng 3 tháng `/admin/accounting/revenue-forecast` (`RevenueForecastService`, pickup: trên sổ + lượng đặt thêm cùng kỳ × tốc độ bán, giới hạn ×0,5-×2), độ tin cậy, so với kế hoạch; gửi kèm cho AI khi phân tích tháng hiện tại |
 | `059d3be` | Báo cáo quản trị tháng gửi email 8h ngày 1 (`MonthlyReportScheduler`, tắt bằng `MONTHLY_REPORT_ENABLED=false`) cho cùng người nhận báo cáo cuối ngày; nút gửi ngay trên trang Phân tích |
 | `3279122` | Kế hoạch năm `/admin/accounting/budget` (doanh thu, trần chi phí, công suất, ADR theo tháng); trang lãi lỗ hiện % đạt; nhận định "thiếu X VND ≈ N phòng-đêm"; gửi kèm cho AI |
-| `1a1a14d` | Phân tích quản trị `/admin/accounting/insights`: nhận định tự động theo quy tắc (`InsightService`, ngưỡng là hằng số đầu file) + trợ lý AI (`service/ai/`): `ClaudeAiGateway` gọi Claude qua Java SDK `com.anthropic:anthropic-java:2.34.0`, model `claude-opus-5-5`, structured output `AiAnalysis` (tóm tắt, điểm sáng, rủi ro, khuyến nghị, dự báo); hỏi đáp số liệu; lưu `ai_reports` kèm token và chi phí ước tính. Số liệu gửi AI chỉ là số tổng hợp, không có tên / email / SĐT khách |
+| `1a1a14d` | Phân tích quản trị `/admin/accounting/insights`: nhận định tự động theo quy tắc (`InsightService`, ngưỡng là hằng số đầu file) + trợ lý AI (`service/ai/`): `ClaudeAiGateway` gọi Claude qua Java SDK `com.anthropic:anthropic-java:2.34.0`, model mặc định `claude-haiku-5-5` (rẻ nhất, chủ dự án chọn; đổi bằng `AI_MODEL`), structured output `AiAnalysis` (tóm tắt, điểm sáng, rủi ro, khuyến nghị, dự báo); hỏi đáp số liệu; lưu `ai_reports` kèm token và chi phí ước tính. Số liệu gửi AI chỉ là số tổng hợp, không có tên / email / SĐT khách |
 | `c8fcb85` | Chi phí vận hành `/admin/accounting/expenses` (1 lần / hàng tháng, dừng từ tháng nào), giá vốn dịch vụ %, phí cổng thanh toán %, chi phí mỗi phòng-đêm; lãi lỗ `/admin/accounting/pnl` (dồn tích: phòng theo đêm, dịch vụ theo ngày phát sinh, cọc giữ lại theo ngày hủy; không tính tiền bán thẻ quà tặng), GOP, biên, GOPPAR, CPOR, so tháng trước / cùng kỳ, biểu đồ SVG 12 tháng, Excel |
 
 ### Đợt 6 (19/10/2026)
@@ -97,7 +97,7 @@
 - Biến môi trường:
   - VNPay: `VNPAY_TMN_CODE`, `VNPAY_HASH_SECRET`. Chưa thử với sandbox thật (xem mục 7).
   - Mail: OTP quản trị tự bật khi đã cấu hình mail; đặt `ADMIN_OTP=false` để tắt.
-  - AI: `ANTHROPIC_API_KEY` (tạo ở console.anthropic.com) để bật phân tích AI; `AI_MODEL` (mặc định `claude-opus-5-5`), `AI_ENABLED=false` để tắt hẳn, `AI_FALLBACKS=false` nếu API báo lỗi tham số `fallbacks`. **Chưa gọi thử API thật** (máy chưa có key) - lần đầu bật nên bấm "Phân tích tháng này" một lần và xem log.
+  - AI: `ANTHROPIC_API_KEY` (tạo ở console.anthropic.com) để bật phân tích AI; `AI_MODEL` (mặc định `claude-haiku-5-5` - 0,10 / 0,50 USD mỗi triệu token vào / ra; đổi sang `claude-opus-5-5` nếu cần phân tích sâu hơn), `AI_ENABLED=false` để tắt hẳn, `AI_FALLBACKS` (`auto` mặc định: chỉ gửi `fallbacks` với model có hỗ trợ - Haiku thì không). **Chưa gọi thử API thật** (máy chưa có key) - lần đầu bật nên bấm "Phân tích tháng này" một lần và xem log.
   - Báo cáo cuối ngày: `DAILY_REPORT_TO` (email cách nhau dấu phẩy; bỏ trống = gửi các tài khoản ADMIN), `DAILY_REPORT_ENABLED=false` để tắt.
 - Tài khoản admin `ngqhoan214@gmail.com` mới chỉ có trên DB dev. Server cần tạo lại tài khoản này.
 - Thông báo tức thời dùng SSE: nếu đặt sau Nginx thì cho đường dẫn `/admin/notifications/stream` tắt buffer (`proxy_buffering off;`, `proxy_read_timeout 1h;`). Nhiều instance app thì mỗi instance chỉ báo cho lễ tân đang nối vào nó.
@@ -110,7 +110,7 @@
 - Giới hạn số lượt mã giảm giá không khóa dòng: 2 khách bấm đặt đúng cùng lúc ở lượt cuối có thể cùng được nhận.
 - Nâng hạng chỉ mời loại phòng có giá gốc (`basePrice`) cao hơn; giá mời là chênh lệch theo bảng giá các đêm của đơn.
 - Lịch sử dọn phòng chỉ có từ khi triển khai đợt 6 (lượt dọn trước đó không có số liệu).
-- Lãi lỗ chỉ đúng khi kế toán nhập đủ chi phí; công suất các tháng cũ tính theo số phòng hiện tại. Mỗi lần bấm phân tích / hỏi AI tốn phí API (~0,02-0,1 USD).
+- Lãi lỗ chỉ đúng khi kế toán nhập đủ chi phí; công suất các tháng cũ tính theo số phòng hiện tại. Mỗi lần bấm phân tích / hỏi AI với Haiku 5.5 tốn khoảng 0,001-0,005 USD.
 - No-show không tự động: lễ tân bấm "Khách không đến" (hệ thống chỉ nhắc lúc 23h).
 - Gửi lại email thẻ quà tặng giới hạn 1 lần / 10 phút / thẻ, lưu trong bộ nhớ (khởi động lại app thì đếm lại).
 

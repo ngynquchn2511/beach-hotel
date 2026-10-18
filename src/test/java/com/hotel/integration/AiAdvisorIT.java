@@ -41,7 +41,7 @@ class AiAdvisorIT extends ItFixtures {
         String lastUser;
 
         public boolean isEnabled() { return true; }
-        public String model() { return "fake-model"; }
+        public String model() { return "claude-haiku-5-5"; }
         public Result<AiAnalysis> analyze(String system, String user) {
             lastSystem = system;
             lastUser = user;
@@ -91,7 +91,8 @@ class AiAdvisorIT extends ItFixtures {
         AiAdvisorService.SavedAnalysis saved = advisor.latestAnalysis(m).orElseThrow();
         assertThat(saved.analysis().recommendations()).hasSize(1);
         assertThat(saved.report().getInputTokens()).isEqualTo(1200);
-        assertThat(AiAdvisorService.costUsd(saved.report())).isEqualTo(0.021);
+        // Haiku 5.5: 1200 x $0.10 + 800 x $0.50 tren 1 trieu token
+        assertThat(AiAdvisorService.costUsd(saved.report())).isEqualTo(0.0005);
 
         // Trang dung bean that (khong co API key) -> nut AI tat, nhung van hien ban phan tich da luu + nhan dinh tu dong
         mockMvc.perform(get("/admin/accounting/insights").with(as(persistUser(UserRole.ACCOUNTANT, null))).param("month", m.toString()))

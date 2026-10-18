@@ -36,11 +36,12 @@ public class ClaudeAiGateway implements AiGateway {
     private final boolean enabledFlag;
     private volatile AnthropicClient client;
 
-    // Tat bang AI_FALLBACKS=false neu tai khoan / nen tang khong ho tro server-side fallback
-    @Value("${app.ai.fallbacks:true}")
-    private boolean fallbacks = true;
+    // Server-side fallback khi bi bo loc an toan tu choi: "auto" = chi gui voi model co ho tro (Opus 5.x, Fable, Sonnet 5.5);
+    // Haiku 5.5 (model mac dinh, re nhat) KHONG co fallback phia server - gui tham so nay se loi. "true" / "false" de ep
+    @Value("${app.ai.fallbacks:auto}")
+    private String fallbacksMode = "auto";
 
-    public ClaudeAiGateway(@Value("${app.ai.api-key:}") String apiKey, @Value("${app.ai.model:claude-opus-5-5}") String model,
+    public ClaudeAiGateway(@Value("${app.ai.api-key:}") String apiKey, @Value("${app.ai.model:claude-haiku-5-5}") String model,
                            @Value("${app.ai.enabled:true}") boolean enabledFlag) {
         this.apiKey = apiKey;
         this.model = model;
@@ -119,12 +120,24 @@ public class ClaudeAiGateway implements AiGateway {
         }
     }
 
+    boolean fallbacksEnabled() {
+        return switch (fallbacksMode == null ? "auto" : fallbacksMode.trim().toLowerCase()) {
+            case "true" -> true;
+            case "false" -> false;
+            default -> supportsServerFallback(model);
+        };
+    }
+
+    static boolean supportsServerFallback(String model) {
+        return model != null && (model.startsWith("claude-opus-5") || model.startsWith("claude-fable-5") || model.equals("claude-sonnet-5-5"));
+    }
+
     private java.util.Map<String, Iterable<String>> fallbackHeaders() {
-        return fallbacks ? java.util.Map.of("anthropic-beta", List.of(FALLBACK_BETA)) : java.util.Map.of();
+        return fallbacksEnabled() ? java.util.Map.of("anthropic-beta", List.of(FALLBACK_BETA)) : java.util.Map.of();
     }
 
     private java.util.Map<String, JsonValue> fallbackBody() {
-        return fallbacks ? java.util.Map.of("fallbacks", JsonValue.from("default")) : java.util.Map.of();
+        return fallbacksEnabled() ? java.util.Map.of("fallbacks", JsonValue.from("default")) : java.util.Map.of();
     }
 
     private void requireEnabled() {
