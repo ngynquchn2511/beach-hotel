@@ -57,6 +57,12 @@ public class AiAdvisorService {
     private final ExpenseService expenseService;
     private final AiReportRepository repository;
     private final ObjectMapper mapper = new ObjectMapper();
+    private com.hotel.service.BudgetService budgetService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setBudgetService(com.hotel.service.BudgetService budgetService) {
+        this.budgetService = budgetService;
+    }
 
     public AiAdvisorService(AiGateway gateway, ProfitService profitService, InsightService insightService,
                             CancellationReportService cancellationService, ExpenseService expenseService, AiReportRepository repository) {
@@ -164,6 +170,19 @@ public class AiAdvisorService {
             insights.add(m);
         }
         root.put("ruleBasedFindings", insights);
+        if (budgetService != null) {
+            budgetService.variance(r.current()).ifPresent(v -> {
+                Map<String, Object> b = new LinkedHashMap<>();
+                b.put("revenueTarget", v.budget().getRevenueTarget());
+                b.put("costBudget", v.budget().getCostBudget());
+                b.put("occupancyTargetPercent", v.budget().getOccupancyTarget());
+                b.put("adrTarget", v.budget().getAdrTarget());
+                b.put("revenueAchievedPercent", v.revenuePercent());
+                b.put("costUsedPercent", v.costPercent());
+                b.put("monthInProgress", v.inProgress());
+                root.put("budget", b);
+            });
+        }
         return write(root);
     }
 

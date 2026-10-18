@@ -52,15 +52,53 @@ public class InsightService {
 
     private final ProfitService profitService;
     private final CancellationReportService cancellationService;
+    private BudgetService budgetService;
 
     public InsightService(ProfitService profitService, CancellationReportService cancellationService) {
         this.profitService = profitService;
         this.cancellationService = cancellationService;
     }
 
+    @org.springframework.beans.factory.annotation.Autowired
+    void setBudgetService(BudgetService budgetService) {
+        this.budgetService = budgetService;
+    }
+
     @Transactional(readOnly = true)
     public List<Insight> analyze(YearMonth month) {
-        return analyze(profitService.report(month), cancellationService.build(month, month).total().cancelRate());
+        ProfitService.Report report = profitService.report(month);
+        List<Insight> list = analyze(report, cancellationService.build(month, month).total().cancelRate());
+        if (budgetService != null) {
+            budgetService.variance(report.current()).ifPresent(v -> list.addAll(budgetInsights(v, report.current())));
+            list.sort(Comparator.comparing(Insight::level));
+        }
+        return list;
+    }
+
+    // Tien do / ket qua so voi ke hoach thang
+    static List<Insight> budgetInsights(BudgetService.Variance v, ProfitService.MonthPnl c) {
+        List<Insight> out = new ArrayList<>();
+        if (v.revenuePercent() != null) {
+            if (v.revenuePercent() >= 100) {
+                out.add(new Insight(Level.GOOD, "Đạt " + v.revenuePercent() + "% kế hoạch doanh thu", v.inProgress()
+                        ? "Doanh thu đã có trên sổ đã vượt chỉ tiêu tháng." : "Tháng vượt chỉ tiêu doanh thu.", null));
+            } else {
+                BigDecimal gap = v.getRevenueShortfall();
+                String nights = c.adr().signum() > 0
+                        ? " - khoảng " + gap.divide(c.adr(), 0, RoundingMode.UP) + " phòng-đêm ở ADR hiện tại" : "";
+                out.add(new Insight(v.revenuePercent() < 80 ? Level.WARNING : Level.INFO,
+                        (v.inProgress() ? "Mới có " : "Chỉ đạt ") + v.revenuePercent() + "% kế hoạch doanh thu",
+                        "Còn thiếu " + Money.format(gap) + " VND" + nights + ".",
+                        v.inProgress() ? "Đẩy bán phòng trống còn lại trong tháng: khuyến mãi ngắn ngày, mời nâng hạng, nhắc khách cũ quay lại."
+                                : "Xem lại chỉ tiêu tháng sau hoặc kế hoạch bán hàng mùa thấp điểm."));
+            }
+        }
+        if (v.costPercent() != null && v.costPercent() > 100) {
+            out.add(new Insight(Level.WARNING, "Chi phí vượt ngân sách: " + v.costPercent() + "%",
+                    "Chi phí " + Money.format(c.totalCost()) + " VND so với ngân sách " + Money.format(v.budget().getCostBudget()) + " VND.",
+                    "Hoãn khoản chi chưa cấp thiết sang tháng sau."));
+        }
+        return out;
     }
 
     // Tach rieng de unit test voi so lieu dung san

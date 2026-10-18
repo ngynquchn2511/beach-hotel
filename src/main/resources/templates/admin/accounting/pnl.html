@@ -47,6 +47,29 @@
                 <a th:href="@{/admin/accounting/expenses(month=${month})}">Nhập chi phí vận hành và giá vốn</a> để có số lãi thật.
             </div>
 
+            <!-- Thuc te / ke hoach -->
+            <div class="bg-white rounded shadow-sm p-3 mb-3" th:if="${variance != null}" th:with="v=${variance}">
+                <div class="d-flex justify-content-between flex-wrap gap-2">
+                    <h6 class="fw-bold m-0"><i class="bi bi-bullseye me-1"></i>So với kế hoạch
+                        <span class="small text-muted fw-normal" th:if="${v.inProgress}">(tháng chưa kết thúc - doanh thu gồm đơn đã xác nhận trên sổ)</span></h6>
+                    <a class="small" th:href="@{/admin/accounting/budget(year=${month.year})}">Sửa kế hoạch</a>
+                </div>
+                <div class="row g-2 mt-1 small">
+                    <div class="col-sm-3" th:if="${v.revenuePercent != null}">Doanh thu: <b th:classappend="${v.revenuePercent < 100} ? 'text-danger' : 'text-success'"
+                            th:text="${v.revenuePercent} + '%'"></b> kế hoạch
+                        <div class="text-muted" th:if="${v.revenueShortfall.signum() > 0}"
+                             th:text="'Còn thiếu ' + ${#numbers.formatDecimal(v.revenueShortfall, 1, 'POINT', 0, 'COMMA')}"></div></div>
+                    <div class="col-sm-3" th:if="${v.costPercent != null}">Chi phí: <b th:classappend="${v.costPercent > 100} ? 'text-danger' : 'text-success'"
+                            th:text="${v.costPercent} + '%'"></b> ngân sách</div>
+                    <div class="col-sm-3" th:if="${v.occupancyPoints != null}">Công suất: <b th:classappend="${v.occupancyPoints < 0} ? 'text-danger' : 'text-success'"
+                            th:text="(${v.occupancyPoints >= 0} ? '+' : '') + ${v.occupancyPoints} + ' điểm'"></b> so với chỉ tiêu</div>
+                    <div class="col-sm-3" th:if="${v.adrPercent != null}">ADR: <b th:classappend="${v.adrPercent < 100} ? 'text-danger' : 'text-success'"
+                            th:text="${v.adrPercent} + '%'"></b> kế hoạch</div>
+                </div>
+            </div>
+            <div class="small text-muted mb-3" th:if="${variance == null}">
+                Chưa có kế hoạch tháng này - <a th:href="@{/admin/accounting/budget(year=${month.year})}">nhập kế hoạch năm</a> để theo dõi % đạt chỉ tiêu.</div>
+
             <!-- KPI: so voi thang truoc / cung ky nam truoc -->
             <div class="row g-3 mb-4">
                 <div class="col-6 col-lg-3"><div class="kpi"><div class="small text-muted">Doanh thu</div>

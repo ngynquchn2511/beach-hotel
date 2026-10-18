@@ -24,9 +24,11 @@ import java.util.List;
 public class AdminProfitController {
 
     private final ProfitService profitService;
+    private final com.hotel.service.BudgetService budgetService;
 
-    public AdminProfitController(ProfitService profitService) {
+    public AdminProfitController(ProfitService profitService, com.hotel.service.BudgetService budgetService) {
         this.profitService = profitService;
+        this.budgetService = budgetService;
     }
 
     @GetMapping
@@ -48,6 +50,7 @@ public class AdminProfitController {
         model.addAttribute("orange", TrendChartSvg.ORANGE);
         model.addAttribute("red", TrendChartSvg.RED);
         model.addAttribute("hasCosts", trend.stream().anyMatch(p -> p.totalCost().signum() > 0));
+        budgetService.variance(report.current()).ifPresent(v -> model.addAttribute("variance", v));
         return "admin/accounting/pnl";
     }
 
