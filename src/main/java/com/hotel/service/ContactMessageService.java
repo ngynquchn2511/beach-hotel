@@ -14,6 +14,19 @@ import java.util.regex.Pattern;
 @Service
 public class ContactMessageService {
 
+    private com.hotel.service.StaffNotificationService staffNotifier;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setStaffNotifier(com.hotel.service.StaffNotificationService staffNotifier) {
+        this.staffNotifier = staffNotifier;
+    }
+
+    private void notifyStaff(String kind, com.hotel.service.StaffNotificationService.Level level, String title, String message, String url) {
+        if (staffNotifier != null) {
+            staffNotifier.notify(kind, level, title, message, url);
+        }
+    }
+
     public static final int MAX_MESSAGE_LENGTH = 2000;
     public static final int MIN_MESSAGE_LENGTH = 10;
     // Chong spam: 1 email gui toi da 3 tin moi gio
@@ -51,9 +64,12 @@ public class ContactMessageService {
         if (repository.countByEmailIgnoreCaseAndCreatedAtAfter(mail, LocalDateTime.now().minusHours(1)) >= MAX_PER_HOUR) {
             throw BusinessException.of("contact.error.tooMany");
         }
-        return repository.save(ContactMessage.builder()
+        ContactMessage saved = repository.save(ContactMessage.builder()
                 .fullName(name).email(mail).phone(tel.isEmpty() ? null : tel).message(body)
                 .handled(false).build());
+        notifyStaff("contact", com.hotel.service.StaffNotificationService.Level.INFO, "Tin nhắn liên hệ từ " + name,
+                body.length() > 80 ? body.substring(0, 80) + "…" : body, "/admin/contact-messages");
+        return saved;
     }
 
     // status: "NEW" = chua xu ly, "HANDLED" = da xu ly, con lai = tat ca. q: tim theo ten / email / SDT / noi dung

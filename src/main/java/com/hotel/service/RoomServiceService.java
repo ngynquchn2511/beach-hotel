@@ -21,6 +21,19 @@ import java.util.stream.Collectors;
 @Service
 public class RoomServiceService {
 
+    private com.hotel.service.StaffNotificationService staffNotifier;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setStaffNotifier(com.hotel.service.StaffNotificationService staffNotifier) {
+        this.staffNotifier = staffNotifier;
+    }
+
+    private void notifyStaff(String kind, com.hotel.service.StaffNotificationService.Level level, String title, String message, String url) {
+        if (staffNotifier != null) {
+            staffNotifier.notify(kind, level, title, message, url);
+        }
+    }
+
     public static final int MAX_QUANTITY = 20;
     public static final BigDecimal MAX_PRICE = new BigDecimal("10000000");
 
@@ -80,7 +93,10 @@ public class RoomServiceService {
             throw BusinessException.of("rs.error.empty");
         }
         order.setTotalAmount(total);
-        return orderRepository.save(order);
+        RoomServiceOrder saved = orderRepository.save(order);
+        notifyStaff("room-service", com.hotel.service.StaffNotificationService.Level.INFO, "Gọi lên phòng " + booking.getRoom().getRoomNumber(),
+                saved.getLines().size() + " món · " + com.hotel.util.Money.format(total) + " VND", "/admin/room-service");
+        return saved;
     }
 
     // Khach huy khi le tan chua giao

@@ -20,6 +20,19 @@ import java.util.List;
 @Service
 public class FacilityReservationService {
 
+    private com.hotel.service.StaffNotificationService staffNotifier;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setStaffNotifier(com.hotel.service.StaffNotificationService staffNotifier) {
+        this.staffNotifier = staffNotifier;
+    }
+
+    private void notifyStaff(String kind, com.hotel.service.StaffNotificationService.Level level, String title, String message, String url) {
+        if (staffNotifier != null) {
+            staffNotifier.notify(kind, level, title, message, url);
+        }
+    }
+
     // Spa co 3 giuong: moi khung gio toi da 3 luot dat
     public static final int SPA_BEDS = 3;
     public static final int SPA_MAX_PEOPLE = 2;
@@ -113,10 +126,13 @@ public class FacilityReservationService {
         if (text != null && text.length() > 300) {
             throw BusinessException.of("err.svc.note");
         }
-        return repository.save(FacilityReservation.builder().booking(booking).kind(kind).spaPackage(treatment)
+        FacilityReservation saved = repository.save(FacilityReservation.builder().booking(booking).kind(kind).spaPackage(treatment)
                 .reservedDate(date).reservedTime(time).people(people)
                 .totalPrice(spa ? treatment.getPrice().multiply(BigDecimal.valueOf(people)) : null)
                 .note(text).status(ServiceStatus.PENDING).build());
+        notifyStaff("facility", com.hotel.service.StaffNotificationService.Level.INFO, (spa ? "Lịch spa mới" : "Đặt bàn nhà hàng mới") + " · phòng " + booking.getRoom().getRoomNumber(),
+                saved.getSummary() + " · " + date.format(DAY) + " " + time, "/admin/facility-reservations");
+        return saved;
     }
 
     // Con giuong trong suot [time, time + minutes)? So luot dang lam chi tang tai gio bat dau cua 1 luot,

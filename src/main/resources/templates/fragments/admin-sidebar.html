@@ -27,6 +27,7 @@
            th:classappend="${p.startsWith('/admin/forecast')} ? 'active'"><i class="bi bi-graph-up-arrow"></i>Dự báo công suất</a>
     </th:block>
     <th:block sec:authorize="hasAnyRole('ADMIN','STAFF')">
+    <script th:src="@{/js/staff-notify.js}" th:data-stream="@{/admin/notifications/stream}" defer></script>
     <div class="admin-sidebar-title">Quầy lễ tân</div>
     <a th:href="@{/admin/today}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
        th:classappend="${p.startsWith('/admin/today')} ? 'active'">

@@ -34,6 +34,19 @@ import java.util.Set;
 @Service
 public class BookingService {
 
+    private com.hotel.service.StaffNotificationService staffNotifier;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setStaffNotifier(com.hotel.service.StaffNotificationService staffNotifier) {
+        this.staffNotifier = staffNotifier;
+    }
+
+    private void notifyStaff(String kind, com.hotel.service.StaffNotificationService.Level level, String title, String message, String url) {
+        if (staffNotifier != null) {
+            staffNotifier.notify(kind, level, title, message, url);
+        }
+    }
+
     // Chi cho phep sua gio nhan/tra hoac doi combo neu con truoc it nhat 6 tieng so voi gio nhan phong
     private static final int EDIT_CUTOFF_HOURS = 6;
 
@@ -330,8 +343,16 @@ public class BookingService {
         }
         if (group == null) {
             emailService.sendBookingConfirmation(savedBooking);
+            notifyStaff("booking", com.hotel.service.StaffNotificationService.Level.INFO, "Đơn đặt phòng mới #" + savedBooking.getId(),
+                    "Phòng " + savedBooking.getRoom().getRoomNumber() + " · " + stayLabel(savedBooking) + " · " + savedBooking.getGuestName(),
+                    "/admin/bookings/" + savedBooking.getId());
         }
         return savedBooking;
+    }
+
+    private static String stayLabel(Booking b) {
+        DateTimeFormatter dm = DateTimeFormatter.ofPattern("dd/MM");
+        return b.getCheckInDate().format(dm) + " – " + b.getCheckOutDate().format(dm);
     }
 
     // ===== Dat nhieu phong 1 lan =====
@@ -402,6 +423,8 @@ public class BookingService {
             throw BusinessException.of("points.error.groupCap", LoyaltyService.MAX_REDEEM_PERCENT, pointsToUse - budget.points);
         }
         emailService.sendGroupBooking(group, bookings, false);
+        notifyStaff("group", com.hotel.service.StaffNotificationService.Level.INFO, "Đoàn mới " + group.getCode(),
+                bookings.size() + " phòng · " + stayLabel(bookings.get(0)) + " · " + group.getGuestName(), "/admin/booking-groups/" + group.getId());
         return group;
     }
 
@@ -895,7 +918,12 @@ public class BookingService {
         booking.setTimeRequestStatus(StayTimeRequestStatus.PENDING);
         booking.setTimeRequestedAt(LocalDateTime.now());
         booking.setTimeRequestNote(null);
-        return bookingRepository.save(booking);
+        Booking saved = bookingRepository.save(booking);
+        notifyStaff("stay-time", com.hotel.service.StaffNotificationService.Level.INFO, "Yêu cầu " + (early && late ? "nhận sớm và trả muộn" : early ? "nhận phòng sớm" : "trả phòng muộn")
+                        + " · đơn #" + saved.getId(),
+                "Phòng " + saved.getRoom().getRoomNumber() + (early ? " · nhận " + in.format(TIME_FMT) : "") + (late ? " · trả " + out.format(TIME_FMT) : ""),
+                "/admin/bookings/" + saved.getId());
+        return saved;
     }
 
     // Khach rut lai yeu cau dang cho duyet
@@ -1288,11 +1316,19 @@ public class BookingService {
             // Tien da tru cua khach nhung phong vua bi don khac giu: ghi nhan da coc, de don o Cho xac nhan
             // de le tan lien he khach (doi phong hoac huy + hoan coc 100%)
             bookingRepository.save(booking);
+            if (booking.getGroup() == null) {
+                notifyStaff("deposit", com.hotel.service.StaffNotificationService.Level.WARNING, "Cọc VNPay đơn #" + booking.getId() + " nhưng phòng đã bị giữ",
+                        "Liên hệ khách đổi phòng hoặc hủy và hoàn cọc", "/admin/bookings/" + booking.getId());
+            }
             return OnlineDepositResult.PAID_BUT_ROOM_TAKEN;
         }
         booking.setStatus(BookingStatus.CONFIRMED);
         Booking confirmedBooking = bookingRepository.save(booking);
         emailService.sendBookingConfirmation(confirmedBooking);
+        if (confirmedBooking.getGroup() == null) {
+            notifyStaff("deposit", com.hotel.service.StaffNotificationService.Level.SUCCESS, "Đã nhận cọc VNPay đơn #" + confirmedBooking.getId(),
+                    com.hotel.util.Money.format(confirmedBooking.getDepositAmount()) + " VND" + " · đơn đã tự xác nhận", "/admin/bookings/" + confirmedBooking.getId());
+        }
         return OnlineDepositResult.CONFIRMED;
     }
 
@@ -1320,6 +1356,14 @@ public class BookingService {
             if (r != OnlineDepositResult.CONFIRMED) {
                 overall = OnlineDepositResult.PAID_BUT_ROOM_TAKEN;
             }
+        }
+        BookingGroup paidGroup = bookingGroupRepository.findById(groupId).orElseThrow();
+        if (overall == OnlineDepositResult.CONFIRMED) {
+            notifyStaff("deposit", com.hotel.service.StaffNotificationService.Level.SUCCESS, "Đã nhận cọc VNPay đoàn " + paidGroup.getCode(),
+                    com.hotel.util.Money.format(due) + " VND" + " · " + awaiting.size() + " phòng đã tự xác nhận", "/admin/booking-groups/" + groupId);
+        } else {
+            notifyStaff("deposit", com.hotel.service.StaffNotificationService.Level.WARNING, "Cọc VNPay đoàn " + paidGroup.getCode() + " có phòng đã bị giữ",
+                    "Kiểm tra từng phòng của đoàn", "/admin/booking-groups/" + groupId);
         }
         return overall;
     }

@@ -36,6 +36,19 @@ import java.util.regex.Pattern;
 @Service
 public class ServiceOrderService {
 
+    private com.hotel.service.StaffNotificationService staffNotifier;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setStaffNotifier(com.hotel.service.StaffNotificationService staffNotifier) {
+        this.staffNotifier = staffNotifier;
+    }
+
+    private void notifyStaff(String kind, com.hotel.service.StaffNotificationService.Level level, String title, String message, String url) {
+        if (staffNotifier != null) {
+            staffNotifier.notify(kind, level, title, message, url);
+        }
+    }
+
     // Khach phai dat truoc gio bat dau bao nhieu tieng (de resort sap xep HLV / tai xe)
     public static final int TOUR_LEAD_HOURS = 12;
     public static final int TRANSFER_LEAD_HOURS = 6;
@@ -131,6 +144,9 @@ public class ServiceOrderService {
                 .build());
         if (byStaff) {
             confirmTour(order.getId());
+        } else {
+            notifyStaff("service", com.hotel.service.StaffNotificationService.Level.INFO, "Đặt tour mới · đơn #" + booking.getId(),
+                    participants + " khách · " + tourDate.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM")), "/admin/service-orders");
         }
         return order;
     }
@@ -227,6 +243,9 @@ public class ServiceOrderService {
                 .build());
         if (byStaff) {
             confirmTransfer(order.getId());
+        } else {
+            notifyStaff("service", com.hotel.service.StaffNotificationService.Level.INFO, "Đặt xe đưa đón · đơn #" + booking.getId(),
+                    passengers + " khách · " + airport.getVietnameseLabel(), "/admin/service-orders");
         }
         return order;
     }
