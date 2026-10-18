@@ -46,8 +46,9 @@
 
             <div class="bg-white p-4 rounded shadow-sm mb-4">
                 <h5 class="fw-bold mb-2">So khớp với sao kê VNPay</h5>
-                <p class="small text-muted">File .csv hoặc .xlsx: <b>cột 1 = mã giao dịch VNPay</b> (vnp_TransactionNo), <b>cột 2 = số tiền</b>.
-                    Dòng tiêu đề tự bỏ qua; hoàn tiền ghi số âm vẫn được.</p>
+                <p class="small text-muted">Tải thẳng file .xlsx / .csv xuất từ cổng merchant VNPay: hệ thống tự tìm cột
+                    <b>Mã giao dịch VNPay</b> và <b>Số tiền</b> theo tiêu đề (bỏ qua dòng trạng thái thất bại / hủy).
+                    File tự làm thì để cột 1 = mã giao dịch, cột 2 = số tiền. Hoàn tiền ghi số âm vẫn được.</p>
                 <form method="post" th:action="@{/admin/accounting/vnpay}" enctype="multipart/form-data" class="d-flex gap-2 flex-wrap align-items-center">
                     <input type="hidden" name="day" th:value="${day}">
                     <input type="file" name="statement" class="form-control form-control-sm" style="max-width: 320px" accept=".csv,.xlsx" required>

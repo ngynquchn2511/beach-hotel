@@ -51,4 +51,43 @@ class AccountingServiceTest {
         assertThat(r.lines().get(0).status()).isEqualTo(AccountingService.MatchStatus.MISSING_IN_STATEMENT);
         assertThat(r.lines().get(0).getDifference()).isEqualByComparingTo("-200");
     }
+
+    @Test
+    void merchantExcel_detectsColumnsByHeader_skipsFailedRows() throws Exception {
+        java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+        try (org.apache.poi.ss.usermodel.Workbook wb = new org.apache.poi.xssf.usermodel.XSSFWorkbook()) {
+            var sheet = wb.createSheet("Giao dich");
+            sheet.createRow(0).createCell(0).setCellValue("BÁO CÁO GIAO DỊCH - SÓNG XANH RESORT");
+            sheet.createRow(1).createCell(0).setCellValue("Từ ngày 14/03/2025 đến ngày 14/03/2025");
+            String[] head = {"STT", "Mã đơn hàng", "Mã GD VNPay", "Ngân hàng", "Số tiền (VND)", "Trạng thái", "Thời gian"};
+            var h = sheet.createRow(3);
+            for (int i = 0; i < head.length; i++) {
+                h.createCell(i).setCellValue(head[i]);
+            }
+            Object[][] data = {{1, "D15_1710400000", 14000001d, "NCB", 300000d, "Thành công"},
+                    {2, "G7_1710400100", 14000002d, "VCB", 450000d, "Thành công"},
+                    {3, "D16_1710400200", 14000005d, "NCB", 990000d, "Thất bại"}};
+            for (int r = 0; r < data.length; r++) {
+                var row = sheet.createRow(4 + r);
+                row.createCell(0).setCellValue((Integer) data[r][0]);
+                row.createCell(1).setCellValue((String) data[r][1]);
+                row.createCell(2).setCellValue((Double) data[r][2]);
+                row.createCell(3).setCellValue((String) data[r][3]);
+                row.createCell(4).setCellValue((Double) data[r][4]);
+                row.createCell(5).setCellValue((String) data[r][5]);
+            }
+            wb.write(out);
+        }
+        Map<String, BigDecimal> m = AccountingService.parseStatement("vnpay-merchant.xlsx", out.toByteArray());
+        assertThat(m).containsOnlyKeys("14000001", "14000002");
+        assertThat(m.get("14000002")).isEqualByComparingTo("450000");
+    }
+
+    @Test
+    void vnpAmountHeader_isDividedBy100() {
+        String csv = "vnp_TxnRef,vnp_TransactionNo,vnp_Amount,vnp_ResponseCode\nD1_1,14000009,30000000,00\n";
+        Map<String, BigDecimal> m = AccountingService.parseStatement("ipn.csv", csv.getBytes(StandardCharsets.UTF_8));
+        assertThat(m).containsOnlyKeys("14000009");
+        assertThat(m.get("14000009")).isEqualByComparingTo("300000");
+    }
 }

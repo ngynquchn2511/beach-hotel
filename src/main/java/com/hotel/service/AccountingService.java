@@ -274,23 +274,108 @@ public class AccountingService {
         return new Reconciliation(lines, matched, lines.size() - matched);
     }
 
-    // Doc sao ke VNPay (.csv hoac .xlsx): cot 1 = ma giao dich VNPay, cot 2 = so tien. Dong tieu de / dong trong bo qua.
-    // Hoan tien ghi so am van tinh theo gia tri tuyet doi; 1 ma xuat hien nhieu dong -> cong don
+    // Cot doc duoc tu dong tieu de (file goc cong merchant): ma GD, so tien, (tuy chon) trang thai.
+    // amountTimes100: cot vnp_Amount (VNPay ghi so tien x100). headerRow = -1: khong co tieu de -> cot 1 / cot 2
+    record Columns(int ref, int amount, int status, boolean amountTimes100, int headerRow) {
+        static final Columns DEFAULT = new Columns(0, 1, -1, false, -1);
+    }
+
+    private static final int HEADER_SCAN_ROWS = 20;
+
+    // Bo dau tieng Viet + chu thuong + gom khoang trang (so khop tieu de cot)
+    static String norm(String s) {
+        if (s == null) {
+            return "";
+        }
+        String t = java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFD).replaceAll("\\p{M}", "")
+                .replace('đ', 'd').replace('Đ', 'D').toLowerCase(Locale.ROOT);
+        return t.replaceAll("[^a-z0-9_]+", " ").trim();
+    }
+
+    static Columns detectColumns(List<String[]> rows) {
+        for (int r = 0; r < Math.min(HEADER_SCAN_ROWS, rows.size()); r++) {
+            String[] row = rows.get(r);
+            int ref = -1;
+            int refScore = 0;
+            int amount = -1;
+            boolean times100 = false;
+            int status = -1;
+            for (int c = 0; c < row.length; c++) {
+                String h = norm(row[c]);
+                if (h.isEmpty()) {
+                    continue;
+                }
+                int score = refScore(h);
+                if (score > refScore) {
+                    ref = c;
+                    refScore = score;
+                }
+                if (amount < 0 && (h.equals("vnp_amount") || h.equals("so tien") || h.startsWith("so tien ") || h.equals("amount")
+                        || h.equals("tong tien") || h.equals("so tien giao dich") || h.startsWith("amount "))) {
+                    amount = c;
+                    times100 = h.equals("vnp_amount");
+                }
+                if (status < 0 && (h.equals("trang thai") || h.startsWith("trang thai ") || h.equals("status") || h.equals("ket qua"))) {
+                    status = c;
+                }
+            }
+            if (ref >= 0 && amount >= 0) {
+                return new Columns(ref, amount, status, times100, r);
+            }
+        }
+        return Columns.DEFAULT;
+    }
+
+    // Diem cang cao cang chac la cot ma giao dich phia VNPay (khong phai ma don cua resort)
+    private static int refScore(String h) {
+        if (h.equals("vnp_transactionno") || h.equals("transactionno") || h.equals("transaction no")) {
+            return 5;
+        }
+        if (h.contains("vnpay") && (h.contains("ma gd") || h.contains("ma giao dich") || h.contains("so giao dich"))) {
+            return 4;
+        }
+        if (h.equals("so giao dich") || h.equals("ma giao dich") || h.equals("ma gd")) {
+            return 3;
+        }
+        if (h.contains("ma tham chieu") || h.contains("ma don") || h.contains("txnref") || h.contains("order")) {
+            return 0;
+        }
+        return h.startsWith("ma giao dich") || h.startsWith("ma gd") ? 2 : 0;
+    }
+
+    // Dong co trang thai that bai / huy -> khong tinh tien
+    private static boolean failedStatus(String raw) {
+        String s = norm(raw);
+        return s.contains("that bai") || s.contains("khong thanh cong") || s.contains("failed") || s.contains("huy")
+                || s.contains("cancel") || s.contains("loi") || s.contains("error");
+    }
+
+    // Doc sao ke VNPay (.csv hoac .xlsx). Co dong tieu de nhan ra duoc (file goc cong merchant) -> lay cot theo tieu de;
+    // khong co -> cot 1 = ma giao dich VNPay, cot 2 = so tien. Hoan tien ghi so am van tinh theo gia tri tuyet doi;
+    // 1 ma xuat hien nhieu dong -> cong don
     public static Map<String, BigDecimal> parseStatement(String filename, byte[] content) {
         if (content == null || content.length == 0) {
             throw new BusinessException("Vui lòng chọn file sao kê VNPay (.csv hoặc .xlsx)");
         }
         String name = filename == null ? "" : filename.toLowerCase(Locale.ROOT);
         List<String[]> rows = name.endsWith(".xlsx") ? readXlsx(content) : readCsv(content);
+        Columns cols = detectColumns(rows);
         Map<String, BigDecimal> result = new LinkedHashMap<>();
-        for (String[] row : rows) {
-            if (row.length < 2) {
+        for (int i = cols.headerRow() + 1; i < rows.size(); i++) {
+            String[] row = rows.get(i);
+            if (row.length <= Math.max(cols.ref(), cols.amount())) {
                 continue;
             }
-            String ref = row[0] == null ? "" : row[0].trim().replace("\"", "");
-            BigDecimal amount = parseAmount(row[1]);
+            if (cols.status() >= 0 && cols.status() < row.length && failedStatus(row[cols.status()])) {
+                continue;
+            }
+            String ref = row[cols.ref()] == null ? "" : row[cols.ref()].trim().replace("\"", "");
+            BigDecimal amount = parseAmount(row[cols.amount()]);
             if (ref.isEmpty() || amount == null || !ref.matches("[A-Za-z0-9_-]{4,40}")) {
                 continue;
+            }
+            if (cols.amountTimes100()) {
+                amount = amount.divide(BigDecimal.valueOf(100), 0, java.math.RoundingMode.HALF_UP);
             }
             result.merge(ref, amount.abs(), BigDecimal::add);
             if (result.size() > MAX_STATEMENT_ROWS) {
@@ -298,7 +383,8 @@ public class AccountingService {
             }
         }
         if (result.isEmpty()) {
-            throw new BusinessException("Không đọc được giao dịch nào: cột 1 phải là mã giao dịch VNPay, cột 2 là số tiền");
+            throw new BusinessException("Không đọc được giao dịch nào: cần cột tiêu đề \"Mã giao dịch VNPay\" và \"Số tiền\", "
+                    + "hoặc cột 1 là mã giao dịch, cột 2 là số tiền");
         }
         return result;
     }
@@ -362,11 +448,15 @@ public class AccountingService {
             DataFormatter fmt = new DataFormatter(Locale.US);
             List<String[]> rows = new ArrayList<>();
             for (Row row : sheet) {
-                Cell ref = row.getCell(0);
-                Cell amount = row.getCell(1);
-                String amountText = amount == null ? null : amount.getCellType() == CellType.NUMERIC
-                        ? BigDecimal.valueOf(amount.getNumericCellValue()).toBigInteger().toString() : fmt.formatCellValue(amount);
-                rows.add(new String[]{ref == null ? "" : fmt.formatCellValue(ref), amountText});
+                int last = Math.max(row.getLastCellNum(), 0);
+                String[] cells = new String[last];
+                for (int c = 0; c < last; c++) {
+                    Cell cell = row.getCell(c);
+                    // So nguyen lon (ma GD, so tien) doc dung chu so, khong ra dang 1.4E7
+                    cells[c] = cell == null ? "" : cell.getCellType() == CellType.NUMERIC && !DateUtil.isCellDateFormatted(cell)
+                            ? BigDecimal.valueOf(cell.getNumericCellValue()).stripTrailingZeros().toPlainString() : fmt.formatCellValue(cell);
+                }
+                rows.add(cells);
             }
             return rows;
         } catch (IOException | RuntimeException ex) {
