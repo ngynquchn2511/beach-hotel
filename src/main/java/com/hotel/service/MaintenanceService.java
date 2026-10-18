@@ -22,6 +22,13 @@ import java.util.List;
 @Service
 public class MaintenanceService {
 
+    private StaffNotificationService staffNotifier;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setStaffNotifier(StaffNotificationService staffNotifier) {
+        this.staffNotifier = staffNotifier;
+    }
+
     public static final int WARN_DAYS = 3;
 
     private final MaintenanceTicketRepository ticketRepository;
@@ -84,6 +91,12 @@ public class MaintenanceService {
             room.setStatus(RoomStatus.MAINTENANCE);
             roomRepository.save(room);
         }
+        if (staffNotifier != null) {
+            staffNotifier.notify(java.util.EnumSet.of(com.hotel.service.StaffNotificationService.Audience.FRONT_DESK, com.hotel.service.StaffNotificationService.Audience.HOUSEKEEPING), null, "maintenance",
+                    ticket.getPriority() == MaintenanceTicket.Priority.NORMAL ? com.hotel.service.StaffNotificationService.Level.INFO : com.hotel.service.StaffNotificationService.Level.WARNING,
+                    "Báo hỏng phòng " + room.getRoomNumber() + ": " + name,
+                    (blocksRoom ? "Đã khóa phòng" : "Phòng vẫn bán") + (reportedBy != null ? " · báo bởi " + reportedBy : ""), "/admin/maintenance");
+        }
         return ticket;
     }
 
@@ -117,6 +130,10 @@ public class MaintenanceService {
             room.setCleaningBy(null);
             room.setCleaningStartedAt(null);
             roomRepository.save(room);
+            if (staffNotifier != null) {
+                staffNotifier.notify(java.util.EnumSet.of(com.hotel.service.StaffNotificationService.Audience.HOUSEKEEPING), null, "room-dirty", com.hotel.service.StaffNotificationService.Level.INFO,
+                        "Phòng " + room.getRoomNumber() + " cần dọn", "Vừa sửa xong: " + ticket.getTitle(), "/admin/housekeeping");
+            }
         }
         return ticket;
     }

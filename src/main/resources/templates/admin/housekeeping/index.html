@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
     <title>Dọn phòng</title>
@@ -13,6 +13,7 @@
         .hk-col h5 { font-weight: 800; display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
         .hk-room { border: 1px solid #dee2e6; border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; background: #fff; }
         .hk-room.priority { border-color: #f08c00; box-shadow: inset 4px 0 0 #f08c00; }
+        .hk-room.mine { background: #f3f9ff; }
         .hk-room .num { font-weight: 800; font-size: 1.1rem; }
     </style>
 </head>
@@ -27,10 +28,23 @@
         </div>
 
         <div class="col-md-9">
-            <div class="mb-3">
-                <h3 class="fw-bold m-0">Dọn phòng</h3>
-                <div class="text-muted small">Khách trả phòng xong, phòng vào "Chờ dọn". Phòng chưa sạch thì chưa nhận phòng cho khách mới được.
-                    Trang tự cập nhật mỗi 2 phút.</div>
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                <div>
+                    <h3 class="fw-bold m-0">Dọn phòng</h3>
+                    <div class="text-muted small">Khách trả phòng xong, phòng vào "Chờ dọn". Phòng chưa sạch thì chưa nhận phòng cho khách mới được.
+                        <span th:if="${inspectionRequired}">Đang bật kiểm phòng: buồng phòng dọn xong, lễ tân kiểm đạt mới thành sạch.</span></div>
+                </div>
+                <div class="d-flex gap-2 align-items-center">
+                    <th:block th:if="${isHousekeeper}">
+                        <a th:href="@{/admin/housekeeping(mine=true)}" class="btn btn-sm" th:classappend="${mine} ? 'btn-primary' : 'btn-outline-primary'">Phòng của tôi</a>
+                        <a th:href="@{/admin/housekeeping}" class="btn btn-sm" th:classappend="${!mine} ? 'btn-primary' : 'btn-outline-primary'">Tất cả</a>
+                    </th:block>
+                    <form sec:authorize="hasAnyRole('ADMIN','STAFF')" method="post" th:action="@{/admin/housekeeping/settings}" class="form-check form-switch m-0">
+                        <input type="hidden" name="inspectionRequired" th:value="${!inspectionRequired}">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary"
+                                th:text="${inspectionRequired} ? 'Tắt kiểm phòng' : 'Bật kiểm phòng'"></button>
+                    </form>
+                </div>
             </div>
 
             <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
@@ -38,47 +52,58 @@
 
             <div class="row g-3">
                 <!-- Cho don: phong co khach den hom nay len dau -->
-                <div class="col-lg-4">
+                <div class="col-lg-6 col-xl-3">
                     <div class="hk-col">
                         <h5><i class="bi bi-hourglass-split text-warning"></i>Chờ dọn
                             <span class="badge bg-warning text-dark" th:text="${#lists.size(board.waiting)}"></span></h5>
                         <p th:if="${#lists.isEmpty(board.waiting)}" class="text-muted small mb-0">Không có phòng nào chờ dọn.</p>
-                        <div th:each="t : ${board.waiting}" class="hk-room" th:classappend="${t.priority()} ? 'priority'">
-                            <div class="d-flex justify-content-between align-items-start gap-2">
-                                <div>
-                                    <div class="num" th:text="'Phòng ' + ${t.room.roomNumber}"></div>
-                                    <div class="small text-muted" th:text="${t.room.roomType.name}"></div>
-                                    <div class="small text-muted" th:if="${t.room.dirtySince}"
-                                         th:text="'Khách trả lúc ' + ${#temporals.format(t.room.dirtySince, 'HH:mm dd/MM')}"></div>
-                                    <div class="small fw-semibold text-warning-emphasis" th:if="${t.priority()}">
-                                        <i class="bi bi-exclamation-triangle-fill"></i>
-                                        <span th:text="|Ưu tiên: khách ${t.arrival.guestName} đến hôm nay|"></span>
-                                    </div>
-                                </div>
-                                <form method="post" th:action="@{/admin/housekeeping/{id}/start(id=${t.room.id})}">
-                                    <button type="submit" class="btn btn-sm btn-primary text-nowrap"><i class="bi bi-person-check me-1"></i>Nhận dọn</button>
-                                </form>
+                        <div th:each="t : ${board.waiting}" class="hk-room"
+                             th:classappend="${(t.priority() ? 'priority ' : '') + (t.assignee() != null and t.assignee().id == myId ? 'mine' : '')}">
+                            <div class="num" th:text="'Phòng ' + ${t.room.roomNumber}"></div>
+                            <div class="small text-muted" th:text="${t.room.roomType.name}"></div>
+                            <div class="small text-muted" th:if="${t.room.dirtySince}"
+                                 th:text="'Cần dọn từ ' + ${#temporals.format(t.room.dirtySince, 'HH:mm dd/MM')}"></div>
+                            <div class="small fw-semibold text-warning-emphasis" th:if="${t.priority()}">
+                                <i class="bi bi-exclamation-triangle-fill"></i>
+                                <span th:text="|Ưu tiên: khách ${t.arrival.guestName} đến hôm nay|"></span>
                             </div>
+                            <div class="small" th:if="${t.assignee() != null}"><i class="bi bi-person"></i>
+                                <span th:text="'Giao: ' + ${t.assignee().fullName}"></span></div>
+                            <form sec:authorize="hasAnyRole('ADMIN','STAFF')" method="post" th:action="@{/admin/housekeeping/{id}/assign(id=${t.room.id})}"
+                                  class="d-flex gap-1 mt-2">
+                                <select name="assigneeId" class="form-select form-select-sm" aria-label="Giao cho">
+                                    <option value="">-- Chưa giao --</option>
+                                    <option th:each="h : ${housekeepers}" th:value="${h.id}" th:text="${h.fullName}"
+                                            th:selected="${t.assignee() != null and t.assignee().id == h.id}"></option>
+                                </select>
+                                <button type="submit" class="btn btn-sm btn-outline-secondary">Giao</button>
+                            </form>
+                            <form method="post" th:action="@{/admin/housekeeping/{id}/start(id=${t.room.id}, mine=${mine})}" class="mt-2">
+                                <button type="submit" class="btn btn-sm btn-primary w-100"><i class="bi bi-person-check me-1"></i>Nhận dọn</button>
+                            </form>
                         </div>
                     </div>
                 </div>
 
                 <!-- Dang don -->
-                <div class="col-lg-4">
+                <div class="col-lg-6 col-xl-3">
                     <div class="hk-col">
                         <h5><i class="bi bi-stars text-info"></i>Đang dọn
                             <span class="badge bg-info" th:text="${#lists.size(board.inProgress)}"></span></h5>
                         <p th:if="${#lists.isEmpty(board.inProgress)}" class="text-muted small mb-0">Chưa có phòng nào đang dọn.</p>
-                        <div th:each="t : ${board.inProgress}" class="hk-room" th:classappend="${t.priority()} ? 'priority'">
+                        <div th:each="t : ${board.inProgress}" class="hk-room"
+                             th:classappend="${(t.priority() ? 'priority ' : '') + (t.assignee() != null and t.assignee().id == myId ? 'mine' : '')}">
                             <div class="num" th:text="'Phòng ' + ${t.room.roomNumber}"></div>
                             <div class="small" th:text="|${t.room.cleaningBy} · từ ${#temporals.format(t.room.cleaningStartedAt, 'HH:mm')}|"></div>
                             <div class="small fw-semibold text-warning-emphasis" th:if="${t.priority()}"
                                  th:text="|Ưu tiên: khách ${t.arrival.guestName} đến hôm nay|"></div>
+                            <div class="small text-danger" th:if="${t.room.inspectionNote != null}">
+                                <i class="bi bi-arrow-repeat"></i> <span th:text="'Kiểm chưa đạt: ' + ${t.room.inspectionNote}"></span></div>
                             <div class="d-flex gap-2 mt-2">
-                                <form method="post" th:action="@{/admin/housekeeping/{id}/finish(id=${t.room.id})}">
+                                <form method="post" th:action="@{/admin/housekeeping/{id}/finish(id=${t.room.id}, mine=${mine})}">
                                     <button type="submit" class="btn btn-sm btn-success"><i class="bi bi-check2-circle me-1"></i>Đã dọn xong</button>
                                 </form>
-                                <form method="post" th:action="@{/admin/housekeeping/{id}/release(id=${t.room.id})}">
+                                <form method="post" th:action="@{/admin/housekeeping/{id}/release(id=${t.room.id}, mine=${mine})}">
                                     <button type="submit" class="btn btn-sm btn-outline-secondary">Trả lại</button>
                                 </form>
                             </div>
@@ -86,8 +111,32 @@
                     </div>
                 </div>
 
+                <!-- Cho kiem -->
+                <div class="col-lg-6 col-xl-3">
+                    <div class="hk-col">
+                        <h5><i class="bi bi-clipboard-check text-primary"></i>Chờ kiểm
+                            <span class="badge bg-primary" th:text="${#lists.size(board.awaitingInspection)}"></span></h5>
+                        <p th:if="${#lists.isEmpty(board.awaitingInspection)}" class="text-muted small mb-0"
+                           th:text="${inspectionRequired} ? 'Không có phòng nào chờ kiểm.' : 'Đang tắt kiểm phòng.'"></p>
+                        <div th:each="t : ${board.awaitingInspection}" class="hk-room" th:classappend="${t.priority()} ? 'priority'">
+                            <div class="num" th:text="'Phòng ' + ${t.room.roomNumber}"></div>
+                            <div class="small" th:text="|${t.room.cleaningBy} · xong ${#temporals.format(t.room.inspectionRequestedAt, 'HH:mm')}|"></div>
+                            <div sec:authorize="hasAnyRole('ADMIN','STAFF')" class="mt-2">
+                                <form method="post" th:action="@{/admin/housekeeping/{id}/inspect/pass(id=${t.room.id})}" class="mb-1">
+                                    <button type="submit" class="btn btn-sm btn-success w-100"><i class="bi bi-check2 me-1"></i>Đạt</button>
+                                </form>
+                                <form method="post" th:action="@{/admin/housekeeping/{id}/inspect/fail(id=${t.room.id})}" class="d-flex gap-1">
+                                    <input type="text" name="note" class="form-control form-control-sm" maxlength="300" required placeholder="Chỗ chưa đạt">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger text-nowrap">Chưa đạt</button>
+                                </form>
+                            </div>
+                            <div sec:authorize="hasRole('HOUSEKEEPER')" class="small text-muted mt-1">Đang chờ lễ tân kiểm.</div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Sach hom nay -->
-                <div class="col-lg-4">
+                <div class="col-lg-6 col-xl-3">
                     <div class="hk-col">
                         <h5><i class="bi bi-check-circle text-success"></i>Đã sạch hôm nay
                             <span class="badge bg-success" th:text="${#lists.size(board.cleanedToday)}"></span></h5>

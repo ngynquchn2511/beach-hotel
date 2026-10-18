@@ -68,6 +68,14 @@ public class PricingSettings {
     @Column(name = "max_advance_days")
     private Integer maxAdvanceDays;
 
+    // Buong phong don xong phai cho le tan / quan ly kiem moi thanh "sach" (null = khong)
+    @Column(name = "housekeeping_inspection")
+    private Boolean housekeepingInspection;
+
+    public boolean isInspectionRequired() {
+        return Boolean.TRUE.equals(housekeepingInspection);
+    }
+
     // Gia khong hoan tien: % giam tien phong (null / 0 = khong ban)
     @Column(name = "non_refundable_percent")
     private Integer nonRefundablePercent;

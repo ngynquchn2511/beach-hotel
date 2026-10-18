@@ -905,6 +905,10 @@ public class BookingService {
             oldRoom.setStatus(RoomStatus.NOT_READY);
             oldRoom.setDirtySince(LocalDateTime.now());
             roomRepository.save(oldRoom);
+            if (staffNotifier != null) {
+                staffNotifier.notify(java.util.EnumSet.of(com.hotel.service.StaffNotificationService.Audience.HOUSEKEEPING), null, "room-dirty", com.hotel.service.StaffNotificationService.Level.INFO,
+                        "Phòng " + oldRoom.getRoomNumber() + " cần dọn", "Khách vừa đổi sang phòng " + newRoom.getRoomNumber(), "/admin/housekeeping");
+            }
             newRoom.setStatus(RoomStatus.OCCUPIED);
             roomRepository.save(newRoom);
         }
@@ -1470,6 +1474,10 @@ public class BookingService {
         room.setCleaningBy(null);
         room.setCleaningStartedAt(null);
         roomRepository.save(room);
+        if (staffNotifier != null) {
+            staffNotifier.notify(java.util.EnumSet.of(com.hotel.service.StaffNotificationService.Audience.HOUSEKEEPING), null, "room-dirty", com.hotel.service.StaffNotificationService.Level.INFO,
+                    "Phòng " + room.getRoomNumber() + " cần dọn", "Khách vừa trả phòng", "/admin/housekeeping");
+        }
 
         Booking checkedOutBooking = bookingRepository.save(booking);
         upgradeLoyaltyTier(checkedOutBooking);

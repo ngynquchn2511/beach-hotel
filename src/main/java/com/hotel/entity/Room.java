@@ -69,8 +69,26 @@ public class Room {
     @Column(name = "last_cleaned_by", length = 100)
     private String lastCleanedBy;
 
+    // Phan cong: nhan vien buong duoc giao don phong nay (null = chua giao, ai nhan cung duoc)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cleaning_assignee_id")
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private User cleaningAssignee;
+
+    // Buong phong bao don xong, cho le tan / quan ly kiem (khi bat buoc kiem phong)
+    @Column(name = "inspection_requested_at")
+    private LocalDateTime inspectionRequestedAt;
+
+    // Ly do kiem chua dat lan gan nhat (nhan vien buong xem de lam lai)
+    @Column(name = "inspection_note", length = 300)
+    private String inspectionNote;
+
     public boolean isBeingCleaned() {
-        return status == RoomStatus.NOT_READY && cleaningStartedAt != null;
+        return status == RoomStatus.NOT_READY && cleaningStartedAt != null && inspectionRequestedAt == null;
+    }
+
+    public boolean isAwaitingInspection() {
+        return status == RoomStatus.NOT_READY && inspectionRequestedAt != null;
     }
 
     @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)

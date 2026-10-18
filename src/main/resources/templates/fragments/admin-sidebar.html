@@ -1,6 +1,7 @@
 <nav th:fragment="sidebar" class="list-group admin-sidebar" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
      th:with="p=${currentPath != null ? currentPath : ''}">
     <th:block sec:authorize="hasRole('HOUSEKEEPER')">
+        <script th:src="@{/js/staff-notify.js}" th:data-stream="@{/admin/notifications/stream}" defer></script>
         <div class="admin-sidebar-title">Buồng phòng</div>
         <a th:href="@{/admin/housekeeping}" class="list-group-item list-group-item-action"
            th:classappend="${p.startsWith('/admin/housekeeping')} ? 'active'"><i class="bi bi-stars"></i>Dọn phòng</a>
