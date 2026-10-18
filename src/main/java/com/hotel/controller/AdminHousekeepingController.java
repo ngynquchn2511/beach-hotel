@@ -85,6 +85,24 @@ public class AdminHousekeepingController {
                 redirectAttributes, false);
     }
 
+    // Thong ke nang suat / chat luong buong phong (mac dinh 30 ngay gan nhat)
+    @GetMapping("/stats")
+    public String stats(@RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate from,
+                        @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate to,
+                        Model model) {
+        LocalDate t = to != null ? to : LocalDate.now();
+        LocalDate f = from != null ? from : t.minusDays(29);
+        if (f.isAfter(t)) {
+            LocalDate x = f;
+            f = t;
+            t = x;
+        }
+        model.addAttribute("from", f);
+        model.addAttribute("to", t);
+        model.addAttribute("stats", housekeepingService.stats(f, t));
+        return "admin/housekeeping/stats";
+    }
+
     @PostMapping("/settings")
     public String settings(@RequestParam(defaultValue = "false") boolean inspectionRequired, RedirectAttributes redirectAttributes) {
         housekeepingService.setInspectionRequired(inspectionRequired);

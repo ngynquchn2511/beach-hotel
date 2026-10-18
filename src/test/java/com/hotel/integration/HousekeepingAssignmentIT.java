@@ -27,6 +27,7 @@ class HousekeepingAssignmentIT extends ItFixtures {
 
     @Autowired private PricingSettingsRepository settingsRepository;
     @Autowired private StaffNotificationService notificationService;
+    @Autowired private com.hotel.service.HousekeepingService housekeepingService;
 
     private User staff;
     private User lan;
@@ -149,5 +150,32 @@ class HousekeepingAssignmentIT extends ItFixtures {
         assertThat(forStaff).contains("Vòi sen rỉ nước").doesNotContain("Riêng cho Minh");
         mockMvc.perform(get("/admin/notifications/stream").with(as(lan))).andExpect(request().asyncStarted());
         mockMvc.perform(get("/admin/housekeeping").with(as(lan))).andExpect(content().string(containsString("/js/staff-notify.js")));
+    }
+
+    @Test
+    void stats_countRoomsMinutesAndFailRatePerCleaner() throws Exception {
+        inspection(true);
+        mockMvc.perform(post("/admin/housekeeping/{id}/start", room.getId()).with(csrf()).with(as(lan)));
+        Room r = roomRepository.findById(room.getId()).orElseThrow();
+        r.setCleaningStartedAt(LocalDateTime.now().minusMinutes(30));
+        roomRepository.save(r);
+        mockMvc.perform(post("/admin/housekeeping/{id}/finish", room.getId()).with(csrf()).with(as(lan)));
+        mockMvc.perform(post("/admin/housekeeping/{id}/inspect/fail", room.getId()).with(csrf()).with(as(staff)).param("note", "Gương còn vết"));
+        mockMvc.perform(post("/admin/housekeeping/{id}/finish", room.getId()).with(csrf()).with(as(lan)));
+        mockMvc.perform(post("/admin/housekeeping/{id}/inspect/pass", room.getId()).with(csrf()).with(as(staff)));
+
+        var stats = housekeepingService.stats(java.time.LocalDate.now(), java.time.LocalDate.now());
+        var lanStats = stats.cleaners().stream().filter(c -> c.name().equals(lan.getFullName())).findFirst().orElseThrow();
+        assertThat(lanStats.cleaned()).isEqualTo(1);
+        assertThat(lanStats.inspected()).isEqualTo(2);
+        assertThat(lanStats.failed()).isEqualTo(1);
+        assertThat(lanStats.failRate()).isEqualTo(50.0);
+        assertThat(lanStats.avgMinutes()).isNotNull();
+        assertThat(stats.recentFailures()).extracting(com.hotel.entity.HousekeepingLog::getNote).contains("Gương còn vết");
+
+        mockMvc.perform(get("/admin/housekeeping/stats").with(as(staff)))
+                .andExpect(status().isOk()).andExpect(content().string(containsString("Gương còn vết")))
+                .andExpect(content().string(containsString("50.0%")));
+        mockMvc.perform(get("/admin/housekeeping/stats").with(as(lan))).andExpect(status().isForbidden());
     }
 }

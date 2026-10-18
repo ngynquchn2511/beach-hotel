@@ -42,6 +42,23 @@ public class HousekeepingService {
     private PricingService pricingService;
     private PricingSettingsRepository settingsRepository;
     private StaffNotificationService notifier;
+    private com.hotel.repository.HousekeepingLogRepository logRepository;
+
+    @Autowired
+    void setLogRepository(com.hotel.repository.HousekeepingLogRepository logRepository) {
+        this.logRepository = logRepository;
+    }
+
+    // Ghi 1 luot don (thong ke nang suat / chat luong)
+    private void log(Room room, User cleaner, String cleanerName, LocalDateTime startedAt, LocalDateTime finishedAt,
+                     com.hotel.entity.HousekeepingLog.Result result, String inspectedBy, String note) {
+        if (logRepository == null) {
+            return;
+        }
+        logRepository.save(com.hotel.entity.HousekeepingLog.builder().room(room)
+                .cleaner(cleaner != null && cleaner.getId() != null ? cleaner : null).cleanerName(cleanerName)
+                .startedAt(startedAt).finishedAt(finishedAt).result(result).inspectedBy(inspectedBy).note(note).build());
+    }
 
     public HousekeepingService(RoomRepository roomRepository, BookingRepository bookingRepository, RoomService roomService) {
         this.roomRepository = roomRepository;
@@ -211,6 +228,10 @@ public class HousekeepingService {
                     name + " vừa dọn xong");
             return false;
         }
+        User cleaner = room.getCleaningAssignee() != null ? room.getCleaningAssignee()
+                : staff != null && staff.getRole() == UserRole.HOUSEKEEPER ? staff : null;
+        log(room, cleaner, room.getCleaningBy() != null ? room.getCleaningBy() : name, room.getCleaningStartedAt(), LocalDateTime.now(),
+                com.hotel.entity.HousekeepingLog.Result.DIRECT, null, null);
         roomService.markReady(roomId, name);
         notifyReady(room, name);
         return true;
@@ -227,6 +248,8 @@ public class HousekeepingService {
         Room room = requireAwaiting(roomId);
         String cleaner = room.getCleaningBy();
         Long cleanerId = room.getCleaningAssignee() != null ? room.getCleaningAssignee().getId() : null;
+        log(room, room.getCleaningAssignee(), cleaner, room.getCleaningStartedAt(), room.getInspectionRequestedAt(),
+                com.hotel.entity.HousekeepingLog.Result.PASSED, inspectorName, null);
         roomService.markReady(roomId, cleaner);
         notifyReady(room, cleaner);
         if (cleanerId != null) {
@@ -243,12 +266,47 @@ public class HousekeepingService {
         if (text.isEmpty() || text.length() > NOTE_MAX) {
             throw new BusinessException("Vui lòng ghi chỗ chưa đạt (tối đa " + NOTE_MAX + " ký tự)");
         }
+        log(room, room.getCleaningAssignee(), room.getCleaningBy(), room.getCleaningStartedAt(), room.getInspectionRequestedAt(),
+                com.hotel.entity.HousekeepingLog.Result.FAILED, inspectorName, text);
         room.setInspectionRequestedAt(null);
         room.setInspectionNote(text);
         room.setCleaningStartedAt(LocalDateTime.now());
         roomRepository.save(room);
         notify(EnumSet.of(Audience.HOUSEKEEPING), room.getCleaningAssignee() != null ? room.getCleaningAssignee().getId() : null,
                 Level.WARNING, "Phòng " + room.getRoomNumber() + " kiểm chưa đạt", text + (inspectorName != null ? " · " + inspectorName : ""));
+    }
+
+    // ===== Thong ke buong phong =====
+
+    public record CleanerStats(String name, long cleaned, Double avgMinutes, long inspected, long failed) {
+        public double failRate() {
+            return inspected == 0 ? 0 : Math.round(1000.0 * failed / inspected) / 10.0;
+        }
+    }
+
+    public record Stats(List<CleanerStats> cleaners, List<com.hotel.entity.HousekeepingLog> recentFailures, long totalCleaned) {
+    }
+
+    // Moi nguoi: so phong don xong (DIRECT + PASSED), thoi gian TB, so lan kiem / chua dat
+    @Transactional(readOnly = true)
+    public Stats stats(LocalDate from, LocalDate to) {
+        List<com.hotel.entity.HousekeepingLog> logs = logRepository == null ? List.of()
+                : logRepository.findBetween(from.atStartOfDay(), to.plusDays(1).atStartOfDay());
+        Map<String, List<com.hotel.entity.HousekeepingLog>> byCleaner = logs.stream()
+                .collect(Collectors.groupingBy(l -> l.getCleaner() != null ? l.getCleaner().getFullName()
+                        : l.getCleanerName() != null ? l.getCleanerName() : "Không rõ"));
+        List<CleanerStats> cleaners = byCleaner.entrySet().stream().map(e -> {
+            List<com.hotel.entity.HousekeepingLog> list = e.getValue();
+            List<com.hotel.entity.HousekeepingLog> done = list.stream().filter(l -> l.getResult() != com.hotel.entity.HousekeepingLog.Result.FAILED).toList();
+            Double avg = list.stream().map(com.hotel.entity.HousekeepingLog::getMinutes).filter(java.util.Objects::nonNull)
+                    .mapToLong(Long::longValue).average().stream().boxed().findFirst().map(v -> Math.round(v * 10) / 10.0).orElse(null);
+            long inspected = list.stream().filter(l -> l.getResult() != com.hotel.entity.HousekeepingLog.Result.DIRECT).count();
+            long failed = list.stream().filter(l -> l.getResult() == com.hotel.entity.HousekeepingLog.Result.FAILED).count();
+            return new CleanerStats(e.getKey(), done.size(), avg, inspected, failed);
+        }).sorted(Comparator.comparing(CleanerStats::cleaned).reversed().thenComparing(CleanerStats::name)).toList();
+        List<com.hotel.entity.HousekeepingLog> failures = logs.stream()
+                .filter(l -> l.getResult() == com.hotel.entity.HousekeepingLog.Result.FAILED).limit(20).toList();
+        return new Stats(cleaners, failures, cleaners.stream().mapToLong(CleanerStats::cleaned).sum());
     }
 
     private void notifyReady(Room room, String cleaner) {

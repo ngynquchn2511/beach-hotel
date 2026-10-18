@@ -39,6 +39,8 @@
                         <a th:href="@{/admin/housekeeping(mine=true)}" class="btn btn-sm" th:classappend="${mine} ? 'btn-primary' : 'btn-outline-primary'">Phòng của tôi</a>
                         <a th:href="@{/admin/housekeeping}" class="btn btn-sm" th:classappend="${!mine} ? 'btn-primary' : 'btn-outline-primary'">Tất cả</a>
                     </th:block>
+                    <a sec:authorize="hasAnyRole('ADMIN','STAFF')" th:href="@{/admin/housekeeping/stats}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-bar-chart me-1"></i>Thống kê</a>
                     <form sec:authorize="hasAnyRole('ADMIN','STAFF')" method="post" th:action="@{/admin/housekeeping/settings}" class="form-check form-switch m-0">
                         <input type="hidden" name="inspectionRequired" th:value="${!inspectionRequired}">
                         <button type="submit" class="btn btn-sm btn-outline-secondary"
