@@ -53,7 +53,8 @@ import org.springframework.web.bind.annotation.ModelAttribute;
         AdminExpenseController.class,
         AdminProfitController.class,
         AdminInsightController.class,
-        AdminBudgetController.class
+        AdminBudgetController.class,
+        AdminRevenueForecastController.class
 })
 public class AdminSidebarModelAdvice {
 

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Dự báo doanh thu</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+</head>
+<body class="eaut eaut-admin">
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="container py-5">
+    <div class="row g-4">
+        <div class="col-md-3">
+            <div th:replace="~{fragments/admin-sidebar :: sidebar}"></div>
+        </div>
+
+        <div class="col-md-9">
+            <h3 class="fw-bold mb-1">Dự báo doanh thu phòng</h3>
+            <p class="text-muted small">Tính đến <span th:text="${#temporals.format(today, 'dd/MM/yyyy')}"></span>.
+                <b>Đã có trên sổ</b> = đơn đã xác nhận cho các đêm của tháng. <b>Dự báo</b> = trên sổ + lượng đặt thêm như cùng kỳ năm trước
+                (từ thời điểm này đến cuối tháng), điều chỉnh theo tốc độ bán năm nay. Chưa tính doanh thu dịch vụ.</p>
+
+            <div class="row g-3">
+                <div class="col-lg-4" th:each="f : ${forecasts}">
+                    <div class="bg-white rounded shadow-sm p-3 h-100">
+                        <div class="d-flex justify-content-between align-items-baseline">
+                            <h5 class="fw-bold m-0" th:text="'Tháng ' + ${f.month.monthValue} + '/' + ${f.month.year}"></h5>
+                            <span class="badge" th:classappend="${f.confidence.name() == 'HIGH'} ? 'bg-success' : (${f.confidence.name() == 'MEDIUM'} ? 'bg-info text-dark' : 'bg-secondary')"
+                                  th:text="'Tin cậy: ' + ${f.confidence.label}"></span>
+                        </div>
+                        <div class="small text-muted mt-2">Dự báo doanh thu phòng</div>
+                        <div class="fs-4 fw-bold" th:text="${#numbers.formatDecimal(f.forecastRevenue, 1, 'POINT', 0, 'COMMA')}"></div>
+                        <div class="small" th:text="'Công suất dự báo ' + ${f.forecastOccupancy} + '%'"></div>
+                        <hr class="my-2">
+                        <table class="table table-sm small mb-0">
+                            <tbody>
+                            <tr><td>Đã có trên sổ</td><td class="text-end" th:text="${#numbers.formatDecimal(f.onTheBooks.revenue, 1, 'POINT', 0, 'COMMA')}"></td></tr>
+                            <tr><td>· phòng-đêm / công suất</td><td class="text-end" th:text="${f.onTheBooks.nights} + ' / ' + ${f.otbOccupancy} + '%'"></td></tr>
+                            <tr><td>Dự kiến đặt thêm</td><td class="text-end" th:text="'+' + ${#numbers.formatDecimal(f.pickup, 1, 'POINT', 0, 'COMMA')}"></td></tr>
+                            <tr><td>Cùng kỳ năm trước (kết quả)</td><td class="text-end" th:text="${#numbers.formatDecimal(f.lastYearFinal.revenue, 1, 'POINT', 0, 'COMMA')}"></td></tr>
+                            <tr><td>Cùng kỳ, cùng thời điểm này</td><td class="text-end" th:text="${#numbers.formatDecimal(f.lastYearAtSameLead.revenue, 1, 'POINT', 0, 'COMMA')}"></td></tr>
+                            <tr><td>Tốc độ bán so với năm trước</td><td class="text-end" th:classappend="${f.pace < 1} ? 'text-danger' : 'text-success'" th:text="'×' + ${f.pace}"></td></tr>
+                            <tr th:if="${f.revenueTarget != null}"><td>So với kế hoạch</td>
+                                <td class="text-end fw-semibold" th:classappend="${f.forecastVsTargetPercent < 100} ? 'text-danger' : 'text-success'"
+                                    th:text="${f.forecastVsTargetPercent} + '%'"></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <p class="small text-muted mt-3">Dự báo là ước tính - tháng càng xa càng kém chắc. Nên xem cùng trang Lãi lỗ và Phân tích &amp; AI.</p>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

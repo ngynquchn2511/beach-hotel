@@ -58,6 +58,12 @@ public class AiAdvisorService {
     private final AiReportRepository repository;
     private final ObjectMapper mapper = new ObjectMapper();
     private com.hotel.service.BudgetService budgetService;
+    private com.hotel.service.RevenueForecastService forecastService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setForecastService(com.hotel.service.RevenueForecastService forecastService) {
+        this.forecastService = forecastService;
+    }
 
     @org.springframework.beans.factory.annotation.Autowired
     void setBudgetService(com.hotel.service.BudgetService budgetService) {
@@ -170,6 +176,22 @@ public class AiAdvisorService {
             insights.add(m);
         }
         root.put("ruleBasedFindings", insights);
+        // Du bao chi co y nghia khi phan tich thang hien tai
+        if (forecastService != null && month.equals(YearMonth.now())) {
+            List<Map<String, Object>> fc = new ArrayList<>();
+            for (com.hotel.service.RevenueForecastService.MonthForecast f : forecastService.forecast(java.time.LocalDate.now())) {
+                Map<String, Object> x = new LinkedHashMap<>();
+                x.put("month", f.month().toString());
+                x.put("roomRevenueOnTheBooks", f.onTheBooks().revenue());
+                x.put("forecastRoomRevenue", f.forecastRevenue());
+                x.put("forecastOccupancyPercent", f.forecastOccupancy());
+                x.put("paceVsLastYear", f.pace());
+                x.put("confidence", f.confidence().name());
+                x.put("revenueTarget", f.revenueTarget());
+                fc.add(x);
+            }
+            root.put("roomRevenueForecast", fc);
+        }
         if (budgetService != null) {
             budgetService.variance(r.current()).ifPresent(v -> {
                 Map<String, Object> b = new LinkedHashMap<>();

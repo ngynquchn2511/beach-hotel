@@ -28,6 +28,8 @@
            th:classappend="${p.startsWith('/admin/accounting/pnl')} ? 'active'"><i class="bi bi-graph-up"></i>Lãi lỗ</a>
         <a th:href="@{/admin/accounting/budget}" class="list-group-item list-group-item-action"
            th:classappend="${p.startsWith('/admin/accounting/budget')} ? 'active'"><i class="bi bi-bullseye"></i>Kế hoạch năm</a>
+        <a th:href="@{/admin/accounting/revenue-forecast}" class="list-group-item list-group-item-action"
+           th:classappend="${p.startsWith('/admin/accounting/revenue-forecast')} ? 'active'"><i class="bi bi-binoculars"></i>Dự báo doanh thu</a>
         <a th:href="@{/admin/accounting/insights}" class="list-group-item list-group-item-action"
            th:classappend="${p.startsWith('/admin/accounting/insights')} ? 'active'"><i class="bi bi-stars"></i>Phân tích &amp; AI</a>
         <a th:href="@{/admin/reports/daily}" class="list-group-item list-group-item-action"
@@ -105,6 +107,8 @@
        th:classappend="${p.startsWith('/admin/accounting/pnl')} ? 'active'"><i class="bi bi-graph-up"></i>Lãi lỗ</a>
     <a th:href="@{/admin/accounting/budget}" class="list-group-item list-group-item-action"
        th:classappend="${p.startsWith('/admin/accounting/budget')} ? 'active'"><i class="bi bi-bullseye"></i>Kế hoạch năm</a>
+    <a th:href="@{/admin/accounting/revenue-forecast}" class="list-group-item list-group-item-action"
+       th:classappend="${p.startsWith('/admin/accounting/revenue-forecast')} ? 'active'"><i class="bi bi-binoculars"></i>Dự báo doanh thu</a>
     <a th:href="@{/admin/accounting/insights}" class="list-group-item list-group-item-action"
        th:classappend="${p.startsWith('/admin/accounting/insights')} ? 'active'"><i class="bi bi-stars"></i>Phân tích &amp; AI</a>
     </th:block>
