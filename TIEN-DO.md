@@ -1,7 +1,7 @@
 # Tiến độ dự án Sóng Xanh Resort (beach-hotel)
 
 > File bàn giao giữa các phiên làm việc với Claude. Mở phiên mới, bảo Claude: **"đọc file TIEN-DO.md"**.
-> Cập nhật lần cuối: 18/10/2026, sau commit `93d6326`, 1851 test xanh.
+> Cập nhật lần cuối: 18/10/2026, sau commit `ca45ae8`, 1870 test xanh.
 
 ## 1. Dự án
 
@@ -22,6 +22,7 @@
 4. Đổi cấu trúc DB thì:
    - thêm file `sql/<ngày>_<ten>.sql` chạy lại nhiều lần vẫn an toàn (`CREATE TABLE IF NOT EXISTS`, thủ tục `hb_add_column`, `ALTER ... MODIFY` cho cột ENUM);
    - kiểm chứng trên DB nháp `beach_hotel_migtest`: dump cấu trúc DB dev → chạy file sql 2 lần → chạy app ở cổng 8082 với `ddl-auto=validate` → thấy "Started" thì dừng app và xóa DB nháp → áp file sql vào DB dev.
+     Claude viết sẵn các bước này thành script PowerShell `migcheck.ps1 -SqlFile <file>` trong thư mục tạm của phiên (mất khi đổi phiên, viết lại theo các bước trên).
 5. Cột enum của Hibernate là ENUM trong MySQL. Thêm giá trị enum mới (vai trò, loại phụ phí...) thì **phải** `ALTER ... MODIFY` trong migration và áp luôn vào DB dev.
 6. Mẹo kỹ thuật:
    - Sửa file lớn bằng script Python lưu ở thư mục tạm (Write tool tạo script, hàm `sub(path, old, new)` báo lỗi nếu không thấy chuỗi), không dùng heredoc của bash.
@@ -31,6 +32,18 @@
    - MockMvc đọc JSON không charset là ISO-8859-1: dùng `getContentAsString(StandardCharsets.UTF_8)`.
 
 ## 3. Đã làm (theo thứ tự gần nhất trước)
+
+### Đợt 5 (18/10/2026)
+| Commit | Chức năng |
+|---|---|
+| `ca45ae8` | Trang `/services`: mục Spa & nhà hàng (gói đang bán, số sao, góp ý tiêu biểu từ 4 sao, tên khách rút gọn "Lan N.") |
+| `2430006` | Đối soát VNPay đọc thẳng file gốc cổng merchant: tự nhận cột mã GD / số tiền / trạng thái theo tiêu đề, bỏ dòng thất bại, `vnp_Amount` chia 100 |
+| `ea6a128` | Thời lượng spa chốt vào từng lịch (`duration_minutes`), sửa gói không đổi lịch đã đặt |
+| `cf2b506` | Phân công dọn phòng (giao phòng cho nhân viên buồng, lọc "Phòng của tôi"), bước kiểm phòng bật/tắt trên `/admin/housekeeping`; thông báo tức thời theo nhóm: `Audience.FRONT_DESK` / `HOUSEKEEPING` + người nhận riêng |
+| `e3757ef` | Báo cáo cuối ngày `/admin/reports/daily` (xem / in; ADMIN gửi email ngay), tự gửi 23h30 (`DailyReportScheduler`) |
+| `a4168c6` | Giá không hoàn tiền: giảm % (cài ở `/admin/pricing`), trả trước 100% qua cọc, hủy không hoàn, không tự đổi ngày |
+| `d01ed85` | Luật bán phòng (`stay_rules`): số đêm tối thiểu theo ngày nhận, đóng bán theo ngày / loại phòng, đặt trước tối đa N ngày; áp cho online / đoàn / khách đổi ngày, không chặn đặt tại quầy |
+| `dbce957` | Khách không đến (no-show): đơn đóng như hủy (status CANCELLED + cờ `noShow`), giữ cọc, trả phòng; cảnh báo ở đơn sau của khách; nhắc lễ tân 23h |
 
 ### Đợt 4 (18/10/2026)
 | Commit | Chức năng |
@@ -58,9 +71,11 @@
 
 - Chạy **tất cả** các file trong `sql/` theo thứ tự tên file (`2026-10-10_*`, `2026-10-15_*`, `2026-10-16_*`, rồi `2026-10-18_*`) **trước khi** chạy bản mới.
   - `2026-10-18_goi-spa.sql` vừa tạo bảng vừa **chuyển dữ liệu** lịch spa cũ (cột `treatment`) sang `spa_package_id`; cột `treatment` cũ được giữ lại, app không đọc nữa.
+  - `2026-10-18_thoi-luong-spa-theo-lich.sql` phải chạy **sau** `2026-10-18_goi-spa.sql` (thứ tự tên file đã đúng) vì điền thời lượng từ bảng gói.
 - Biến môi trường:
   - VNPay: `VNPAY_TMN_CODE`, `VNPAY_HASH_SECRET`. Chưa thử với sandbox thật (xem mục 7).
   - Mail: OTP quản trị tự bật khi đã cấu hình mail; đặt `ADMIN_OTP=false` để tắt.
+  - Báo cáo cuối ngày: `DAILY_REPORT_TO` (email cách nhau dấu phẩy; bỏ trống = gửi các tài khoản ADMIN), `DAILY_REPORT_ENABLED=false` để tắt.
 - Tài khoản admin `ngqhoan214@gmail.com` mới chỉ có trên DB dev. Server cần tạo lại tài khoản này.
 - Thông báo tức thời dùng SSE: nếu đặt sau Nginx thì cho đường dẫn `/admin/notifications/stream` tắt buffer (`proxy_buffering off;`, `proxy_read_timeout 1h;`). Nhiều instance app thì mỗi instance chỉ báo cho lễ tân đang nối vào nó.
 
@@ -68,17 +83,17 @@
 
 - Đơn đoàn: mã giảm giá số tiền cố định chỉ trừ vào phòng đầu tiên (tối đa bằng tiền phòng đó).
 - Công suất các kỳ cũ được tính theo số phòng hiện tại.
-- Thời lượng spa của lịch cũ lấy theo thời lượng **hiện tại** của gói (sửa thời lượng gói thì lịch đã đặt cũng đổi theo khi tính giường trống); giá thì đã chốt lúc đặt.
-- Đối soát VNPay chỉ đọc file 2 cột (mã GD, số tiền); file xuất từ cổng merchant cần xóa / sắp lại cột trước khi tải lên.
+- Đối soát VNPay nhận cột theo các tiêu đề thường gặp; chưa thử với file thật của cổng merchant (chưa có tài khoản). Nếu không nhận được, sửa danh sách tiêu đề trong `AccountingService.refScore` / `detectColumns`.
+- Giá không hoàn tiền chưa áp cho đơn đoàn.
+- No-show không tự động: lễ tân bấm "Khách không đến" (hệ thống chỉ nhắc lúc 23h).
 - Gửi lại email thẻ quà tặng giới hạn 1 lần / 10 phút / thẻ, lưu trong bộ nhớ (khởi động lại app thì đếm lại).
 
 ## 6. Gợi ý việc làm tiếp (chưa làm)
 
-1. Thử VNPay sandbox thật theo checklist mục 7 (cần chủ dự án đăng ký tài khoản sandbox).
-2. Đối soát VNPay đọc thẳng file Excel gốc của cổng merchant (tự nhận cột theo tiêu đề).
-3. Lưu thời lượng spa vào từng lịch đặt (chốt lúc đặt, giống giá).
-4. Trang công khai cho dịch vụ spa / nhà hàng hiển thị điểm đánh giá và góp ý tiêu biểu.
-5. Thông báo tức thời cho buồng phòng (phòng trả xong cần dọn, báo hỏng mới).
+1. Thử VNPay sandbox thật theo checklist mục 7 (cần chủ dự án đăng ký tài khoản sandbox), kèm thử đối soát với file sao kê thật.
+2. Giá không hoàn tiền cho đơn đoàn.
+3. Báo cáo no-show / hủy theo kênh và theo tháng (tỷ lệ, tiền cọc giữ lại).
+4. Lịch sử kiểm phòng (ai kiểm, bao nhiêu lần chưa đạt) để đánh giá nhân viên buồng.
 
 ## 7. Checklist thử VNPay sandbox (chưa chạy - cần tài khoản)
 
