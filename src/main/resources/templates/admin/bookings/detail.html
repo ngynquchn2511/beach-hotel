@@ -187,6 +187,31 @@
                     <button type="submit" class="btn btn-outline-secondary">Gửi hóa đơn qua email</button>
                 </form>
 
+                <div class="border rounded p-3 my-3" id="yeu-cau">
+                    <div class="fw-semibold mb-2"><i class="bi bi-chat-heart me-1"></i>Yêu cầu đặc biệt &amp; sở thích</div>
+                    <div class="alert alert-warning py-2 small" th:if="${booking.customer != null and booking.customer.staffNotes != null}">
+                        <b>Lưu ý về khách:</b> <span th:text="${booking.customer.staffNotes}"></span></div>
+                    <form method="post" th:action="@{/admin/bookings/{id}/requests(id=${booking.id})}" class="mb-2">
+                        <div class="d-flex flex-wrap gap-2 mb-2">
+                            <div class="form-check form-check-inline m-0" th:each="tg : ${requestTagOptions}">
+                                <input class="form-check-input" type="checkbox" name="requestTags" th:value="${tg}" th:id="'rt' + ${tg}"
+                                       th:checked="${#lists.contains(booking.requestTagList, tg)}">
+                                <label class="form-check-label small" th:for="'rt' + ${tg}" th:text="${tg.vietnameseLabel}"></label>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <input type="text" name="specialRequests" class="form-control form-control-sm" maxlength="500"
+                                   th:value="${booking.specialRequests}" placeholder="Yêu cầu khác của khách">
+                            <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">Lưu yêu cầu</button>
+                        </div>
+                    </form>
+                    <form method="post" th:if="${booking.customer != null}" th:action="@{/admin/bookings/{id}/guest-notes(id=${booking.id})}" class="d-flex gap-2">
+                        <input type="text" name="staffNotes" class="form-control form-control-sm" maxlength="1000"
+                               th:value="${booking.customer.staffNotes}" placeholder="Sở thích / lưu ý về khách (chỉ nhân viên thấy, nhớ cho lần sau)">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary text-nowrap">Lưu vào hồ sơ</button>
+                    </form>
+                </div>
+
                 <div class="border rounded p-3 my-3" id="nang-hang" th:if="${!#lists.isEmpty(upgradeCandidates) or !#lists.isEmpty(upgradeOffers)}">
                     <div class="fw-semibold mb-1"><i class="bi bi-arrow-up-circle me-1"></i>Nâng hạng phòng</div>
                     <ul class="small mb-2" th:unless="${#lists.isEmpty(upgradeOffers)}">

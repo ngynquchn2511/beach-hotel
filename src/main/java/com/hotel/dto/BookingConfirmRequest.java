@@ -22,6 +22,12 @@ public class BookingConfirmRequest {
     // Gia khong hoan tien (giam them %, tra truoc toan bo)
     private Boolean nonRefundable;
 
+    // Yeu cau dac biet
+    private java.util.List<com.hotel.entity.GuestRequestTag> requestTags;
+
+    @jakarta.validation.constraints.Size(max = 500, message = "{req.error.tooLongField}")
+    private String specialRequests;
+
     @NotBlank(message = "{val.guestName.required}")
     private String guestName;
 

@@ -1535,6 +1535,65 @@ public class BookingService {
         return cancelledBooking;
     }
 
+    // ===== Yeu cau dac biet / so thich khach =====
+
+    public static final int SPECIAL_REQUESTS_MAX = 500;
+    public static final int STAFF_NOTES_MAX = 1000;
+
+    // Khach sua duoc truoc khi nhan phong; le tan sua ca khi khach dang o
+    public boolean canEditRequests(Booking booking, boolean byGuest) {
+        BookingStatus s = booking.getStatus();
+        return s == BookingStatus.PENDING || s == BookingStatus.CONFIRMED || (!byGuest && s == BookingStatus.CHECKED_IN);
+    }
+
+    @Transactional
+    public Booking updateRequests(Booking booking, java.util.Collection<GuestRequestTag> tags, String text, boolean byGuest) {
+        if (!canEditRequests(booking, byGuest)) {
+            throw BusinessException.of("req.error.closed");
+        }
+        String clean = text == null || text.isBlank() ? null : text.trim();
+        if (clean != null && clean.length() > SPECIAL_REQUESTS_MAX) {
+            throw BusinessException.of("req.error.tooLong", SPECIAL_REQUESTS_MAX);
+        }
+        String codes = tags == null || tags.isEmpty() ? null
+                : tags.stream().distinct().sorted().map(Enum::name).collect(java.util.stream.Collectors.joining(","));
+        boolean changed = !java.util.Objects.equals(codes, booking.getRequestTags()) || !java.util.Objects.equals(clean, booking.getSpecialRequests());
+        booking.setRequestTags(codes);
+        booking.setSpecialRequests(clean);
+        booking.setRequestsUpdatedAt(LocalDateTime.now());
+        Booking saved = bookingRepository.save(booking);
+        if (byGuest && changed) {
+            String summary = saved.getRequestTagList().stream().map(GuestRequestTag::getVietnameseLabel)
+                    .collect(java.util.stream.Collectors.joining(", "));
+            if (clean != null) {
+                summary = summary.isEmpty() ? clean : summary + " · " + clean;
+            }
+            notifyStaff("requests", com.hotel.service.StaffNotificationService.Level.INFO,
+                    "Khách cập nhật yêu cầu đặc biệt · đơn #" + saved.getId(),
+                    summary.isEmpty() ? "Đã bỏ hết yêu cầu" : (summary.length() > 120 ? summary.substring(0, 120) + "…" : summary),
+                    "/admin/bookings/" + saved.getId());
+        }
+        return saved;
+    }
+
+    @Transactional
+    public User updateStaffNotes(Long customerId, String notes) {
+        User user = userRepositoryForNotes.findById(customerId).orElseThrow(() -> new BusinessException("Không tìm thấy khách"));
+        String clean = notes == null || notes.isBlank() ? null : notes.trim();
+        if (clean != null && clean.length() > STAFF_NOTES_MAX) {
+            throw new BusinessException("Ghi chú về khách tối đa " + STAFF_NOTES_MAX + " ký tự");
+        }
+        user.setStaffNotes(clean);
+        return userRepositoryForNotes.save(user);
+    }
+
+    private com.hotel.repository.UserRepository userRepositoryForNotes;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setUserRepositoryForNotes(com.hotel.repository.UserRepository userRepository) {
+        this.userRepositoryForNotes = userRepository;
+    }
+
     // ===== Khach khong den (no-show) =====
 
     // Danh dau duoc khi da qua gio nhan phong cua don ma khach chua den (don dang cho / da xac nhan)

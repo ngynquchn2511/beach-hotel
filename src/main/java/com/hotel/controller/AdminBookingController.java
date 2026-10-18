@@ -97,6 +97,7 @@ public class AdminBookingController {
         model.addAttribute("refundQuote", bookingService.refundQuoteIfCancelledNow(booking));
         model.addAttribute("canMarkNoShow", bookingService.canMarkNoShow(booking));
         model.addAttribute("upgradeOffers", upgradeService.offersOf(id));
+        model.addAttribute("requestTagOptions", com.hotel.entity.GuestRequestTag.values());
         model.addAttribute("upgradeCandidates", upgradeService.candidates(booking));
         // So lan khach nay khong den o cac don KHAC (canh bao nen yeu cau coc)
         long noShows = booking.getCustomer() != null ? bookingService.noShowCount(booking.getCustomer().getId()) : 0;
@@ -389,6 +390,35 @@ public class AdminBookingController {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
         return "redirect:/admin/bookings/" + id;
+    }
+
+    // Le tan sua yeu cau dac biet cua don
+    @PostMapping("/{id}/requests")
+    public String updateRequests(@PathVariable Long id, @RequestParam(required = false) java.util.List<com.hotel.entity.GuestRequestTag> requestTags,
+                                 @RequestParam(required = false) String specialRequests, RedirectAttributes redirectAttributes) {
+        try {
+            bookingService.updateRequests(bookingService.findById(id), requestTags, specialRequests, false);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã lưu yêu cầu đặc biệt");
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "redirect:/admin/bookings/" + id + "#yeu-cau";
+    }
+
+    // Ghi chu so thich / luu y ve khach (luu vao ho so, hien o cac don sau)
+    @PostMapping("/{id}/guest-notes")
+    public String updateGuestNotes(@PathVariable Long id, @RequestParam(required = false) String staffNotes, RedirectAttributes redirectAttributes) {
+        try {
+            Booking booking = bookingService.findById(id);
+            if (booking.getCustomer() == null) {
+                throw new BusinessException("Đơn không gắn với tài khoản khách");
+            }
+            bookingService.updateStaffNotes(booking.getCustomer().getId(), staffNotes);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã lưu ghi chú về khách - hiện lại ở các đơn sau");
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "redirect:/admin/bookings/" + id + "#yeu-cau";
     }
 
     // Gui loi moi nang hang phong cho khach (email + hien tren trang don)

@@ -137,6 +137,30 @@
     </div>
 
     <!-- Goi mon len phong khi dang o: le tan giao xong moi cong tien vao hoa don -->
+    <div class="bg-white p-4 rounded shadow-sm mb-4" id="yeu-cau" th:if="${canEditRequests or booking.hasSpecialRequests}">
+        <h5 class="fw-bold mb-1"><i class="bi bi-chat-heart me-2"></i><span th:text="#{req.title}">Yêu cầu đặc biệt</span></h5>
+        <div th:if="${requestsSuccess}" class="alert alert-success small py-2" th:text="${requestsSuccess}"></div>
+        <div th:if="${requestsError}" class="alert alert-danger small py-2" th:text="${requestsError}"></div>
+        <form th:if="${canEditRequests}" method="post" th:action="@{/customer/bookings/{id}/requests(id=${booking.id})}">
+            <input type="hidden" name="token" th:if="${accessToken != null}" th:value="${accessToken}">
+            <div class="d-flex flex-wrap gap-2 mb-2">
+                <div class="form-check form-check-inline m-0" th:each="tg : ${requestTagOptions}">
+                    <input class="form-check-input" type="checkbox" name="requestTags" th:value="${tg}" th:id="'rs' + ${tg}"
+                           th:checked="${#lists.contains(booking.requestTagList, tg)}">
+                    <label class="form-check-label small" th:for="'rs' + ${tg}" th:text="#{'req.tag.' + ${tg}}"></label>
+                </div>
+            </div>
+            <textarea name="specialRequests" class="form-control form-control-sm mb-2" rows="2" maxlength="500"
+                      th:text="${booking.specialRequests}" th:placeholder="#{req.placeholder}"></textarea>
+            <button type="submit" class="btn btn-sm btn-outline-primary" th:text="#{req.save}">Lưu yêu cầu</button>
+            <span class="small text-muted ms-2" th:text="#{req.hint}"></span>
+        </form>
+        <div th:unless="${canEditRequests}" class="small">
+            <span th:each="tg : ${booking.requestTagList}" class="badge bg-light text-dark border me-1" th:text="#{'req.tag.' + ${tg}}"></span>
+            <div th:if="${booking.specialRequests != null}" class="fst-italic mt-1" th:text="${booking.specialRequests}"></div>
+        </div>
+    </div>
+
     <div class="bg-white p-4 rounded shadow-sm mb-4 border border-primary" id="nang-hang"
          th:if="${!#lists.isEmpty(upgradeOffers) or upgradeSuccess != null or upgradeError != null}">
         <h5 class="fw-bold mb-1"><i class="bi bi-arrow-up-circle me-2"></i><span th:text="#{upgrade.title}">Nâng hạng phòng</span></h5>

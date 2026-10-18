@@ -218,6 +218,10 @@ public class CustomerBookingController {
                     request.getGuestName(), request.getGuestPhone(), request.getGuestEmail(), points,
                     request.getGiftCode(), userDetails != null, Boolean.TRUE.equals(request.getNonRefundable())
             );
+            if ((request.getRequestTags() != null && !request.getRequestTags().isEmpty())
+                    || (request.getSpecialRequests() != null && !request.getSpecialRequests().isBlank())) {
+                booking = bookingService.updateRequests(booking, request.getRequestTags(), request.getSpecialRequests(), false);
+            }
             if (companyInfo != null) {
                 companyInvoiceService.save(booking, companyInfo);
             }
@@ -289,6 +293,8 @@ public class CustomerBookingController {
         model.addAttribute("canReview", reviewService.canReview(booking));
         model.addAttribute("canModify", bookingService.canModify(booking));
         model.addAttribute("canChangeDates", bookingService.canModify(booking) && !booking.isNonRefundable());
+        model.addAttribute("canEditRequests", bookingService.canEditRequests(booking, true));
+        model.addAttribute("requestTagOptions", com.hotel.entity.GuestRequestTag.values());
         // Da coc: bao truoc tien duoc hoan neu huy ngay bay gio
         model.addAttribute("refundQuote", bookingService.refundQuoteIfCancelledNow(booking));
         if (booking.isAwaitingDeposit()) {
@@ -523,6 +529,22 @@ public class CustomerBookingController {
             redirectAttributes.addFlashAttribute("facilityError", userMessages.of(ex));
         }
         return backTo(id, token, "#spa-nha-hang");
+    }
+
+    // Khach sua yeu cau dac biet tren trang don (truoc khi nhan phong)
+    @PostMapping("/{id}/requests")
+    public String updateRequests(@PathVariable Long id, @RequestParam(required = false) String token,
+                                 @RequestParam(required = false) java.util.List<com.hotel.entity.GuestRequestTag> requestTags,
+                                 @RequestParam(required = false) String specialRequests,
+                                 @AuthenticationPrincipal CustomUserDetails userDetails, RedirectAttributes redirectAttributes) {
+        Booking booking = bookingService.findForViewing(id, token, userDetails != null ? userDetails.getUser().getId() : null);
+        try {
+            bookingService.updateRequests(booking, requestTags, specialRequests, true);
+            redirectAttributes.addFlashAttribute("requestsSuccess", userMessages.get("req.saved"));
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("requestsError", userMessages.of(ex));
+        }
+        return backTo(id, token, "#yeu-cau");
     }
 
     // Nang hang phong: khach dong y / tu choi loi moi
@@ -764,6 +786,7 @@ public class CustomerBookingController {
         }
         // Uoc tinh truoc khi ap ma giam gia - so chinh xac hien o trang don sau khi dat
         model.addAttribute("estimatedDeposit", pricingService.depositFor(subtotal));
+        model.addAttribute("requestTagOptions", com.hotel.entity.GuestRequestTag.values());
         // Lua chon gia khong hoan tien (uoc tinh tren tien phong sau khuyen mai, truoc gia thanh vien)
         int nonRefPercent = settings.getEffectiveNonRefundablePercent();
         if (nonRefPercent > 0) {

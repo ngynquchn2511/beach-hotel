@@ -118,6 +118,20 @@
                 <div class="text-muted small mt-1" th:text="#{confirm.timesHint}">Giờ mặc định theo thông lệ của resort — chọn lại trong danh sách nếu muốn đổi</div>
             </div>
 
+            <!-- Yeu cau dac biet: chon nhanh + ghi them (resort co gang dap ung, khong cam ket) -->
+            <div class="mb-3">
+                <label class="form-label" th:text="#{req.title}">Yêu cầu đặc biệt (không bắt buộc)</label>
+                <div class="d-flex flex-wrap gap-2 mb-2">
+                    <div class="form-check form-check-inline m-0" th:each="tg : ${requestTagOptions}">
+                        <input class="form-check-input" type="checkbox" name="requestTags" th:value="${tg}" th:id="'rq' + ${tg}"
+                               th:checked="${bookingConfirmRequest.requestTags != null and #lists.contains(bookingConfirmRequest.requestTags, tg)}">
+                        <label class="form-check-label small" th:for="'rq' + ${tg}" th:text="#{'req.tag.' + ${tg}}"></label>
+                    </div>
+                </div>
+                <textarea th:field="*{specialRequests}" class="form-control" rows="2" maxlength="500" th:placeholder="#{req.placeholder}"></textarea>
+                <div class="form-text" th:text="#{req.hint}"></div>
+            </div>
+
             <!-- Gia khong hoan tien: giam them %, tra truoc toan bo -->
             <div class="mb-3 p-3 border rounded" th:if="${nonRefPercent != null}">
                 <div class="fw-semibold mb-2" th:text="#{nonRef.choose}">Chọn loại giá</div>

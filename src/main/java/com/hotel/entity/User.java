@@ -63,6 +63,10 @@ public class User {
     @Column(name = "locked")
     private Boolean locked;
 
+    // So thich / luu y ve khach do le tan ghi (khach khong thay) - hien lai o moi don sau
+    @Column(name = "staff_notes", length = 1000)
+    private String staffNotes;
+
     // Xac thuc email: false = chua kich hoat (tu dang ky chua bam link, hoac tai khoan tu tao khi dat phong
     // khong dang nhap) -> chua dang nhap duoc. null = tai khoan cu / admin / nhan vien -> coi nhu da xac thuc
     @Column(name = "email_verified")

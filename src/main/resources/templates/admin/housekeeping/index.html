@@ -67,6 +67,9 @@
                                 <i class="bi bi-exclamation-triangle-fill"></i>
                                 <span th:text="|Ưu tiên: khách ${t.arrival.guestName} đến hôm nay|"></span>
                             </div>
+                            <div th:if="${t.priority() and !#lists.isEmpty(t.arrival.housekeepingTags)}" class="mt-1">
+                                <span th:each="tg : ${t.arrival.housekeepingTags}" class="badge bg-warning-subtle text-warning-emphasis me-1" th:text="${tg.vietnameseLabel}"></span>
+                            </div>
                             <div class="small" th:if="${t.assignee() != null}"><i class="bi bi-person"></i>
                                 <span th:text="'Giao: ' + ${t.assignee().fullName}"></span></div>
                             <form sec:authorize="hasAnyRole('ADMIN','STAFF')" method="post" th:action="@{/admin/housekeeping/{id}/assign(id=${t.room.id})}"

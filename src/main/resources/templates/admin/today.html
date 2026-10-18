@@ -153,6 +153,10 @@
                                       th:text="${b.room.status.name() == 'OCCUPIED'} ? 'Khách trước chưa trả phòng' : (${b.room.status.name() == 'MAINTENANCE'} ? 'Phòng đang bảo trì' : 'Phòng chưa dọn')"></span>
                                 <span th:if="${!e.done and e.declaredGuests == 0}" class="badge bg-secondary">Chưa khai báo lưu trú</span>
                                 <span th:if="${b.combo != null}" class="badge bg-info text-dark" th:text="${b.combo.name}"></span>
+                                <span th:each="tg : ${b.requestTagList}" class="badge bg-light text-dark border" th:text="${tg.vietnameseLabel}"></span>
+                                <div class="small fst-italic" th:if="${b.specialRequests != null}" th:text="'“' + ${b.specialRequests} + '”'"></div>
+                                <div class="small text-warning-emphasis" th:if="${b.customer != null and b.customer.staffNotes != null}">
+                                    <i class="bi bi-person-exclamation"></i> <span th:text="${b.customer.staffNotes}"></span></div>
                             </td>
                             <td class="text-end no-print text-nowrap">
                                 <form th:if="${b.status.name() == 'CONFIRMED' and e.declaredGuests > 0}" class="d-inline" method="post"

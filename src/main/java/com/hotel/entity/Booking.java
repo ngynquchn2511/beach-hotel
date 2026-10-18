@@ -92,6 +92,39 @@ public class Booking {
     @Column(name = "cancelled_at")
     private LocalDateTime cancelledAt;
 
+    // Yeu cau dac biet cua khach: ma chon nhanh (GuestRequestTag, cach nhau dau phay) + ghi them
+    @Column(name = "request_tags", length = 200)
+    private String requestTags;
+
+    @Column(name = "special_requests", length = 500)
+    private String specialRequests;
+
+    @Column(name = "requests_updated_at")
+    private LocalDateTime requestsUpdatedAt;
+
+    public java.util.List<GuestRequestTag> getRequestTagList() {
+        if (requestTags == null || requestTags.isBlank()) {
+            return java.util.List.of();
+        }
+        java.util.List<GuestRequestTag> list = new java.util.ArrayList<>();
+        for (String code : requestTags.split(",")) {
+            try {
+                list.add(GuestRequestTag.valueOf(code.trim()));
+            } catch (IllegalArgumentException ignored) {
+                // ma cu da bo
+            }
+        }
+        return list;
+    }
+
+    public java.util.List<GuestRequestTag> getHousekeepingTags() {
+        return getRequestTagList().stream().filter(GuestRequestTag::isForHousekeeping).toList();
+    }
+
+    public boolean isHasSpecialRequests() {
+        return !getRequestTagList().isEmpty() || (specialRequests != null && !specialRequests.isBlank());
+    }
+
     // Khach khong den (no-show): don dong nhu huy (status CANCELLED) nhung khong hoan coc, danh dau de theo doi khach
     @Column(name = "no_show")
     private Boolean noShow;
