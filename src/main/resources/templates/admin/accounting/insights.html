@@ -37,6 +37,9 @@
                     <button class="btn btn-sm btn-outline-primary">Xem</button>
                     <a class="btn btn-sm btn-outline-secondary text-nowrap" th:href="@{/admin/accounting/pnl(month=${month})}"><i class="bi bi-graph-up me-1"></i>Lãi lỗ</a>
                 </form>
+                <form method="post" th:action="@{/admin/accounting/insights/email(month=${month})}">
+                    <button class="btn btn-sm btn-outline-primary text-nowrap" title="Tự gửi sáng ngày 1 hằng tháng"><i class="bi bi-envelope me-1"></i>Gửi email báo cáo tháng</button>
+                </form>
             </div>
 
             <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>

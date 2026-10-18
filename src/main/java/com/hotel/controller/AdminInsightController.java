@@ -26,11 +26,27 @@ public class AdminInsightController {
     private final InsightService insightService;
     private final ProfitService profitService;
     private final AiAdvisorService advisor;
+    private com.hotel.service.MonthlyReportService monthlyReportService;
 
     public AdminInsightController(InsightService insightService, ProfitService profitService, AiAdvisorService advisor) {
         this.insightService = insightService;
         this.profitService = profitService;
         this.advisor = advisor;
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setMonthlyReportService(com.hotel.service.MonthlyReportService monthlyReportService) {
+        this.monthlyReportService = monthlyReportService;
+    }
+
+    // Gui ngay bao cao quan tri thang qua email (cung nguoi nhan bao cao cuoi ngay)
+    @PostMapping("/email")
+    public String email(@RequestParam @DateTimeFormat(pattern = "yyyy-MM") YearMonth month, RedirectAttributes redirectAttributes) {
+        boolean sent = monthlyReportService.send(month);
+        redirectAttributes.addFlashAttribute(sent ? "successMessage" : "errorMessage", sent
+                ? "Đã gửi báo cáo tháng tới " + String.join(", ", monthlyReportService.recipients())
+                : "Chưa gửi được: cần cấu hình MAIL_USERNAME / MAIL_PASSWORD và có ít nhất 1 người nhận");
+        return "redirect:/admin/accounting/insights?month=" + month;
     }
 
     @GetMapping
