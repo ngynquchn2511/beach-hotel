@@ -25,10 +25,16 @@ public class AdminProfitController {
 
     private final ProfitService profitService;
     private final com.hotel.service.BudgetService budgetService;
+    private com.hotel.service.RoomTypePerformanceService roomTypePerformance;
 
     public AdminProfitController(ProfitService profitService, com.hotel.service.BudgetService budgetService) {
         this.profitService = profitService;
         this.budgetService = budgetService;
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setRoomTypePerformance(com.hotel.service.RoomTypePerformanceService roomTypePerformance) {
+        this.roomTypePerformance = roomTypePerformance;
     }
 
     @GetMapping
@@ -51,6 +57,7 @@ public class AdminProfitController {
         model.addAttribute("red", TrendChartSvg.RED);
         model.addAttribute("hasCosts", trend.stream().anyMatch(p -> p.totalCost().signum() > 0));
         budgetService.variance(report.current()).ifPresent(v -> model.addAttribute("variance", v));
+        model.addAttribute("roomTypes", roomTypePerformance.month(m));
         return "admin/accounting/pnl";
     }
 

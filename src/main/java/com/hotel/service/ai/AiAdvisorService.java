@@ -59,6 +59,12 @@ public class AiAdvisorService {
     private final ObjectMapper mapper = new ObjectMapper();
     private com.hotel.service.BudgetService budgetService;
     private com.hotel.service.RevenueForecastService forecastService;
+    private com.hotel.service.RoomTypePerformanceService roomTypePerformance;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setRoomTypePerformance(com.hotel.service.RoomTypePerformanceService roomTypePerformance) {
+        this.roomTypePerformance = roomTypePerformance;
+    }
 
     @org.springframework.beans.factory.annotation.Autowired
     void setForecastService(com.hotel.service.RevenueForecastService forecastService) {
@@ -176,6 +182,21 @@ public class AiAdvisorService {
             insights.add(m);
         }
         root.put("ruleBasedFindings", insights);
+        if (roomTypePerformance != null) {
+            List<Map<String, Object>> types = new ArrayList<>();
+            for (com.hotel.service.RoomTypePerformanceService.Row t : roomTypePerformance.month(month)) {
+                Map<String, Object> x = new LinkedHashMap<>();
+                x.put("roomType", t.type().getName());
+                x.put("rooms", t.rooms());
+                x.put("occupancyPercent", t.occupancy());
+                x.put("adr", t.adr());
+                x.put("revPar", t.revPar());
+                x.put("serviceRevenue", t.serviceRevenue());
+                x.put("contributionPerAvailableNight", t.contributionPerAvailableNight());
+                types.add(x);
+            }
+            root.put("roomTypePerformance", types);
+        }
         // Du bao chi co y nghia khi phan tich thang hien tai
         if (forecastService != null && month.equals(YearMonth.now())) {
             List<Map<String, Object>> fc = new ArrayList<>();

@@ -169,6 +169,29 @@
                 </table>
             </div>
 
+            <!-- Hieu qua theo loai phong -->
+            <div class="bg-white rounded shadow-sm p-3 mb-4 table-responsive" th:unless="${#lists.isEmpty(roomTypes)}">
+                <h6 class="fw-bold">Hiệu quả theo loại phòng</h6>
+                <p class="small text-muted mb-2">Đóng góp = tiền phòng + dịch vụ kèm đơn - giá vốn dịch vụ - chi phí mỗi phòng-đêm (chưa trừ chi phí cố định).
+                    Xếp theo đóng góp trên mỗi phòng-đêm sẵn có.</p>
+                <table class="table table-sm align-middle mb-0 text-end">
+                    <thead><tr><th class="text-start">Loại phòng</th><th>Số phòng</th><th>Công suất</th><th>ADR</th><th>RevPAR</th>
+                        <th>Dịch vụ kèm</th><th>Đóng góp</th><th>Đóng góp / phòng-đêm</th></tr></thead>
+                    <tbody>
+                    <tr th:each="t : ${roomTypes}">
+                        <td class="text-start fw-semibold" th:text="${t.type.name}"></td>
+                        <td th:text="${t.rooms}"></td>
+                        <td th:text="${t.occupancy} + '%'"></td>
+                        <td th:text="${#numbers.formatDecimal(t.adr, 1, 'POINT', 0, 'COMMA')}"></td>
+                        <td th:text="${#numbers.formatDecimal(t.revPar, 1, 'POINT', 0, 'COMMA')}"></td>
+                        <td th:text="${#numbers.formatDecimal(t.serviceRevenue, 1, 'POINT', 0, 'COMMA')}"></td>
+                        <td th:text="${#numbers.formatDecimal(t.contribution, 1, 'POINT', 0, 'COMMA')}"></td>
+                        <td class="fw-semibold" th:text="${#numbers.formatDecimal(t.contributionPerAvailableNight, 1, 'POINT', 0, 'COMMA')}"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
             <!-- Bang so lieu cua bieu do (doc duoc khong can nhin mau) -->
             <details class="bg-white rounded shadow-sm p-3">
                 <summary class="fw-semibold small">Bảng số liệu 12 tháng</summary>
