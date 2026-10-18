@@ -16,4 +16,8 @@ public interface CashShiftRepository extends JpaRepository<CashShift, Long> {
 
     @Query("select s from CashShift s join fetch s.openedBy left join fetch s.closedBy order by s.openedAt desc")
     List<CashShift> findAllForList();
+
+    @Query("select s from CashShift s join fetch s.openedBy left join fetch s.closedBy where s.openedAt between :from and :to order by s.openedAt")
+    List<CashShift> findOpenedBetween(@org.springframework.data.repository.query.Param("from") java.time.LocalDateTime from,
+                                      @org.springframework.data.repository.query.Param("to") java.time.LocalDateTime to);
 }

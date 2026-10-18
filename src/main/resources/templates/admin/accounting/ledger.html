@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Sổ quỹ tháng</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+</head>
+<body class="eaut eaut-admin">
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="container py-5" th:with="fmt='#,##0'">
+    <div class="row g-4">
+        <div class="col-md-3">
+            <div th:replace="~{fragments/admin-sidebar :: sidebar}"></div>
+        </div>
+
+        <div class="col-md-9">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                <div>
+                    <h3 class="fw-bold mb-1">Sổ quỹ tháng</h3>
+                    <p class="text-muted small mb-0">Mọi khoản thu (thanh toán đơn, nhận cọc, bán thẻ quà tặng) và chi (hoàn cọc) theo ngày ghi nhận.</p>
+                </div>
+                <form method="get" class="d-flex gap-2 align-items-end">
+                    <input type="month" name="month" class="form-control form-control-sm" th:value="${month}">
+                    <button type="submit" class="btn btn-sm btn-outline-primary">Xem</button>
+                    <a class="btn btn-sm btn-success text-nowrap" th:href="@{/admin/accounting/ledger.xlsx(month=${month})}">
+                        <i class="bi bi-file-earmark-excel me-1"></i>Xuất Excel</a>
+                </form>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-lg"><div class="bg-white p-3 rounded shadow-sm h-100"><div class="small text-muted">Tiền mặt</div>
+                    <div class="fw-bold" th:text="${#numbers.formatDecimal(report.totals[T(com.hotel.entity.PaymentMethod).CASH], 1, 'POINT', 0, 'COMMA')}"></div></div></div>
+                <div class="col-6 col-lg"><div class="bg-white p-3 rounded shadow-sm h-100"><div class="small text-muted">Chuyển khoản</div>
+                    <div class="fw-bold" th:text="${#numbers.formatDecimal(report.totals[T(com.hotel.entity.PaymentMethod).BANK_TRANSFER], 1, 'POINT', 0, 'COMMA')}"></div></div></div>
+                <div class="col-6 col-lg"><div class="bg-white p-3 rounded shadow-sm h-100"><div class="small text-muted">Online (VNPay)</div>
+                    <div class="fw-bold" th:text="${#numbers.formatDecimal(report.totals[T(com.hotel.entity.PaymentMethod).ONLINE], 1, 'POINT', 0, 'COMMA')}"></div></div></div>
+                <div class="col-6 col-lg"><div class="bg-white p-3 rounded shadow-sm h-100"><div class="small text-muted">Đã hoàn cọc</div>
+                    <div class="fw-bold text-danger" th:text="${#numbers.formatDecimal(report.refunds, 1, 'POINT', 0, 'COMMA')}"></div></div></div>
+                <div class="col-12 col-lg"><div class="bg-white p-3 rounded shadow-sm h-100"><div class="small text-muted">Thực thu tháng (VND)</div>
+                    <div class="fw-bold fs-5" th:text="${#numbers.formatDecimal(report.net, 1, 'POINT', 0, 'COMMA')}"></div></div></div>
+            </div>
+            <p class="small text-muted">Các ô theo phương thức đã trừ khoản hoàn cọc của phương thức đó.</p>
+
+            <div th:if="${#lists.isEmpty(report.days)}" class="alert alert-info">Tháng này chưa có khoản thu chi nào.</div>
+            <div class="bg-white p-4 rounded shadow-sm mb-4" th:unless="${#lists.isEmpty(report.days)}">
+                <h5 class="fw-bold mb-3">Theo ngày</h5>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0 text-end">
+                        <thead><tr><th class="text-start">Ngày</th><th>Tiền mặt</th><th>Chuyển khoản</th><th>Online</th><th>Hoàn cọc</th><th>Thực thu</th><th></th></tr></thead>
+                        <tbody>
+                        <tr th:each="d : ${report.days}">
+                            <td class="text-start" th:text="${#temporals.format(d.day, 'dd/MM')}"></td>
+                            <td th:text="${#numbers.formatDecimal(d.cash, 1, 'POINT', 0, 'COMMA')}"></td>
+                            <td th:text="${#numbers.formatDecimal(d.transfer, 1, 'POINT', 0, 'COMMA')}"></td>
+                            <td th:text="${#numbers.formatDecimal(d.online, 1, 'POINT', 0, 'COMMA')}"></td>
+                            <td class="text-danger" th:text="${d.refunds.signum() > 0} ? ${#numbers.formatDecimal(d.refunds, 1, 'POINT', 0, 'COMMA')} : '-'"></td>
+                            <td class="fw-semibold" th:text="${#numbers.formatDecimal(d.net, 1, 'POINT', 0, 'COMMA')}"></td>
+                            <td><a class="small" th:if="${d.online.signum() > 0 or d.refunds.signum() > 0}"
+                                   th:href="@{/admin/accounting/vnpay(day=${d.day})}">Đối soát VNPay</a></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded shadow-sm mb-4" th:unless="${#lists.isEmpty(report.entries)}">
+                <h5 class="fw-bold mb-3">Chi tiết</h5>
+                <div class="table-responsive" style="max-height: 480px; overflow-y: auto;">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead><tr><th>Thời gian</th><th>Nội dung</th><th>Phương thức</th><th class="text-end">Số tiền</th></tr></thead>
+                        <tbody>
+                        <tr th:each="e : ${report.entries}">
+                            <td class="text-nowrap small" th:text="${#temporals.format(e.time, 'dd/MM HH:mm')}"></td>
+                            <td><a th:if="${e.bookingId != null}" th:href="@{/admin/bookings/{id}/invoice(id=${e.bookingId})}" th:text="${e.label}"></a>
+                                <span th:if="${e.bookingId == null}" th:text="${e.label}"></span></td>
+                            <td class="small" th:text="${e.method.vietnameseLabel}"></td>
+                            <td class="text-end" th:classappend="${e.amount.signum() < 0} ? 'text-danger'"
+                                th:text="${#numbers.formatDecimal(e.amount, 1, 'POINT', 0, 'COMMA')}"></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded shadow-sm" th:unless="${#lists.isEmpty(report.shifts)}">
+                <h5 class="fw-bold mb-3">Ca trực trong tháng</h5>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead><tr><th>Ca</th><th>Mở / đóng</th><th class="text-end">Thu tiền mặt</th><th class="text-end">Chênh lệch</th><th class="text-end">Nộp két</th></tr></thead>
+                        <tbody>
+                        <tr th:each="s : ${report.shifts}">
+                            <td><a th:href="@{/admin/shifts/{id}(id=${s.id})}" th:text="'#' + ${s.id}"></a></td>
+                            <td class="small"><span th:text="${#temporals.format(s.openedAt, 'dd/MM HH:mm')} + ' ' + ${s.openedBy.fullName}"></span><br>
+                                <span th:text="${s.closedAt != null} ? ${#temporals.format(s.closedAt, 'dd/MM HH:mm')} + ' ' + ${s.closedBy.fullName} : 'Đang mở'"></span></td>
+                            <td class="text-end" th:text="${s.cashIn != null} ? ${#numbers.formatDecimal(s.cashIn, 1, 'POINT', 0, 'COMMA')} : '-'"></td>
+                            <td class="text-end" th:classappend="${s.cashDifference != null and s.cashDifference.signum() != 0} ? 'text-danger fw-semibold'"
+                                th:text="${s.cashDifference != null} ? ${#numbers.formatDecimal(s.cashDifference, 1, 'POINT', 0, 'COMMA')} : '-'"></td>
+                            <td class="text-end" th:text="${s.cashToSafe != null} ? ${#numbers.formatDecimal(s.cashToSafe, 1, 'POINT', 0, 'COMMA')} : '-'"></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>
