@@ -52,10 +52,14 @@ public class RoomCalendarService {
         Map<Long, List<Booking>> bookingsByRoom = bookingRepository.findForCalendar(from, to).stream()
                 .collect(Collectors.groupingBy(b -> b.getRoom().getId()));
 
+        // Luot dat tu Booking.com / Airbnb chua ghi nhan thanh don: thanh rieng, khong bam vao don
+        Map<Long, List<com.hotel.entity.OtaBlock>> otaByRoom = otaBlockRepository == null ? Map.of()
+                : otaBlockRepository.findBlockingBetween(from, to).stream().collect(Collectors.groupingBy(o -> o.getRoom().getId()));
         List<RoomRow> rows = rooms.stream()
                 .map(room -> new RoomRow(room, bookingsByRoom.getOrDefault(room.getId(), List.of()).stream()
                         .map(b -> toBar(b, from, to, days))
-                        .toList()))
+                        .toList(),
+                        otaByRoom.getOrDefault(room.getId(), List.of()).stream().map(o -> toOtaBar(o, from, to, days)).toList()))
                 .toList();
 
         // So phong con trong tung dem: phong khong bao tri va khong co don nao o qua dem do
@@ -63,7 +67,7 @@ public class RoomCalendarService {
         List<Long> freeRooms = dayList.stream()
                 .map(day -> sellable - rows.stream()
                         .filter(row -> row.room().getStatus() != RoomStatus.MAINTENANCE)
-                        .filter(row -> row.bars().stream().anyMatch(bar -> bar.coversNight(day.date())))
+                        .filter(row -> !row.isFree(day.date()))
                         .count())
                 .toList();
 
@@ -91,12 +95,35 @@ public class RoomCalendarService {
         public int gridStart() { return 2 * index + 1; }
     }
 
-    public record RoomRow(Room room, List<Bar> bars) {
+    public record RoomRow(Room room, List<Bar> bars, List<OtaBar> otaBars) {
+        public RoomRow(Room room, List<Bar> bars) {
+            this(room, bars, List.of());
+        }
+
         // Dem nay phong chua co don nao o qua -> o lich moi cho bam de dat tai quay
         // (nua dau o ngay khach khac nhan phong van lo ra, khong duoc tro toi dem da co khach)
         public boolean isFree(LocalDate night) {
-            return bars.stream().noneMatch(bar -> bar.coversNight(night));
+            return bars.stream().noneMatch(bar -> bar.coversNight(night))
+                    && otaBars.stream().noneMatch(o -> !o.block().getStartDate().isAfter(night) && o.block().getEndDate().isAfter(night));
         }
+    }
+
+    public record OtaBar(com.hotel.entity.OtaBlock block, int gridStart, int gridEnd, boolean clippedLeft, boolean clippedRight) {
+    }
+
+    static OtaBar toOtaBar(com.hotel.entity.OtaBlock o, LocalDate from, LocalDate to, int days) {
+        boolean clippedLeft = o.getStartDate().isBefore(from);
+        boolean clippedRight = !o.getEndDate().isBefore(to);
+        int startHalf = clippedLeft ? 0 : 2 * (int) ChronoUnit.DAYS.between(from, o.getStartDate()) + 1;
+        int endHalf = clippedRight ? 2 * days : 2 * (int) ChronoUnit.DAYS.between(from, o.getEndDate()) + 1;
+        return new OtaBar(o, startHalf + 1, endHalf + 1, clippedLeft, clippedRight);
+    }
+
+    private com.hotel.repository.OtaBlockRepository otaBlockRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setOtaBlockRepository(com.hotel.repository.OtaBlockRepository otaBlockRepository) {
+        this.otaBlockRepository = otaBlockRepository;
     }
 
     public record Bar(Booking booking, int gridStart, int gridEnd, boolean clippedLeft, boolean clippedRight) {

@@ -54,6 +54,7 @@
         .rc-bar.clip-l { border-top-left-radius: 0; border-bottom-left-radius: 0; border-left-style: dashed; }
         .rc-bar.clip-r { border-top-right-radius: 0; border-bottom-right-radius: 0; border-right-style: dashed; }
         .st-PENDING { background: #ffe08a; }
+        .st-OTA { background: #f3d1f4; }
         .st-CONFIRMED { background: var(--baby); }
         .st-CHECKED_IN { background: #8fdcaa; }
         .st-CHECKED_OUT { background: #d9dee3; color: #5c6670 !important; }
@@ -104,6 +105,7 @@
                 <span><i class="sw st-PENDING"></i>Chờ xác nhận</span>
                 <span><i class="sw st-PENDING awaiting rc-bar" style="height:14px;padding:0;margin:0"></i>Chờ chuyển cọc</span>
                 <span><i class="sw st-CONFIRMED"></i>Đã xác nhận</span>
+                <span><i class="sw st-OTA"></i>Đặt qua Booking.com / Airbnb</span>
                 <span><i class="sw st-CHECKED_IN"></i>Đang ở</span>
                 <span><i class="sw st-CHECKED_OUT"></i>Đã trả phòng</span>
                 <span><i class="sw" style="background: repeating-linear-gradient(45deg,#f1f1f1 0 4px,#d6d6d6 4px 8px)"></i>Bảo trì</span>
@@ -161,6 +163,12 @@ ${#temporals.format(b.checkInDate, 'dd/MM')} ${b.checkInTime} → ${#temporals.f
                                 <span th:if="${b.newBooking}" class="dot" title="Đơn mới"></span>
                                 <span class="name" th:text="${bar.displayName()}"></span>
                                 <span class="id" th:text="'#' + ${b.id}"></span>
+                            </a>
+                            <a th:each="ob : ${row.otaBars}" class="rc-bar st-OTA"
+                               th:classappend="|${ob.clippedLeft ? 'clip-l' : ''} ${ob.clippedRight ? 'clip-r' : ''} ${ob.gridEnd - ob.gridStart <= 2 ? 'short' : ''}|"
+                               th:style="|grid-column: ${ob.gridStart} / ${ob.gridEnd}|" th:href="@{/admin/ota}"
+                               th:title="|${ob.block.feed.channel.label} · ${#temporals.format(ob.block.startDate, 'dd/MM')} → ${#temporals.format(ob.block.endDate, 'dd/MM')} · bấm để ghi nhận đơn|">
+                                <span class="name" th:text="${ob.block.feed.channel.label}"></span>
                             </a>
                         </div>
                     </div>

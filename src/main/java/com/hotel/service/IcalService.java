@@ -68,13 +68,36 @@ public class IcalService {
                 && MessageDigest.isEqual(current.getBytes(StandardCharsets.UTF_8), key.getBytes(StandardCharsets.UTF_8));
     }
 
-    // roomId = null: tat ca phong
+    private com.hotel.repository.OtaBlockRepository otaBlockRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setOtaBlockRepository(com.hotel.repository.OtaBlockRepository otaBlockRepository) {
+        this.otaBlockRepository = otaBlockRepository;
+    }
+
     @Transactional(readOnly = true)
     public String calendar(Long roomId, String calendarName) {
+        return calendar(roomId, calendarName, null);
+    }
+
+    // roomId = null: tat ca phong. forChannel: link danh cho kenh nao (VD Booking.com) -> khong xuat lai cac luot dat
+    // den tu chinh kenh do (kenh tu biet), chi xuat don website + luot dat cua kenh khac (VD Airbnb) de kenh khoa ngay
+    @Transactional(readOnly = true)
+    public String calendar(Long roomId, String calendarName, com.hotel.entity.OtaFeed.Channel forChannel) {
         LocalDate today = LocalDate.now();
+        java.util.Map<Long, com.hotel.entity.OtaFeed.Channel> bookingChannel = new java.util.HashMap<>();
+        List<com.hotel.entity.OtaBlock> blocks = List.of();
+        if (otaBlockRepository != null) {
+            otaBlockRepository.findLinked().forEach(o -> bookingChannel.put(o.getBooking().getId(), o.getFeed().getChannel()));
+            blocks = otaBlockRepository.findBlockingBetween(today.minusDays(PAST_DAYS), today.plusDays(FUTURE_DAYS)).stream()
+                    .filter(o -> roomId == null || o.getRoom().getId().equals(roomId))
+                    .filter(o -> forChannel == null || o.getFeed().getChannel() != forChannel)
+                    .toList();
+        }
         List<Booking> bookings = bookingRepository.findForCalendar(today.minusDays(PAST_DAYS), today.plusDays(FUTURE_DAYS))
                 .stream()
                 .filter(b -> roomId == null || b.getRoom().getId().equals(roomId))
+                .filter(b -> forChannel == null || bookingChannel.get(b.getId()) != forChannel)
                 .toList();
         String stamp = ZonedDateTime.now(ZoneOffset.UTC).format(STAMP);
         StringBuilder ics = new StringBuilder();
@@ -99,6 +122,17 @@ public class IcalService {
             line(ics, "DESCRIPTION:" + escape("Đơn #" + b.getId() + " · nhận " + b.getCheckInTime()
                     + " · trả " + b.getCheckOutTime() + " · " + b.getStatus().name()));
             line(ics, "STATUS:" + (firm ? "CONFIRMED" : "TENTATIVE"));
+            line(ics, "TRANSP:OPAQUE");
+            line(ics, "END:VEVENT");
+        }
+        for (com.hotel.entity.OtaBlock o : blocks) {
+            line(ics, "BEGIN:VEVENT");
+            line(ics, "UID:ota-" + o.getId() + "@songxanhresort");
+            line(ics, "DTSTAMP:" + stamp);
+            line(ics, "DTSTART;VALUE=DATE:" + o.getStartDate().format(DATE));
+            line(ics, "DTEND;VALUE=DATE:" + o.getEndDate().format(DATE));
+            line(ics, "SUMMARY:" + escape("Phòng " + o.getRoom().getRoomNumber() + " · Đã đặt qua " + o.getFeed().getChannel().getLabel()));
+            line(ics, "STATUS:CONFIRMED");
             line(ics, "TRANSP:OPAQUE");
             line(ics, "END:VEVENT");
         }

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>Đồng bộ Booking.com / Airbnb</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+</head>
+<body class="eaut eaut-admin">
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="container py-5">
+    <div class="row g-4">
+        <div class="col-md-3">
+            <div th:replace="~{fragments/admin-sidebar :: sidebar}"></div>
+        </div>
+
+        <div class="col-md-9">
+            <h3 class="fw-bold mb-1">Đồng bộ Booking.com / Airbnb</h3>
+            <p class="text-muted small">Đồng bộ 2 chiều bằng lịch iCal. <b>Chiều vào:</b> hệ thống đọc lịch của từng phòng trên kênh mỗi 15 phút,
+                ngày đã có khách đặt trên kênh bị khóa trên website. <b>Chiều ra:</b> dán link xuất của phòng vào mục nhập lịch của kênh để kênh
+                khóa ngày đã bán trên website và trên kênh còn lại. Kênh chỉ cho biết ngày bị chiếm (không có tên khách / giá) - khi khách tới,
+                lễ tân bấm <b>Ghi nhận đơn</b> để làm check-in, thu tiền như đơn thường.</p>
+
+            <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+            <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+            <div th:if="${conflictCount > 0}" class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle me-1"></i><b th:text="${conflictCount}"></b> lượt đặt từ kênh trùng ngày với đơn trên website
+                (đánh dấu đỏ bên dưới) - liên hệ khách / kênh để đổi phòng cho một bên.</div>
+            <div th:if="${removedCount > 0}" class="alert alert-warning">
+                <i class="bi bi-x-octagon me-1"></i><b th:text="${removedCount}"></b> đơn đã ghi nhận nhưng kênh đã hủy lượt đặt - kiểm tra và hủy đơn nếu đúng.</div>
+
+            <!-- Luot dat tu kenh -->
+            <div class="bg-white p-4 rounded shadow-sm mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h5 class="fw-bold m-0">Lượt đặt từ kênh (hôm nay trở đi)</h5>
+                    <form method="post" th:action="@{/admin/ota/sync-all}"><button class="btn btn-sm btn-outline-primary"><i class="bi bi-arrow-repeat"></i> Đồng bộ ngay</button></form>
+                </div>
+                <div th:if="${#lists.isEmpty(rows)}" class="alert alert-info mb-0">Chưa có lượt đặt nào từ kênh.</div>
+                <div class="table-responsive" th:unless="${#lists.isEmpty(rows)}">
+                    <table class="table table-sm align-middle small">
+                        <thead><tr><th>Kênh</th><th>Phòng</th><th>Nhận - trả</th><th>Đêm</th><th>Ghi chú của kênh</th><th>Trạng thái</th><th></th></tr></thead>
+                        <tbody>
+                        <tr th:each="r : ${rows}" th:with="b=${r.block}" th:classappend="${r.conflict} ? 'table-danger'">
+                            <td th:text="${b.feed.channel.label}"></td>
+                            <td class="fw-semibold" th:text="${b.room.roomNumber}"></td>
+                            <td th:text="${#temporals.format(b.startDate, 'dd/MM/yyyy')} + ' - ' + ${#temporals.format(b.endDate, 'dd/MM/yyyy')}"></td>
+                            <td th:text="${b.nights}"></td>
+                            <td th:text="${b.summary}"></td>
+                            <td>
+                                <span th:if="${r.conflict}" class="badge bg-danger">Trùng đơn website</span>
+                                <span th:if="${b.booking != null and b.removedAt == null}" class="badge bg-success">
+                                    <a class="text-white" th:href="@{/admin/bookings/{id}(id=${b.booking.id})}" th:text="'Đơn #' + ${b.booking.id}"></a></span>
+                                <span th:if="${b.booking != null and b.removedAt != null}" class="badge bg-warning text-dark">Kênh đã hủy · đơn #<span th:text="${b.booking.id}"></span></span>
+                                <span th:if="${b.booking == null and !r.conflict}" class="badge bg-secondary">Đang khóa phòng</span>
+                            </td>
+                            <td class="text-end">
+                                <button th:if="${b.booking == null}" class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse"
+                                        th:attr="data-bs-target='#link' + ${b.id}">Ghi nhận đơn</button>
+                                <form th:if="${b.booking != null and b.removedAt != null}" method="post" th:action="@{/admin/ota/blocks/{id}/dismiss(id=${b.id})}">
+                                    <button class="btn btn-sm btn-outline-secondary">Đã xử lý</button></form>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <div th:each="r : ${rows}" th:if="${r.block.booking == null}" th:id="'link' + ${r.block.id}" class="collapse border rounded p-3 mb-2">
+                        <div class="fw-semibold small mb-2" th:text="'Ghi nhận lượt đặt ' + ${r.block.feed.channel.label} + ' - phòng ' + ${r.block.room.roomNumber}
+                             + ' (' + ${#temporals.format(r.block.startDate, 'dd/MM')} + ' - ' + ${#temporals.format(r.block.endDate, 'dd/MM')} + ')'"></div>
+                        <form method="post" th:action="@{/admin/ota/blocks/{id}/link(id=${r.block.id})}" class="row g-2">
+                            <div class="col-md-4"><input name="guestName" class="form-control form-control-sm" placeholder="Họ tên khách" required maxlength="150"></div>
+                            <div class="col-md-3"><input name="guestPhone" class="form-control form-control-sm" placeholder="Số điện thoại" required maxlength="20"></div>
+                            <div class="col-md-3"><input name="guestEmail" type="email" class="form-control form-control-sm" placeholder="Email (nếu có)"></div>
+                            <div class="col-md-2"><input name="guests" type="number" min="1" max="10" value="2" class="form-control form-control-sm" title="Số khách"></div>
+                            <div class="col-md-4"><input name="amount" type="number" min="0" step="1000" class="form-control form-control-sm" required
+                                                         placeholder="Tiền phòng theo kênh (VND)"></div>
+                            <div class="col-md-6"><input name="note" class="form-control form-control-sm" maxlength="200" placeholder="Mã đặt chỗ trên kênh, ghi chú"></div>
+                            <div class="col-md-2"><button class="btn btn-sm btn-primary w-100">Tạo đơn</button></div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Link lich cua kenh (chieu vao) -->
+            <div class="bg-white p-4 rounded shadow-sm mb-4">
+                <h5 class="fw-bold mb-2">Link lịch của kênh (chiều vào)</h5>
+                <p class="small text-muted">Booking.com: Extranet → Giá & tình trạng phòng trống → Đồng bộ lịch → Xuất lịch.
+                    Airbnb: Lịch → Tình trạng phòng trống → Kết nối lịch → Xuất lịch. Mỗi phòng trên website ứng với một chỗ ở trên kênh.</p>
+                <form sec:authorize="hasRole('ADMIN')" method="post" th:action="@{/admin/ota/feeds}" class="row g-2 mb-3">
+                    <div class="col-md-2"><select name="roomId" class="form-select form-select-sm" required>
+                        <option value="">Phòng</option>
+                        <option th:each="r : ${rooms}" th:value="${r.id}" th:text="${r.roomNumber}"></option></select></div>
+                    <div class="col-md-2"><select name="channel" class="form-select form-select-sm">
+                        <option th:each="c : ${channels}" th:value="${c}" th:text="${c.label}"></option></select></div>
+                    <div class="col-md-6"><input name="url" class="form-control form-control-sm" required maxlength="600" placeholder="https://... .ics"></div>
+                    <div class="col-md-2"><button class="btn btn-sm btn-primary w-100">Thêm link</button></div>
+                </form>
+                <div th:if="${#lists.isEmpty(feeds)}" class="alert alert-info mb-0">Chưa có link lịch nào.</div>
+                <table class="table table-sm align-middle small" th:unless="${#lists.isEmpty(feeds)}">
+                    <thead><tr><th>Phòng</th><th>Kênh</th><th>Lần đồng bộ gần nhất</th><th>Kết quả</th><th></th></tr></thead>
+                    <tbody>
+                    <tr th:each="f : ${feeds}" th:classappend="${!f.open} ? 'text-muted'">
+                        <td class="fw-semibold" th:text="${f.room.roomNumber}"></td>
+                        <td th:text="${f.channel.label}"></td>
+                        <td th:text="${f.lastSyncAt != null} ? ${#temporals.format(f.lastSyncAt, 'dd/MM HH:mm')} : 'Chưa'"></td>
+                        <td><span th:if="${f.lastOk != null}" class="badge" th:classappend="${f.lastOk} ? 'bg-success' : 'bg-danger'"
+                                  th:text="${f.lastOk} ? 'OK' : 'Lỗi'"></span> <span th:text="${f.lastMessage}"></span></td>
+                        <td class="text-end text-nowrap">
+                            <form class="d-inline" method="post" th:action="@{/admin/ota/feeds/{id}/sync(id=${f.id})}"><button class="btn btn-sm btn-outline-primary" title="Đồng bộ"><i class="bi bi-arrow-repeat"></i></button></form>
+                            <form sec:authorize="hasRole('ADMIN')" class="d-inline" method="post" th:action="@{/admin/ota/feeds/{id}/toggle(id=${f.id})}">
+                                <button class="btn btn-sm btn-outline-secondary" th:text="${f.open} ? 'Tạm ngừng' : 'Bật lại'"></button></form>
+                            <form sec:authorize="hasRole('ADMIN')" class="d-inline" method="post" th:action="@{/admin/ota/feeds/{id}/delete(id=${f.id})}"
+                                  onsubmit="return confirm('Xóa link này? Các ngày đang khóa theo link sẽ mở bán lại.')">
+                                <button class="btn btn-sm btn-outline-danger">Xóa</button></form>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Link xuat cho kenh (chieu ra) -->
+            <div sec:authorize="hasRole('ADMIN')" class="bg-white p-4 rounded shadow-sm">
+                <h5 class="fw-bold mb-2">Link xuất cho kênh (chiều ra)</h5>
+                <p class="small text-muted">Dán vào mục <b>nhập lịch</b> của chỗ ở tương ứng trên kênh. Mỗi kênh dùng link riêng: lịch gồm đơn trên website
+                    và lượt đặt của kênh còn lại, không lặp lại lượt đặt của chính kênh đó. Link chứa mã bí mật - đổi mã ở trang Đồng bộ lịch (iCal) nếu lộ.</p>
+                <table class="table table-sm small align-middle">
+                    <thead><tr><th>Phòng</th><th>Dán vào Booking.com</th><th>Dán vào Airbnb</th></tr></thead>
+                    <tbody>
+                    <tr th:each="r : ${rooms}">
+                        <td class="fw-semibold" th:text="${r.roomNumber}"></td>
+                        <td><input class="form-control form-control-sm" readonly onclick="this.select()"
+                                   th:value="${exportBase} + ${r.id} + '.ics?key=' + ${exportKey} + '&channel=BOOKING'"></td>
+                        <td><input class="form-control form-control-sm" readonly onclick="this.select()"
+                                   th:value="${exportBase} + ${r.id} + '.ics?key=' + ${exportKey} + '&channel=AIRBNB'"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

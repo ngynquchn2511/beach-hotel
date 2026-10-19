@@ -92,7 +92,15 @@ public class RoomService {
         if (room.getStatus() == RoomStatus.MAINTENANCE) {
             return false;
         }
-        return !bookingRepository.existsOverlappingBooking(roomId, checkIn, checkOut);
+        return !bookingRepository.existsOverlappingBooking(roomId, checkIn, checkOut)
+                && (otaBlockRepository == null || otaBlockRepository.findBlocking(roomId, checkIn, checkOut).isEmpty());
+    }
+
+    private com.hotel.repository.OtaBlockRepository otaBlockRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setOtaBlockRepository(com.hotel.repository.OtaBlockRepository otaBlockRepository) {
+        this.otaBlockRepository = otaBlockRepository;
     }
 
     // Cac ngay da co khach o duoc hien mau xam trong lich dat phong.
@@ -104,9 +112,14 @@ public class RoomService {
                         BookingStatus.CHECKED_IN))
                 .stream()
                 .flatMap(booking -> booking.getCheckInDate().datesUntil(booking.getCheckOutDate()))
-                .distinct()
-                .sorted(Comparator.naturalOrder())
-                .toList();
+                .collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toCollection(java.util.TreeSet::new), set -> {
+                    // Ngay da ban tren Booking.com / Airbnb cung khoa tren lich
+                    if (otaBlockRepository != null) {
+                        otaBlockRepository.findBlockingFrom(roomId, LocalDate.now().minusDays(1))
+                                .forEach(o -> o.getStartDate().datesUntil(o.getEndDate()).forEach(set::add));
+                    }
+                    return List.copyOf(set);
+                }));
     }
 
     // Cac ngay chi co don CHO XAC NHAN giu cho (chua co don xac nhan) - lich hien mau rieng de khach biet

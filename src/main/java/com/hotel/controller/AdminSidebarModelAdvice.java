@@ -34,6 +34,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
         AdminContactMessageController.class,
         AdminHousekeepingController.class,
         AdminIcalController.class,
+        AdminOtaController.class,
         AdminRoomServiceController.class,
         AdminRoomAlertController.class,
         AdminMaintenanceController.class,

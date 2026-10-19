@@ -66,6 +66,8 @@
     </a>
     <a th:href="@{/admin/room-calendar}" class="list-group-item list-group-item-action"
        th:classappend="${p.startsWith('/admin/room-calendar')} ? 'active'"><i class="bi bi-calendar3-range"></i>Lịch phòng</a>
+    <a th:href="@{/admin/ota}" class="list-group-item list-group-item-action"
+       th:classappend="${p.startsWith('/admin/ota')} ? 'active'"><i class="bi bi-arrow-left-right"></i>Booking.com / Airbnb</a>
     <a th:href="@{/admin/room-service}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
        th:classappend="${p.startsWith('/admin/room-service')} ? 'active'">
         <span><i class="bi bi-cup-hot"></i>Gọi lên phòng</span>

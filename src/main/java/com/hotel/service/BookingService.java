@@ -129,11 +129,17 @@ public class BookingService {
     // freeFrom: thoi diem phong trong tro lai sau cac don trung (tinh ca cac don noi tiep nhau)
     // earliestCheckIn: ngay nhan phong co khach truoc tra phong -> chi nhan phong tu gio nay
     // latestCheckOut: ngay tra phong co khach sau nhan phong -> phai tra phong truoc gio nay
+    // otaBlocks: cac dot da ban tren Booking.com / Airbnb (doc tu lich iCal cua kenh) trung khoang ngay
     public record Availability(boolean maintenance, List<Booking> conflicts, LocalDateTime freeFrom,
-                               LocalTime earliestCheckIn, LocalTime latestCheckOut) {
+                               LocalTime earliestCheckIn, LocalTime latestCheckOut, List<com.hotel.entity.OtaBlock> otaBlocks) {
+
+        public Availability(boolean maintenance, List<Booking> conflicts, LocalDateTime freeFrom,
+                            LocalTime earliestCheckIn, LocalTime latestCheckOut) {
+            this(maintenance, conflicts, freeFrom, earliestCheckIn, latestCheckOut, List.of());
+        }
 
         public boolean isAvailable() {
-            return !maintenance && conflicts.isEmpty();
+            return !maintenance && conflicts.isEmpty() && otaBlocks.isEmpty();
         }
 
         public boolean isOnlyPendingConflicts() {
@@ -150,10 +156,14 @@ public class BookingService {
             if (maintenance) {
                 return t.t("avail.maintenance");
             }
-            if (conflicts.isEmpty()) {
+            if (conflicts.isEmpty() && otaBlocks.isEmpty()) {
                 return null;
             }
             List<String> parts = new java.util.ArrayList<>();
+            for (com.hotel.entity.OtaBlock o : otaBlocks) {
+                parts.add(t.t("avail.otaRange", o.getFeed().getChannel().getLabel(),
+                        o.getStartDate().format(DAY_FMT), o.getEndDate().format(DAY_FMT)));
+            }
             for (Booking b : conflicts) {
                 parts.add(t.t(b.getStatus() == BookingStatus.PENDING ? "avail.pendingRange" : "avail.confirmedRange",
                         b.getCheckInDate().format(DAY_FMT), b.getCheckOutDate().format(DAY_FMT)));
@@ -212,8 +222,10 @@ public class BookingService {
                 .filter(b -> b.getCheckInDate().equals(checkOut))
                 .map(Booking::getCheckInTime).min(LocalTime::compareTo).orElse(null);
 
+        List<com.hotel.entity.OtaBlock> ota = otaBlockRepository == null ? List.of()
+                : otaBlockRepository.findBlocking(room.getId(), checkIn, checkOut);
         return new Availability(room.getStatus() == RoomStatus.MAINTENANCE, conflicts, freeFrom,
-                earliestCheckIn, latestCheckOut);
+                earliestCheckIn, latestCheckOut, ota);
     }
 
     // Ngay doi khach: khong cho nhan phong truoc gio khach truoc tra / tra phong sau gio khach sau nhan
@@ -678,7 +690,7 @@ public class BookingService {
 
         // BR-01 - kiem tra lai lan cuoi ngay truoc khi luu, phong truong hop phong bi dat mat trong luc khach dang xem
         Availability availability = checkAvailability(room, checkInDate, checkOutDate);
-        if (bookingRepository.existsOverlappingBooking(roomId, checkInDate, checkOutDate)) {
+        if (bookingRepository.existsOverlappingBooking(roomId, checkInDate, checkOutDate) || !availability.otaBlocks().isEmpty()) {
             throw BusinessException.rendered(t -> {
                 String detail = availability.describe(t);
                 return detail != null ? detail : t.t("err.roomJustTaken");
@@ -1507,6 +1519,58 @@ public class BookingService {
         if (earned.ordinal() > current.ordinal()) {
             customer.setCustomerType(earned);
         }
+    }
+
+    private com.hotel.repository.OtaBlockRepository otaBlockRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setOtaBlockRepository(com.hotel.repository.OtaBlockRepository otaBlockRepository) {
+        this.otaBlockRepository = otaBlockRepository;
+    }
+
+    // Ghi nhan 1 luot dat tu Booking.com / Airbnb thanh don cua he thong (de check-in, thu tien, khai bao luu tru):
+    // phong + ngay lay tu lich kenh, gia la so tien khach tra tren kenh, xac nhan luon (kenh da thu / dam bao).
+    // Sau khi lien ket, don nay giu phong; dot OTA khong khoa them
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public Booking createOtaBooking(com.hotel.entity.OtaBlock block, User customer, String guestName, String guestPhone,
+                                    String guestEmail, Integer guests, BigDecimal amount, String note) {
+        if (block.getBooking() != null) {
+            throw new BusinessException("Lượt đặt này đã được ghi nhận thành đơn #" + block.getBooking().getId());
+        }
+        if (block.getRemovedAt() != null) {
+            throw new BusinessException("Kênh đã hủy lượt đặt này");
+        }
+        if (guestName == null || guestName.isBlank() || guestPhone == null || guestPhone.isBlank()) {
+            throw new BusinessException("Vui lòng nhập họ tên và số điện thoại khách");
+        }
+        if (amount == null || amount.signum() < 0) {
+            throw new BusinessException("Vui lòng nhập số tiền phòng theo kênh (0 nếu kênh đã thu toàn bộ)");
+        }
+        Room room = lockRoom(block.getRoom().getId()).orElseThrow(() -> BusinessException.of("err.roomNotFound"));
+        int max = room.getRoomType() != null && room.getRoomType().getMaxGuests() != null ? room.getRoomType().getMaxGuests() : 2;
+        int n = guests == null ? Math.min(2, max) : guests;
+        if (n < 1 || n > max) {
+            throw new BusinessException("Số khách phải từ 1 đến " + max);
+        }
+        if (bookingRepository.existsOverlappingBooking(room.getId(), block.getStartDate(), block.getEndDate())) {
+            throw new BusinessException("Phòng " + room.getRoomNumber() + " đã có đơn trên website trùng ngày - đổi phòng cho một bên trước khi ghi nhận");
+        }
+        String channel = block.getFeed().getChannel().getLabel();
+        Booking booking = Booking.builder().customer(customer).room(room)
+                .checkInDate(block.getStartDate()).checkOutDate(block.getEndDate())
+                .checkInTime(LocalTime.of(14, 0)).checkOutTime(LocalTime.of(12, 0)).numberOfGuests(n)
+                .guestName(guestName.trim()).guestPhone(guestPhone.trim())
+                .guestEmail(guestEmail == null || guestEmail.isBlank() ? null : guestEmail.trim())
+                .roomAmount(amount).totalAmount(amount).discountAmount(BigDecimal.ZERO)
+                .status(BookingStatus.CONFIRMED).channel(BookingChannel.OTA).newBooking(false)
+                .specialRequests(("Đặt qua " + channel + (note == null || note.isBlank() ? "" : " · " + note.trim())))
+                .build();
+        Booking saved = bookingRepository.save(booking);
+        block.setBooking(saved);
+        if (otaBlockRepository != null) {
+            otaBlockRepository.save(block);
+        }
+        return saved;
     }
 
     // Dat phong truc tiep tai quay cho khach vang lai (khong can dang ky tai khoan truoc),

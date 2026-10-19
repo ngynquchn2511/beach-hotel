@@ -48,6 +48,11 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
                 AND b.checkInDate < :checkOutDate
                 AND b.checkOutDate > :checkInDate
             )
+            AND r.id NOT IN (
+                SELECT o.room.id FROM OtaBlock o
+                WHERE o.booking IS NULL AND o.removedAt IS NULL
+                AND o.startDate < :checkOutDate AND o.endDate > :checkInDate
+            )
             """)
     List<Room> findAvailableRooms(
             @Param("checkInDate") LocalDate checkInDate,
@@ -72,6 +77,10 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
                 )
                 AND b.checkInDate < :checkOutDate
                 AND b.checkOutDate > :checkInDate
+            ) AND r.id NOT IN (
+                SELECT o.room.id FROM OtaBlock o
+                WHERE o.booking IS NULL AND o.removedAt IS NULL
+                AND o.startDate < :checkOutDate AND o.endDate > :checkInDate
             ))
             ORDER BY CASE WHEN t.id = :roomTypeId THEN 0 ELSE 1 END,
                      ABS(r.price - :price),

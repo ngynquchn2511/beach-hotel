@@ -30,13 +30,23 @@ public class IcalController {
     }
 
     @GetMapping("/ical/rooms/{roomId}.ics")
-    public ResponseEntity<String> roomFeed(@PathVariable Long roomId, @RequestParam(required = false) String key) {
+    public ResponseEntity<String> roomFeed(@PathVariable Long roomId, @RequestParam(required = false) String key,
+                                           @RequestParam(required = false) String channel) {
         Room room = icalService.isValid(key) ? roomRepository.findById(roomId).orElse(null) : null;
         if (room == null) {
             // Sai ma / khong co phong: khong cho biet ly do
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
-        return ics(icalService.calendar(roomId, "Sóng Xanh - Phòng " + room.getRoomNumber()), "phong-" + room.getRoomNumber());
+        // ?channel=BOOKING / AIRBNB: link danh rieng cho kenh do (khong xuat lai luot dat cua chinh kenh)
+        com.hotel.entity.OtaFeed.Channel forChannel = null;
+        if (channel != null) {
+            try {
+                forChannel = com.hotel.entity.OtaFeed.Channel.valueOf(channel.toUpperCase(java.util.Locale.ROOT));
+            } catch (IllegalArgumentException ignored) {
+                // tham so la -> coi nhu khong co
+            }
+        }
+        return ics(icalService.calendar(roomId, "Sóng Xanh - Phòng " + room.getRoomNumber(), forChannel), "phong-" + room.getRoomNumber());
     }
 
     @GetMapping("/ical/all.ics")

@@ -34,6 +34,11 @@
 
 ## 3. Đã làm (theo thứ tự gần nhất trước)
 
+### Đợt 9 (19/10/2026) - Đồng bộ Booking.com / Airbnb
+| Commit | Chức năng |
+|---|---|
+| `OTA` | Đồng bộ 2 chiều qua iCal `/admin/ota` (`OtaSyncService`, `OtaSyncScheduler` 15 phút, tắt bằng `OTA_SYNC_ENABLED=false`). Chiều vào: link lịch của kênh cho từng phòng (`ota_feeds`, chỉ ADMIN thêm / xóa, chỉ https, chặn địa chỉ nội bộ) → mỗi lượt đặt thành `ota_blocks` khóa phòng ở tìm phòng, đặt phòng, đổi ngày, lịch ngày trống, lịch phòng của lễ tân; kênh xóa lượt đặt → mở bán lại; trùng đơn website → cảnh báo tức thời. Lễ tân «Ghi nhận đơn» → đơn kênh `OTA` (CONFIRMED, giá theo kênh) để check-in / thu tiền; kênh hủy lượt đã ghi nhận → giữ đơn, báo lễ tân. Chiều ra: link xuất riêng cho từng kênh (`/ical/rooms/{id}.ics?key=..&channel=BOOKING|AIRBNB`) gồm đơn website + lượt đặt kênh còn lại, không lặp lượt của chính kênh. Migration `sql/2026-10-19_dong-bo-ota.sql` (2 bảng + thêm `OTA` vào enum `bookings.channel`). Chưa thử với tài khoản Booking.com / Airbnb thật |
+
 ### Đợt 8 (19/10/2026) - Sửa lỗi kỹ thuật, tài liệu
 | Commit | Chức năng |
 |---|---|
@@ -131,6 +136,7 @@
 2. Thử VNPay sandbox thật theo checklist mục 7 (cần chủ dự án đăng ký tài khoản sandbox), kèm thử đối soát với file sao kê thật.
 3. Điền thông tin wifi thật vào mẫu trả lời nhanh rồi bật mẫu.
 4. Gợi ý giá theo nhu cầu (tăng giá khi tốc độ bán cao, khuyến mãi khi thấp) dựa trên dự báo.
+5. Thử đồng bộ lịch với chỗ ở thật trên Booking.com / Airbnb (cần tài khoản chủ nhà); iCal chỉ cập nhật theo chu kỳ của kênh (Booking.com ~ vài giờ) nên vẫn có khoảng hở bán trùng - muốn tức thời phải dùng channel manager / API đối tác.
 
 ## 7. Checklist thử VNPay sandbox (chưa chạy - cần tài khoản)
 

@@ -122,6 +122,8 @@ public class SecurityConfig {
                         .requestMatchers("/admin/pricing", "/admin/pricing/**").hasRole("ADMIN")
                         // Link lich iCal lo ra la ai cung xem duoc lich phong -> chi ADMIN lay link / doi ma
                         .requestMatchers("/admin/ical", "/admin/ical/**").hasRole("ADMIN")
+                        // Dong bo OTA: le tan xem / dong bo / ghi nhan don; them, xoa, bat tat link chi ADMIN
+                        .requestMatchers(HttpMethod.POST, "/admin/ota/feeds", "/admin/ota/feeds/*/toggle", "/admin/ota/feeds/*/delete").hasRole("ADMIN")
                         // Le tan giao mon duoc, sua thuc don chi ADMIN
                         .requestMatchers("/admin/room-service/menu", "/admin/room-service/menu/**").hasRole("ADMIN")
                         .requestMatchers("/admin/spa-packages", "/admin/spa-packages/**").hasRole("ADMIN")
