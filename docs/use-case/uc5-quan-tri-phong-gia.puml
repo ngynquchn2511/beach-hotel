@@ -1,0 +1,35 @@
+@startuml uc5-quan-tri-phong-gia
+!include common.iuml
+title UC5 - Quản trị phòng, giá và doanh thu
+
+actor "Quản trị viên" as Admin
+actor "Lễ tân" as Staff
+actor "Kế toán" as Accountant
+
+rectangle "Cổng quản trị" {
+  usecase "Đăng nhập cổng quản trị" as UC_Login
+  usecase "Xác thực OTP qua email" as UC_Otp
+  usecase "Quản lý loại phòng & phòng\n(ảnh, trạng thái)" as UC_Rooms
+  usecase "Thiết lập giá\n(giá đặc biệt, khuyến mãi,\ngiá thành viên)" as UC_Pricing
+  usecase "Quản lý mã giảm giá" as UC_Codes
+  usecase "Quản lý tài khoản nhân viên" as UC_StaffAcc
+  usecase "Xem tổng quan doanh thu\n& công suất" as UC_Dashboard
+  usecase "Xuất báo cáo Excel" as UC_Export
+  usecase "Xem dự báo công suất" as UC_Forecast
+}
+
+Admin --> UC_Rooms
+Admin --> UC_Pricing
+Admin --> UC_Codes
+Admin --> UC_StaffAcc
+Admin --> UC_Dashboard
+Staff --> UC_Dashboard
+Accountant --> UC_Dashboard
+Accountant --> UC_Forecast
+
+UC_Rooms ..> UC_Login : <<include>>
+UC_Pricing ..> UC_Login : <<include>>
+UC_Dashboard ..> UC_Login : <<include>>
+UC_Otp ..> UC_Login : <<extend>>\n(khi đã cấu hình mail)
+UC_Export ..> UC_Dashboard : <<extend>>
+@enduml

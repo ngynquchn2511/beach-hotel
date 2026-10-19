@@ -1,0 +1,31 @@
+@startuml uc4-dich-vu-kem-don
+!include common.iuml
+title UC4 - Đặt dịch vụ kèm đơn phòng
+
+actor "Khách hàng" as Customer
+actor "Lễ tân" as Staff
+
+rectangle "Website Sóng Xanh Resort" {
+  usecase "Đặt dịch vụ kèm đơn phòng" as UC_Service
+  usecase "Gọi dịch vụ lên phòng" as UC_RoomSvc
+  usecase "Đặt lịch spa" as UC_Spa
+  usecase "Đặt bàn nhà hàng" as UC_Table
+  usecase "Đặt tour lặn" as UC_Tour
+  usecase "Đặt xe đưa đón sân bay" as UC_Transfer
+  usecase "Hủy dịch vụ đã đặt" as UC_CancelSvc
+  usecase "Xác nhận / từ chối yêu cầu" as UC_Confirm
+  usecase "Cộng phụ phí vào đơn" as UC_AddCharge
+}
+
+Customer --> UC_Service
+Customer --> UC_CancelSvc
+Staff --> UC_Confirm
+
+UC_RoomSvc --|> UC_Service
+UC_Spa --|> UC_Service
+UC_Table --|> UC_Service
+UC_Tour --|> UC_Service
+UC_Transfer --|> UC_Service
+
+UC_Confirm ..> UC_AddCharge : <<include>>
+@enduml

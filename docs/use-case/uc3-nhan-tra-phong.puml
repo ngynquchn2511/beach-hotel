@@ -1,0 +1,34 @@
+@startuml uc3-nhan-tra-phong
+!include common.iuml
+title UC3 - Nhận phòng và trả phòng tại quầy
+
+actor "Lễ tân" as Staff
+actor "Khách hàng" as Customer
+
+rectangle "Cổng quản trị" {
+  usecase "Xem việc hôm nay\n(khách đến / khách đi)" as UC_Today
+  usecase "Đặt phòng tại quầy\n(walk-in)" as UC_Walkin
+  usecase "Check-in" as UC_In
+  usecase "Khai báo lưu trú\n(giấy tờ tùy thân)" as UC_Reg
+  usecase "Duyệt nhận sớm / trả muộn" as UC_Stay
+  usecase "Đổi phòng" as UC_Move
+  usecase "Check-out" as UC_Out
+  usecase "Thêm phụ phí phát sinh\n(minibar, giặt ủi, hư hỏng...)" as UC_Charge
+  usecase "Thu tiền còn lại\n(tiền mặt / QR / thẻ)" as UC_Pay
+  usecase "Xuất hóa đơn PDF / gửi email" as UC_Invoice
+}
+
+Staff --> UC_Today
+Staff --> UC_Walkin
+Staff --> UC_In
+Staff --> UC_Out
+Customer --> UC_Reg
+Customer --> UC_Stay
+
+UC_In ..> UC_Reg : <<include>>
+UC_Stay ..> UC_In : <<extend>>
+UC_Move ..> UC_In : <<extend>>
+UC_Out ..> UC_Pay : <<include>>
+UC_Charge ..> UC_Out : <<extend>>
+UC_Invoice ..> UC_Out : <<extend>>
+@enduml

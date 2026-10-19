@@ -1,0 +1,16 @@
+!pragma layout smetana
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor #E8F4FB
+  BorderColor #1F6E9C
+  ArrowColor #1F6E9C
+}
+skinparam rectangle {
+  BorderColor #1F6E9C
+  FontStyle bold
+}
+left to right direction

@@ -1,0 +1,36 @@
+@startuml uc1-dat-phong
+!include common.iuml
+title UC1 - Đặt phòng trực tuyến
+
+actor "Khách vãng lai" as Guest
+actor "Khách hàng\n(đã đăng nhập)" as Customer
+Customer -|> Guest
+
+rectangle "Website Sóng Xanh Resort" {
+  usecase "Tìm & xem phòng\n(lọc ngày, số khách)" as UC_Search
+  usecase "Đặt phòng" as UC_Book
+  usecase "Kiểm tra phòng trống" as UC_Avail
+  usecase "Tính tiền phòng\n(giá mùa, giá đặc biệt,\nkhuyến mãi tự động)" as UC_Price
+  usecase "Áp mã giảm giá" as UC_Code
+  usecase "Dùng thẻ quà tặng" as UC_Gift
+  usecase "Chọn combo" as UC_Combo
+  usecase "Yêu cầu hóa đơn VAT" as UC_Vat
+  usecase "Dùng điểm thưởng" as UC_Points
+  usecase "Giảm giá thành viên\ntheo hạng khách" as UC_Member
+  usecase "Đặt nhiều phòng (đoàn)" as UC_Group
+}
+
+Guest --> UC_Search
+Guest --> UC_Book
+Customer --> UC_Group
+
+UC_Book ..> UC_Avail : <<include>>
+UC_Book ..> UC_Price : <<include>>
+UC_Group ..> UC_Avail : <<include>>
+UC_Code ..> UC_Book : <<extend>>
+UC_Gift ..> UC_Book : <<extend>>
+UC_Combo ..> UC_Book : <<extend>>
+UC_Vat ..> UC_Book : <<extend>>
+UC_Points ..> UC_Book : <<extend>>\n(chỉ khách đăng nhập)
+UC_Member ..> UC_Price : <<extend>>\n(chỉ khách đăng nhập)
+@enduml

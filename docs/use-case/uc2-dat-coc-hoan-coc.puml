@@ -1,0 +1,39 @@
+@startuml uc2-dat-coc-hoan-coc
+!include common.iuml
+title UC2 - Đặt cọc, hủy đơn và hoàn cọc
+
+actor "Khách hàng" as Customer
+actor "Lễ tân" as Staff
+actor "VNPay" as VNPay <<hệ thống>>
+actor "Bộ hẹn giờ" as Timer <<hệ thống>>
+
+rectangle "Website Sóng Xanh Resort" {
+  usecase "Đặt cọc qua VNPay\n(đơn lẻ hoặc cả đoàn)" as UC_VnPay
+  usecase "Đặt cọc chuyển khoản QR" as UC_Qr
+  usecase "Xác thực kết quả giao dịch\n(chữ ký, IPN)" as UC_Verify
+  usecase "Xác nhận đã nhận cọc" as UC_ConfirmDep
+  usecase "Hủy đơn" as UC_Cancel
+  usecase "Tính tiền hoàn\ntheo chính sách hoàn cọc" as UC_Policy
+  usecase "Hoàn cọc qua VNPay" as UC_RefundVn
+  usecase "Xác nhận đã hoàn tiền\n(chuyển khoản)" as UC_RefundManual
+  usecase "Email nhắc chuyển cọc\n(quét 15 phút/lần,\nđơn còn ≤ 3 giờ)" as UC_Remind
+  usecase "Tự hủy đơn quá hạn cọc" as UC_Expire
+}
+
+Customer --> UC_VnPay
+Customer --> UC_Qr
+Customer --> UC_Cancel
+Staff --> UC_ConfirmDep
+Staff --> UC_Cancel
+Staff --> UC_RefundVn
+Staff --> UC_RefundManual
+
+UC_VnPay ..> UC_Verify : <<include>>
+UC_Verify -- VNPay
+UC_RefundVn -- VNPay
+UC_Qr ..> UC_ConfirmDep : <<precedes>>
+Timer --> UC_Remind
+Timer --> UC_Expire
+UC_Cancel ..> UC_Policy : <<include>>
+UC_RefundVn ..> UC_Policy : <<include>>
+@enduml
