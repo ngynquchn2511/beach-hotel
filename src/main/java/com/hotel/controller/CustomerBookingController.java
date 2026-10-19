@@ -547,10 +547,11 @@ public class CustomerBookingController {
     @PostMapping("/{id}/messages")
     public String sendMessage(@PathVariable Long id, @RequestParam(required = false) String token,
                               @RequestParam(required = false) String body,
+                              @RequestParam(required = false) org.springframework.web.multipart.MultipartFile image,
                               @AuthenticationPrincipal CustomUserDetails userDetails, RedirectAttributes redirectAttributes) {
         Booking booking = bookingService.findForViewing(id, token, userDetails != null ? userDetails.getUser().getId() : null);
         try {
-            messageService.guestSend(booking, body);
+            messageService.guestSend(booking, body, image);
             redirectAttributes.addFlashAttribute("messageSuccess", userMessages.get("msg.sent"));
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("messageError", userMessages.of(ex));

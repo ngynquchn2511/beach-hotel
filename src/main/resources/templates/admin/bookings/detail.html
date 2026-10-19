@@ -192,7 +192,9 @@
                     <div th:if="${#lists.isEmpty(messages)}" class="small text-muted mb-2">Chưa có tin nhắn.</div>
                     <div th:each="m : ${messages}" class="d-flex mb-2" th:classappend="${m.fromGuest} ? '' : 'justify-content-end'">
                         <div class="p-2 rounded small" style="max-width: 80%" th:classappend="${m.fromGuest} ? 'bg-light border' : 'bg-primary-subtle'">
-                            <div style="white-space: pre-line" th:text="${m.body}"></div>
+                            <div style="white-space: pre-line" th:if="${!#strings.isEmpty(m.body)}" th:text="${m.body}"></div>
+                            <a th:if="${m.imageUrl != null}" th:href="@{${m.imageUrl}}" target="_blank" rel="noopener">
+                                <img th:src="@{${m.imageUrl}}" class="rounded mt-1" style="max-width: 220px; max-height: 220px" alt="Ảnh khách gửi"></a>
                             <div class="text-muted" style="font-size: .75rem"
                                  th:text="(${m.fromGuest} ? 'Khách' : (${m.staffName != null} ? ${m.staffName} : 'Lễ tân')) + ' · ' + ${#temporals.format(m.createdAt, 'dd/MM HH:mm')}"></div>
                         </div>

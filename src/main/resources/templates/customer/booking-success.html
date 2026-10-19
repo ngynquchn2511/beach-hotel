@@ -144,15 +144,21 @@
         <div th:if="${messageError}" class="alert alert-danger small py-2" th:text="${messageError}"></div>
         <div th:each="m : ${messages}" class="d-flex mb-2" th:classappend="${m.fromGuest} ? 'justify-content-end' : ''">
             <div class="p-2 rounded small" style="max-width: 80%" th:classappend="${m.fromGuest} ? 'bg-primary-subtle' : 'bg-light border'">
-                <div style="white-space: pre-line" th:text="${m.body}"></div>
+                <div style="white-space: pre-line" th:if="${!#strings.isEmpty(m.body)}" th:text="${m.body}"></div>
+                <a th:if="${m.imageUrl != null}" th:href="@{${m.imageUrl}}" target="_blank" rel="noopener">
+                    <img th:src="@{${m.imageUrl}}" class="rounded mt-1" style="max-width: 220px; max-height: 220px" th:alt="#{msg.photoAlt}"></a>
                 <div class="text-muted" style="font-size: .75rem"
                      th:text="(${m.fromGuest} ? #{msg.you} : #{msg.frontDesk}) + ' · ' + ${#temporals.format(m.createdAt, 'dd/MM HH:mm')}"></div>
             </div>
         </div>
-        <form th:if="${canMessage}" method="post" th:action="@{/customer/bookings/{id}/messages(id=${booking.id})}" class="d-flex gap-2">
+        <form th:if="${canMessage}" method="post" th:action="@{/customer/bookings/{id}/messages(id=${booking.id})}" enctype="multipart/form-data">
             <input type="hidden" name="token" th:if="${accessToken != null}" th:value="${accessToken}">
-            <textarea name="body" class="form-control form-control-sm" rows="2" maxlength="1000" required th:placeholder="#{msg.placeholder}"></textarea>
-            <button type="submit" class="btn btn-sm btn-primary align-self-end" th:text="#{msg.send}">Gửi</button>
+            <div class="d-flex gap-2">
+                <textarea name="body" class="form-control form-control-sm" rows="2" maxlength="1000" th:placeholder="#{msg.placeholder}"></textarea>
+                <button type="submit" class="btn btn-sm btn-primary align-self-end" th:text="#{msg.send}">Gửi</button>
+            </div>
+            <label class="small text-muted mt-1 d-block"><i class="bi bi-camera me-1"></i><span th:text="#{msg.photo}">Kèm ảnh</span>
+                <input type="file" name="image" accept="image/jpeg,image/png,image/webp" class="form-control form-control-sm mt-1"></label>
         </form>
     </div>
 

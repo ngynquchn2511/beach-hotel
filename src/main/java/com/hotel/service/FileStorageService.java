@@ -77,6 +77,23 @@ public class FileStorageService {
         return new StoredMedia(save(file, "reviews", extension), type);
     }
 
+    // Anh khach gui kem tin nhan theo don: chi anh jpg/png/webp, toi da 5MB, loai noi dung phai la anh
+    public String storeMessageImage(MultipartFile file) {
+        String extension = getExtension(file.getOriginalFilename()).toLowerCase();
+        if (!ALLOWED_EXTENSIONS.contains(extension)) {
+            throw BusinessException.of("msg.error.photoType");
+        }
+        if (file.getSize() > MAX_IMAGE_MB * MB) {
+            throw BusinessException.of("err.mediaImageTooLarge", MAX_IMAGE_MB);
+        }
+        String contentType = file.getContentType();
+        if (contentType != null && !contentType.isBlank() && !"application/octet-stream".equals(contentType)
+                && !contentType.startsWith("image/")) {
+            throw BusinessException.of("msg.error.photoType");
+        }
+        return save(file, "messages", extension);
+    }
+
     private String save(MultipartFile file, String subDir, String extension) {
         try {
             Path uploadPath = Paths.get(baseUploadDir, subDir).toAbsolutePath().normalize();

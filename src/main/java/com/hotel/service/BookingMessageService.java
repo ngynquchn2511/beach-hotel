@@ -34,6 +34,13 @@ public class BookingMessageService {
         this.emailService = emailService;
     }
 
+    private com.hotel.service.FileStorageService fileStorageService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setFileStorageService(com.hotel.service.FileStorageService fileStorageService) {
+        this.fileStorageService = fileStorageService;
+    }
+
     public boolean canGuestMessage(Booking booking) {
         return booking.getStatus() != BookingStatus.CANCELLED
                 && !LocalDate.now().isAfter(booking.getCheckOutDate().plusDays(DAYS_AFTER_CHECKOUT));
@@ -45,18 +52,26 @@ public class BookingMessageService {
 
     @Transactional
     public BookingMessage guestSend(Booking booking, String text) {
+        return guestSend(booking, text, null);
+    }
+
+    // Khach gui tin (co the kem 1 anh; co anh thi duoc de trong chu)
+    @Transactional
+    public BookingMessage guestSend(Booking booking, String text, org.springframework.web.multipart.MultipartFile image) {
         if (!canGuestMessage(booking)) {
             throw BusinessException.of("msg.error.closed");
         }
-        String body = clean(text);
+        boolean hasImage = image != null && !image.isEmpty();
+        String body = hasImage && (text == null || text.isBlank()) ? "" : clean(text);
         if (repository.countByBookingIdAndFromGuestTrueAndCreatedAtAfter(booking.getId(), LocalDateTime.now().minusHours(1)) >= GUEST_MAX_PER_HOUR) {
             throw BusinessException.of("msg.error.tooMany");
         }
-        BookingMessage m = repository.save(BookingMessage.builder().booking(booking).fromGuest(true).body(body).build());
+        String imageUrl = hasImage ? fileStorageService.storeMessageImage(image) : null;
+        BookingMessage m = repository.save(BookingMessage.builder().booking(booking).fromGuest(true).body(body).imageUrl(imageUrl).build());
+        String preview = body.isEmpty() ? "[Ảnh]" : (body.length() > 100 ? body.substring(0, 100) + "…" : body) + (hasImage ? " [kèm ảnh]" : "");
         notifier.notify("message", StaffNotificationService.Level.INFO,
                 "Tin nhắn từ " + booking.getGuestName() + " · đơn #" + booking.getId(),
-                (booking.getRoom() != null ? "Phòng " + booking.getRoom().getRoomNumber() + ": " : "")
-                        + (body.length() > 100 ? body.substring(0, 100) + "…" : body),
+                (booking.getRoom() != null ? "Phòng " + booking.getRoom().getRoomNumber() + ": " : "") + preview,
                 "/admin/bookings/" + booking.getId() + "#tin-nhan");
         return m;
     }

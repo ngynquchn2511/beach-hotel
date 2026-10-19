@@ -42,7 +42,7 @@
                             <span class="small text-muted fw-normal" th:text="'· đơn #' + ${b.id} + ' · phòng ' + ${b.room.roomNumber}"></span>
                         </div>
                         <div class="small text-truncate">
-                            <span class="text-muted" th:text="${m.fromGuest} ? 'Khách: ' : 'Lễ tân: '"></span><span th:text="${m.body}"></span>
+                            <span class="text-muted" th:text="${m.fromGuest} ? 'Khách: ' : 'Lễ tân: '"></span><span th:text="${#strings.isEmpty(m.body)} ? '' : ${m.body}"></span><span th:if="${m.imageUrl != null}" class="badge bg-info-subtle text-dark ms-1"><i class="bi bi-image"></i> Ảnh</span>
                         </div>
                     </div>
                     <div class="text-end text-nowrap">

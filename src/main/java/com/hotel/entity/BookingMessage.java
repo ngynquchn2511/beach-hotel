@@ -38,6 +38,10 @@ public class BookingMessage {
     @Column(name = "staff_name", length = 100)
     private String staffName;
 
+    // Anh khach dinh kem (VD chup cho hong can sua) - duong dan /uploads/messages/<uuid>.jpg
+    @Column(name = "image_url", length = 200)
+    private String imageUrl;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

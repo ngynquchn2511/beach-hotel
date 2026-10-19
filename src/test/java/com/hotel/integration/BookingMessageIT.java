@@ -6,6 +6,7 @@ import com.hotel.service.StaffNotificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
@@ -13,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -87,5 +89,35 @@ class BookingMessageIT extends ItFixtures {
         Booking other = persistBooking(guest, booking.getRoom(), BookingStatus.CANCELLED, 30, 1);
         mockMvc.perform(post("/customer/bookings/{id}/messages", other.getId()).with(csrf()).with(as(guest)).param("body", "Còn phòng không?"))
                 .andExpect(flash().attribute("messageError", containsString("hộp thư liên hệ")));
+    }
+
+    @Test
+    void guestSendsPhoto_staffSeesIt_wrongTypeRejected() throws Exception {
+        byte[] png = {(byte) 0x89, 'P', 'N', 'G', 13, 10, 26, 10, 0, 0, 0, 0};
+        // Chi anh, khong chu -> van gui duoc
+        mockMvc.perform(multipart("/customer/bookings/{id}/messages", booking.getId())
+                        .file(new MockMultipartFile("image", "voi-sen.png", "image/png", png)).with(csrf()).with(as(guest)))
+                .andExpect(flash().attribute("messageSuccess", containsString("Đã gửi")));
+        BookingMessage m = messageRepository.findByBookingIdOrderByCreatedAtAscIdAsc(booking.getId()).get(0);
+        assertThat(m.getImageUrl()).startsWith("/uploads/messages/").endsWith(".png");
+        assertThat(m.getBody()).isEmpty();
+        mockMvc.perform(get("/admin/bookings/{id}", booking.getId()).with(as(staff)))
+                .andExpect(content().string(containsString(m.getImageUrl())));
+        mockMvc.perform(get("/admin/messages").with(as(staff)))
+                .andExpect(content().string(containsString("bi-image")));
+
+        // Kem chu + anh sai loai (doi duoi) -> tu choi, khong luu
+        mockMvc.perform(multipart("/customer/bookings/{id}/messages", booking.getId())
+                        .file(new MockMultipartFile("image", "virus.png", "application/x-msdownload", new byte[]{1, 2}))
+                        .param("body", "Xem giúp em").with(csrf()).with(as(guest)))
+                .andExpect(flash().attribute("messageError", containsString("JPG, PNG hoặc WEBP")));
+        mockMvc.perform(multipart("/customer/bookings/{id}/messages", booking.getId())
+                        .file(new MockMultipartFile("image", "ghi-chu.pdf", "application/pdf", new byte[]{1}))
+                        .with(csrf()).with(as(guest)))
+                .andExpect(flash().attribute("messageError", containsString("JPG, PNG hoặc WEBP")));
+        // Khong chu, khong anh -> bao trong
+        mockMvc.perform(multipart("/customer/bookings/{id}/messages", booking.getId()).with(csrf()).with(as(guest)))
+                .andExpect(flash().attribute("messageError", containsString("nhập nội dung")));
+        assertThat(messageRepository.findByBookingIdOrderByCreatedAtAscIdAsc(booking.getId())).hasSize(1);
     }
 }
