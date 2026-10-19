@@ -166,6 +166,10 @@ public class ClaudeAiGateway implements AiGateway {
         if (ex instanceof UnauthorizedException) {
             return new BusinessException("Khóa ANTHROPIC_API_KEY không hợp lệ hoặc đã bị thu hồi");
         }
+        String msg = ex.getMessage() == null ? "" : ex.getMessage().toLowerCase();
+        if (msg.contains("credit balance")) {
+            return new BusinessException("Tài khoản Anthropic đã hết credit - vào console.anthropic.com > Plans & Billing để nạp tiền rồi thử lại");
+        }
         return new BusinessException("Gọi AI thất bại (mã " + ex.statusCode() + "), vui lòng thử lại sau");
     }
 }
