@@ -1,7 +1,7 @@
 # Tiến độ dự án Sóng Xanh Resort (beach-hotel)
 
 > File bàn giao giữa các phiên làm việc với Claude. Mở phiên mới, bảo Claude: **"đọc file TIEN-DO.md"**.
-> Cập nhật lần cuối: 19/10/2026, sau đợt 7 (lãi lỗ, kế hoạch, dự báo, phân tích AI, báo cáo tháng), 1898 test xanh.
+> Cập nhật lần cuối: 20/10/2026, sau đợt 12 (sắp xếp lại chương 3 / 4 của báo cáo).
 
 ## 1. Dự án
 
@@ -33,6 +33,11 @@
    - MockMvc đọc JSON không charset là ISO-8859-1: dùng `getContentAsString(StandardCharsets.UTF_8)`.
 
 ## 3. Đã làm (theo thứ tự gần nhất trước)
+
+### Đợt 12 (20/10/2026) - Báo cáo: sắp xếp lại chương 3 / 4 theo HD.T01
+| Commit | Chức năng |
+|---|---|
+| (xem `git log`) | 174 ảnh chụp chức năng chuyển từ 4.1 sang mục mới **3.5 «Kết quả chạy chương trình theo vai trò người dùng»** (3.5.1 - 3.5.6, Hình 3.1 - 3.174); chương 4 chỉ còn văn xuôi (HD.T01: kết luận không có hình, bảng): 4.1 viết lại từ «Đánh giá chung», 4.2 thêm hạn chế biểu mẫu chỉ kiểm tra ở trình duyệt, câu Claude API sửa thành «khóa hợp lệ, chưa nạp credit». Sửa tham chiếu (Mở đầu, 2.10 → mục 3.5, «sáu nhóm người dùng»). Trình bày: phần đầu (mục lục, danh mục) đánh số i, ii...; từ Mở đầu đánh số 1; bảng lặp dòng tiêu đề khi sang trang và không ngắt dòng; hình giữ cùng trang với chú thích; tài liệu tham khảo / phụ lục 2 căn trái. Báo cáo 314 trang (17 trang phần đầu + 297). Script: Python sửa XML (`move_ch4.py`) + PowerShell điều khiển Word (`finish.ps1`) trong thư mục tạm của phiên |
 
 ### Đợt 11 (20/10/2026) - Báo cáo: kiểm thử toàn bộ chức năng bằng tài khoản giả
 | Commit | Chức năng |
