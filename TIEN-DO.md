@@ -1,4 +1,4 @@
-﻿# Tiến độ dự án Sóng Xanh Resort (beach-hotel)
+# Tiến độ dự án Sóng Xanh Resort (beach-hotel)
 
 > File bàn giao giữa các phiên làm việc với Claude. Mở phiên mới, bảo Claude: **"đọc file TIEN-DO.md"**.
 > Cập nhật lần cuối: 19/10/2026, sau đợt 7 (lãi lỗ, kế hoạch, dự báo, phân tích AI, báo cáo tháng), 1898 test xanh.
