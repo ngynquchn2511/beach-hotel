@@ -142,7 +142,7 @@ public class ClaudeAiGateway implements AiGateway {
 
     private void requireEnabled() {
         if (!isEnabled()) {
-            throw new BusinessException("Chưa bật AI: cần đặt biến môi trường ANTHROPIC_API_KEY rồi khởi động lại ứng dụng");
+            throw new BusinessException("Chưa bật AI: cần đặt app.ai.api-key trong file secrets.properties (hoặc biến môi trường ANTHROPIC_API_KEY) rồi khởi động lại ứng dụng");
         }
     }
 

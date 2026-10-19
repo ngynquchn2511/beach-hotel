@@ -13,3 +13,6 @@ deploy/.env
 /*.docx
 /*.xlsx
 /*.pdf
+
+# Khoa API rieng tung may (phan tich AI admin)
+secrets.properties
