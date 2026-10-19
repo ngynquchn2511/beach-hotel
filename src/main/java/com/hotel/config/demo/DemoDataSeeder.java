@@ -223,6 +223,7 @@ public class DemoDataSeeder implements CommandLineRunner {
         housekeepers.add(staff("Hoàng Thị Mơ", "buongphong.mo@example.com", UserRole.HOUSEKEEPER, hired));
         housekeepers.add(staff("Vũ Thị Nụ", "buongphong.nu@example.com", UserRole.HOUSEKEEPER, LocalDate.of(2026, 5, 20).atTime(9, 0)));
         accountant = staff("Đặng Thị Bích Ngọc", "ketoan.bichngoc@example.com", UserRole.ACCOUNTANT, hired);
+        staff("Ngô Văn Thành", "quanly.vanthanh@example.com", UserRole.ADMIN, hired);
     }
 
     private void createDiscountCodes() {
