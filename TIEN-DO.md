@@ -37,7 +37,7 @@
 ### Đợt 8 (19/10/2026) - Sửa lỗi kỹ thuật, tài liệu
 | Commit | Chức năng |
 |---|---|
-| `BCDOC` | Báo cáo đồ án toàn bộ khổ dọc (132 trang): phân cấp chức năng vẽ lại dạng dọc, ERD tách 5 hình (`erd-1` ... `erd-5`), mục 2.10 dùng phác thảo bố cục (draw.io), mục 4.1 "Kết quả đạt được" có ảnh chụp + mô tả 67 màn hình theo 5 vai trò (`docs/hinh/chuc-nang`, script chụp tự động bằng Chrome headless). Thêm tài khoản quản trị demo vào `DemoDataSeeder` |
+| `ca591bf` | Báo cáo đồ án toàn bộ khổ dọc (132 trang): phân cấp chức năng vẽ lại dạng dọc, ERD tách 5 hình (`erd-1` ... `erd-5`), mục 2.10 dùng phác thảo bố cục (draw.io), mục 4.1 "Kết quả đạt được" có ảnh chụp + mô tả 67 màn hình theo 5 vai trò (`docs/hinh/chuc-nang`, script chụp tự động bằng Chrome headless). Thêm tài khoản quản trị demo vào `DemoDataSeeder` |
 | `b3934e4` | Dự báo thêm doanh thu dịch vụ: chi tiêu dịch vụ / phòng-đêm (cùng kỳ năm trước, chưa có thì trung bình 3 tháng gần nhất) × số phòng-đêm dự báo; trang dự báo hiện tổng = phòng + dịch vụ, so với kế hoạch theo tổng; gửi kèm cho AI |
 | `5d58ecc` | Khách gửi ảnh kèm tin nhắn theo đơn (`booking_messages.image_url`, `FileStorageService.storeMessageImage`: JPG/PNG/WEBP ≤ 5MB, kiểm loại nội dung), chỉ ảnh cũng gửi được; lễ tân xem ảnh ở trang đơn, hộp thư đánh dấu tin có ảnh. Migration `sql/2026-10-19_anh-tin-nhan.sql` |
 | `192bdac` | Mẫu trả lời nhanh cho lễ tân: admin quản lý `/admin/quick-replies` (biến `{ten_khach}`, `{ma_don}`, `{so_phong}`, `{ngay_den}`, `{ngay_di}`, `{gio_nhan}`, `{gio_tra}`), lễ tân chọn ở khung tin nhắn của đơn. Mẫu mặc định tự tạo khi bảng trống; mẫu wifi để tạm ngừng chờ điền thông tin thật. Migration `sql/2026-10-19_mau-tra-loi-nhanh.sql` |
