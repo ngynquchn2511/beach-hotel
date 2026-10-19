@@ -197,10 +197,28 @@
                                  th:text="(${m.fromGuest} ? 'Khách' : (${m.staffName != null} ? ${m.staffName} : 'Lễ tân')) + ' · ' + ${#temporals.format(m.createdAt, 'dd/MM HH:mm')}"></div>
                         </div>
                     </div>
+                    <select th:unless="${#lists.isEmpty(quickReplies)}" class="form-select form-select-sm mb-2" id="quickReply"
+                            aria-label="Chèn mẫu trả lời nhanh">
+                        <option value="">Chèn mẫu trả lời nhanh...</option>
+                        <option th:each="q : ${quickReplies}" th:value="${q.text}" th:text="${q.title}"></option>
+                    </select>
                     <form method="post" th:action="@{/admin/bookings/{id}/messages(id=${booking.id})}" class="d-flex gap-2">
-                        <textarea name="body" class="form-control form-control-sm" rows="2" maxlength="1000" required placeholder="Trả lời khách (gửi kèm email)"></textarea>
+                        <textarea name="body" id="replyBody" class="form-control form-control-sm" rows="2" maxlength="1000" required placeholder="Trả lời khách (gửi kèm email)"></textarea>
                         <button type="submit" class="btn btn-sm btn-primary align-self-end">Gửi</button>
                     </form>
+                    <script>
+                        (function () {
+                            var sel = document.getElementById('quickReply');
+                            var box = document.getElementById('replyBody');
+                            if (!sel || !box) return;
+                            sel.addEventListener('change', function () {
+                                if (!sel.value) return;
+                                box.value = box.value.trim() ? box.value.trim() + '\n' + sel.value : sel.value;
+                                box.focus();
+                                sel.value = '';
+                            });
+                        })();
+                    </script>
                 </div>
 
                 <div class="border rounded p-3 my-3" id="yeu-cau">

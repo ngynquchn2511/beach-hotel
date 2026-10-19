@@ -90,6 +90,8 @@
        th:classappend="${p.startsWith('/admin/spa-packages')} ? 'active'">
         <i class="bi bi-droplet-half"></i>Gói spa
     </a>
+    <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin/quick-replies}" class="list-group-item list-group-item-action"
+       th:classappend="${p.startsWith('/admin/quick-replies')} ? 'active'"><i class="bi bi-lightning-charge"></i>Mẫu trả lời nhanh</a>
     <a th:href="@{/admin/shifts}" class="list-group-item list-group-item-action"
        th:classappend="${p.startsWith('/admin/shifts')} ? 'active'"><i class="bi bi-cash-coin"></i>Sổ quỹ ca</a>
     <a th:href="@{/admin/reports/daily}" class="list-group-item list-group-item-action"
