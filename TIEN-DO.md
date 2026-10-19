@@ -34,6 +34,11 @@
 
 ## 3. Đã làm (theo thứ tự gần nhất trước)
 
+### Đợt 11 (20/10/2026) - Báo cáo: kiểm thử toàn bộ chức năng bằng tài khoản giả
+| Commit | Chức năng |
+|---|---|
+| (xem `git log`) | Mục 4.1 viết lại: 174 ảnh chụp thao tác thật (29 ảnh thao tác sai) trong `docs/hinh/ket-qua/`, khung đỏ đánh số quanh vùng thao tác + «Các bước thực hiện» theo số. Kịch bản chạy trên bản sao CSDL `beach_hotel_shots` (app cổng 8082, tắt email/OTP, riêng 4 ảnh OTP chụp khi bật), khách giả Trần Minh Khoa `khoa.demo@example.com` / `Demo@2026` đặt phòng rồi lễ tân, buồng phòng, kế toán, quản trị xử lý nối tiếp; ngày lấy theo «hôm nay» khi chạy. Script Python điều khiển Chrome headless qua DevTools (thư mục tạm của phiên, tự kiểm tra viền đỏ nằm trong ảnh). Ảnh cũ `docs/hinh/chuc-nang/` bỏ. Báo cáo 312 trang. Sửa lỗi tìm được khi test: nút «Ghi nhận đơn» ở `/admin/ota` không mở được form (trang không nạp Bootstrap JS) → thêm script nhỏ trong `admin/ota/index.html`. Còn tồn: bỏ qua kiểm tra của trình duyệt mà gửi form đặt tại quầy không chọn phòng thì ra trang lỗi 400 thô |
+
 ### Đợt 10 (19/10/2026) - Báo cáo: phác thảo toàn bộ giao diện
 | Commit | Chức năng |
 |---|---|

@@ -143,5 +143,20 @@
 </main>
 
 <div th:replace="~{fragments/footer :: footer}"></div>
+<script>
+    // Trang khong nap Bootstrap JS: tu mo / dong khung "Ghi nhan don" va dua o nhap vao tam nhin
+    document.querySelectorAll('[data-bs-toggle="collapse"]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var box = document.querySelector(btn.getAttribute('data-bs-target'));
+            if (!box) return;
+            var open = box.classList.toggle('show');
+            if (open) {
+                box.scrollIntoView({ block: 'center' });
+                var first = box.querySelector('input:not([type=hidden])');
+                if (first) first.focus({ preventScroll: true });
+            }
+        });
+    });
+</script>
 </body>
 </html>
