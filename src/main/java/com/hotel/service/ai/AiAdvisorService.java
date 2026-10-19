@@ -220,6 +220,8 @@ public class AiAdvisorService {
                 x.put("month", f.month().toString());
                 x.put("roomRevenueOnTheBooks", f.onTheBooks().revenue());
                 x.put("forecastRoomRevenue", f.forecastRevenue());
+                x.put("forecastServiceRevenue", f.forecastServiceRevenue());
+                x.put("forecastTotalRevenue", f.forecastTotalRevenue());
                 x.put("forecastOccupancyPercent", f.forecastOccupancy());
                 x.put("paceVsLastYear", f.pace());
                 x.put("confidence", f.confidence().name());

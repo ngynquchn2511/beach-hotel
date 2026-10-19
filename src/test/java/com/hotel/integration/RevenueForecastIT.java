@@ -21,6 +21,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class RevenueForecastIT extends ItFixtures {
 
     @Autowired private RevenueForecastService forecastService;
+    @Autowired private com.hotel.repository.BookingChargeRepository chargeRepository;
+    @Autowired private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     private Room room;
     // Moc co dinh: hom nay 15/6/2025 -> du bao thang 6, 7, 8
@@ -64,6 +66,35 @@ class RevenueForecastIT extends ItFixtures {
 
         // Thang 8 khong co du lieu nam ngoai -> chi tren so, tin cay thap
         assertThat(list.get(2).confidence()).isEqualTo(RevenueForecastService.Confidence.LOW);
+    }
+
+    private void charge(Booking b, long amount, LocalDateTime at) {
+        BookingCharge c = chargeRepository.save(BookingCharge.builder().booking(b).type(ChargeType.MINIBAR).description("Minibar")
+                .amount(BigDecimal.valueOf(amount)).build());
+        c.setCreatedAt(at);
+        chargeRepository.flush();
+        // created_at khong cap nhat qua JPA (updatable = false) -> ghi thang vao DB nhu du lieu that
+        jdbcTemplate.update("update booking_charges set created_at = ? where id = ?", at, c.getId());
+    }
+
+    @Test
+    void serviceRevenue_fromLastYearSpendPerNight_andTotalVsTarget() {
+        // Nam ngoai thang 7: 6 phong-dem, 600k dich vu -> 100k / phong-dem
+        Booking a = booking(LocalDate.of(2024, 7, 10), 2, 2_000_000, BookingStatus.CHECKED_OUT, LocalDateTime.of(2024, 5, 1, 9, 0));
+        booking(LocalDate.of(2024, 7, 20), 4, 4_000_000, BookingStatus.CHECKED_OUT, LocalDateTime.of(2024, 7, 1, 9, 0));
+        charge(a, 600_000, LocalDateTime.of(2024, 7, 11, 20, 0));
+        // Phu phi cua don da huy khong tinh
+        Booking x = booking(LocalDate.of(2024, 7, 25), 1, 1_000_000, BookingStatus.CANCELLED, LocalDateTime.of(2024, 6, 1, 9, 0));
+        charge(x, 5_000_000, LocalDateTime.of(2024, 7, 12, 20, 0));
+        // Nam nay thang 7: 3tr tren so (3 dem) -> du bao phong 9tr = 9 dem x ADR 1tr -> dich vu 9 x 100k
+        booking(LocalDate.of(2025, 7, 5), 3, 3_000_000, BookingStatus.CONFIRMED, LocalDateTime.of(2025, 6, 1, 9, 0));
+
+        RevenueForecastService.MonthForecast july = forecastService.forecast(today).get(1);
+        assertThat(july.forecastNights()).isEqualTo(9);
+        assertThat(july.serviceSpendPerNight()).isEqualByComparingTo("100000");
+        assertThat(july.serviceBasis()).isEqualTo("cùng kỳ năm trước");
+        assertThat(july.forecastServiceRevenue()).isEqualByComparingTo("900000");
+        assertThat(july.forecastTotalRevenue()).isEqualByComparingTo("9900000");
     }
 
     @Test

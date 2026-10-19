@@ -23,6 +23,8 @@ import java.util.function.Predicate;
 //   du bao = da co tren so (OTB) + pickup du kien, pickup = (ket qua cuoi thang nam ngoai - OTB nam ngoai cung thoi diem) x toc do ban
 //   toc do ban = OTB nam nay / OTB nam ngoai cung thoi diem (gioi han 0.5 - 2 de tranh so ao khi du lieu it)
 // Khong co du lieu nam ngoai -> du bao = OTB (muc san), do tin cay thap
+// Doanh thu dich vu du bao = chi tieu dich vu / phong-dem co khach (cung thang nam ngoai; chua co thi trung binh 3 thang gan nhat)
+//   x so phong-dem du bao
 @Service
 public class RevenueForecastService {
 
@@ -55,10 +57,21 @@ public class RevenueForecastService {
 
     public record MonthForecast(YearMonth month, Stay onTheBooks, Stay lastYearAtSameLead, Stay lastYearFinal, double pace,
                                 BigDecimal forecastRevenue, double forecastOccupancy, double otbOccupancy, long availableRoomNights,
-                                Confidence confidence, BigDecimal revenueTarget) {
+                                Confidence confidence, BigDecimal revenueTarget, long forecastNights, BigDecimal serviceSpendPerNight,
+                                String serviceBasis) {
+        // Doanh thu dich vu du bao (minibar, goi do, spa, tour, xe...) theo so phong-dem du bao
+        public BigDecimal forecastServiceRevenue() {
+            return serviceSpendPerNight.multiply(BigDecimal.valueOf(forecastNights)).setScale(0, RoundingMode.HALF_UP);
+        }
+
+        public BigDecimal forecastTotalRevenue() {
+            return forecastRevenue.add(forecastServiceRevenue());
+        }
+
+        // Ke hoach doanh thu gom ca dich vu -> so voi tong du bao
         public Double forecastVsTargetPercent() {
             return revenueTarget == null || revenueTarget.signum() == 0 ? null
-                    : forecastRevenue.multiply(BigDecimal.valueOf(1000)).divide(revenueTarget, 0, RoundingMode.HALF_UP).doubleValue() / 10;
+                    : forecastTotalRevenue().multiply(BigDecimal.valueOf(1000)).divide(revenueTarget, 0, RoundingMode.HALF_UP).doubleValue() / 10;
         }
 
         public BigDecimal getPickup() {
@@ -85,11 +98,44 @@ public class RevenueForecastService {
         List<Booking> all = new ArrayList<>(window(first, last));
         all.addAll(window(first.minusYears(1), last.minusYears(1)));
         long rooms = roomRepository.count();
+        recentSpend = recentSpendPerNight(today);
         List<MonthForecast> list = new ArrayList<>();
         for (int i = 0; i < MONTHS_AHEAD; i++) {
             list.add(forecastMonth(YearMonth.from(today).plusMonths(i), today, all, rooms));
         }
         return list;
+    }
+
+    private com.hotel.repository.BookingChargeRepository chargeRepository;
+    // Chi tieu dich vu / phong-dem trung binh 3 thang gan nhat (du phong khi chua co du lieu cung ky)
+    private BigDecimal recentSpend = BigDecimal.ZERO;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setChargeRepository(com.hotel.repository.BookingChargeRepository chargeRepository) {
+        this.chargeRepository = chargeRepository;
+    }
+
+    // Tong phu phi phat sinh trong [first, last] (bo don da huy) / so phong-dem da ban cung ky
+    BigDecimal spendPerNight(YearMonth first, YearMonth last) {
+        if (chargeRepository == null) {
+            return BigDecimal.ZERO;
+        }
+        LocalDate from = first.atDay(1);
+        LocalDate to = last.plusMonths(1).atDay(1);
+        BigDecimal services = chargeRepository.findCreatedBetween(from.atStartOfDay(), to.atStartOfDay()).stream()
+                .filter(c -> c.getBooking().getStatus() != BookingStatus.CANCELLED)
+                .map(com.hotel.entity.BookingCharge::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+        long nights = 0;
+        List<Booking> sold = window(first, last).stream().filter(b -> SOLD.contains(b.getStatus())).toList();
+        for (YearMonth m = first; !m.isAfter(last); m = m.plusMonths(1)) {
+            nights += stay(m, sold, b -> true).nights();
+        }
+        return nights == 0 ? BigDecimal.ZERO : services.divide(BigDecimal.valueOf(nights), 0, RoundingMode.HALF_UP);
+    }
+
+    private BigDecimal recentSpendPerNight(LocalDate today) {
+        YearMonth cur = YearMonth.from(today);
+        return spendPerNight(cur.minusMonths(3), cur.minusMonths(1));
     }
 
     private List<Booking> window(YearMonth first, YearMonth last) {
@@ -127,9 +173,15 @@ public class RevenueForecastService {
                 : lyFinal.nights() > 0 ? lyFinal.revenue().divide(BigDecimal.valueOf(lyFinal.nights()), 0, RoundingMode.HALF_UP) : BigDecimal.ZERO;
         long forecastNights = adr.signum() == 0 ? otb.nights() : forecast.divide(adr, 0, RoundingMode.HALF_UP).longValue();
         forecastNights = Math.min(forecastNights, available);
+        BigDecimal spend = lyFinal.nights() > 0 ? spendPerNight(ly, ly) : BigDecimal.ZERO;
+        String basis = "cùng kỳ năm trước";
+        if (spend.signum() == 0) {
+            spend = recentSpend;
+            basis = spend.signum() == 0 ? "chưa có dữ liệu" : "trung bình 3 tháng gần nhất";
+        }
         return new MonthForecast(m, otb, lyAtLead, lyFinal, Math.round(pace * 100) / 100.0, forecast,
                 pct(forecastNights, available), pct(otb.nights(), available), available, confidence,
-                budgetService.of(m).map(b -> b.getRevenueTarget()).orElse(null));
+                budgetService.of(m).map(b -> b.getRevenueTarget()).orElse(null), forecastNights, spend, basis);
     }
 
     // Don con hieu luc tai thoi diem t: da tao truoc t, va (chua huy hoac huy sau t); khong tinh don dang cho xac nhan

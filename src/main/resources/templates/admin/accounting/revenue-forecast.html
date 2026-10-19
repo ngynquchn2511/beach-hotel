@@ -22,7 +22,8 @@
             <h3 class="fw-bold mb-1">Dự báo doanh thu phòng</h3>
             <p class="text-muted small">Tính đến <span th:text="${#temporals.format(today, 'dd/MM/yyyy')}"></span>.
                 <b>Đã có trên sổ</b> = đơn đã xác nhận cho các đêm của tháng. <b>Dự báo</b> = trên sổ + lượng đặt thêm như cùng kỳ năm trước
-                (từ thời điểm này đến cuối tháng), điều chỉnh theo tốc độ bán năm nay. Chưa tính doanh thu dịch vụ.</p>
+                (từ thời điểm này đến cuối tháng), điều chỉnh theo tốc độ bán năm nay. <b>Dịch vụ</b> = chi tiêu dịch vụ trên mỗi phòng-đêm
+                (cùng kỳ năm trước, chưa có thì lấy trung bình 3 tháng gần nhất) × số phòng-đêm dự báo.</p>
 
             <div class="row g-3">
                 <div class="col-lg-4" th:each="f : ${forecasts}">
@@ -32,8 +33,10 @@
                             <span class="badge" th:classappend="${f.confidence.name() == 'HIGH'} ? 'bg-success' : (${f.confidence.name() == 'MEDIUM'} ? 'bg-info text-dark' : 'bg-secondary')"
                                   th:text="'Tin cậy: ' + ${f.confidence.label}"></span>
                         </div>
-                        <div class="small text-muted mt-2">Dự báo doanh thu phòng</div>
-                        <div class="fs-4 fw-bold" th:text="${#numbers.formatDecimal(f.forecastRevenue, 1, 'POINT', 0, 'COMMA')}"></div>
+                        <div class="small text-muted mt-2">Dự báo tổng doanh thu</div>
+                        <div class="fs-4 fw-bold" th:text="${#numbers.formatDecimal(f.forecastTotalRevenue(), 1, 'POINT', 0, 'COMMA')}"></div>
+                        <div class="small" th:text="'Phòng ' + ${#numbers.formatDecimal(f.forecastRevenue, 1, 'POINT', 0, 'COMMA')}
+                             + ' · dịch vụ ' + ${#numbers.formatDecimal(f.forecastServiceRevenue(), 1, 'POINT', 0, 'COMMA')}"></div>
                         <div class="small" th:text="'Công suất dự báo ' + ${f.forecastOccupancy} + '%'"></div>
                         <hr class="my-2">
                         <table class="table table-sm small mb-0">
@@ -43,6 +46,8 @@
                             <tr><td>Dự kiến đặt thêm</td><td class="text-end" th:text="'+' + ${#numbers.formatDecimal(f.pickup, 1, 'POINT', 0, 'COMMA')}"></td></tr>
                             <tr><td>Cùng kỳ năm trước (kết quả)</td><td class="text-end" th:text="${#numbers.formatDecimal(f.lastYearFinal.revenue, 1, 'POINT', 0, 'COMMA')}"></td></tr>
                             <tr><td>Cùng kỳ, cùng thời điểm này</td><td class="text-end" th:text="${#numbers.formatDecimal(f.lastYearAtSameLead.revenue, 1, 'POINT', 0, 'COMMA')}"></td></tr>
+                            <tr><td>Dịch vụ / phòng-đêm <span class="text-muted" th:text="'(' + ${f.serviceBasis} + ')'"></span></td>
+                                <td class="text-end" th:text="${#numbers.formatDecimal(f.serviceSpendPerNight, 1, 'POINT', 0, 'COMMA')}"></td></tr>
                             <tr><td>Tốc độ bán so với năm trước</td><td class="text-end" th:classappend="${f.pace < 1} ? 'text-danger' : 'text-success'" th:text="'×' + ${f.pace}"></td></tr>
                             <tr th:if="${f.revenueTarget != null}"><td>So với kế hoạch</td>
                                 <td class="text-end fw-semibold" th:classappend="${f.forecastVsTargetPercent < 100} ? 'text-danger' : 'text-success'"

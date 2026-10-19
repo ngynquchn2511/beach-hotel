@@ -37,6 +37,9 @@
 ### Đợt 8 (19/10/2026) - Sửa lỗi kỹ thuật, tài liệu
 | Commit | Chức năng |
 |---|---|
+| `SVC` | Dự báo thêm doanh thu dịch vụ: chi tiêu dịch vụ / phòng-đêm (cùng kỳ năm trước, chưa có thì trung bình 3 tháng gần nhất) × số phòng-đêm dự báo; trang dự báo hiện tổng = phòng + dịch vụ, so với kế hoạch theo tổng; gửi kèm cho AI |
+| `5d58ecc` | Khách gửi ảnh kèm tin nhắn theo đơn (`booking_messages.image_url`, `FileStorageService.storeMessageImage`: JPG/PNG/WEBP ≤ 5MB, kiểm loại nội dung), chỉ ảnh cũng gửi được; lễ tân xem ảnh ở trang đơn, hộp thư đánh dấu tin có ảnh. Migration `sql/2026-10-19_anh-tin-nhan.sql` |
+| `192bdac` | Mẫu trả lời nhanh cho lễ tân: admin quản lý `/admin/quick-replies` (biến `{ten_khach}`, `{ma_don}`, `{so_phong}`, `{ngay_den}`, `{ngay_di}`, `{gio_nhan}`, `{gio_tra}`), lễ tân chọn ở khung tin nhắn của đơn. Mẫu mặc định tự tạo khi bảng trống; mẫu wifi để tạm ngừng chờ điền thông tin thật. Migration `sql/2026-10-19_mau-tra-loi-nhanh.sql` |
 | `331855f` | `README.md` (cài đặt, biến môi trường, tài khoản demo, triển khai). Báo cáo `docs/BaoCao-DoAn.docx` + `.pdf` (72 trang) theo mẫu bìa BTL `BM.T04` và hướng dẫn trình bày `HD.T01` trong `D:\DoAnChuyenNganh`: mở đầu, 4 chương theo dàn ý mẫu (actor, use case UC1-UC8 kèm đặc tả, BFD, hoạt động, lớp, trạng thái, tuần tự, thành phần, triển khai, 11 ảnh giao diện thật, ERD 3 hình, cấu trúc 12 bảng chính, cài đặt, kiểm thử), phụ lục, tài liệu tham khảo. Sơ đồ draw.io trong `docs/use-case` (thêm uc0, uc6-uc8) và `docs/thiet-ke`, ảnh xuất trong `docs/hinh`. Đặc tả UC1-UC5 chép từ `BaoCao-UseCase.docx` cũ. Mục lục / danh mục là trường tự động (Word: References > Update Table) |
 | `9d573a1` | Báo cáo chỉ nạp dữ liệu trong kỳ (`BookingRepository.findForPeriod`, `BookingChargeRepository.findCreatedBetween`, join fetch phòng + hạng phòng) thay cho `findAll`: lãi lỗ 13 tháng, dự báo, hiệu quả loại phòng, báo cáo kênh / dịch vụ; khóa dòng mã giảm giá khi tạo đơn (`DiscountCodeRepository.findActiveForUpdate`, test `ConcurrentDiscountIT`: không khóa thì 6/6 người cùng dùng lượt cuối); bỏ `TestDataSeeder` cũ |
 
@@ -123,11 +126,10 @@
 
 ## 6. Gợi ý việc làm tiếp (chưa làm)
 
-1. Bật `ANTHROPIC_API_KEY` và chạy thử phân tích AI một tháng có số liệu; chỉnh prompt (`AiAdvisorService.ANALYST_PROMPT`) theo phản hồi của chủ resort.
-2. Dự báo cả doanh thu dịch vụ (hiện chỉ dự báo tiền phòng).
-3. Thử VNPay sandbox thật theo checklist mục 7 (cần chủ dự án đăng ký tài khoản sandbox), kèm thử đối soát với file sao kê thật.
-4. Gửi tin nhắn kèm ảnh (khách chụp chỗ hỏng / đồ cần hỗ trợ).
-5. Mẫu trả lời nhanh cho lễ tân (giờ đón xe, wifi, giờ ăn sáng).
+1. Nạp credit cho tài khoản Anthropic (khóa `ANTHROPIC_API_KEY` đã đặt trên máy dev), chạy thử phân tích AI một tháng có số liệu; chỉnh prompt (`AiAdvisorService.ANALYST_PROMPT`) theo phản hồi của chủ resort.
+2. Thử VNPay sandbox thật theo checklist mục 7 (cần chủ dự án đăng ký tài khoản sandbox), kèm thử đối soát với file sao kê thật.
+3. Điền thông tin wifi thật vào mẫu trả lời nhanh rồi bật mẫu.
+4. Gợi ý giá theo nhu cầu (tăng giá khi tốc độ bán cao, khuyến mãi khi thấp) dựa trên dự báo.
 
 ## 7. Checklist thử VNPay sandbox (chưa chạy - cần tài khoản)
 
