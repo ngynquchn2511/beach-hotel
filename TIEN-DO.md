@@ -34,6 +34,11 @@
 
 ## 3. Đã làm (theo thứ tự gần nhất trước)
 
+### Đợt 10 (19/10/2026) - Báo cáo: phác thảo toàn bộ giao diện
+| Commit | Chức năng |
+|---|---|
+| (xem `git log`) | Mục 2.10 báo cáo viết lại: 83 phác thảo đen trắng kiểu draw.io (`docs/thiet-ke/giao-dien/gd01 ... gd83.drawio`, ảnh `docs/hinh/giao-dien/`) chia 7 nhóm (quy ước + bố cục chung, khách vãng lai, khách hàng, lễ tân, buồng phòng, kế toán, quản trị viên); mỗi hình có số chú thích ①②③ và phần mô tả «Mục đích» + «Các thành phần chính» theo đúng số. Sửa thẳng vào file Word (giữ các chỉnh sửa tay của chủ dự án), đánh số lại hình chương 2 (Hình 2.30 - 2.112 là phác thảo, ERD thành 2.113 - 2.117), báo cáo 243 trang. Script sinh hình viết bằng Python trong thư mục tạm của phiên (lớp `WF` trên nền `dio.py`), xuất PNG bằng draw.io Desktop bản portable |
+
 ### Đợt 9 (19/10/2026) - Đồng bộ Booking.com / Airbnb
 | Commit | Chức năng |
 |---|---|
