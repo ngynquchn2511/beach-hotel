@@ -202,7 +202,7 @@ class BookingServiceTest {
                 .discountValue(bd(10)).applicableCustomerType(null).active(true).build();
         when(roomRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(room));
         when(bookingRepository.existsOverlappingBooking(10L, in, out)).thenReturn(false);
-        when(discountCodeRepository.findByCodeAndActiveTrue("SALE10")).thenReturn(Optional.of(code));
+        when(discountCodeRepository.findActiveForUpdate("SALE10")).thenReturn(Optional.of(code));
         when(bookingRepository.save(any(Booking.class))).thenAnswer(inv -> inv.getArgument(0));
 
         Booking result = bookingService.createBooking(customer, 10L, in, out,
@@ -221,7 +221,7 @@ class BookingServiceTest {
                 .discountValue(bd(500000)).applicableCustomerType(null).active(true).build();
         when(roomRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(room));
         when(bookingRepository.existsOverlappingBooking(10L, in, out)).thenReturn(false);
-        when(discountCodeRepository.findByCodeAndActiveTrue("FIX500K")).thenReturn(Optional.of(code));
+        when(discountCodeRepository.findActiveForUpdate("FIX500K")).thenReturn(Optional.of(code));
         when(bookingRepository.save(any(Booking.class))).thenAnswer(inv -> inv.getArgument(0));
 
         Booking result = bookingService.createBooking(customer, 10L, in, out,
@@ -241,7 +241,7 @@ class BookingServiceTest {
                 .discountValue(bd(20)).applicableCustomerType(CustomerType.VIP).active(true).build();
         when(roomRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(room));
         when(bookingRepository.existsOverlappingBooking(10L, in, out)).thenReturn(false);
-        when(discountCodeRepository.findByCodeAndActiveTrue("VIPONLY")).thenReturn(Optional.of(code));
+        when(discountCodeRepository.findActiveForUpdate("VIPONLY")).thenReturn(Optional.of(code));
 
         assertThrows(BusinessException.class, () -> bookingService.createBooking(customer, 10L, in, out,
                 LocalTime.of(14, 0), LocalTime.of(12, 0), 2, null, "VIPONLY",
@@ -254,7 +254,7 @@ class BookingServiceTest {
         LocalDate out = LocalDate.now().plusDays(2);
         when(roomRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(room));
         when(bookingRepository.existsOverlappingBooking(10L, in, out)).thenReturn(false);
-        when(discountCodeRepository.findByCodeAndActiveTrue("NOPE")).thenReturn(Optional.empty());
+        when(discountCodeRepository.findActiveForUpdate("NOPE")).thenReturn(Optional.empty());
 
         assertThrows(BusinessException.class, () -> bookingService.createBooking(customer, 10L, in, out,
                 LocalTime.of(14, 0), LocalTime.of(12, 0), 2, null, "nope",

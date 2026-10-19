@@ -113,9 +113,7 @@ class RoomServiceTest {
 
     @Test
     void delete_withExistingBookings_throws() {
-        Room room = Room.builder().id(1L).build();
-        Booking b = Booking.builder().id(1L).room(room).build();
-        when(bookingRepository.findAll()).thenReturn(List.of(b));
+        when(bookingRepository.existsByRoomId(1L)).thenReturn(true);
 
         assertThrows(BusinessException.class, () -> roomService.delete(1L));
         verify(roomRepository, never()).deleteById(any());

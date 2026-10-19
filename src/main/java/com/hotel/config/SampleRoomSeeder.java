@@ -25,7 +25,7 @@ import java.util.Map;
 
 // Tao san hang phong, phong, combo hai san va tour lan cua resort bien de chay thu ngay sau khi clone.
 // Chi chay khi DB chua co hang phong nao (lan dau) va app.seed-sample-rooms=true (may dev).
-// Chay truoc TestDataSeeder (@Order(1)) de TestDataSeeder co phong ma sinh don gia lap.
+// Chay truoc DemoDataSeeder (@Order(1)) de du lieu demo co phong ma sinh don.
 @Component
 @Order(1)
 @ConditionalOnProperty(name = "app.seed-sample-rooms", havingValue = "true")

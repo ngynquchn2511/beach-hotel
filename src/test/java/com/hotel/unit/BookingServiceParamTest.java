@@ -101,7 +101,7 @@ class BookingServiceParamTest {
     }
 
     private void stubCode(String code, DiscountType type, String value, CustomerType applicable) {
-        when(discountCodeRepository.findByCodeAndActiveTrue(code)).thenReturn(Optional.of(DiscountCode.builder()
+        when(discountCodeRepository.findActiveForUpdate(code)).thenReturn(Optional.of(DiscountCode.builder()
                 .id(7L).code(code).discountType(type).discountValue(new BigDecimal(value))
                 .applicableCustomerType(applicable).active(true).build()));
     }
@@ -197,7 +197,7 @@ class BookingServiceParamTest {
     @ValueSource(strings = {"KHONGCO", "NEWBIE2026", "HETHAN", "123"})
     void discount_unknownOrInactive_throws(String code) {
         stubRoom(200000, RoomStatus.AVAILABLE);
-        when(discountCodeRepository.findByCodeAndActiveTrue(any())).thenReturn(Optional.empty());
+        when(discountCodeRepository.findActiveForUpdate(any())).thenReturn(Optional.empty());
         assertThatThrownBy(() -> create(1, null, code))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("không tồn tại hoặc đã ngừng áp dụng");
@@ -211,7 +211,7 @@ class BookingServiceParamTest {
         stubRoom(200000, RoomStatus.AVAILABLE);
         Booking b = create(2, null, code);
         assertThat(b.getDiscountAmount()).isEqualByComparingTo(BigDecimal.ZERO);
-        verify(discountCodeRepository, never()).findByCodeAndActiveTrue(any());
+        verify(discountCodeRepository, never()).findActiveForUpdate(any());
     }
 
     // ===================== Kiểm tra ngày, thông tin khách =====================

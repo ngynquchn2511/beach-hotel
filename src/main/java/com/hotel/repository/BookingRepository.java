@@ -110,4 +110,14 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     @Query("select b from Booking b join fetch b.room where b.invoiceTaxCode is not null "
             + "order by case when b.eInvoiceIssuedAt is null then 0 else 1 end, b.checkOutDate desc")
     List<Booking> findCompanyInvoices();
+
+    // Bao cao theo ky: don co dem nam trong [from, to) hoac bi huy trong ky (nap san phong + hang phong, tranh N+1)
+    @Query("select b from Booking b join fetch b.room r join fetch r.roomType "
+            + "where (b.checkInDate < :to and b.checkOutDate > :from) or (b.cancelledAt >= :fromTime and b.cancelledAt < :toTime)")
+    List<Booking> findForPeriod(@Param("from") LocalDate from, @Param("to") LocalDate to,
+                                @Param("fromTime") java.time.LocalDateTime fromTime, @Param("toTime") java.time.LocalDateTime toTime);
+
+    List<Booking> findByCreatedAtBetweenOrderByCreatedAtDesc(java.time.LocalDateTime from, java.time.LocalDateTime to);
+
+    boolean existsByRoomId(Long roomId);
 }

@@ -110,7 +110,7 @@ public class DailyReportService {
         if (recipients != null && !recipients.isBlank()) {
             return Arrays.stream(recipients.split(",")).map(String::trim).filter(s -> s.contains("@")).distinct().toList();
         }
-        return userRepository.findAll().stream().filter(u -> u.getRole() == UserRole.ADMIN).map(User::getEmail)
+        return userRepository.findByRoleOrderByCreatedAtDesc(UserRole.ADMIN).stream().map(User::getEmail)
                 .filter(e -> e != null && e.contains("@")).distinct().toList();
     }
 

@@ -258,8 +258,7 @@ public class RoomService {
     @Transactional
     public void delete(Long id) {
         // Rang buoc du lieu: khong cho xoa phong neu da co booking gan voi phong nay
-        boolean hasBookings = bookingRepository.findAll().stream()
-                .anyMatch(booking -> booking.getRoom().getId().equals(id));
+        boolean hasBookings = bookingRepository.existsByRoomId(id);
         if (hasBookings) {
             throw new BusinessException("Không thể xóa phòng này vì đã có lịch sử đặt phòng liên quan");
         }

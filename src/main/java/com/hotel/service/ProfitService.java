@@ -128,8 +128,10 @@ public class ProfitService {
 
     @Transactional(readOnly = true)
     public Report report(YearMonth month) {
-        List<Booking> bookings = bookingRepository.findAll();
-        List<BookingCharge> charges = chargeRepository.findAll();
+        // Chi nap du lieu cua cac thang can tinh: xu huong 12 thang + cung ky nam truoc
+        YearMonth first = month.minusMonths(Math.max(TREND_MONTHS - 1, 12));
+        List<Booking> bookings = periodBookings(first, month);
+        List<BookingCharge> charges = periodCharges(first, month);
         long rooms = roomRepository.count();
         MonthPnl current = month(month, bookings, charges, rooms);
         MonthPnl previous = month(month.minusMonths(1), bookings, charges, rooms);
@@ -144,7 +146,17 @@ public class ProfitService {
 
     @Transactional(readOnly = true)
     public MonthPnl month(YearMonth month) {
-        return month(month, bookingRepository.findAll(), chargeRepository.findAll(), roomRepository.count());
+        return month(month, periodBookings(month, month), periodCharges(month, month), roomRepository.count());
+    }
+
+    private List<Booking> periodBookings(YearMonth first, YearMonth last) {
+        LocalDate from = first.atDay(1);
+        LocalDate to = last.plusMonths(1).atDay(1);
+        return bookingRepository.findForPeriod(from, to, from.atStartOfDay(), to.atStartOfDay());
+    }
+
+    private List<BookingCharge> periodCharges(YearMonth first, YearMonth last) {
+        return chargeRepository.findCreatedBetween(first.atDay(1).atStartOfDay(), last.plusMonths(1).atDay(1).atStartOfDay());
     }
 
     private MonthPnl month(YearMonth month, List<Booking> bookings, List<BookingCharge> charges, long rooms) {

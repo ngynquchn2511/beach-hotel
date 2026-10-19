@@ -702,7 +702,7 @@ public class BookingService {
         DiscountCode discountCode = null;
         BigDecimal discountAmount = BigDecimal.ZERO;
         if (discountCodeStr != null && !discountCodeStr.isBlank()) {
-            discountCode = discountCodeRepository.findByCodeAndActiveTrue(discountCodeStr.trim().toUpperCase())
+            discountCode = discountCodeRepository.findActiveForUpdate(discountCodeStr.trim().toUpperCase())
                     .orElseThrow(() -> BusinessException.of("err.discountInvalid"));
 
             if (discountCode.getApplicableCustomerType() != null

@@ -60,16 +60,12 @@ public class ReportService {
 
     @Transactional(readOnly = true)
     public Report build(LocalDate from, LocalDate to) {
-        List<Booking> created = bookingRepository.findAllByOrderByCreatedAtDesc().stream()
-                .filter(b -> b.getCreatedAt() != null)
-                .filter(b -> !b.getCreatedAt().toLocalDate().isBefore(from) && !b.getCreatedAt().toLocalDate().isAfter(to))
-                .toList();
+        List<Booking> created = bookingRepository.findByCreatedAtBetweenOrderByCreatedAtDesc(
+                from.atStartOfDay(), to.plusDays(1).atStartOfDay().minusNanos(1));
         List<Booking> kept = created.stream().filter(b -> b.getStatus() != BookingStatus.CANCELLED).toList();
         Set<Long> keptIds = kept.stream().map(Booking::getId).collect(Collectors.toSet());
 
-        List<BookingCharge> charges = chargeRepository.findAll().stream()
-                .filter(c -> keptIds.contains(c.getBooking().getId()))
-                .toList();
+        List<BookingCharge> charges = keptIds.isEmpty() ? List.of() : chargeRepository.findByBookingIdIn(keptIds);
         Map<Long, BigDecimal> chargeByBooking = new java.util.HashMap<>();
         charges.forEach(c -> chargeByBooking.merge(c.getBooking().getId(), c.getAmount(), BigDecimal::add));
 

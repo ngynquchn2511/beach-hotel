@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.stream.IntStream;
 
 // Bo sung 50 phong cho resort (tong 60 phong): them phong cho 4 hang phong mau + 6 hang phong moi voi view khac nhau
-// (vuon, ho boi, bien/dao, bungalow sat bien, penthouse). Chay sau SampleRoomSeeder (@Order(2)) va truoc TestDataSeeder.
+// (vuon, ho boi, bien/dao, bungalow sat bien, penthouse). Chay sau SampleRoomSeeder (@Order(2)) va truoc DemoDataSeeder.
 // An toan khi chay lai: hang phong tim theo ten tieng Anh, phong nao da co so phong thi bo qua (khong dung toi phong admin da sua)
 @Component
 @Order(2)

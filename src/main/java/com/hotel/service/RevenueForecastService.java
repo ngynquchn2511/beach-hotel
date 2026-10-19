@@ -79,13 +79,23 @@ public class RevenueForecastService {
     // Thang hien tai + MONTHS_AHEAD - 1 thang tiep theo
     @Transactional(readOnly = true)
     public List<MonthForecast> forecast(LocalDate today) {
-        List<Booking> all = bookingRepository.findAll();
+        // Chi can cac thang du bao va cung ky nam truoc
+        YearMonth first = YearMonth.from(today);
+        YearMonth last = first.plusMonths(MONTHS_AHEAD - 1);
+        List<Booking> all = new ArrayList<>(window(first, last));
+        all.addAll(window(first.minusYears(1), last.minusYears(1)));
         long rooms = roomRepository.count();
         List<MonthForecast> list = new ArrayList<>();
         for (int i = 0; i < MONTHS_AHEAD; i++) {
             list.add(forecastMonth(YearMonth.from(today).plusMonths(i), today, all, rooms));
         }
         return list;
+    }
+
+    private List<Booking> window(YearMonth first, YearMonth last) {
+        LocalDate from = first.atDay(1);
+        LocalDate to = last.plusMonths(1).atDay(1);
+        return bookingRepository.findForPeriod(from, to, from.atStartOfDay(), to.atStartOfDay());
     }
 
     MonthForecast forecastMonth(YearMonth m, LocalDate today, List<Booking> all, long rooms) {

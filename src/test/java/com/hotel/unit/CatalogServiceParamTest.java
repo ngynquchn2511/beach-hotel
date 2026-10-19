@@ -221,8 +221,7 @@ class CatalogServiceParamTest {
     @CsvSource({"chưa từng được đặt,false", "đã có đơn đặt phòng,true"})
     void deleteRoom_blockedWhenHasBookings(String label, boolean hasBooking) {
         Room room = Room.builder().id(10L).roomNumber("101").roomType(roomType).price(BigDecimal.ONE).status(RoomStatus.AVAILABLE).build();
-        List<Booking> bookings = hasBooking ? List.of(Booking.builder().room(room).build()) : List.of();
-        when(bookingRepository.findAll()).thenReturn(bookings);
+        when(bookingRepository.existsByRoomId(10L)).thenReturn(hasBooking);
         when(roomImageRepository.findByRoomIdOrderById(10L)).thenReturn(List.of(RoomImage.builder().imageUrl("/uploads/rooms/a.jpg").build()));
         if (hasBooking) {
             assertThatThrownBy(() -> roomService.delete(10L)).isInstanceOf(BusinessException.class).hasMessageContaining("lịch sử đặt phòng");

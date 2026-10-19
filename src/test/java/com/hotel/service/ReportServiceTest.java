@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -59,14 +60,19 @@ class ReportServiceTest {
         // Ngoai khoang ngay -> bo qua
         Booking outside = booking("d@mail.com", BookingChannel.ONLINE, BookingStatus.CHECKED_OUT, 9_000_000, in.minusMonths(2));
 
-        when(bookingRepository.findAllByOrderByCreatedAtDesc())
-                .thenReturn(List.of(online, walkIn, legacyWalkIn, legacyOnline, cancelled, outside));
-        when(chargeRepository.findAll()).thenReturn(List.of(
+        // Repository loc theo ngay tao: don "outside" khong nam trong ket qua
+        when(bookingRepository.findByCreatedAtBetweenOrderByCreatedAtDesc(any(), any()))
+                .thenReturn(List.of(online, walkIn, legacyWalkIn, legacyOnline, cancelled));
+        List<BookingCharge> allCharges = List.of(
                 BookingCharge.builder().booking(online).type(ChargeType.DIVING_TOUR).amount(BigDecimal.valueOf(400_000)).build(),
                 BookingCharge.builder().booking(walkIn).type(ChargeType.MINIBAR).amount(BigDecimal.valueOf(100_000)).build(),
                 // Phu phi cua don da huy / ngoai khoang -> khong tinh
                 BookingCharge.builder().booking(cancelled).type(ChargeType.MINIBAR).amount(BigDecimal.valueOf(999_000)).build(),
-                BookingCharge.builder().booking(outside).type(ChargeType.DIVING_TOUR).amount(BigDecimal.valueOf(999_000)).build()));
+                BookingCharge.builder().booking(outside).type(ChargeType.DIVING_TOUR).amount(BigDecimal.valueOf(999_000)).build());
+        when(chargeRepository.findByBookingIdIn(any())).thenAnswer(inv -> {
+            java.util.Collection<Long> ids = inv.getArgument(0);
+            return allCharges.stream().filter(c -> ids.contains(c.getBooking().getId())).toList();
+        });
 
         ReportService.Report report = service.build(FROM, TO);
 
@@ -103,8 +109,7 @@ class ReportServiceTest {
 
     @Test
     void emptyRange_noDivisionByZero() {
-        when(bookingRepository.findAllByOrderByCreatedAtDesc()).thenReturn(List.of());
-        when(chargeRepository.findAll()).thenReturn(List.of());
+        when(bookingRepository.findByCreatedAtBetweenOrderByCreatedAtDesc(any(), any())).thenReturn(List.of());
 
         ReportService.Report report = service.build(FROM, TO);
 

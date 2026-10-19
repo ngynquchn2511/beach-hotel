@@ -28,6 +28,7 @@ class ProfitIT extends ItFixtures {
     @Autowired private ProfitService profitService;
     @Autowired private ExpenseService expenseService;
     @Autowired private BookingChargeRepository chargeRepository;
+    @Autowired private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     private final YearMonth march = YearMonth.of(2025, 3);
     private Room room;
@@ -60,8 +61,10 @@ class ProfitIT extends ItFixtures {
         bookingRepository.save(cancelled);
         BookingCharge food = chargeRepository.save(BookingCharge.builder().booking(crossing).type(ChargeType.ROOM_SERVICE)
                 .description("Ăn tối").amount(BigDecimal.valueOf(1_000_000)).build());
+        // created_at khong cap nhat qua JPA (updatable = false) -> ghi thang vao DB nhu du lieu that
         food.setCreatedAt(LocalDateTime.of(2025, 3, 31, 20, 0));
-        chargeRepository.save(food);
+        chargeRepository.flush();
+        jdbcTemplate.update("update booking_charges set created_at = ? where id = ?", LocalDateTime.of(2025, 3, 31, 20, 0), food.getId());
 
         expenseService.updateCostSettings(Map.of(ChargeType.ROOM_SERVICE, 40), BigDecimal.ZERO, BigDecimal.valueOf(100_000));
         expenseService.create(Expense.Category.PAYROLL, "Lương", BigDecimal.valueOf(1_500_000), Expense.Recurrence.MONTHLY,

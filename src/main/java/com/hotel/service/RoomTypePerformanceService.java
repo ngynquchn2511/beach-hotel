@@ -74,7 +74,7 @@ public class RoomTypePerformanceService {
         }
         Map<Long, long[]> nights = new HashMap<>();
         Map<Long, BigDecimal> revenue = new HashMap<>();
-        for (Booking b : bookingRepository.findAll()) {
+        for (Booking b : bookingRepository.findForPeriod(from, to, from.atStartOfDay(), to.atStartOfDay())) {
             if (!SOLD.contains(b.getStatus())) {
                 continue;
             }
@@ -93,8 +93,8 @@ public class RoomTypePerformanceService {
         Map<com.hotel.entity.ChargeType, Integer> rates = expenseService.costRates();
         Map<Long, BigDecimal> services = new HashMap<>();
         Map<Long, BigDecimal> serviceCost = new HashMap<>();
-        for (BookingCharge c : chargeRepository.findAll()) {
-            if (c.getCreatedAt() == null || !YearMonth.from(c.getCreatedAt()).equals(m) || c.getBooking().getStatus() == BookingStatus.CANCELLED) {
+        for (BookingCharge c : chargeRepository.findCreatedBetween(from.atStartOfDay(), to.atStartOfDay())) {
+            if (c.getBooking().getStatus() == BookingStatus.CANCELLED) {
                 continue;
             }
             Long typeId = c.getBooking().getRoom().getRoomType().getId();
