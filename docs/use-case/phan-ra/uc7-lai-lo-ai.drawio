@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net">
   <diagram id="uc7-lai-lo-ai" name="UC7 - Phân tích lãi lỗ và trợ lý AI">
-    <mxGraphModel dx="1400" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1420" pageHeight="970.0" math="0" shadow="0">
+    <mxGraphModel dx="1400" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1420" pageHeight="1022.0" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -49,6 +49,10 @@
         <mxCell id="e25" edge="1" parent="1" source="nd" target="login" style="endArrow=open;endSize=12;dashed=1;html=1;rounded=0;strokeColor=#000000;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" value="&amp;lt;&amp;lt;include&amp;gt;&amp;gt;"><mxGeometry x="-0.55" relative="1" as="geometry"></mxGeometry></mxCell>
         <mxCell id="e26" edge="1" parent="1" source="aipt" target="login" style="endArrow=open;endSize=12;dashed=1;html=1;rounded=0;strokeColor=#000000;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" value="&amp;lt;&amp;lt;include&amp;gt;&amp;gt;"><mxGeometry x="-0.55" relative="1" as="geometry"></mxGeometry></mxCell>
         <mxCell id="e27" edge="1" parent="1" source="hoi" target="login" style="endArrow=open;endSize=12;dashed=1;html=1;rounded=0;strokeColor=#000000;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" value="&amp;lt;&amp;lt;include&amp;gt;&amp;gt;"><mxGeometry x="-0.55" relative="1" as="geometry"></mxGeometry></mxCell>
+        <mxCell id="ndung" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=#FFFFFF;strokeColor=#000000;fontSize=13;" value="Người dùng" vertex="1"><mxGeometry x="1260" y="446.00000000000006" width="40" height="70" as="geometry" /></mxCell>
+        <mxCell id="e28" edge="1" parent="1" source="ndung" target="login" style="endArrow=open;endSize=10;html=1;rounded=0;strokeColor=#000000;exitX=0;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;" value=""><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+        <mxCell id="e29" edge="1" parent="1" source="qt" target="ndung" style="endArrow=block;endSize=16;endFill=0;html=1;rounded=0;strokeColor=#000000;exitX=0;exitY=0.6;exitDx=0;exitDy=0;exitPerimeter=0;entryX=1;entryY=0.7;entryDx=0;entryDy=0;entryPerimeter=0;" value=""><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="5" y="677.0" /><mxPoint x="5" y="950.0" /><mxPoint x="1360" y="950.0" /><mxPoint x="1360" y="495.00000000000006" /></Array></mxGeometry></mxCell>
+        <mxCell id="e30" edge="1" parent="1" source="kt" target="ndung" style="endArrow=block;endSize=16;endFill=0;html=1;rounded=0;strokeColor=#000000;exitX=0;exitY=0.6;exitDx=0;exitDy=0;exitPerimeter=0;entryX=1;entryY=0.49999999999999994;entryDx=0;entryDy=0;entryPerimeter=0;" value=""><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="-11" y="317.0" /><mxPoint x="-11" y="966.0" /><mxPoint x="1376" y="966.0" /><mxPoint x="1376" y="481.00000000000006" /></Array></mxGeometry></mxCell>
       </root>
     </mxGraphModel>
   </diagram>

@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net">
   <diagram id="uc9-dong-bo-ota" name="UC9 - Đồng bộ lịch Booking.com / Airbnb">
-    <mxGraphModel dx="1400" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1420" pageHeight="927.0000000000001" math="0" shadow="0">
+    <mxGraphModel dx="1400" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1420" pageHeight="1047.0" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -42,6 +42,10 @@
         <mxCell id="e19" edge="1" parent="1" source="xem" target="login" style="endArrow=open;endSize=12;dashed=1;html=1;rounded=0;strokeColor=#000000;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" value="&amp;lt;&amp;lt;include&amp;gt;&amp;gt;"><mxGeometry x="-0.55" relative="1" as="geometry"></mxGeometry></mxCell>
         <mxCell id="e20" edge="1" parent="1" source="ghi" target="login" style="endArrow=open;endSize=12;dashed=1;html=1;rounded=0;strokeColor=#000000;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" value="&amp;lt;&amp;lt;include&amp;gt;&amp;gt;"><mxGeometry x="-0.55" relative="1" as="geometry"></mxGeometry></mxCell>
         <mxCell id="e21" edge="1" parent="1" source="xlh" target="login" style="endArrow=open;endSize=12;dashed=1;html=1;rounded=0;strokeColor=#000000;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" value="&amp;lt;&amp;lt;include&amp;gt;&amp;gt;"><mxGeometry x="-0.55" relative="1" as="geometry"></mxGeometry></mxCell>
+        <mxCell id="ndung" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=#FFFFFF;strokeColor=#000000;fontSize=13;" value="Người dùng" vertex="1"><mxGeometry x="670.0" y="917.0000000000001" width="40" height="70" as="geometry" /></mxCell>
+        <mxCell id="e22" edge="1" parent="1" source="ndung" target="login" style="endArrow=open;endSize=10;html=1;rounded=0;strokeColor=#000000;exitX=0.5;exitY=0;exitDx=0;exitDy=0;exitPerimeter=0;" value=""><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+        <mxCell id="e23" edge="1" parent="1" source="lt" target="ndung" style="endArrow=block;endSize=16;endFill=0;html=1;rounded=0;strokeColor=#000000;exitX=0;exitY=0.6;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.3;entryDx=0;entryDy=0;entryPerimeter=0;" value=""><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="5" y="587.0" /><mxPoint x="5" y="938.0000000000001" /></Array></mxGeometry></mxCell>
+        <mxCell id="e24" edge="1" parent="1" source="qt" target="ndung" style="endArrow=block;endSize=16;endFill=0;html=1;rounded=0;strokeColor=#000000;exitX=0;exitY=0.6;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;entryPerimeter=0;" value=""><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="-11" y="227.0" /><mxPoint x="-11" y="952.0000000000001" /></Array></mxGeometry></mxCell>
       </root>
     </mxGraphModel>
   </diagram>
