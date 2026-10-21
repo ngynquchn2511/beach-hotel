@@ -34,6 +34,11 @@
 
 ## 3. Đã làm (theo thứ tự gần nhất trước)
 
+### Đợt 14 (21/10/2026) - Use case phân rã có Đăng nhập, làm lại slide
+| Commit | Chức năng |
+|---|---|
+| (xem `git log`) | **9 use case phân rã vẽ lại theo kiểu sơ đồ tổng quát `uc0`** (đen trắng, nhãn `<<include>>`, có UC «Đăng nhập» được include từ mọi UC của người dùng; UC của Bộ hẹn giờ / VNPay / OTA không cần đăng nhập) trong `docs/use-case/phan-ra/` (`.drawio` + `.png`, kèm `uc0-tong-quat.png` xuất từ bản `uc0` chủ dự án sửa). Bản cũ `docs/use-case/uc1 ... uc9` và hình trong báo cáo **chưa thay**. Sinh bằng script Python `ucgen.py` trong thư mục tạm của phiên (bố cục cột A = UC chính, cột B = UC phụ / UC của tác nhân bên phải, Đăng nhập ở hành lang giữa). **Slide** (artifact claude.ai «Khảo sát hệ thống Sóng Xanh Resort», https://claude.ai/artifact/QZVKLhzufpr5APoKQqimBt) làm lại ít chữ, 18 slide: gộp 6 slide phiếu hỏi thành 1, gộp quan sát + tài liệu, bỏ slide đối chiếu yêu cầu; thêm BFD, use case tổng quát và 5 phân rã (UC1 đặt phòng, UC2 cọc – hủy – hoàn, UC3 nhận – trả phòng, UC8 chăm sóc khách, UC7 lãi lỗ – AI), không mô tả; nội dung chi tiết chuyển vào ghi chú người nói |
+
 ### Đợt 13 (21/10/2026) - Báo cáo: đánh số trang liền mạch
 | Commit | Chức năng |
 |---|---|
