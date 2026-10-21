@@ -34,6 +34,11 @@
 
 ## 3. Đã làm (theo thứ tự gần nhất trước)
 
+### Đợt 13 (21/10/2026) - Báo cáo: đánh số trang liền mạch
+| Commit | Chức năng |
+|---|---|
+| (xem `git log`) | Bỏ số La Mã ở phần đầu và bỏ đánh lại từ 1 ở Mở đầu: cả báo cáo đánh số Ả Rập liên tục, bìa là trang 1 nhưng không hiện số, các trang từ 2 đến 338 hiện số (Mở đầu trang 20). Sửa bằng Word COM (`pn.ps1` trong thư mục tạm của phiên: section 1 trang đầu khác, footer trang đầu rỗng; section 2, 3 không bắt đầu lại), cập nhật mục lục / danh mục, xuất lại PDF. Sơ đồ use case do chủ dự án tự sửa |
+
 ### Đợt 12 (20/10/2026) - Báo cáo: sắp xếp lại chương 3 / 4 theo HD.T01
 | Commit | Chức năng |
 |---|---|
