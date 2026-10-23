@@ -32,18 +32,51 @@ class ContactMessageIT {
     @Autowired private ContactMessageRepository repository;
     @Autowired private UserRepository userRepository;
 
-    @Test
-    void aboutPage_showsContactForm() throws Exception {
-        mockMvc.perform(get("/about"))
-                .andExpect(status().isOk())
-                .andExpect(content().string(containsString("id=\"lien-he\"")))
-                .andExpect(content().string(containsString("Gửi yêu cầu tư vấn")))
-                .andExpect(content().string(containsString("name=\"website\"")));
+    // Tai khoan khach dung de gui form lien he (lien he bat buoc dang nhap)
+    private CustomUserDetails customer() {
+        return new CustomUserDetails(userRepository.findByEmail("khach.lienhe@mail.com").orElseGet(() -> userRepository.save(
+                com.hotel.entity.User.builder().fullName("Khach Lien He IT").email("khach.lienhe@mail.com").phoneNumber("0900111222")
+                        .password("x").role(com.hotel.entity.UserRole.CUSTOMER).build())));
     }
 
     @Test
-    void guestSubmits_staffSeesBadgeRepliesAndMessageIsHandled() throws Exception {
+    void aboutPage_loggedIn_showsContactFormPrefilled() throws Exception {
+        mockMvc.perform(get("/about").with(user(customer())))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("id=\"lien-he\"")))
+                .andExpect(content().string(containsString("Gửi yêu cầu tư vấn")))
+                .andExpect(content().string(containsString("name=\"website\"")))
+                .andExpect(content().string(containsString("value=\"Khach Lien He IT\"")))
+                .andExpect(content().string(containsString("value=\"khach.lienhe@mail.com\"")));
+    }
+
+    @Test
+    void anonymous_seesLoginButton_sendingNeedsLogin_thenBackToForm() throws Exception {
+        // Chua dang nhap: khong co form, chi co nut "Dang nhap de gui yeu cau" tro toi /contact
+        mockMvc.perform(get("/about"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Đăng nhập để gửi yêu cầu")))
+                .andExpect(content().string(containsString("href=\"/contact\"")))
+                .andExpect(content().string(not(containsString("name=\"website\""))));
+        // Gui thang form khi chua dang nhap -> ve /login, khong luu gi
+        long before = repository.count();
         mockMvc.perform(post("/contact").with(csrf())
+                        .param("fullName", "Khach Chua Dang Nhap").param("email", "chuadn@mail.com")
+                        .param("message", "Cho hoi gia phong thang 12"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrlPattern("**/login"));
+        assertThat(repository.count()).isEqualTo(before);
+        mockMvc.perform(get("/contact"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrlPattern("**/login"));
+        // Dang nhap xong mo lai /contact -> ve dung form lien he
+        mockMvc.perform(get("/contact").with(user(customer())))
+                .andExpect(redirectedUrl("/about#lien-he"));
+    }
+
+    @Test
+    void customerSubmits_staffSeesBadgeRepliesAndMessageIsHandled() throws Exception {
+        mockMvc.perform(post("/contact").with(csrf()).with(user(customer()))
                         .param("fullName", "Pham Thi Lien He")
                         .param("email", "lienhe@mail.com")
                         .param("phone", "0912 345 678")
@@ -84,7 +117,7 @@ class ContactMessageIT {
 
     @Test
     void invalidSubmission_keepsInputAndShowsError() throws Exception {
-        mockMvc.perform(post("/contact").with(csrf())
+        mockMvc.perform(post("/contact").with(csrf()).with(user(customer()))
                         .param("fullName", "Khach Sai Email")
                         .param("email", "khong-phai-email")
                         .param("message", "Noi dung hop le du dai"))
@@ -94,7 +127,7 @@ class ContactMessageIT {
         assertThat(repository.findAll()).noneMatch(m -> m.getFullName().equals("Khach Sai Email"));
 
         // Trang hien loi + giu noi dung khach da go
-        mockMvc.perform(get("/about")
+        mockMvc.perform(get("/about").with(user(customer()))
                         .flashAttr("contactError", "Email không hợp lệ.")
                         .flashAttr("contactForm", java.util.Map.of("fullName", "Khach Sai Email", "email", "x",
                                 "phone", "", "message", "Noi dung hop le du dai")))
@@ -105,7 +138,7 @@ class ContactMessageIT {
     @Test
     void honeypotFilled_pretendsSuccessButSavesNothing() throws Exception {
         long before = repository.count();
-        mockMvc.perform(post("/contact").with(csrf())
+        mockMvc.perform(post("/contact").with(csrf()).with(user(customer()))
                         .param("fullName", "Bot")
                         .param("email", "bot@spam.com")
                         .param("message", "Mua thuoc gia re tai day")
@@ -117,11 +150,11 @@ class ContactMessageIT {
     @Test
     void tooManyFromSameEmail_blocked() throws Exception {
         for (int i = 0; i < 3; i++) {
-            mockMvc.perform(post("/contact").with(csrf()).param("fullName", "Khach Gui Nhieu")
+            mockMvc.perform(post("/contact").with(csrf()).with(user(customer())).param("fullName", "Khach Gui Nhieu")
                             .param("email", "nhieu@mail.com").param("message", "Cau hoi so " + i + " ve phong"))
                     .andExpect(flash().attributeExists("contactSuccess"));
         }
-        mockMvc.perform(post("/contact").with(csrf()).param("fullName", "Khach Gui Nhieu")
+        mockMvc.perform(post("/contact").with(csrf()).with(user(customer())).param("fullName", "Khach Gui Nhieu")
                         .param("email", "NHIEU@mail.com").param("message", "Cau hoi thu tu ve phong"))
                 .andExpect(flash().attribute("contactError", containsString("nhiều yêu cầu")));
     }

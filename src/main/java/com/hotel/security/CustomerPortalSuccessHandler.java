@@ -45,7 +45,7 @@ public class CustomerPortalSuccessHandler extends SimpleUrlAuthenticationSuccess
 
     public static boolean isResumable(SavedRequest saved) {
         String path = java.net.URI.create(saved.getRedirectUrl()).getPath();
-        return path.startsWith("/customer/") || path.startsWith("/gift-vouchers");
+        return path.startsWith("/customer/") || path.startsWith("/gift-vouchers") || path.equals("/contact");
     }
 
     // Trang dat phong moi (1 phong / nhieu phong) - khach vang lai bi chuyen ve /login khi mo

@@ -499,16 +499,22 @@
                 <div class="col-lg-8">
                     <div th:if="${contactSuccess}" class="alert alert-success" role="status" th:text="${contactSuccess}"></div>
                     <div th:if="${contactError}" class="alert alert-danger" role="alert" th:text="${contactError}"></div>
-                    <form th:action="@{/contact}" method="post" class="row g-3" th:with="f=${contactForm}">
+                    <!-- Lien he bat buoc dang nhap: khach chua dang nhap chi thay nut dang nhap (dang nhap xong quay lai day) -->
+                    <a sec:authorize="!isAuthenticated()" th:href="@{/contact}" class="btn btn-glow">
+                        <i class="bi bi-box-arrow-in-right me-2"></i><span th:text="#{contact.form.loginToSend}">Đăng nhập để gửi yêu cầu</span></a>
+                    <th:block sec:authorize="isAuthenticated()">
+                    <!-- Da dang nhap: dien san ho ten, email cua tai khoan -->
+                    <form th:action="@{/contact}" method="post" class="row g-3"
+                          th:with="f=${contactForm}, me=${#authentication.principal.user}">
                         <div class="col-md-6">
                             <label for="contact-name" class="form-label" th:text="#{contact.form.name}">Họ và tên</label>
                             <input id="contact-name" type="text" name="fullName" class="form-control" required maxlength="100"
-                                   th:value="${f != null ? f['fullName'] : ''}" autocomplete="name">
+                                   th:value="${f != null ? f['fullName'] : me.fullName}" autocomplete="name">
                         </div>
                         <div class="col-md-6">
                             <label for="contact-email" class="form-label">Email</label>
                             <input id="contact-email" type="email" name="email" class="form-control" required maxlength="150"
-                                   th:value="${f != null ? f['email'] : ''}" autocomplete="email">
+                                   th:value="${f != null ? f['email'] : me.email}" autocomplete="email">
                         </div>
                         <div class="col-md-6">
                             <label for="contact-phone" class="form-label" th:text="#{contact.form.phone}">Số điện thoại (không bắt buộc)</label>
@@ -530,6 +536,7 @@
                             <button type="submit" class="btn btn-glow"><i class="bi bi-send me-2"></i><span th:text="#{contact.form.submit}">Gửi yêu cầu</span></button>
                         </div>
                     </form>
+                    </th:block>
                 </div>
             </div>
         </div>

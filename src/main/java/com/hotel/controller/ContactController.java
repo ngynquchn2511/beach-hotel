@@ -4,13 +4,14 @@ import com.hotel.exception.BusinessException;
 import com.hotel.service.ContactMessageService;
 import com.hotel.service.UserMessages;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.Map;
 
-// Form "Gui yeu cau tu van" o trang gioi thieu - khong can dang nhap
+// Form "Gui yeu cau tu van" o trang gioi thieu - bat buoc dang nhap (SecurityConfig)
 @Controller
 public class ContactController {
 
@@ -20,6 +21,12 @@ public class ContactController {
     public ContactController(ContactMessageService contactMessageService, UserMessages messages) {
         this.contactMessageService = contactMessageService;
         this.messages = messages;
+    }
+
+    // Khach chua dang nhap bam "Dang nhap de gui yeu cau" -> /login -> dang nhap xong ve lai form lien he
+    @GetMapping("/contact")
+    public String loginThenBack() {
+        return "redirect:/about#lien-he";
     }
 
     @PostMapping("/contact")

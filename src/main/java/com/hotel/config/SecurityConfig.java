@@ -179,12 +179,14 @@ public class SecurityConfig {
                 .addFilterAfter(csrfTokenEagerLoadFilter(), CsrfFilter.class)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/", "/home", "/about", "/services", "/rooms", "/rooms/**", "/login", "/register",
-                                "/forgot-password", "/reset-password", "/verify-email", "/contact", "/resend-verification", "/robots.txt", "/sitemap.xml",
+                                "/forgot-password", "/reset-password", "/verify-email", "/resend-verification", "/robots.txt", "/sitemap.xml",
                                 "/css/**", "/js/**", "/images/**", "/uploads/**", "/page-images/**").permitAll()
                         // Chatbot tu van - bat buoc dang nhap (khach chua dang nhap thay nut "Dang nhap" trong khung chat)
                         .requestMatchers("/api/chatbot/**").authenticated()
-                        // Khach vang lai chi duoc XEM / TIM phong (+ lien he, dang ky o tren). Moi chuc nang
-                        // con lai cua khach (chatbot, dat phong, xem / huy / coc / doi ngay don, dich vu them, nhan tin, danh gia,
+                        // Form "Gui yeu cau tu van" (lien he) - bat buoc dang nhap; GET /contact = dang nhap roi quay lai form
+                        .requestMatchers("/contact").authenticated()
+                        // Khach vang lai chi duoc XEM / TIM phong (+ dang ky o tren). Moi chuc nang
+                        // con lai cua khach (chatbot, lien he, dat phong, xem / huy / coc / doi ngay don, dich vu them, nhan tin, danh gia,
                         // "bao toi khi phong trong", mua the qua tang...) bat buoc dang nhap tai khoan khach hang.
                         // Chua dang nhap -> chuyen ve /login, dang nhap xong quay lai dung trang dang mo (CustomerPortalSuccessHandler)
                         .requestMatchers("/customer/rooms", "/customer/rooms/*").permitAll()

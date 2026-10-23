@@ -55,7 +55,7 @@ class StaffNotificationIT extends ItFixtures {
         // Chua commit -> chua bao
         assertThat(notificationService.recent(startId)).isEmpty();
 
-        mockMvc.perform(post("/contact").with(csrf()).param("fullName", "Chị Lan").param("email", "lan@mail.vn")
+        mockMvc.perform(post("/contact").with(csrf()).with(asNewCustomer()).param("fullName", "Chị Lan").param("email", "lan@mail.vn")
                 .param("message", "Cho em hỏi resort có đón khách ở ga Hạ Long không ạ?"));
 
         List<StaffNotificationService.Notice> notices = commitNotices();

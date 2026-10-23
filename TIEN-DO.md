@@ -1,7 +1,7 @@
 # Tiến độ dự án Sóng Xanh Resort (beach-hotel)
 
 > File bàn giao giữa các phiên làm việc với Claude. Mở phiên mới, bảo Claude: **"đọc file TIEN-DO.md"**.
-> Cập nhật lần cuối: 23/10/2026, sau đợt 18 (chatbot bắt buộc đăng nhập; chủ dự án tự vẽ lại sơ đồ).
+> Cập nhật lần cuối: 23/10/2026, sau đợt 18 (chatbot, liên hệ bắt buộc đăng nhập; chủ dự án tự vẽ lại sơ đồ).
 
 ## 1. Dự án
 
@@ -34,10 +34,10 @@
 
 ## 3. Đã làm (theo thứ tự gần nhất trước)
 
-### Đợt 18 (23/10/2026) - Chatbot bắt buộc đăng nhập; chủ dự án tự vẽ lại sơ đồ
+### Đợt 18 (23/10/2026) - Chatbot và liên hệ bắt buộc đăng nhập; chủ dự án tự vẽ lại sơ đồ
 | Commit | Chức năng |
 |---|---|
-| (xem `git log`) | **Code**: theo yêu cầu chủ dự án «bây giờ chatbot phải đăng nhập mới được dùng». `SecurityConfig`: `/api/chatbot/**` → `authenticated()` (chưa đăng nhập gọi API bị chuyển về `/login`). Widget `fragments/chatbot-widget.html`: biến JS `ANONYMOUS` (`#authorization.expression('isAnonymous()')`); khách chưa đăng nhập mở khung chat chỉ thấy lời nhắc `chat.w.loginRequired` + nút `chat.w.loginButton` tới `/login`, ẩn ô nhập và nút làm mới. Sửa test chatbot (`ChatbotAndMiscIT`, `CustomerFlowParamIT`, `SystemParamST`) đăng nhập trước; thêm test khách chưa đăng nhập bị chuyển `/login` và widget hiện nút Đăng nhập; 1919 test qua. **Sơ đồ**: chủ dự án tự vẽ lại BFD, `uc0`, `ucn1..3`, `uc7`, `uc8` trong draw.io (chưa commit, chưa đưa vào báo cáo / slide). **Không ghi đè file sơ đồ chủ dự án tự vẽ**; Claude chỉ xuất ảnh ra thư mục tạm để kiểm tra. Slide đang dùng hình `uc1..3` cũ, chủ dự án muốn thay bằng `ucn1..3` tự vẽ khi xong |
+| (xem `git log`) | **Code**: theo yêu cầu chủ dự án «bây giờ chatbot phải đăng nhập mới được dùng». `SecurityConfig`: `/api/chatbot/**` → `authenticated()` (chưa đăng nhập gọi API bị chuyển về `/login`). Widget `fragments/chatbot-widget.html`: biến JS `ANONYMOUS` (`#authorization.expression('isAnonymous()')`); khách chưa đăng nhập mở khung chat chỉ thấy lời nhắc `chat.w.loginRequired` + nút `chat.w.loginButton` tới `/login`, ẩn ô nhập và nút làm mới. Sửa test chatbot (`ChatbotAndMiscIT`, `CustomerFlowParamIT`, `SystemParamST`) đăng nhập trước; thêm test khách chưa đăng nhập bị chuyển `/login` và widget hiện nút Đăng nhập; 1919 test qua. **Liên hệ** (form «Gửi yêu cầu tư vấn» ở `/about#lien-he`) cũng bắt buộc đăng nhập: `/contact` → `authenticated()`; khách chưa đăng nhập chỉ thấy nút `contact.form.loginToSend` tới `GET /contact` (đăng nhập xong `CustomerPortalSuccessHandler` đưa về form, `isResumable` thêm `/contact`); đã đăng nhập thì form điền sẵn họ tên, email tài khoản. Sửa `ContactMessageIT`, `StaffNotificationIT`; 1920 test qua. File Word `docs/SoDo-NhomTuVe.docx` (chưa commit) gom 7 sơ đồ chủ dự án tự vẽ theo thứ tự slide. **Sơ đồ**: chủ dự án tự vẽ lại BFD, `uc0`, `ucn1..3`, `uc7`, `uc8` trong draw.io (chưa commit, chưa đưa vào báo cáo / slide). **Không ghi đè file sơ đồ chủ dự án tự vẽ**; Claude chỉ xuất ảnh ra thư mục tạm để kiểm tra. Slide đang dùng hình `uc1..3` cũ, chủ dự án muốn thay bằng `ucn1..3` tự vẽ khi xong |
 
 ### Đợt 17 (23/10/2026) - Mọi chức năng của khách bắt buộc đăng nhập; sơ đồ vẽ «include» Đăng nhập
 | Commit | Chức năng |
