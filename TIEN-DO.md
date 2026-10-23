@@ -1,7 +1,7 @@
 # Tiến độ dự án Sóng Xanh Resort (beach-hotel)
 
 > File bàn giao giữa các phiên làm việc với Claude. Mở phiên mới, bảo Claude: **"đọc file TIEN-DO.md"**.
-> Cập nhật lần cuối: 23/10/2026, sau đợt 16 (rút gọn sơ đồ BFD và use case).
+> Cập nhật lần cuối: 23/10/2026, sau đợt 17 (bắt buộc đăng nhập, sơ đồ vẽ «include» Đăng nhập).
 
 ## 1. Dự án
 
@@ -33,6 +33,11 @@
    - MockMvc đọc JSON không charset là ISO-8859-1: dùng `getContentAsString(StandardCharsets.UTF_8)`.
 
 ## 3. Đã làm (theo thứ tự gần nhất trước)
+
+### Đợt 17 (23/10/2026) - Mọi chức năng của khách bắt buộc đăng nhập; sơ đồ vẽ «include» Đăng nhập
+| Commit | Chức năng |
+|---|---|
+| (xem `git log`) | **Code**: theo yêu cầu chủ dự án «phải đăng nhập mới dùng được mấy chức năng cần đăng nhập». Khách vãng lai chỉ còn xem / tìm phòng (`/customer/rooms`, `/customer/rooms/*`, `/rooms/**`), chatbot, liên hệ, đăng ký. Mọi trang đơn (`/customer/bookings/**`: xem, hủy, cọc VNPay, đổi ngày, dịch vụ thêm, khai báo lưu trú, nhắn tin, yêu cầu, đánh giá, đơn đoàn), «báo tôi khi phòng trống» (`POST /customer/rooms/*/alerts`) và mua thẻ quà tặng (`/gift-vouchers/**`) bắt buộc vai trò CUSTOMER. Link `?token=` trong email vẫn dùng được nhưng phải đăng nhập trước; chưa đăng nhập → `/login` có lời nhắc `auth.login.required`, đăng nhập xong `CustomerPortalSuccessHandler` đưa về đúng trang (mọi GET dưới `/customer/` và `/gift-vouchers`). Trang phòng: khách chưa đăng nhập thấy nút «Đăng nhập để nhận email khi phòng trống lại» (`GET /customer/rooms/{id}/alerts` → đăng nhập → quay lại trang phòng). Đơn lễ tân tạo tại quầy: khách đăng ký bằng đúng email trên đơn (luồng `auth.login.pending` gửi link đặt mật khẩu) để xem đơn. Sửa 16 lớp test, thêm test chưa đăng nhập bị chuyển về `/login`; 1918 test qua. **Sơ đồ**: use case tổng quát, 6 phân rã, 9 sơ đồ mục 2.4 vẽ «include» Đăng nhập cho mọi chức năng cần đăng nhập: UC Đăng nhập ở góc trên phải khung, mũi tên nét đứt gom về 1 trục dọc, nhãn «include» ghi 1 lần; tổng quát có tác nhân «Người dùng» nối Đăng nhập, khách hàng và 4 nhân viên kế thừa Người dùng (kiểu bản `uc0` chủ dự án tự sửa trước đó). Tác nhân bên phải tự lệch khỏi hàng UC có «include» để đường nối không đè mũi tên. Báo cáo sửa chữ mục 2.2-2.4, phác thảo trang tour / thẻ quà tặng / chi tiết đơn, mô tả cột mã truy cập; 336 trang. Slide thay 6 hình |
 
 ### Đợt 16 (23/10/2026) - Rút gọn sơ đồ theo góp ý «rườm rà»
 | Commit | Chức năng |
