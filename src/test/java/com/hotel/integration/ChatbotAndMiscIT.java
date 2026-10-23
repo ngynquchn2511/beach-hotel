@@ -33,12 +33,16 @@ class ChatbotAndMiscIT {
     @Autowired private DiscountCodeRepository discountCodeRepository;
 
     private User admin;
+    private User customer;
 
     @BeforeEach
     void seed() {
         admin = userRepository.findByEmail("admin@hotel.com").orElseGet(() -> userRepository.save(User.builder()
                 .fullName("Admin Misc IT").email("admin.misc@hotel.com").phoneNumber("0900777888")
                 .password(passwordEncoder.encode("x")).role(UserRole.ADMIN).build()));
+        customer = userRepository.save(User.builder()
+                .fullName("Khach Chatbot IT").email("khach.chatbot@hotel.com").phoneNumber("0900777999")
+                .password(passwordEncoder.encode("x")).role(UserRole.CUSTOMER).build());
     }
 
     @Test
@@ -50,7 +54,7 @@ class ChatbotAndMiscIT {
 
     @Test
     void chatbot_askAboutCheckInTime_returnsRelevantAnswer() throws Exception {
-        mockMvc.perform(post("/api/chatbot/ask").with(csrf())
+        mockMvc.perform(post("/api/chatbot/ask").with(csrf()).with(user(new CustomUserDetails(customer)))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"message\": \"May gio nhan phong vay ban?\"}"))
                 .andExpect(status().isOk())
@@ -60,7 +64,7 @@ class ChatbotAndMiscIT {
     // Khach da chon EN (cookie "lang") -> chatbot tra loi tieng Anh
     @Test
     void chatbot_englishSelected_repliesInEnglish() throws Exception {
-        mockMvc.perform(post("/api/chatbot/ask").with(csrf())
+        mockMvc.perform(post("/api/chatbot/ask").with(csrf()).with(user(new CustomUserDetails(customer)))
                         .cookie(new jakarta.servlet.http.Cookie("lang", "en"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"message\": \"What time is check-in?\"}"))
@@ -70,7 +74,7 @@ class ChatbotAndMiscIT {
 
     @Test
     void chatbot_emptyMessage_returnsDefaultPromptNotError() throws Exception {
-        mockMvc.perform(post("/api/chatbot/ask").with(csrf())
+        mockMvc.perform(post("/api/chatbot/ask").with(csrf()).with(user(new CustomUserDetails(customer)))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"message\": \"\"}"))
                 .andExpect(status().isOk())
@@ -78,12 +82,25 @@ class ChatbotAndMiscIT {
     }
 
     @Test
-    void chatbot_noLoginRequired() throws Exception {
-        // Khong .with(user(...)) - xac nhan khach chua dang nhap van goi duoc chatbot
+    void chatbot_anonymous_mustLogIn() throws Exception {
+        // Chatbot bat buoc dang nhap: khach chua dang nhap goi API bi chuyen ve /login, khong co cau tra loi
         mockMvc.perform(post("/api/chatbot/ask").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"message\": \"Khach san o dau\"}"))
-                .andExpect(status().isOk());
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrlPattern("**/login"));
+    }
+
+    @Test
+    void chatbotWidget_anonymousSeesLoginPrompt_customerCanChat() throws Exception {
+        // Khung chat cua khach chua dang nhap chi co loi nhac + nut Dang nhap; da dang nhap thi chat binh thuong
+        mockMvc.perform(get("/"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("label: T_LOGIN_BTN, url: '/login'")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("var ANONYMOUS = true")));
+        mockMvc.perform(get("/").with(user(new CustomUserDetails(customer))))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("var ANONYMOUS = false")));
     }
 
     @Test

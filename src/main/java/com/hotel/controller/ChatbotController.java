@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
-// API cho widget chat tu van "May" o giao dien khach hang - khong can dang nhap
+// API cho widget chat tu van "May" o giao dien khach hang - bat buoc dang nhap (SecurityConfig)
 @RestController
 @RequestMapping("/api/chatbot")
 public class ChatbotController {

@@ -266,6 +266,10 @@
             var T_GREET2 = /*[[#{chat.w.greet2}]]*/ '';
             var T_TYPING = /*[[#{chat.w.typing}]]*/ '';
             var T_ERROR = /*[[#{chat.w.error}]]*/ '';
+            var T_LOGIN = /*[[#{chat.w.loginRequired}]]*/ '';
+            var T_LOGIN_BTN = /*[[#{chat.w.loginButton}]]*/ '';
+            // Chatbot bat buoc dang nhap: khach chua dang nhap chi thay loi nhac + nut Dang nhap
+            var ANONYMOUS = /*[[${#authorization.expression('isAnonymous()')}]]*/ false;
             var TP_PRICE = /*[[#{chat.t.price}]]*/ '';
             var SG_PRICE = /*[[#{chat.sg.price}]]*/ '';
             var TP_AVAILABLE = /*[[#{chat.t.available}]]*/ '';
@@ -459,6 +463,10 @@
 
             function renderAll() {
                 list.replaceChildren();
+                if (ANONYMOUS) {
+                    renderMessage({ from: 'bot', time: Date.now(), text: T_LOGIN, actions: [{ label: T_LOGIN_BTN, url: '/login' }] });
+                    return;
+                }
                 if (!history.length) { greet(); return; }
                 history.forEach(renderMessage);
                 var last = history[history.length - 1];
@@ -532,7 +540,7 @@
                 document.body.classList.add('chatbot-panel-open');
                 hidePeek();
                 renderAll();
-                setTimeout(function () { input.focus(); }, 50);
+                if (!ANONYMOUS) setTimeout(function () { input.focus(); }, 50);
             }
             function closePanel() {
                 panel.classList.remove('chatbot-open');
@@ -552,6 +560,10 @@
                 save();
                 renderAll();
             });
+            if (ANONYMOUS) {
+                form.style.display = 'none';
+                resetBtn.style.display = 'none';
+            }
             form.addEventListener('submit', function (e) {
                 e.preventDefault();
                 send(input.value);

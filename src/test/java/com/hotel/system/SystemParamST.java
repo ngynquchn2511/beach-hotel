@@ -240,13 +240,14 @@ class SystemParamST extends StBase {
 
     // ===================== Chatbot qua HTTP =====================
 
-    @TcSteps("Mở trang chủ lấy CSRF token của widget chatbot, gửi POST /api/chatbot/ask (JSON) như trình duyệt")
+    @TcSteps("Đăng nhập tài khoản khách hàng, mở trang chủ lấy CSRF token của widget chatbot, gửi POST /api/chatbot/ask (JSON) như trình duyệt")
     @ParameterizedTest(name = "Chatbot trên server thật trả lời ¦ câu hỏi: \"{0}\" ¦ HTTP 200, reply chứa \"{1}\"")
     @CsvSource(delimiter = '|', value = {"Resort ở đâu?|Bãi Cháy", "Số điện thoại liên hệ|0338932368", "email resort|songxanhresort@gmail.com",
             "Có cần đặt cọc không|đặt cọc", "Thanh toán thế nào|Chuyển khoản", "Mấy giờ trả phòng|Giờ trả phòng",
             "Có ban công nhìn biển không|Ban công hướng vịnh", "xin chào|Mình là **Sóng**", "Giá phòng bao nhiêu|Giá phòng", "câu hỏi linh tinh|Sóng chưa hiểu lắm"})
     void chatbot(String q, String expected) {
         Browser b = new Browser();
+        b.loginCustomer(createUser(UserRole.CUSTOMER, CustomerType.NEW, "matkhau123").getEmail(), "matkhau123");
         String token = b.chatbotToken("/");
         Res r = b.postJson("/api/chatbot/ask", "{\"message\":\"" + q + "\"}", token);
         assertThat(r.status()).isEqualTo(200);
