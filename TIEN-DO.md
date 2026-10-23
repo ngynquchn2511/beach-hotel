@@ -1,7 +1,7 @@
 # Tiến độ dự án Sóng Xanh Resort (beach-hotel)
 
 > File bàn giao giữa các phiên làm việc với Claude. Mở phiên mới, bảo Claude: **"đọc file TIEN-DO.md"**.
-> Cập nhật lần cuối: 23/10/2026, sau đợt 15 (khách vãng lai chỉ xem, đặt phòng bắt buộc đăng nhập).
+> Cập nhật lần cuối: 23/10/2026, sau đợt 16 (rút gọn sơ đồ BFD và use case).
 
 ## 1. Dự án
 
@@ -33,6 +33,11 @@
    - MockMvc đọc JSON không charset là ISO-8859-1: dùng `getContentAsString(StandardCharsets.UTF_8)`.
 
 ## 3. Đã làm (theo thứ tự gần nhất trước)
+
+### Đợt 16 (23/10/2026) - Rút gọn sơ đồ theo góp ý «rườm rà»
+| Commit | Chức năng |
+|---|---|
+| (xem `git log`) | Gộp chức năng giống nhau, chỉ vẽ chức năng chính. **BFD** (Hình 2.1): 6 nhóm nằm một hàng ngay dưới nút gốc (không vẽ ngược lên), mỗi nhóm 4 chức năng 1.1 ... 6.4; cột hẹp (ảnh 750 px) để in trên trang dọc vẫn đọc được, chèn rộng hết lề (16 cm). **Use case tổng quát** 11 UC: khách vãng lai chỉ xem / tìm phòng, đăng ký; khách hàng kế thừa khách vãng lai, đặt phòng / dịch vụ / cọc, đăng nhập; lễ tân, buồng phòng, kế toán, quản trị viên kế thừa tác nhân «Nhân viên» nối tới Đăng nhập. **6 phân rã** `ucn1..6` và **9 sơ đồ mục 2.4** `uc1..9` mỗi hình 4-6 UC. Bố cục: 1 cột UC giữa khung hệ thống, tác nhân 2 bên, sắp thứ tự UC để đường nối không cắt nhau, mũi tên kế thừa đi vòng bên trái (không đè tên tác nhân). Báo cáo: thay 17 ảnh, sửa chữ mục 1.4, 2.1-2.4 và 3 đoạn còn ghi «khách vãng lai đặt phòng» (phác thảo trang đặt phòng, trang chi tiết đơn, kịch bản kiểm thử); 337 trang. Slide: thay ảnh BFD, use case tổng quát và 5 phân rã. Script sinh hình (`dio.py`, `bfd.py`, `uc.py`, `patch_docx.py`, `word_update.ps1`) nằm trong `docs/so-do-rut-gon-dang-lam/` (không commit; chủ dự án tự xóa được, đã chép dự phòng vào thư mục tạm của phiên). draw.io Desktop bản portable phải dùng bản `draw.io-32.5.5-windows.zip`. Bản `docs/use-case/phan-ra/` (đợt 14) giờ là bản cũ, báo cáo không dùng |
 
 ### Đợt 15 (23/10/2026) - Khách vãng lai chỉ được xem, muốn đặt phòng phải đăng nhập
 | Commit | Chức năng |
