@@ -154,39 +154,44 @@ class BookingFlowIT {
     }
 
     @Test
-    void viewBooking_anonymousGuestLink_accessibleWithoutLogin() throws Exception {
-        User guestAccount = userRepository.save(User.builder()
-                .fullName("Guest Acc").email("guestacc@khachvanglai.local").phoneNumber("0900111222")
-                .password(passwordEncoder.encode("x")).role(UserRole.CUSTOMER).customerType(CustomerType.NEW).build());
-        Booking booking = bookingRepository.save(Booking.builder().customer(guestAccount).room(room)
-                .checkInDate(LocalDate.now().plusDays(1)).checkOutDate(LocalDate.now().plusDays(2))
-                .checkInTime(LocalTime.of(14, 0)).checkOutTime(LocalTime.of(12, 0)).numberOfGuests(1)
-                .guestName("Guest").guestPhone("0900111222").guestEmail("guestacc@khachvanglai.local")
-                .totalAmount(BigDecimal.valueOf(400000)).discountAmount(BigDecimal.ZERO).status(BookingStatus.PENDING).build());
+    void viewBooking_emailLinkWithoutLogin_redirectsToLogin_ownerSeesAfterLogin() throws Exception {
+        User owner = persistCustomer("guestacc@mail.com");
+        Booking booking = pendingBookingOf(owner);
 
-        // Khach vang lai xem duoc don khi link co dung ma truy cap
+        // Link trong email (co ma truy cap) van bat dang nhap truoc khi xem don
         mockMvc.perform(get("/customer/bookings/{id}", booking.getId()).param("token", booking.getAccessToken()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrlPattern("**/login"));
+        mockMvc.perform(get("/customer/bookings/{id}", booking.getId()).param("token", booking.getAccessToken())
+                        .with(user(new CustomUserDetails(owner))))
                 .andExpect(status().isOk())
                 .andExpect(view().name("customer/booking-success"));
     }
 
     @Test
-    void viewBooking_anonymousWithoutOrWithWrongToken_notFoundAndNoPersonalData() throws Exception {
+    void viewBooking_anonymousRedirected_wrongTokenOrIdNotFound_noPersonalData() throws Exception {
         User owner = persistCustomer("secret.owner@mail.com");
+        User other = persistCustomer("other.viewer@mail.com");
         Booking booking = bookingRepository.save(Booking.builder().customer(owner).room(room)
                 .checkInDate(LocalDate.now().plusDays(1)).checkOutDate(LocalDate.now().plusDays(2))
                 .checkInTime(LocalTime.of(14, 0)).checkOutTime(LocalTime.of(12, 0)).numberOfGuests(1)
                 .guestName("Nguoi Bi Lo Thong Tin").guestPhone("0911222333").guestEmail("secret.owner@mail.com")
                 .totalAmount(BigDecimal.valueOf(400000)).discountAmount(BigDecimal.ZERO).status(BookingStatus.PENDING).build());
 
-        // Doi so id tren URL khong con xem duoc don nguoi khac
+        // Chua dang nhap -> ve trang dang nhap, khong lo thong tin don
         mockMvc.perform(get("/customer/bookings/{id}", booking.getId()))
+                .andExpect(redirectedUrlPattern("**/login"))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("0911222333"))));
+        // Khach khac dang nhap: doi so id / ma sai khong xem duoc don nguoi khac
+        mockMvc.perform(get("/customer/bookings/{id}", booking.getId()).with(user(new CustomUserDetails(other))))
                 .andExpect(status().isNotFound())
                 .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("0911222333"))));
-        mockMvc.perform(get("/customer/bookings/{id}", booking.getId()).param("token", "khongphaimacuadonnay00000000000"))
+        mockMvc.perform(get("/customer/bookings/{id}", booking.getId()).param("token", "khongphaimacuadonnay00000000000")
+                        .with(user(new CustomUserDetails(other))))
                 .andExpect(status().isNotFound());
         // Ma cua don nay khong mo duoc don khac
-        mockMvc.perform(get("/customer/bookings/{id}", booking.getId() + 99999).param("token", booking.getAccessToken()))
+        mockMvc.perform(get("/customer/bookings/{id}", booking.getId() + 99999).param("token", booking.getAccessToken())
+                        .with(user(new CustomUserDetails(other))))
                 .andExpect(status().isNotFound());
         // Chu don dang nhap thi xem duoc khong can ma
         mockMvc.perform(get("/customer/bookings/{id}", booking.getId()).with(user(new CustomUserDetails(owner))))
@@ -195,10 +200,11 @@ class BookingFlowIT {
     }
 
     @Test
-    void createBooking_redirectLinkContainsAccessToken_worksWithoutSession() throws Exception {
+    void createBooking_redirectLinkContainsAccessToken_needsLoginToOpen() throws Exception {
         LocalDate in = LocalDate.now().plusDays(20);
+        User customer = persistCustomer("token.flow@mail.com");
         String location = mockMvc.perform(post("/customer/bookings/new").with(csrf())
-                        .with(user(new CustomUserDetails(persistCustomer("token.flow@mail.com"))))
+                        .with(user(new CustomUserDetails(customer)))
                         .param("roomId", room.getId().toString())
                         .param("checkIn", in.toString()).param("checkOut", in.plusDays(1).toString())
                         .param("checkInTime", "14:00").param("checkOutTime", "12:00")
@@ -207,7 +213,9 @@ class BookingFlowIT {
                 .andReturn().getResponse().getRedirectedUrl();
 
         org.junit.jupiter.api.Assertions.assertTrue(location.matches("/customer/bookings/\\d+\\?token=[0-9a-f]{32}"), location);
-        mockMvc.perform(get(location)).andExpect(status().isOk()).andExpect(view().name("customer/booking-success"));
+        mockMvc.perform(get(location)).andExpect(redirectedUrlPattern("**/login"));
+        mockMvc.perform(get(location).with(user(new CustomUserDetails(customer))))
+                .andExpect(status().isOk()).andExpect(view().name("customer/booking-success"));
     }
 
     @Test
@@ -244,30 +252,34 @@ class BookingFlowIT {
                 .totalAmount(BigDecimal.valueOf(400000)).discountAmount(BigDecimal.ZERO).status(BookingStatus.PENDING).build());
     }
 
-    // Khong dang nhap, khong co ma truy cap (hoac sai ma) -> khong huy duoc, bao link khong hop le
+    // Chua dang nhap thi khong huy duoc, ke ca co dung ma truy cap trong link email -> ve trang dang nhap
     @Test
-    void cancelBooking_anonymousWithoutValidToken_rejected() throws Exception {
+    void cancelBooking_withoutLogin_redirectsToLogin_evenWithValidToken() throws Exception {
         Booking booking = pendingBookingOf(persistCustomer("notoken@mail.com"));
 
         mockMvc.perform(post("/customer/bookings/{id}/cancel", booking.getId()).with(csrf()))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(flash().attributeExists("errorMessage"));
-        mockMvc.perform(post("/customer/bookings/{id}/cancel", booking.getId()).param("token", "sai-ma").with(csrf()))
-                .andExpect(flash().attributeExists("errorMessage"));
+                .andExpect(redirectedUrlPattern("**/login"));
+        mockMvc.perform(post("/customer/bookings/{id}/cancel", booking.getId()).param("token", booking.getAccessToken()).with(csrf()))
+                .andExpect(redirectedUrlPattern("**/login"));
 
         org.junit.jupiter.api.Assertions.assertEquals(BookingStatus.PENDING,
                 bookingRepository.findById(booking.getId()).orElseThrow().getStatus());
     }
 
-    // Khach vang lai huy bang link trong email (?token=) -> huy duoc, quay lai trang don giu token
+    // Khach khac dang nhap, khong co / sai ma truy cap -> khong huy duoc, bao link khong hop le
     @Test
-    void cancelBooking_guestWithEmailLinkToken_cancels() throws Exception {
+    void cancelBooking_otherCustomerWithoutValidToken_rejected() throws Exception {
         Booking booking = pendingBookingOf(persistCustomer("guestlink@mail.com"));
+        User other = persistCustomer("guestlink.other@mail.com");
 
-        mockMvc.perform(post("/customer/bookings/{id}/cancel", booking.getId()).param("token", booking.getAccessToken()).with(csrf()))
-                .andExpect(redirectedUrl("/customer/bookings/" + booking.getId() + "?token=" + booking.getAccessToken()));
+        mockMvc.perform(post("/customer/bookings/{id}/cancel", booking.getId()).with(csrf()).with(user(new CustomUserDetails(other))))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(flash().attributeExists("errorMessage"));
+        mockMvc.perform(post("/customer/bookings/{id}/cancel", booking.getId()).param("token", "sai-ma").with(csrf())
+                        .with(user(new CustomUserDetails(other))))
+                .andExpect(flash().attributeExists("errorMessage"));
 
-        org.junit.jupiter.api.Assertions.assertEquals(BookingStatus.CANCELLED,
+        org.junit.jupiter.api.Assertions.assertEquals(BookingStatus.PENDING,
                 bookingRepository.findById(booking.getId()).orElseThrow().getStatus());
     }
 

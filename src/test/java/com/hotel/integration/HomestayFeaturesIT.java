@@ -186,7 +186,7 @@ class HomestayFeaturesIT {
         assertThat(b.getDepositDeadline()).isBetween(LocalDateTime.now().plusHours(23), LocalDateTime.now().plusHours(25));
 
         // Khach thay QR chuyen coc voi noi dung "HB<id> COC"
-        mockMvc.perform(get("/customer/bookings/{id}", b.getId()).param("token", b.getAccessToken()))
+        mockMvc.perform(get("/customer/bookings/{id}", b.getId()).param("token", b.getAccessToken()).with(user(new CustomUserDetails(b.getCustomer()))))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Chuyển cọc để giữ phòng")))
                 .andExpect(content().string(containsString("HB" + b.getId() + " COC")))
@@ -325,7 +325,7 @@ class HomestayFeaturesIT {
         mockMvc.perform(get("/admin/dashboard").with(user(new CustomUserDetails(admin))))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Đơn hủy chờ hoàn cọc")));
-        mockMvc.perform(get("/customer/bookings/{id}", b.getId()).param("token", b.getAccessToken()))
+        mockMvc.perform(get("/customer/bookings/{id}", b.getId()).param("token", b.getAccessToken()).with(user(new CustomUserDetails(b.getCustomer()))))
                 .andExpect(content().string(containsString("Bạn được hoàn")));
 
         // Nhan vien da chuyen tien -> ghi nhan, het cho
@@ -335,7 +335,7 @@ class HomestayFeaturesIT {
         Booking refunded = bookingRepository.findById(b.getId()).orElseThrow();
         assertThat(refunded.getRefundedAt()).isNotNull();
         assertThat(refunded.getRefundNote()).isEqualTo("CK VCB FT999");
-        mockMvc.perform(get("/customer/bookings/{id}", b.getId()).param("token", b.getAccessToken()))
+        mockMvc.perform(get("/customer/bookings/{id}", b.getId()).param("token", b.getAccessToken()).with(user(new CustomUserDetails(b.getCustomer()))))
                 .andExpect(content().string(containsString("Resort đã hoàn")));
 
         // Bam lan nua -> bao loi, khong ghi de

@@ -129,22 +129,23 @@ class ChangeDatesIT {
                         .with(user(new CustomUserDetails(stranger)))
                         .param("checkIn", IN.plusDays(3).toString()).param("checkOut", IN.plusDays(4).toString()))
                 .andExpect(flash().attributeExists("errorMessage"));
-        // Khong dang nhap, khong co / sai ma truy cap -> khong xem gia, khong doi duoc
+        // Khong dang nhap (ke ca co dung ma truy cap) -> ve trang dang nhap, khong xem gia, khong doi duoc
         mockMvc.perform(get("/customer/bookings/{id}/change-dates/quote", booking.getId())
                         .param("checkIn", IN.plusDays(3).toString()).param("checkOut", IN.plusDays(4).toString()))
-                .andExpect(jsonPath("$.ok").value(false));
-        mockMvc.perform(post("/customer/bookings/{id}/change-dates", booking.getId()).with(csrf()).param("token", "sai-ma")
+                .andExpect(redirectedUrlPattern("**/login"));
+        mockMvc.perform(post("/customer/bookings/{id}/change-dates", booking.getId()).with(csrf()).param("token", booking.getAccessToken())
                         .param("checkIn", IN.plusDays(3).toString()).param("checkOut", IN.plusDays(4).toString()))
-                .andExpect(flash().attributeExists("errorMessage"));
+                .andExpect(redirectedUrlPattern("**/login"));
 
         assertThat(bookingRepository.findById(booking.getId()).orElseThrow().getCheckInDate()).isEqualTo(IN);
     }
 
-    // Khach vang lai (khong co tai khoan de dang nhap) tu doi ngay / gio / combo bang link trong email
+    // Chu don mo link trong email (sau khi dang nhap) tu doi ngay / gio / combo, link giu nguyen ma truy cap
     @Test
-    void guestWithEmailLink_seesForms_quotesAndChangesDates_withoutLogin() throws Exception {
+    void ownerWithEmailLink_seesForms_quotesAndChangesDates_afterLogin() throws Exception {
         String token = booking.getAccessToken();
-        mockMvc.perform(get("/customer/bookings/{id}", booking.getId()).param("token", token))
+        CustomUserDetails me = new CustomUserDetails(owner);
+        mockMvc.perform(get("/customer/bookings/{id}", booking.getId()).param("token", token).with(user(me)))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("id=\"changeDatesForm\"")))
                 .andExpect(content().string(containsString("change-dates/quote?token=" + token)))
@@ -152,17 +153,17 @@ class ChangeDatesIT {
                 .andExpect(content().string(containsString("Hủy đặt phòng")));
 
         LocalDate newIn = IN.plusDays(2);
-        mockMvc.perform(get("/customer/bookings/{id}/change-dates/quote", booking.getId()).param("token", token)
+        mockMvc.perform(get("/customer/bookings/{id}/change-dates/quote", booking.getId()).param("token", token).with(user(me))
                         .param("checkIn", newIn.toString()).param("checkOut", newIn.plusDays(1).toString()))
                 .andExpect(jsonPath("$.ok").value(true));
 
-        mockMvc.perform(post("/customer/bookings/{id}/change-dates", booking.getId()).with(csrf()).param("token", token)
+        mockMvc.perform(post("/customer/bookings/{id}/change-dates", booking.getId()).with(csrf()).param("token", token).with(user(me))
                         .param("checkIn", newIn.toString()).param("checkOut", newIn.plusDays(1).toString()))
                 .andExpect(redirectedUrl("/customer/bookings/" + booking.getId() + "?token=" + token + "#doi-ngay"))
                 .andExpect(flash().attributeExists("successMessage"));
         assertThat(bookingRepository.findById(booking.getId()).orElseThrow().getCheckInDate()).isEqualTo(newIn);
 
-        mockMvc.perform(post("/customer/bookings/{id}/edit-time", booking.getId()).with(csrf()).param("token", token)
+        mockMvc.perform(post("/customer/bookings/{id}/edit-time", booking.getId()).with(csrf()).param("token", token).with(user(me))
                         .param("checkInTime", "15:00").param("checkOutTime", "11:00"))
                 .andExpect(redirectedUrl("/customer/bookings/" + booking.getId() + "?token=" + token));
         assertThat(bookingRepository.findById(booking.getId()).orElseThrow().getCheckInTime()).isEqualTo(LocalTime.of(15, 0));

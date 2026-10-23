@@ -43,7 +43,7 @@ class GiftVoucherIT extends ItFixtures {
     }
 
     private GiftVoucher buy(long amount) throws Exception {
-        mockMvc.perform(post("/gift-vouchers").with(csrf()).param("amount", String.valueOf(amount))
+        mockMvc.perform(post("/gift-vouchers").with(csrf()).with(as(customer)).param("amount", String.valueOf(amount))
                         .param("purchaserName", "Mẹ").param("purchaserEmail", "me@mail.vn")
                         .param("recipientName", "Con").param("recipientEmail", "con@mail.vn").param("message", "Chúc mừng sinh nhật"))
                 .andExpect(status().is3xxRedirection());
@@ -78,12 +78,12 @@ class GiftVoucherIT extends ItFixtures {
         assertThat(v.getStatus()).isEqualTo(GiftVoucher.Status.PENDING_PAYMENT);
         assertThat(v.getCode()).matches("QT-[A-Z2-9]{4}-[A-Z2-9]{4}");
 
-        mockMvc.perform(get("/gift-vouchers/{id}", v.getId()).param("token", v.getAccessToken()))
+        mockMvc.perform(get("/gift-vouchers/{id}", v.getId()).param("token", v.getAccessToken()).with(as(customer)))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("QT" + v.getId())))
                 .andExpect(content().string(containsString("Thanh toán qua VNPay")))
                 .andExpect(content().string(org.hamcrest.Matchers.not(containsString(v.getCode()))));
-        mockMvc.perform(get("/gift-vouchers/{id}", v.getId()).param("token", "sai"))
+        mockMvc.perform(get("/gift-vouchers/{id}", v.getId()).param("token", "sai").with(as(customer)))
                 .andExpect(content().string(org.hamcrest.Matchers.not(containsString("QT" + v.getId() + "<"))));
 
         GiftVoucher active = activeVoucher(1_000_000);
@@ -111,10 +111,21 @@ class GiftVoucherIT extends ItFixtures {
         book(40, unpaid.getCode()).andExpect(model().attribute("errorMessage", containsString("chưa thanh toán")));
         book(40, "QT-SAI-MA00").andExpect(model().attribute("errorMessage", containsString("không đúng")));
 
-        mockMvc.perform(post("/gift-vouchers").with(csrf()).param("amount", "100")
+        mockMvc.perform(post("/gift-vouchers").with(csrf()).with(as(customer)).param("amount", "100")
                         .param("purchaserName", "A").param("purchaserEmail", "a@mail.vn")
                         .param("recipientName", "B").param("recipientEmail", "b@mail.vn"))
                 .andExpect(flash().attribute("errorMessage", containsString("200.000")));
+    }
+
+    @Test
+    void anonymous_mustLogInToBuy() throws Exception {
+        long before = voucherRepository.count();
+        mockMvc.perform(get("/gift-vouchers")).andExpect(redirectedUrlPattern("**/login"));
+        mockMvc.perform(post("/gift-vouchers").with(csrf()).param("amount", "500000")
+                        .param("purchaserName", "A").param("purchaserEmail", "a@mail.vn")
+                        .param("recipientName", "B").param("recipientEmail", "b@mail.vn"))
+                .andExpect(redirectedUrlPattern("**/login"));
+        assertThat(voucherRepository.count()).isEqualTo(before);
     }
 
     @Test

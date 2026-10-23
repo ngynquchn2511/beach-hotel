@@ -36,9 +36,14 @@ public class AuthController {
                             jakarta.servlet.http.HttpServletRequest request, jakarta.servlet.http.HttpServletResponse response) {
         // Khach vang lai bam dat phong -> Spring Security luu lai trang dat phong roi chuyen ve day
         var saved = new org.springframework.security.web.savedrequest.HttpSessionRequestCache().getRequest(request, response);
-        if (saved != null && com.hotel.security.CustomerPortalSuccessHandler.isBookingPath(
-                java.net.URI.create(saved.getRedirectUrl()).getPath())) {
-            model.addAttribute("bookingLoginRequired", true);
+        if (saved != null) {
+            String savedPath = java.net.URI.create(saved.getRedirectUrl()).getPath();
+            if (com.hotel.security.CustomerPortalSuccessHandler.isBookingPath(savedPath)) {
+                model.addAttribute("bookingLoginRequired", true);
+            } else if (com.hotel.security.CustomerPortalSuccessHandler.isResumable(saved)) {
+                // Mo link xem don / mua the qua tang / bao phong trong... khi chua dang nhap
+                model.addAttribute("loginRequired", true);
+            }
         }
         int lockMinutes = com.hotel.security.LoginAttemptService.LOCK_MINUTES;
         try {

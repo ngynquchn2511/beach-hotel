@@ -84,9 +84,9 @@ class GroupVnPayIT extends ItFixtures {
 
     @Test
     void payWholeGroupDeposit_confirmsAllRooms() throws Exception {
-        mockMvc.perform(get("/customer/bookings/group/{id}", group.getId()).param("token", group.getAccessToken()))
+        mockMvc.perform(get("/customer/bookings/group/{id}", group.getId()).param("token", group.getAccessToken()).with(as(group.getCustomer())))
                 .andExpect(content().string(containsString("Thanh toán cọc cả đoàn qua VNPay")));
-        mockMvc.perform(post("/customer/bookings/group/{id}/vnpay", group.getId()).with(csrf()).param("token", group.getAccessToken()))
+        mockMvc.perform(post("/customer/bookings/group/{id}/vnpay", group.getId()).with(csrf()).param("token", group.getAccessToken()).with(as(group.getCustomer())))
                 .andExpect(redirectedUrlPattern("https://**"))
                 .andExpect(result -> assertThat(result.getResponse().getRedirectedUrl())
                         .contains("vnp_Amount=96000000").contains("vnp_TxnRef=G" + group.getId() + "_"));

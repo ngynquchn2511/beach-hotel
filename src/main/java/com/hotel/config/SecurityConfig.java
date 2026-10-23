@@ -178,58 +178,20 @@ public class SecurityConfig {
         http
                 .addFilterAfter(csrfTokenEagerLoadFilter(), CsrfFilter.class)
                 .authorizeHttpRequests(auth -> auth
-                        // Mua the qua tang khong can dang nhap (trang thanh toan kiem tra ?token=)
-                        .requestMatchers("/gift-vouchers", "/gift-vouchers/**").permitAll()
                         .requestMatchers("/", "/home", "/about", "/services", "/rooms", "/rooms/**", "/login", "/register",
                                 "/forgot-password", "/reset-password", "/verify-email", "/contact", "/resend-verification", "/robots.txt", "/sitemap.xml",
                                 "/css/**", "/js/**", "/images/**", "/uploads/**", "/page-images/**").permitAll()
                         // Chatbot tu van - khach chua dang nhap cung phai hoi duoc
                         .requestMatchers("/api/chatbot/**").permitAll()
-                        // Khach vang lai chi duoc XEM: dat phong (1 phong / nhieu phong) va kiem tra ma giam gia
-                        // bat buoc dang nhap tai khoan khach hang. Phai dat TRUOC "/customer/bookings/*" ben duoi
-                        // (mau do cung khop "/customer/bookings/new"). Chua dang nhap -> chuyen ve /login, dang
-                        // nhap xong quay lai dung trang dat phong (CustomerPortalSuccessHandler)
-                        .requestMatchers("/customer/bookings/new", "/customer/bookings/check-discount",
-                                "/customer/bookings/group/new").hasRole("CUSTOMER")
-                        // Tim phong, xem chi tiet phong khong can dang nhap; xem lai 1 don qua link ?token=
-                        // (don le tan tao tai quay / don OTA cho khach khong co tai khoan)
-                        .requestMatchers("/customer/rooms", "/customer/rooms/*", "/customer/bookings/*").permitAll()
-                        // Dat / huy dich vu them (tour lan, xe dua don) tren trang don - khach vang lai dung ?token=
-                        // (kiem tra quyen trong BookingService.findForViewing giong trang xem don)
-                        .requestMatchers("/customer/bookings/*/tours", "/customer/bookings/*/tours/*/cancel",
-                                "/customer/bookings/*/transfers", "/customer/bookings/*/transfers/*/cancel").permitAll()
-                        // Viet danh gia tu link trong email moi danh gia (?token=) - kiem tra quyen giong tren
-                        .requestMatchers(HttpMethod.POST, "/customer/bookings/*/review").permitAll()
-                        // Khach vang lai tu doi ngay / gio / combo / huy don bang link co ?token= (khong co tai khoan de dang nhap) -
-                        // controller kiem tra chu don hoac dung ma truy cap truoc khi lam gi
-                        .requestMatchers(HttpMethod.POST, "/customer/bookings/*/cancel", "/customer/bookings/*/change-dates",
-                                "/customer/bookings/*/edit-time", "/customer/bookings/*/edit-combo").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/customer/bookings/*/change-dates/quote").permitAll()
-                        // Dat coc qua VNPay: nut tren trang don (kiem tra chu don / ma truy cap nhu tren);
-                        // trang tra ve + IPN do VNPay goi, an toan nho kiem tra chu ky HMAC
-                        .requestMatchers(HttpMethod.POST, "/customer/bookings/*/vnpay", "/customer/bookings/group/*/vnpay").permitAll()
-                        // Khach tu khai bao luu tru truoc khi den (check-in online) - kiem tra chu don / ma truy cap nhu tren
-                        .requestMatchers(HttpMethod.POST, "/customer/bookings/*/guests", "/customer/bookings/*/guests/*/delete").permitAll()
-                        // Xin nhan phong som / tra phong muon (kiem tra chu don / ma truy cap nhu tren)
-                        .requestMatchers(HttpMethod.POST, "/customer/bookings/*/stay-time", "/customer/bookings/*/stay-time/withdraw").permitAll()
-                        // Khach dang o goi mon len phong (kiem tra chu don / ma truy cap nhu tren)
-                        .requestMatchers(HttpMethod.POST, "/customer/bookings/*/room-service", "/customer/bookings/*/room-service/*/cancel").permitAll()
-                        // Thong tin xuat hoa don cong ty tren trang don (kiem tra chu don / ma truy cap)
-                        .requestMatchers(HttpMethod.POST, "/customer/bookings/*/company-invoice").permitAll()
-                        // Dat / huy lich spa, ban nha hang tren trang don (kiem tra chu don / ma truy cap)
-                        .requestMatchers(HttpMethod.POST, "/customer/bookings/*/facility", "/customer/bookings/*/facility/*/cancel",
-                                "/customer/bookings/*/facility/*/rate").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/customer/bookings/*/upgrade/*/accept", "/customer/bookings/*/upgrade/*/decline").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/customer/bookings/*/requests", "/customer/bookings/*/messages").permitAll()
-                        // Xem / huy don nhieu phong qua ?token= cua nhom (dat moi da chan o tren)
-                        .requestMatchers("/customer/bookings/group/*",
-                                "/customer/bookings/group/*/cancel").permitAll()
-                        // "Bao toi khi phong trong lai" o trang chi tiet phong - khach chua dang nhap cung dung duoc
-                        .requestMatchers(HttpMethod.POST, "/customer/rooms/*/alerts").permitAll()
+                        // Khach vang lai chi duoc XEM / TIM phong (+ chatbot, lien he, dang ky o tren). Moi chuc nang
+                        // con lai cua khach (dat phong, xem / huy / coc / doi ngay don, dich vu them, nhan tin, danh gia,
+                        // "bao toi khi phong trong", mua the qua tang...) bat buoc dang nhap tai khoan khach hang.
+                        // Chua dang nhap -> chuyen ve /login, dang nhap xong quay lai dung trang dang mo (CustomerPortalSuccessHandler)
+                        .requestMatchers("/customer/rooms", "/customer/rooms/*").permitAll()
+                        .requestMatchers("/gift-vouchers", "/gift-vouchers/**").hasRole("CUSTOMER")
                         // Lich .ics cho Google Calendar / Booking.com - kiem tra ma bi mat ?key= trong IcalController
                         .requestMatchers(HttpMethod.GET, "/ical/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/payment/vnpay/return", "/payment/vnpay/ipn").permitAll()
-                        // Con lai (lich su dat phong, tai khoan, hoa don...) can dang nhap
                         .requestMatchers("/customer/**").hasRole("CUSTOMER")
                         .anyRequest().authenticated()
                 )

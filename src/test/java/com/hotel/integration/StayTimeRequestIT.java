@@ -39,7 +39,7 @@ class StayTimeRequestIT extends ItFixtures {
 
     private ResultActions request(String in, String out) throws Exception {
         return mockMvc.perform(post("/customer/bookings/{id}/stay-time", booking.getId()).with(csrf())
-                .param("token", token).param("checkInTime", in).param("checkOutTime", out));
+                .param("token", token).with(as(booking.getCustomer())).param("checkInTime", in).param("checkOutTime", out));
     }
 
     private Booking reload() {
@@ -71,7 +71,7 @@ class StayTimeRequestIT extends ItFixtures {
                         org.assertj.core.groups.Tuple.tuple(ChargeType.LATE_CHECKOUT, 500000));
 
         // Gio da duyet duoc giu khi khach sua gio trong khung (khong bi bat loi)
-        mockMvc.perform(post("/customer/bookings/{id}/edit-time", booking.getId()).with(csrf()).param("token", token)
+        mockMvc.perform(post("/customer/bookings/{id}/edit-time", booking.getId()).with(csrf()).param("token", token).with(as(booking.getCustomer()))
                         .param("checkInTime", "12:00").param("checkOutTime", "11:00"))
                 .andExpect(flash().attributeCount(0));
         assertThat(reload().getCheckOutTime()).isEqualTo(LocalTime.of(11, 0));
@@ -88,7 +88,7 @@ class StayTimeRequestIT extends ItFixtures {
                         .param("guestEmail", guest.getEmail()))
                 .andExpect(model().attribute("errorMessage", containsString("Nhận phòng sớm / Trả phòng muộn")));
 
-        mockMvc.perform(post("/customer/bookings/{id}/edit-time", booking.getId()).with(csrf()).param("token", token)
+        mockMvc.perform(post("/customer/bookings/{id}/edit-time", booking.getId()).with(csrf()).param("token", token).with(as(booking.getCustomer()))
                         .param("checkInTime", "14:00").param("checkOutTime", "15:00"))
                 .andExpect(flash().attribute("errorMessage", containsString("trả phòng trước 12:00")));
         assertThat(reload().getCheckOutTime()).isEqualTo(LocalTime.of(12, 0));
@@ -112,12 +112,12 @@ class StayTimeRequestIT extends ItFixtures {
         Booking rejected = reload();
         assertThat(rejected.getTimeRequestStatus()).isEqualTo(StayTimeRequestStatus.REJECTED);
         assertThat(rejected.getCheckOutTime()).isEqualTo(LocalTime.of(12, 0));
-        mockMvc.perform(get("/customer/bookings/{id}", booking.getId()).param("token", token))
+        mockMvc.perform(get("/customer/bookings/{id}", booking.getId()).param("token", token).with(as(booking.getCustomer())))
                 .andExpect(content().string(containsString("Phòng có khách nhận sớm")));
 
         // Gui lai roi rut
         request("", "13:00");
-        mockMvc.perform(post("/customer/bookings/{id}/stay-time/withdraw", booking.getId()).with(csrf()).param("token", token));
+        mockMvc.perform(post("/customer/bookings/{id}/stay-time/withdraw", booking.getId()).with(csrf()).param("token", token).with(as(booking.getCustomer())));
         assertThat(reload().getTimeRequestStatus()).isNull();
     }
 

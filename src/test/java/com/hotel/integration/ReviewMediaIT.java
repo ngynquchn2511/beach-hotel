@@ -79,13 +79,13 @@ class ReviewMediaIT {
     @Test
     void guestWithEmailLink_seesFormAndReviewsWithoutLogin() throws Exception {
         // Link trong email moi danh gia: ?token=... - khong dang nhap van thay form va gui duoc
-        mockMvc.perform(get("/customer/bookings/{id}", booking.getId()).param("token", booking.getAccessToken()))
+        mockMvc.perform(get("/customer/bookings/{id}", booking.getId()).param("token", booking.getAccessToken()).with(user(new CustomUserDetails(booking.getCustomer()))))
                 .andExpect(status().isOk())
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("name=\"token\"")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("star-picker")));
 
         mockMvc.perform(multipart("/customer/bookings/{id}/review", booking.getId()).with(csrf())
-                        .param("token", booking.getAccessToken()).param("rating", "4").param("comment", "Biển đẹp"))
+                        .param("token", booking.getAccessToken()).with(user(new CustomUserDetails(booking.getCustomer()))).param("rating", "4").param("comment", "Biển đẹp"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/customer/bookings/" + booking.getId() + "?token=" + booking.getAccessToken() + "#danh-gia"))
                 .andExpect(flash().attributeExists("reviewSuccess"));
@@ -96,12 +96,12 @@ class ReviewMediaIT {
     }
 
     @Test
-    void wrongOrMissingToken_withoutLogin_reviewRejected() throws Exception {
+    void withoutLogin_reviewRejected_evenWithEmailLinkToken() throws Exception {
         mockMvc.perform(multipart("/customer/bookings/{id}/review", booking.getId()).with(csrf())
-                        .param("token", "sai-ma").param("rating", "1"))
-                .andExpect(flash().attributeExists("errorMessage"));
+                        .param("token", booking.getAccessToken()).param("rating", "1"))
+                .andExpect(redirectedUrlPattern("**/login"));
         mockMvc.perform(multipart("/customer/bookings/{id}/review", booking.getId()).with(csrf()).param("rating", "1"))
-                .andExpect(flash().attributeExists("errorMessage"));
+                .andExpect(redirectedUrlPattern("**/login"));
 
         assertThat(reviewRepository.findByBookingId(booking.getId())).isEmpty();
     }

@@ -32,7 +32,8 @@ public class CustomerPortalSuccessHandler extends SimpleUrlAuthenticationSuccess
             return;
         }
 
-        // Bam "Dat tour nay" / "Dat phong ngay" khi chua dang nhap -> dang nhap xong quay lai dung trang dang do
+        // Khach vang lai mo chuc nang can dang nhap (dat phong, link xem don trong email, mua the qua tang...)
+        // -> dang nhap xong quay lai dung trang dang do
         SavedRequest saved = requestCache.getRequest(request, response);
         if (saved != null && "GET".equals(saved.getMethod()) && isResumable(saved)) {
             requestCache.removeRequest(request, response);
@@ -42,9 +43,9 @@ public class CustomerPortalSuccessHandler extends SimpleUrlAuthenticationSuccess
         getRedirectStrategy().sendRedirect(request, response, "/customer/rooms");
     }
 
-    private static boolean isResumable(SavedRequest saved) {
+    public static boolean isResumable(SavedRequest saved) {
         String path = java.net.URI.create(saved.getRedirectUrl()).getPath();
-        return path.startsWith("/customer/services/tours/") || isBookingPath(path);
+        return path.startsWith("/customer/") || path.startsWith("/gift-vouchers");
     }
 
     // Trang dat phong moi (1 phong / nhieu phong) - khach vang lai bi chuyen ve /login khi mo

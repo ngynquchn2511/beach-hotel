@@ -35,6 +35,7 @@
             <div th:if="${param.locked != null and param.locked[0] == 'temp'}" class="alert alert-warning border-0 rounded-3 small"
                  th:utext="#{auth.login.lockedTemp(${maxFailedAttempts},${lockMinutes}, @{/forgot-password})}"></div>
             <div th:if="${bookingLoginRequired}" class="alert alert-info border-0 rounded-3 small" th:utext="#{auth.login.bookingRequired}">Vui lòng đăng nhập để đặt phòng.</div>
+            <div th:if="${loginRequired}" class="alert alert-info border-0 rounded-3 small" th:utext="#{auth.login.required}">Vui lòng đăng nhập để dùng chức năng này.</div>
             <div th:if="${param.logout}" class="alert alert-success border-0 rounded-3 small" th:text="#{auth.login.loggedOut}">Bạn đã đăng xuất thành công.</div>
             <div th:if="${param.registered}" class="alert alert-success border-0 rounded-3 small" th:text="#{auth.login.registered}">Đăng ký thành công. Hãy đăng nhập để tiếp tục.</div>
             <div th:if="${param.reset}" class="alert alert-success border-0 rounded-3 small" th:text="#{auth.login.reset}">Đặt lại mật khẩu thành công. Hãy đăng nhập bằng mật khẩu mới.</div>

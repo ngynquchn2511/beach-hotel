@@ -410,8 +410,6 @@
             <button type="submit" class="btn btn-outline-danger w-100" th:text="#{success.cancel}">Hủy đặt phòng</button>
         </form>
 
-        <div class="alert alert-light border mt-3 mb-0" sec:authorize="!isAuthenticated()"
-             th:utext="#{success.guestNote(@{/login}, @{/register})}"></div>
     </div>
 
     <!-- Danh gia sau khi tra phong -->

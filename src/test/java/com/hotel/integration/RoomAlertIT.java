@@ -38,7 +38,7 @@ class RoomAlertIT extends ItFixtures {
     }
 
     private org.springframework.test.web.servlet.ResultActions subscribe(String email, LocalDate checkIn, LocalDate checkOut) throws Exception {
-        return mockMvc.perform(post("/customer/rooms/{id}/alerts", room.getId()).with(csrf())
+        return mockMvc.perform(post("/customer/rooms/{id}/alerts", room.getId()).with(csrf()).with(asNewCustomer())
                 .param("email", email).param("checkIn", checkIn.toString()).param("checkOut", checkOut.toString())
                 .param("guests", "2"));
     }
@@ -55,6 +55,25 @@ class RoomAlertIT extends ItFixtures {
         mockMvc.perform(get("/customer/rooms/{id}", room.getId()).param("checkIn", out.plusDays(5).toString())
                         .param("checkOut", out.plusDays(7).toString()))
                 .andExpect(content().string(not(containsString("Báo tôi qua email khi phòng trống lại"))));
+    }
+
+    @Test
+    void anonymous_seesLoginLink_subscribingNeedsLogin_thenBackToRoom() throws Exception {
+        String roomPage = "/customer/rooms/" + room.getId() + "?checkIn=" + in + "&checkOut=" + out + "&guests=2";
+        mockMvc.perform(get("/customer/rooms/{id}", room.getId()).param("checkIn", in.toString()).param("checkOut", out.toString()))
+                .andExpect(content().string(containsString("Đăng nhập để nhận email khi phòng trống lại")))
+                .andExpect(content().string(not(containsString("Báo tôi qua email khi phòng trống lại"))));
+        mockMvc.perform(get("/customer/rooms/{id}/alerts", room.getId()).param("checkIn", in.toString())
+                        .param("checkOut", out.toString()).param("guests", "2"))
+                .andExpect(redirectedUrlPattern("**/login"));
+        mockMvc.perform(post("/customer/rooms/{id}/alerts", room.getId()).with(csrf())
+                        .param("email", "an.danh@mail.vn").param("checkIn", in.toString()).param("checkOut", out.toString()))
+                .andExpect(redirectedUrlPattern("**/login"));
+        assertThat(alertRepository.findAll()).noneMatch(a -> "an.danh@mail.vn".equals(a.getEmail()));
+        // Dang nhap xong (Spring Security dua ve link tren) -> ve lai trang phong dung khoang ngay
+        mockMvc.perform(get("/customer/rooms/{id}/alerts", room.getId()).param("checkIn", in.toString())
+                        .param("checkOut", out.toString()).param("guests", "2").with(asNewCustomer()))
+                .andExpect(redirectedUrl(roomPage + "#dat-phong"));
     }
 
     @Test
@@ -92,7 +111,7 @@ class RoomAlertIT extends ItFixtures {
 
         for (int i = 0; i < RoomAlertService.MAX_PENDING_PER_EMAIL; i++) {
             Room r = persistRoom(room.getRoomType(), 900_000, RoomStatus.MAINTENANCE);
-            mockMvc.perform(post("/customer/rooms/{id}/alerts", r.getId()).with(csrf())
+            mockMvc.perform(post("/customer/rooms/{id}/alerts", r.getId()).with(csrf()).with(asNewCustomer())
                             .param("email", "nhieu@mail.vn").param("checkIn", in.toString()).param("checkOut", out.toString()))
                     .andExpect(flash().attributeExists("alertSuccess"));
         }

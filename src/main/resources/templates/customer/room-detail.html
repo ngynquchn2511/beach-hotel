@@ -279,7 +279,10 @@
                                th:text="#{detail.suggest(${#temporals.format(suggestCheckIn, 'dd/MM')}, ${#temporals.format(suggestCheckOut, 'dd/MM')})}"></a>
                         </div>
                         <!-- Bao toi khi phong trong lai: don huy / doi ngay / het bao tri thi gui email 1 lan -->
-                        <form method="post" class="border-top border-warning-subtle pt-2 mt-2"
+                        <a class="btn btn-sm btn-outline-warning mt-2" sec:authorize="!isAuthenticated()"
+                           th:href="@{/customer/rooms/{id}/alerts(id=${room.id}, checkIn=${checkIn}, checkOut=${checkOut}, guests=${guests})}">
+                            <i class="bi bi-bell me-1"></i><span th:text="#{alert.loginToSubscribe}">Đăng nhập để nhận thông báo khi phòng trống lại</span></a>
+                        <form method="post" class="border-top border-warning-subtle pt-2 mt-2" sec:authorize="isAuthenticated()"
                               th:action="@{/customer/rooms/{id}/alerts(id=${room.id})}">
                             <input type="hidden" name="checkIn" th:value="${checkIn}">
                             <input type="hidden" name="checkOut" th:value="${checkOut}">

@@ -76,7 +76,7 @@ class GroupBookingIT extends ItFixtures {
         List<Booking> bookings = groupBookings(group);
         assertThat(bookings).hasSize(2).allMatch(bk -> bk.getStatus() == BookingStatus.PENDING && bk.isAwaitingDeposit());
 
-        mockMvc.perform(get("/customer/bookings/group/{id}", group.getId()).param("token", group.getAccessToken()))
+        mockMvc.perform(get("/customer/bookings/group/{id}", group.getId()).param("token", group.getAccessToken()).with(as(group.getCustomer())))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("HB " + group.getCode() + " COC")))
                 .andExpect(content().string(containsString("960.000")));
@@ -119,7 +119,7 @@ class GroupBookingIT extends ItFixtures {
         mockMvc.perform(get("/customer/bookings/group/{id}", group.getId()).param("token", "sai"))
                 .andExpect(content().string(org.hamcrest.Matchers.not(containsString("Hủy cả đoàn"))));
 
-        mockMvc.perform(post("/customer/bookings/group/{id}/cancel", group.getId()).with(csrf()).param("token", group.getAccessToken()))
+        mockMvc.perform(post("/customer/bookings/group/{id}/cancel", group.getId()).with(csrf()).param("token", group.getAccessToken()).with(as(group.getCustomer())))
                 .andExpect(flash().attribute("successMessage", containsString("Đã hủy 3 phòng")));
         assertThat(groupBookings(group)).allMatch(bk -> bk.getStatus() == BookingStatus.CANCELLED);
     }

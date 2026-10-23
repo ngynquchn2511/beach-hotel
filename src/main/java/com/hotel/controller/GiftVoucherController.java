@@ -20,7 +20,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.math.BigDecimal;
 import java.util.List;
 
-// Mua the qua tang (khong can dang nhap): chon menh gia -> thanh toan VNPay / chuyen khoan -> ma gui email nguoi nhan
+// Mua the qua tang (bat buoc dang nhap tai khoan khach hang): chon menh gia -> thanh toan VNPay / chuyen khoan -> ma gui email nguoi nhan
 @Controller
 public class GiftVoucherController {
 

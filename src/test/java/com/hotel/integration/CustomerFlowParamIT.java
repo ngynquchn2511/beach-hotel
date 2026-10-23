@@ -154,6 +154,8 @@ class CustomerFlowParamIT extends ItFixtures {
         var req = get(path);
         if (path.startsWith("/admin")) {
             req.with(as(persistUser(UserRole.STAFF, CustomerType.NEW)));
+        } else if (path.startsWith("/customer/bookings")) {
+            req.with(asNewCustomer()); // xem don bat buoc dang nhap
         }
         mockMvc.perform(req).andExpect(status().isNotFound()).andExpect(view().name("error/business-error"));
     }

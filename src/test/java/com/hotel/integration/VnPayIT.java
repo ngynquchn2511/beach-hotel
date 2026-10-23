@@ -78,11 +78,11 @@ class VnPayIT extends ItFixtures {
     @Test
     void bookingPage_showsVnPayButton_andStartRedirectsToSandbox() throws Exception {
         String token = booking.getAccessToken();
-        mockMvc.perform(get("/customer/bookings/{id}", booking.getId()).param("token", token))
+        mockMvc.perform(get("/customer/bookings/{id}", booking.getId()).param("token", token).with(as(booking.getCustomer())))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Thanh toán cọc qua VNPay")));
 
-        mockMvc.perform(post("/customer/bookings/{id}/vnpay", booking.getId()).param("token", token).with(csrf()))
+        mockMvc.perform(post("/customer/bookings/{id}/vnpay", booking.getId()).param("token", token).with(as(booking.getCustomer())).with(csrf()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(header().string("Location", startsWith("https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?")))
                 .andExpect(header().string("Location", containsString("vnp_Amount=60000000")))
@@ -90,9 +90,9 @@ class VnPayIT extends ItFixtures {
     }
 
     @Test
-    void start_withoutTokenOrLogin_isRejected() throws Exception {
-        mockMvc.perform(post("/customer/bookings/{id}/vnpay", booking.getId()).param("token", "sai-ma").with(csrf()))
-                .andExpect(header().doesNotExist("Location"));
+    void start_withoutLogin_redirectsToLogin_notToVnPay() throws Exception {
+        mockMvc.perform(post("/customer/bookings/{id}/vnpay", booking.getId()).param("token", booking.getAccessToken()).with(csrf()))
+                .andExpect(redirectedUrlPattern("**/login"));
     }
 
     @Test

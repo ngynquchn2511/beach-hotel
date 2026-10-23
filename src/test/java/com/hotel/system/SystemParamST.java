@@ -228,7 +228,12 @@ class SystemParamST extends StBase {
     @ParameterizedTest(name = "Mở {0} với id không tồn tại ¦ GET {1} ¦ HTTP 404, trang lỗi thân thiện (không lộ stack trace)")
     @CsvSource({"phòng,/customer/rooms/999999", "đơn đặt phòng,/customer/bookings/999999"})
     void friendlyNotFound(String what, String path) {
-        Res r = new Browser().get(path);
+        Browser b = new Browser();
+        if (path.startsWith("/customer/bookings")) {
+            // Xem don bat buoc dang nhap
+            b.loginCustomer(createUser(UserRole.CUSTOMER, CustomerType.NEW, "matkhau123").getEmail(), "matkhau123");
+        }
+        Res r = b.get(path);
         assertThat(r.status()).isEqualTo(404);
         assertThat(r.body()).doesNotContain("Exception").doesNotContain("at com.hotel");
     }

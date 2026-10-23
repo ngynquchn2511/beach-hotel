@@ -137,7 +137,7 @@ class I18nPageBranchesIT {
             assertRenders(get("/customer/bookings/" + b.getId()).with(user(me)), lang);
         }
         // Khach vang lai mo bang link co ma truy cap
-        assertRenders(get("/customer/bookings/" + awaitingDeposit.getId()).param("token", awaitingDeposit.getAccessToken()), lang);
+        assertRenders(get("/customer/bookings/" + awaitingDeposit.getId()).param("token", awaitingDeposit.getAccessToken()).with(user(new CustomUserDetails(awaitingDeposit.getCustomer()))), lang);
         assertRenders(get("/customer/bookings").with(user(me)), lang);
         assertRenders(get("/customer/account").with(user(me)), lang);
         assertRenders(get("/customer/rooms").param("checkIn", friday.plusDays(20).toString())

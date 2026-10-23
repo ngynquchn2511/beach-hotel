@@ -48,7 +48,7 @@ class RoomServiceIT extends ItFixtures {
 
     private ResultActions order(String... qtyPairs) throws Exception {
         MockHttpServletRequestBuilder req = post("/customer/bookings/{id}/room-service", booking.getId()).with(csrf())
-                .param("token", token).param("note", "ít cay");
+                .param("token", token).with(as(booking.getCustomer())).param("note", "ít cay");
         for (int i = 0; i < qtyPairs.length; i += 2) {
             req.param("qty_" + qtyPairs[i], qtyPairs[i + 1]);
         }
@@ -61,7 +61,7 @@ class RoomServiceIT extends ItFixtures {
 
     @Test
     void guestOrders_staffDelivers_chargesAddedByType() throws Exception {
-        mockMvc.perform(get("/customer/bookings/{id}", booking.getId()).param("token", token))
+        mockMvc.perform(get("/customer/bookings/{id}", booking.getId()).param("token", token).with(as(booking.getCustomer())))
                 .andExpect(content().string(containsString("Gọi dịch vụ lên phòng")))
                 .andExpect(content().string(containsString("Phở bò IT")));
 
@@ -84,7 +84,7 @@ class RoomServiceIT extends ItFixtures {
 
         // Da giao -> khach khong huy duoc
         mockMvc.perform(post("/customer/bookings/{id}/room-service/{oid}/cancel", booking.getId(), placed.getId())
-                        .with(csrf()).param("token", token))
+                        .with(csrf()).param("token", token).with(as(booking.getCustomer())))
                 .andExpect(flash().attribute("roomServiceError", containsString("đã được xử lý")));
     }
 
@@ -93,7 +93,7 @@ class RoomServiceIT extends ItFixtures {
         order(pho.getId().toString(), "1");
         RoomServiceOrder first = latestOrder();
         mockMvc.perform(post("/customer/bookings/{id}/room-service/{oid}/cancel", booking.getId(), first.getId())
-                .with(csrf()).param("token", token));
+                .with(csrf()).param("token", token).with(as(booking.getCustomer())));
         assertThat(orderRepository.findById(first.getId()).orElseThrow().getStatus()).isEqualTo(RoomServiceOrder.Status.CANCELLED);
 
         order(beer.getId().toString(), "1");

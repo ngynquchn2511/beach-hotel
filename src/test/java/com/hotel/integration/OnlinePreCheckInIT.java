@@ -34,7 +34,7 @@ class OnlinePreCheckInIT extends ItFixtures {
 
     private ResultActions declare(String name, String idNumber) throws Exception {
         return mockMvc.perform(post("/customer/bookings/{id}/guests", booking.getId()).with(csrf())
-                .param("token", token).param("fullName", name).param("dateOfBirth", "1992-05-20")
+                .param("token", token).with(as(booking.getCustomer())).param("fullName", name).param("dateOfBirth", "1992-05-20")
                 .param("gender", "FEMALE").param("idType", "CCCD").param("idNumber", idNumber)
                 .param("nationality", "Việt Nam"));
     }
@@ -45,7 +45,7 @@ class OnlinePreCheckInIT extends ItFixtures {
 
     @Test
     void guestDeclaresWithTokenLink_staffSeesSelfDeclared_andCanCheckIn() throws Exception {
-        mockMvc.perform(get("/customer/bookings/{id}", booking.getId()).param("token", token))
+        mockMvc.perform(get("/customer/bookings/{id}", booking.getId()).param("token", token).with(as(booking.getCustomer())))
                 .andExpect(content().string(containsString("Khai báo lưu trú online")));
 
         declare("Trần Thị Mai", "001092012345")
@@ -56,7 +56,7 @@ class OnlinePreCheckInIT extends ItFixtures {
         assertThat(guests().get(0).isSelfDeclared()).isTrue();
 
         // Trang cua khach chi hien 3 so cuoi
-        mockMvc.perform(get("/customer/bookings/{id}", booking.getId()).param("token", token))
+        mockMvc.perform(get("/customer/bookings/{id}", booking.getId()).param("token", token).with(as(booking.getCustomer())))
                 .andExpect(content().string(containsString("345")))
                 .andExpect(content().string(not(containsString("001092012345"))));
 
@@ -88,10 +88,10 @@ class OnlinePreCheckInIT extends ItFixtures {
         BookingGuest own = guests().stream().filter(BookingGuest::isSelfDeclared).findFirst().orElseThrow();
 
         mockMvc.perform(post("/customer/bookings/{id}/guests/{gid}/delete", booking.getId(), byStaff.getId())
-                        .with(csrf()).param("token", token))
+                        .with(csrf()).param("token", token).with(as(booking.getCustomer())))
                 .andExpect(flash().attribute("guestError", containsString("Không tìm thấy")));
         mockMvc.perform(post("/customer/bookings/{id}/guests/{gid}/delete", booking.getId(), own.getId())
-                .with(csrf()).param("token", token));
+                .with(csrf()).param("token", token).with(as(booking.getCustomer())));
 
         assertThat(guests()).extracting(BookingGuest::getId).containsExactly(byStaff.getId());
     }
@@ -100,14 +100,18 @@ class OnlinePreCheckInIT extends ItFixtures {
     void pendingBookingOrWrongToken_cannotDeclare() throws Exception {
         booking.setStatus(BookingStatus.PENDING);
         bookingRepository.save(booking);
-        mockMvc.perform(get("/customer/bookings/{id}", booking.getId()).param("token", token))
+        mockMvc.perform(get("/customer/bookings/{id}", booking.getId()).param("token", token).with(as(booking.getCustomer())))
                 .andExpect(content().string(not(containsString("id=\"khai-bao\""))));
         declare("Khách", "001092000020").andExpect(flash().attribute("guestError", containsString("chưa được xác nhận")));
 
         booking.setStatus(BookingStatus.CONFIRMED);
         bookingRepository.save(booking);
-        token = "sai-ma";
-        declare("Khách", "001092000021");
+        // Chua dang nhap (ke ca co dung ma trong link email) -> ve trang dang nhap, khong khai bao duoc
+        mockMvc.perform(post("/customer/bookings/{id}/guests", booking.getId()).with(csrf())
+                        .param("token", token).param("fullName", "Khách").param("dateOfBirth", "1992-05-20")
+                        .param("gender", "FEMALE").param("idType", "CCCD").param("idNumber", "001092000021")
+                        .param("nationality", "Việt Nam"))
+                .andExpect(redirectedUrlPattern("**/login"));
         assertThat(guests()).isEmpty();
     }
 

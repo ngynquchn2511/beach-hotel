@@ -78,7 +78,7 @@ class ExtraServicesIT extends ItFixtures {
 
     private void bookTourAsGuest(LocalDate date, int participants) throws Exception {
         mockMvc.perform(post("/customer/bookings/" + booking.getId() + "/tours").with(csrf())
-                        .param("token", booking.getAccessToken())
+                        .param("token", booking.getAccessToken()).with(as(booking.getCustomer()))
                         .param("tourId", tour.getId().toString())
                         .param("tourDate", date.toString())
                         .param("participants", String.valueOf(participants)))
@@ -89,7 +89,7 @@ class ExtraServicesIT extends ItFixtures {
     @Test
     void guestBooksTourWithTokenLink_staffConfirms_priceBecomesBookingCharge() throws Exception {
         mockMvc.perform(post("/customer/bookings/" + booking.getId() + "/tours").with(csrf())
-                        .param("token", booking.getAccessToken())
+                        .param("token", booking.getAccessToken()).with(as(booking.getCustomer()))
                         .param("tourId", tour.getId().toString())
                         .param("tourDate", booking.getCheckInDate().plusDays(1).toString())
                         .param("participants", "2")
@@ -138,7 +138,7 @@ class ExtraServicesIT extends ItFixtures {
         bookTourAsGuest(day, 2);
         // Chuyen chi con 1 cho -> dat them 2 nguoi bi tu choi
         mockMvc.perform(post("/customer/bookings/" + booking.getId() + "/tours").with(csrf())
-                        .param("token", booking.getAccessToken())
+                        .param("token", booking.getAccessToken()).with(as(booking.getCustomer()))
                         .param("tourId", tour.getId().toString())
                         .param("tourDate", day.toString())
                         .param("participants", "2"))
@@ -150,7 +150,7 @@ class ExtraServicesIT extends ItFixtures {
     @Test
     void tourDate_mustBeDuringTheStay() throws Exception {
         mockMvc.perform(post("/customer/bookings/" + booking.getId() + "/tours").with(csrf())
-                        .param("token", booking.getAccessToken())
+                        .param("token", booking.getAccessToken()).with(as(booking.getCustomer()))
                         .param("tourId", tour.getId().toString())
                         .param("tourDate", booking.getCheckOutDate().plusDays(1).toString())
                         .param("participants", "1"))
@@ -167,7 +167,7 @@ class ExtraServicesIT extends ItFixtures {
         booking.setCheckOutDate(LocalDate.now().plusDays(3));
 
         mockMvc.perform(post("/customer/bookings/" + booking.getId() + "/tours").with(csrf())
-                        .param("token", booking.getAccessToken())
+                        .param("token", booking.getAccessToken()).with(as(booking.getCustomer()))
                         .param("tourId", tour.getId().toString())
                         .param("tourDate", start.toLocalDate().toString())
                         .param("participants", "1"))
@@ -184,15 +184,15 @@ class ExtraServicesIT extends ItFixtures {
         assertThat(chargeRepository.findByBookingIdOrderByCreatedAtAsc(booking.getId())).hasSize(1);
     }
 
-    @TcSteps("Khách vãng lai gửi đặt tour với token sai")
+    @TcSteps("Khách vãng lai (chưa đăng nhập) gửi đặt tour bằng link đơn có token")
     @Test
-    void anonymousWithoutToken_cannotBookServices() throws Exception {
+    void anonymous_cannotBookServices_evenWithToken() throws Exception {
         mockMvc.perform(post("/customer/bookings/" + booking.getId() + "/tours").with(csrf())
-                        .param("token", "sai-ma")
+                        .param("token", booking.getAccessToken())
                         .param("tourId", tour.getId().toString())
                         .param("tourDate", booking.getCheckInDate().toString())
                         .param("participants", "1"))
-                .andExpect(flash().attributeExists("serviceError"));
+                .andExpect(redirectedUrlPattern("**/login"));
         assertThat(tourBookingRepository.findByBookingIdOrderByTourDateAscIdAsc(booking.getId())).isEmpty();
     }
 
@@ -256,7 +256,7 @@ class ExtraServicesIT extends ItFixtures {
     @TcSteps("Khách GET /customer/bookings/{id}?token=… (trang đơn)")
     @Test
     void bookingPage_showsServicesSection() throws Exception {
-        mockMvc.perform(get("/customer/bookings/" + booking.getId()).param("token", booking.getAccessToken()))
+        mockMvc.perform(get("/customer/bookings/" + booking.getId()).param("token", booking.getAccessToken()).with(as(booking.getCustomer())))
                 .andExpect(status().isOk())
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("Dịch vụ thêm")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString(tour.getName())));
