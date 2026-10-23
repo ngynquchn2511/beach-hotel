@@ -57,9 +57,7 @@ class GroupBookingExtrasIT extends ItFixtures {
         for (int i = 0; i < extras.length; i += 2) {
             req.param(extras[i], extras[i + 1]);
         }
-        if (who != null) {
-            req.with(as(who));
-        }
+        req.with(who != null ? as(who) : asNewCustomer());
         offset += 5;
         return mockMvc.perform(req);
     }
@@ -134,16 +132,16 @@ class GroupBookingExtrasIT extends ItFixtures {
     }
 
     @Test
-    void guestWithoutLogin_noMemberPriceNoPoints_giftCardSpreadsAcrossRooms() throws Exception {
+    void customerWithoutMemberDiscountOrPoints_giftCardSpreadsAcrossRooms() throws Exception {
         PricingSettings settings = PricingSettings.defaults();
-        settings.setMemberDiscountNew(5);
+        settings.setMemberDiscountNew(0);
         settingsRepository.save(settings);
         GiftVoucher v = voucherRepository.save(GiftVoucher.builder().code("QT-DOAN-" + seq()).amount(BigDecimal.valueOf(2_000_000))
                 .balance(BigDecimal.valueOf(2_000_000)).status(GiftVoucher.Status.ACTIVE).purchaserName("A").purchaserEmail("a@mail.vn")
                 .recipientName("B").recipientEmail("b@mail.vn").accessToken("tok" + seq()).paidAt(LocalDateTime.now())
                 .expiresAt(LocalDateTime.now().plusMonths(6)).build());
 
-        create(null, "giftCode", v.getCode(), "pointsToUse", "500").andExpect(status().is3xxRedirection());
+        create(null, "giftCode", v.getCode()).andExpect(status().is3xxRedirection());
         List<Booking> rooms = latestGroupBookings();
         assertThat(rooms).allSatisfy(bk -> {
             assertThat(bk.getMemberDiscountAmount()).isNull();
@@ -161,7 +159,7 @@ class GroupBookingExtrasIT extends ItFixtures {
         settings.setDepositPercent(30);
         settings.setNonRefundablePercent(10);
         settingsRepository.save(settings);
-        mockMvc.perform(get("/customer/bookings/group/new").param("checkIn", in.toString()).param("checkOut", out.toString())
+        mockMvc.perform(get("/customer/bookings/group/new").with(asNewCustomer()).param("checkIn", in.toString()).param("checkOut", out.toString())
                         .param("roomIds", a.getId().toString()).param("roomIds", b.getId().toString()))
                 .andExpect(content().string(containsString("Giá không hoàn tiền - giảm thêm 10% (khoảng 320.000 VND)")));
 

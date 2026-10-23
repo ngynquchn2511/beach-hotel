@@ -38,8 +38,9 @@ class CustomerFlowParamIT extends ItFixtures {
         customer = persistUser(UserRole.CUSTOMER, CustomerType.NEW);
     }
 
+    // Dat phong bat buoc dang nhap: mac dinh gui bang tai khoan khach hang NEW
     private MockHttpServletRequestBuilder bookingPost(LocalDate in, LocalDate out, String name, String phone, String email) {
-        return post("/customer/bookings/new").with(csrf())
+        return post("/customer/bookings/new").with(csrf()).with(as(customer))
                 .param("roomId", room.getId().toString()).param("checkIn", in.toString()).param("checkOut", out.toString())
                 .param("guests", "2").param("checkInTime", "14:00").param("checkOutTime", "12:00")
                 .param("guestName", name).param("guestPhone", phone).param("guestEmail", email);
@@ -159,33 +160,40 @@ class CustomerFlowParamIT extends ItFixtures {
 
     // ===================== Đặt phòng =====================
 
-    @TcSteps("Khách (chưa đăng nhập hoặc đã đăng nhập) POST /customer/bookings/new với dữ liệu hợp lệ")
+    @TcSteps("Khách đã đăng nhập POST /customer/bookings/new với dữ liệu hợp lệ")
     @ParameterizedTest(name = "Đặt phòng thành công - {0} ¦ {0}, ngày +3 → +{1} ¦ Redirect /customer/bookings/<id>, đơn PENDING, tổng tiền = {2}")
-    @CsvSource({"khách vãng lai chưa đăng nhập,4,400000", "khách vãng lai chưa đăng nhập,6,1200000", "khách đã đăng nhập,5,800000"})
+    @CsvSource({"khách đã đăng nhập (1 đêm),4,400000", "khách đã đăng nhập (3 đêm),6,1200000", "khách đã đăng nhập (2 đêm),5,800000"})
     void booking_success(String who, int out, long total) throws Exception {
         var req = bookingPost(LocalDate.now().plusDays(3), LocalDate.now().plusDays(out), "Nguyễn Khách", "0912340000", "khach" + seq() + "@gmail.com");
-        if (who.contains("đã đăng nhập")) {
-            req.with(as(customer));
-        }
         mockMvc.perform(req).andExpect(status().is3xxRedirection()).andExpect(redirectedUrlPattern("/customer/bookings/*"));
         Booking b = bookingRepository.findAll().stream().filter(x -> x.getRoom().getId().equals(room.getId())).findFirst().orElseThrow();
         assertThat(b.getStatus()).isEqualTo(BookingStatus.PENDING);
         assertThat(b.getTotalAmount()).isEqualByComparingTo(BigDecimal.valueOf(total));
-        if (who.contains("đã đăng nhập")) {
-            assertThat(b.getCustomer().getId()).isEqualTo(customer.getId());
-        }
+        assertThat(b.getCustomer().getId()).isEqualTo(customer.getId());
     }
 
-    @TcSteps("Khách vãng lai đặt phòng bằng email đã/chưa có tài khoản")
-    @ParameterizedTest(name = "Gắn đơn của khách vãng lai vào tài khoản - email {0} ¦ email {0} ¦ {1}")
-    @CsvSource({"chưa có tài khoản,Tự tạo tài khoản CUSTOMER mới theo email", "đã có tài khoản,Dùng lại tài khoản sẵn có, không tạo thêm"})
-    void booking_guestAccount(String label, String expected) throws Exception {
-        String email = label.startsWith("đã") ? customer.getEmail() : "vanglai" + seq() + "@gmail.com";
+    @TcSteps("Khách vãng lai (chưa đăng nhập) thử đặt phòng")
+    @ParameterizedTest(name = "Khách vãng lai không đặt được phòng - {0} ¦ {0} khi chưa đăng nhập ¦ Chuyển tới /login, không tạo đơn, không tạo tài khoản")
+    @ValueSource(strings = {"mở trang xác nhận đặt phòng", "gửi form đặt phòng", "kiểm tra mã giảm giá", "mở trang đặt nhiều phòng"})
+    void booking_anonymousRedirectedToLogin(String action) throws Exception {
+        String in = LocalDate.now().plusDays(3).toString();
+        String out = LocalDate.now().plusDays(4).toString();
+        String email = "vanglai" + seq() + "@gmail.com";
+        var req = switch (action) {
+            case "mở trang xác nhận đặt phòng" -> get("/customer/bookings/new").param("roomId", room.getId().toString())
+                    .param("checkIn", in).param("checkOut", out);
+            case "gửi form đặt phòng" -> post("/customer/bookings/new").with(csrf()).param("roomId", room.getId().toString())
+                    .param("checkIn", in).param("checkOut", out).param("checkInTime", "14:00").param("checkOutTime", "12:00")
+                    .param("guestName", "Khách").param("guestPhone", "0912340001").param("guestEmail", email);
+            case "kiểm tra mã giảm giá" -> get("/customer/bookings/check-discount").param("code", "SALE10")
+                    .param("roomId", room.getId().toString()).param("checkIn", in).param("checkOut", out);
+            default -> get("/customer/bookings/group/new").param("checkIn", in).param("checkOut", out);
+        };
+        long bookingsBefore = bookingRepository.count();
         long usersBefore = userRepository.count();
-        mockMvc.perform(bookingPost(LocalDate.now().plusDays(3), LocalDate.now().plusDays(4), "Khách", "0912340001", email))
-                .andExpect(status().is3xxRedirection());
-        assertThat(userRepository.count()).isEqualTo(label.startsWith("đã") ? usersBefore : usersBefore + 1);
-        assertThat(userRepository.findByEmail(email)).isPresent();
+        mockMvc.perform(req).andExpect(status().is3xxRedirection()).andExpect(redirectedUrlPattern("**/login"));
+        assertThat(bookingRepository.count()).isEqualTo(bookingsBefore);
+        assertThat(userRepository.count()).isEqualTo(usersBefore);
     }
 
     @TcSteps("Khách POST /customer/bookings/new với dữ liệu sai (validation phía controller)")
@@ -250,10 +258,10 @@ class CustomerFlowParamIT extends ItFixtures {
 
     @TcSteps("Gọi AJAX GET /customer/bookings/check-discount với mã theo bộ dữ liệu (phòng 400.000 × 2 đêm)")
     @ParameterizedTest(name = "Kiểm tra mã giảm giá qua AJAX - {0} ¦ code=\"{1}\", người gọi: {2} ¦ valid = {3}, discountAmount = {4}")
-    @CsvSource({"mã % hợp lệ,SALE10,khách chưa đăng nhập (coi là NEW),true,80000", "khách gõ mã chữ thường,sale10,khách chưa đăng nhập (coi là NEW),true,80000",
-            "mã cố định,GIAM50K,khách chưa đăng nhập (coi là NEW),true,50000", "mã đã tắt,DATAT,khách chưa đăng nhập (coi là NEW),false,-",
-            "mã không tồn tại,ABCXYZ,khách chưa đăng nhập (coi là NEW),false,-", "mã VIP với khách mới,VIPONLY,khách chưa đăng nhập (coi là NEW),false,-",
-            "mã VIP với khách VIP,VIPONLY,khách VIP đã đăng nhập,true,160000", "mã cố định lớn hơn tạm tính,GIAM5TR,khách chưa đăng nhập (coi là NEW),true,800000"})
+    @CsvSource({"mã % hợp lệ,SALE10,khách mới đã đăng nhập (NEW),true,80000", "khách gõ mã chữ thường,sale10,khách mới đã đăng nhập (NEW),true,80000",
+            "mã cố định,GIAM50K,khách mới đã đăng nhập (NEW),true,50000", "mã đã tắt,DATAT,khách mới đã đăng nhập (NEW),false,-",
+            "mã không tồn tại,ABCXYZ,khách mới đã đăng nhập (NEW),false,-", "mã VIP với khách mới,VIPONLY,khách mới đã đăng nhập (NEW),false,-",
+            "mã VIP với khách VIP,VIPONLY,khách VIP đã đăng nhập,true,160000", "mã cố định lớn hơn tạm tính,GIAM5TR,khách mới đã đăng nhập (NEW),true,800000"})
     void checkDiscountAjax(String label, String code, String caller, boolean valid, String amount) throws Exception {
         persistCode("SALE10", DiscountType.PERCENTAGE, 10, null, true);
         persistCode("GIAM50K", DiscountType.FIXED_AMOUNT, 50000, null, true);
@@ -261,7 +269,8 @@ class CustomerFlowParamIT extends ItFixtures {
         persistCode("VIPONLY", DiscountType.PERCENTAGE, 20, CustomerType.VIP, true);
         persistCode("GIAM5TR", DiscountType.FIXED_AMOUNT, 5000000, null, true);
         var req = get("/customer/bookings/check-discount").param("code", code).param("roomId", room.getId().toString())
-                .param("checkIn", LocalDate.now().plusDays(3).toString()).param("checkOut", LocalDate.now().plusDays(5).toString());
+                .param("checkIn", LocalDate.now().plusDays(3).toString()).param("checkOut", LocalDate.now().plusDays(5).toString())
+                .with(as(customer));
         if (caller.contains("VIP")) {
             customer.setCustomerType(CustomerType.VIP);
             userRepository.save(customer);
@@ -276,17 +285,20 @@ class CustomerFlowParamIT extends ItFixtures {
     }
 
     @TcSteps("Khách đã đăng nhập GET /customer/bookings/new (trang xác nhận)")
-    @ParameterizedTest(name = "Trang xác nhận điền sẵn thông tin - {0} ¦ GET /customer/bookings/new bởi {0} ¦ guestName/guestEmail/guestPhone điền sẵn = {1}, giờ mặc định 14:00/12:00")
-    @CsvSource({"khách đã đăng nhập,true", "khách chưa đăng nhập,false"})
-    void confirmForm_prefill(String who, boolean prefilled) throws Exception {
-        var req = get("/customer/bookings/new").param("roomId", room.getId().toString())
-                .param("checkIn", LocalDate.now().plusDays(3).toString()).param("checkOut", LocalDate.now().plusDays(4).toString());
-        if (prefilled) {
-            req.with(as(customer));
+    @ParameterizedTest(name = "Trang xác nhận điền sẵn thông tin - {0} ¦ GET /customer/bookings/new bởi {0} ¦ guestName/guestEmail/guestPhone điền sẵn từ tài khoản, giờ mặc định 14:00/12:00")
+    @CsvSource({"khách hàng NEW", "khách hàng VIP"})
+    void confirmForm_prefill(String who) throws Exception {
+        if (who.contains("VIP")) {
+            customer.setCustomerType(CustomerType.VIP);
+            userRepository.save(customer);
         }
+        var req = get("/customer/bookings/new").param("roomId", room.getId().toString())
+                .param("checkIn", LocalDate.now().plusDays(3).toString()).param("checkOut", LocalDate.now().plusDays(4).toString())
+                .with(as(customer));
         var model = mockMvc.perform(req).andExpect(status().isOk()).andReturn().getModelAndView().getModel();
         var form = (com.hotel.dto.BookingConfirmRequest) model.get("bookingConfirmRequest");
-        assertThat(form.getGuestEmail() != null).isEqualTo(prefilled);
+        assertThat(form.getGuestEmail()).isEqualTo(customer.getEmail());
+        assertThat(form.getGuestName()).isEqualTo(customer.getFullName());
         assertThat(form.getCheckInTime()).isEqualTo(LocalTime.of(14, 0));
         assertThat(form.getCheckOutTime()).isEqualTo(LocalTime.of(12, 0));
     }

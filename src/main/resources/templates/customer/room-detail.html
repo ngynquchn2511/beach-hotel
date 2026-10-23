@@ -295,7 +295,13 @@
 
                     <a th:if="${available}"
                        th:href="@{/customer/bookings/new(roomId=${room.id}, checkIn=${checkIn}, checkOut=${checkOut}, guests=${guests}, comboId=${selectedComboId})}"
-                       class="btn btn-primary w-100" th:text="#{detail.bookNow}">Đặt phòng ngay</a>
+                       class="btn btn-primary w-100" sec:authorize="isAuthenticated()" th:text="#{detail.bookNow}">Đặt phòng ngay</a>
+                    <th:block th:if="${available}" sec:authorize="!isAuthenticated()">
+                        <a th:href="@{/customer/bookings/new(roomId=${room.id}, checkIn=${checkIn}, checkOut=${checkOut}, guests=${guests}, comboId=${selectedComboId})}"
+                           class="btn btn-primary w-100"><i class="bi bi-box-arrow-in-right me-1"></i><span th:text="#{detail.loginToBook}">Đăng nhập để đặt phòng</span></a>
+                        <p class="small text-muted text-center mt-2 mb-0"><span th:text="#{auth.noAccount}">Chưa có tài khoản?</span>
+                            <a th:href="@{/register}" th:text="#{auth.signUpNow}">Đăng ký ngay</a></p>
+                    </th:block>
                 </div>
 
                 <a th:href="@{/customer/rooms(checkIn=${checkIn}, checkOut=${checkOut}, guests=${guests})}" class="btn btn-outline-secondary w-100 mt-2" th:text="#{detail.backToSearch}">Quay lại tìm phòng</a>

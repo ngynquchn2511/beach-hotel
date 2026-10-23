@@ -40,9 +40,7 @@ class MemberPriceIT extends ItFixtures {
                 .param("roomId", room.getId().toString()).param("checkIn", in.toString()).param("checkOut", in.plusDays(nights).toString())
                 .param("checkInTime", "14:00").param("checkOutTime", "12:00")
                 .param("guestName", "Khách Thành Viên").param("guestPhone", "0912345678").param("guestEmail", "tv" + nights + "@mail.vn");
-        if (who != null) {
-            req.with(as(who));
-        }
+        req.with(as(who));
         return mockMvc.perform(req);
     }
 
@@ -77,13 +75,17 @@ class MemberPriceIT extends ItFixtures {
     }
 
     @Test
-    void guestBooking_noMemberDiscount_butSeesInvite() throws Exception {
-        mockMvc.perform(get("/customer/bookings/new").param("roomId", room.getId().toString())
+    void anonymousGuest_seesInviteOnRoomPage_mustLoginToBook() throws Exception {
+        mockMvc.perform(get("/customer/rooms/{id}", room.getId())
                         .param("checkIn", in.toString()).param("checkOut", in.plusDays(2).toString()))
                 .andExpect(content().string(containsString("giảm thêm đến 8%")))
-                .andExpect(content().string(not(containsString("Giá thành viên (-"))));
-        book(null, 2).andExpect(status().is3xxRedirection());
-        assertThat(latest().getMemberDiscountAmount()).isNull();
+                .andExpect(content().string(not(containsString("Giá thành viên của bạn"))));
+        mockMvc.perform(get("/customer/bookings/new").param("roomId", room.getId().toString())
+                        .param("checkIn", in.toString()).param("checkOut", in.plusDays(2).toString()))
+                .andExpect(redirectedUrlPattern("**/login"));
+        // Khach NEW dang nhap dat thi duoc gia thanh vien hang NEW (3%)
+        book(persistUser(UserRole.CUSTOMER, CustomerType.NEW), 2).andExpect(status().is3xxRedirection());
+        assertThat(latest().getMemberDiscountPercent()).isEqualTo(3);
     }
 
     @Test

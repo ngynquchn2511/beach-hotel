@@ -53,6 +53,9 @@ class DashboardReportIT {
                         .param("checkInTime", "14:00").param("checkOutTime", "12:00"))
                 .andExpect(status().is3xxRedirection());
         mockMvc.perform(post("/customer/bookings/new").with(csrf())
+                        .with(user(new CustomUserDetails(userRepository.save(User.builder().fullName("Khach Mang")
+                                .email("khachmang@mail.com").phoneNumber("0977000222").password("x")
+                                .role(UserRole.CUSTOMER).customerType(CustomerType.NEW).build()))))
                         .param("roomId", room.getId().toString()).param("checkIn", in.plusDays(3).toString())
                         .param("checkOut", in.plusDays(4).toString()).param("guests", "2")
                         .param("checkInTime", "14:00").param("checkOutTime", "12:00")

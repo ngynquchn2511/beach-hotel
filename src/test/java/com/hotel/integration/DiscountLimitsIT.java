@@ -33,7 +33,7 @@ class DiscountLimitsIT extends ItFixtures {
     }
 
     private ResultActions book(String code, int offset) throws Exception {
-        return mockMvc.perform(post("/customer/bookings/new").with(csrf())
+        return mockMvc.perform(post("/customer/bookings/new").with(csrf()).with(asNewCustomer())
                 .param("roomId", room.getId().toString()).param("checkIn", in.plusDays(offset).toString())
                 .param("checkOut", in.plusDays(offset + 2).toString()).param("guests", "2")
                 .param("checkInTime", "14:00").param("checkOutTime", "12:00").param("discountCode", code)
@@ -83,7 +83,7 @@ class DiscountLimitsIT extends ItFixtures {
         assertThat(latest().getDiscountAmount()).isEqualByComparingTo("150000");
 
         // Nut "Kiem tra ma" bao giong luc dat
-        String json = mockMvc.perform(get("/customer/bookings/check-discount").param("code", expired.getCode())
+        String json = mockMvc.perform(get("/customer/bookings/check-discount").with(asNewCustomer()).param("code", expired.getCode())
                         .param("roomId", room.getId().toString()).param("checkIn", in.plusDays(20).toString())
                         .param("checkOut", in.plusDays(22).toString()))
                 .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
@@ -103,7 +103,7 @@ class DiscountLimitsIT extends ItFixtures {
         assertThat(dc.getMaxDiscountAmount()).isEqualByComparingTo("500000");
 
         Room b = persistRoom(room.getRoomType(), 1_000_000, RoomStatus.AVAILABLE);
-        mockMvc.perform(post("/customer/bookings/group/new").with(csrf())
+        mockMvc.perform(post("/customer/bookings/group/new").with(csrf()).with(asNewCustomer())
                         .param("checkIn", in.toString()).param("checkOut", in.plusDays(2).toString())
                         .param("checkInTime", "14:00").param("checkOutTime", "12:00")
                         .param("guestName", "Đoàn Mã").param("guestPhone", "0912345678").param("guestEmail", "doanma@mail.vn")

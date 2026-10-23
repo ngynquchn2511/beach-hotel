@@ -70,8 +70,15 @@ class HomestayFeaturesIT {
                 .andExpect(flash().attributeExists("successMessage"));
     }
 
+    // Dat phong bat buoc dang nhap: tai khoan khach hang theo email (tao neu chua co)
+    private CustomUserDetails customerAccount(String email) {
+        return new CustomUserDetails(userRepository.findByEmail(email).orElseGet(() -> userRepository.save(User.builder()
+                .fullName("Trần Thị Mai").email(email).phoneNumber("0909001122").password(passwordEncoder.encode("Abc12345"))
+                .role(UserRole.CUSTOMER).customerType(CustomerType.NEW).build())));
+    }
+
     private Booking guestBooksOnline(LocalDate in, LocalDate out, String email) throws Exception {
-        mockMvc.perform(post("/customer/bookings/new").with(csrf())
+        mockMvc.perform(post("/customer/bookings/new").with(csrf()).with(user(customerAccount(email)))
                         .param("roomId", room.getId().toString())
                         .param("checkIn", in.toString()).param("checkOut", out.toString())
                         .param("guests", "2").param("checkInTime", "14:00").param("checkOutTime", "12:00")
@@ -156,7 +163,7 @@ class HomestayFeaturesIT {
                 .andExpect(flash().attributeExists("successMessage"));
 
         // Thu 5 (thuong 500k) + thu 6 (+40% = 700k) + thu 7 (le +100% = 1.000k) = 2.200.000
-        mockMvc.perform(get("/customer/bookings/new").param("roomId", room.getId().toString())
+        mockMvc.perform(get("/customer/bookings/new").with(user(customerAccount("weekend.it@mail.com"))).param("roomId", room.getId().toString())
                         .param("checkIn", FRIDAY.minusDays(1).toString()).param("checkOut", FRIDAY.plusDays(2).toString()))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Cuối tuần (+40%)")))

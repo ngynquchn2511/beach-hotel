@@ -10,7 +10,7 @@ import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-// Kich ban dau-cuoi chay tuan tu tren CUNG mot du lieu: khach vang lai dat phong -> nhan vien xu ly het vong doi don.
+// Kich ban dau-cuoi chay tuan tu tren CUNG mot du lieu: khach vang lai xem phong, dang nhap de dat phong -> nhan vien xu ly het vong doi don.
 @TcSuite(level = "ST", module = "Kịch bản đầu-cuối: đặt phòng → xác nhận → check-in → check-out")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -26,6 +26,7 @@ class SystemJourneyST extends StBase {
     private final Browser staff = new Browser();
     private final Browser customerBrowser = new Browser();
     private User customer;
+    private User guestAccount;
     private Long customerBookingId;
 
     @BeforeAll
@@ -37,6 +38,7 @@ class SystemJourneyST extends StBase {
         in = LocalDate.now().plusDays(20);
         out = in.plusDays(2);
         customer = createUser(UserRole.CUSTOMER, CustomerType.NEW, "matkhau123");
+        guestAccount = createUser(UserRole.CUSTOMER, CustomerType.NEW, "matkhau123");
     }
 
     private String roomUrl() {
@@ -63,12 +65,20 @@ class SystemJourneyST extends StBase {
 
     @Test
     @Order(3)
-    @TcSteps("Bấm Đặt phòng ngay → mở trang xác nhận đặt phòng")
-    @DisplayName("Trang xác nhận đặt phòng cho khách vãng lai ¦ GET /customer/bookings/new (chưa đăng nhập) ¦ Hiển thị form thông tin người nhận, ghi chú không cần đăng nhập, ô mã giảm giá")
+    @TcSteps("Khách vãng lai bấm Đặt phòng ngay → bị chuyển tới trang đăng nhập; đăng nhập xong quay lại trang xác nhận đặt phòng")
+    @DisplayName("Khách vãng lai phải đăng nhập mới đặt được phòng ¦ GET /customer/bookings/new (chưa đăng nhập) rồi đăng nhập ¦ Chuyển tới /login kèm lời nhắc; sau khi đăng nhập về đúng trang xác nhận, thông tin điền sẵn, ô mã giảm giá")
     void s03_confirmPage() {
-        Res r = guest.get("/customer/bookings/new?roomId=" + room.getId() + "&checkIn=" + in + "&checkOut=" + out + "&comboId=" + combo.getId());
-        assertThat(r.status()).isEqualTo(200);
-        assertThat(r.body()).contains("Thông tin người nhận phòng").contains("Không cần đăng nhập").contains("Mã giảm giá (nếu có)");
+        String bookUrl = "/customer/bookings/new?roomId=" + room.getId() + "&checkIn=" + in + "&checkOut=" + out + "&comboId=" + combo.getId();
+        assertThat(guest.get(roomUrl()).body()).contains("Đăng nhập để đặt phòng");
+        Res r = guest.get(bookUrl);
+        assertThat(r.status()).isEqualTo(302);
+        assertThat(r.location()).isEqualTo("/login");
+        assertThat(guest.get("/login").body()).contains("chỉ xem được phòng");
+        Res login = guest.post("/login", form("username", guestAccount.getEmail(), "password", "matkhau123"));
+        assertThat(login.location()).startsWith(bookUrl); // Spring Security them "&continue"
+        Res page = guest.get(login.location());
+        assertThat(page.status()).isEqualTo(200);
+        assertThat(page.body()).contains("Thông tin người nhận phòng").contains(guestAccount.getEmail()).contains("Mã giảm giá (nếu có)");
     }
 
     @Test
@@ -84,7 +94,7 @@ class SystemJourneyST extends StBase {
     @Test
     @Order(5)
     @TcSteps("Điền họ tên, email, SĐT, giờ nhận/trả, mã giảm giá rồi bấm Xác nhận đặt phòng")
-    @DisplayName("Khách vãng lai đặt phòng thành công ¦ POST /customer/bookings/new đủ thông tin + mã HANHTRINH10 ¦ Chuyển tới trang đơn, trạng thái \"Chờ xác nhận\", tổng 989.100")
+    @DisplayName("Khách đăng nhập đặt phòng thành công ¦ POST /customer/bookings/new đủ thông tin + mã HANHTRINH10 ¦ Chuyển tới trang đơn, trạng thái \"Chờ xác nhận\", tổng 989.100")
     void s05_book() {
         Res r = guest.post("/customer/bookings/new", form("roomId", room.getId().toString(), "checkIn", in.toString(), "checkOut", out.toString(),
                 "comboId", combo.getId().toString(), "guestName", "Khách Hành Trình", "guestEmail", "hanhtrinh" + seq() + "@gmail.com",
@@ -105,7 +115,7 @@ class SystemJourneyST extends StBase {
     @DisplayName("Chống đặt trùng phòng trên server thật ¦ khách thứ 2 đặt cùng phòng +20 → +22 ¦ Ở lại trang xác nhận, báo phòng đang có đơn chờ xác nhận và giờ phòng trống trở lại")
     void s06_doubleBooking() {
         Browser other = new Browser();
-        other.get("/customer/rooms");
+        other.loginCustomer(createUser(UserRole.CUSTOMER, CustomerType.NEW, "matkhau123").getEmail(), "matkhau123");
         Res r = other.post("/customer/bookings/new", form("roomId", room.getId().toString(), "checkIn", in.toString(), "checkOut", out.toString(),
                 "guestName", "Khách Thứ Hai", "guestEmail", "thu2" + seq() + "@gmail.com", "guestPhone", "0966000222",
                 "checkInTime", "14:00", "checkOutTime", "12:00"));
@@ -284,11 +294,11 @@ class SystemJourneyST extends StBase {
                 .isEqualTo("/admin/discount-codes");
         String check = "/customer/bookings/check-discount?code=" + code + "&roomId=" + room.getId() + "&checkIn=" + in.plusDays(30)
                 + "&checkOut=" + in.plusDays(31);
-        assertThat(new Browser().get(check).body()).contains("\"valid\":true");
+        assertThat(customerBrowser.get(check).body()).contains("\"valid\":true");
         Long id = discountCodeRepository.findByCodeAndActiveTrue(code).orElseThrow().getId();
         admin.get("/admin/discount-codes");
         admin.post("/admin/discount-codes/" + id + "/toggle-active", form());
-        assertThat(new Browser().get(check).body()).contains("\"valid\":false").contains("ngừng áp dụng");
+        assertThat(customerBrowser.get(check).body()).contains("\"valid\":false").contains("ngừng áp dụng");
     }
 
     @Test

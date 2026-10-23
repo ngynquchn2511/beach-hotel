@@ -291,7 +291,7 @@ class AdminOperationsParamIT extends ItFixtures {
         DiscountCode dc = persistCode("TGL" + seq(), DiscountType.PERCENTAGE, 10, null, initial);
         mockMvc.perform(post("/admin/discount-codes/{id}/toggle-active", dc.getId()).with(csrf()).with(as(admin)))
                 .andExpect(redirectedUrl("/admin/discount-codes"));
-        mockMvc.perform(get("/customer/bookings/check-discount").param("code", dc.getCode()).param("roomId", room.getId().toString())
+        mockMvc.perform(get("/customer/bookings/check-discount").with(asNewCustomer()).param("code", dc.getCode()).param("roomId", room.getId().toString())
                         .param("checkIn", LocalDate.now().plusDays(2).toString()).param("checkOut", LocalDate.now().plusDays(3).toString()))
                 .andExpect(jsonPath("$.valid").value(usable));
     }

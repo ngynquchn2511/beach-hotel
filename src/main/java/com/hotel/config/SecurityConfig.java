@@ -185,11 +185,15 @@ public class SecurityConfig {
                                 "/css/**", "/js/**", "/images/**", "/uploads/**", "/page-images/**").permitAll()
                         // Chatbot tu van - khach chua dang nhap cung phai hoi duoc
                         .requestMatchers("/api/chatbot/**").permitAll()
-                        // Tim phong, xem chi tiet phong, dat phong, kiem tra ma giam gia, xem lai 1 don vua dat
-                        // KHONG can dang nhap - khach nhap ho ten/email/SDT ngay luc dat phong
-                        .requestMatchers("/customer/rooms", "/customer/rooms/*",
-                                "/customer/bookings/new", "/customer/bookings/check-discount",
-                                "/customer/bookings/*").permitAll()
+                        // Khach vang lai chi duoc XEM: dat phong (1 phong / nhieu phong) va kiem tra ma giam gia
+                        // bat buoc dang nhap tai khoan khach hang. Phai dat TRUOC "/customer/bookings/*" ben duoi
+                        // (mau do cung khop "/customer/bookings/new"). Chua dang nhap -> chuyen ve /login, dang
+                        // nhap xong quay lai dung trang dat phong (CustomerPortalSuccessHandler)
+                        .requestMatchers("/customer/bookings/new", "/customer/bookings/check-discount",
+                                "/customer/bookings/group/new").hasRole("CUSTOMER")
+                        // Tim phong, xem chi tiet phong khong can dang nhap; xem lai 1 don qua link ?token=
+                        // (don le tan tao tai quay / don OTA cho khach khong co tai khoan)
+                        .requestMatchers("/customer/rooms", "/customer/rooms/*", "/customer/bookings/*").permitAll()
                         // Dat / huy dich vu them (tour lan, xe dua don) tren trang don - khach vang lai dung ?token=
                         // (kiem tra quyen trong BookingService.findForViewing giong trang xem don)
                         .requestMatchers("/customer/bookings/*/tours", "/customer/bookings/*/tours/*/cancel",
@@ -217,8 +221,8 @@ public class SecurityConfig {
                                 "/customer/bookings/*/facility/*/rate").permitAll()
                         .requestMatchers(HttpMethod.POST, "/customer/bookings/*/upgrade/*/accept", "/customer/bookings/*/upgrade/*/decline").permitAll()
                         .requestMatchers(HttpMethod.POST, "/customer/bookings/*/requests", "/customer/bookings/*/messages").permitAll()
-                        // Dat nhieu phong 1 lan (khach vang lai dung ?token= cua nhom)
-                        .requestMatchers("/customer/bookings/group/new", "/customer/bookings/group/*",
+                        // Xem / huy don nhieu phong qua ?token= cua nhom (dat moi da chan o tren)
+                        .requestMatchers("/customer/bookings/group/*",
                                 "/customer/bookings/group/*/cancel").permitAll()
                         // "Bao toi khi phong trong lai" o trang chi tiet phong - khach chua dang nhap cung dung duoc
                         .requestMatchers(HttpMethod.POST, "/customer/rooms/*/alerts").permitAll()

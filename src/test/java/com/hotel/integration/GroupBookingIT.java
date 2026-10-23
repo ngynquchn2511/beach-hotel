@@ -42,7 +42,7 @@ class GroupBookingIT extends ItFixtures {
     }
 
     private ResultActions create(Room... rooms) throws Exception {
-        MockHttpServletRequestBuilder req = post("/customer/bookings/group/new").with(csrf())
+        MockHttpServletRequestBuilder req = post("/customer/bookings/group/new").with(csrf()).with(asNewCustomer())
                 .param("checkIn", in.toString()).param("checkOut", out.toString())
                 .param("checkInTime", "14:00").param("checkOutTime", "12:00")
                 .param("guestName", "Gia Đình Nguyễn").param("guestPhone", "0912345678").param("guestEmail", "doan@mail.vn");
@@ -66,7 +66,7 @@ class GroupBookingIT extends ItFixtures {
         settings.setDepositPercent(30);
         settingsRepository.save(settings);
 
-        mockMvc.perform(get("/customer/bookings/group/new").param("checkIn", in.toString()).param("checkOut", out.toString())
+        mockMvc.perform(get("/customer/bookings/group/new").with(asNewCustomer()).param("checkIn", in.toString()).param("checkOut", out.toString())
                         .param("roomIds", a.getId().toString()).param("roomIds", b.getId().toString()))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("3.200.000 VND")));
@@ -102,7 +102,7 @@ class GroupBookingIT extends ItFixtures {
     void roomCountAndGuestLimits() throws Exception {
         create(a).andExpect(model().attribute("errorMessage", containsString("từ 2 đến 5")));
         assertThat(groupRepository.count()).isZero();
-        mockMvc.perform(post("/customer/bookings/group/new").with(csrf())
+        mockMvc.perform(post("/customer/bookings/group/new").with(csrf()).with(asNewCustomer())
                         .param("checkIn", in.toString()).param("checkOut", out.toString())
                         .param("guestName", "X").param("guestPhone", "0912345678").param("guestEmail", "x@mail.vn")
                         .param("roomIds", a.getId().toString()).param("guests_" + a.getId(), "5")

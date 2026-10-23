@@ -51,6 +51,11 @@ abstract class ItFixtures {
         return user(new CustomUserDetails(u));
     }
 
+    // Dat phong bat buoc dang nhap: moi lan goi la 1 khach hang NEW moi (khong vuong gioi han dung ma / diem)
+    protected RequestPostProcessor asNewCustomer() {
+        return as(persistUser(UserRole.CUSTOMER, CustomerType.NEW));
+    }
+
     protected RoomType persistRoomType(String name, long price, int maxGuests) {
         return roomTypeRepository.save(RoomType.builder().name(name).basePrice(BigDecimal.valueOf(price)).maxGuests(maxGuests).build());
     }

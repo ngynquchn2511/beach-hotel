@@ -145,7 +145,7 @@ public class CustomerBookingController {
         return "customer/booking-history";
     }
 
-    // Trang xac nhan dat phong - KHONG bat buoc dang nhap, khach nhap ho ten/email/SDT truc tiep
+    // Trang xac nhan dat phong - bat buoc dang nhap (SecurityConfig), dien san ho ten/email/SDT tu tai khoan
     @GetMapping("/new")
     public String confirmForm(
             @RequestParam Long roomId,
@@ -171,8 +171,7 @@ public class CustomerBookingController {
                 request.setCheckOutTime(availability.latestCheckOut());
             }
         }
-        // Neu da dang nhap thi dien san thong tin tu tai khoan, khach van sua duoc.
-        // Neu chua dang nhap (khach vang lai) thi de trong, khach tu nhap.
+        // Dien san thong tin tu tai khoan, khach van sua duoc (vd. dat ho nguoi khac)
         if (userDetails != null) {
             request.setGuestName(userDetails.getUser().getFullName());
             request.setGuestPhone(userDetails.getUser().getPhoneNumber());
@@ -206,24 +205,19 @@ public class CustomerBookingController {
         }
 
         try {
-            // Neu da dang nhap thi dung dung tai khoan do. Neu chua dang nhap (khach vang lai qua web)
-            // thi tu tim/tao tai khoan theo email de gan vao booking, khach khong can biet minh "co tai khoan"
-            User customer = (userDetails != null)
-                    ? userDetails.getUser()
-                    : customerManagementService.findOrCreateGuestCustomer(
-                            request.getGuestName(), request.getGuestEmail(), request.getGuestPhone());
+            // Don luon gan vao tai khoan dang dang nhap (khach vang lai khong dat duoc - SecurityConfig)
+            User customer = userDetails.getUser();
 
             // Hoa don cong ty: kiem tra truoc khi tao don (sai MST thi bao loi, khong tao don)
             com.hotel.service.CompanyInvoiceService.Info companyInfo = wantCompanyInvoice
                     ? com.hotel.service.CompanyInvoiceService.validate(companyName, taxCode, companyAddress, invoiceEmail) : null;
-            // Chi khach dang nhap moi dung diem thuong (khach vang lai khong co so du de tru)
-            int points = userDetails != null && request.getPointsToUse() != null ? request.getPointsToUse() : 0;
+            int points = request.getPointsToUse() != null ? request.getPointsToUse() : 0;
             Booking booking = bookingService.createBooking(
                     customer, roomId, checkIn, checkOut,
                     request.getCheckInTime(), request.getCheckOutTime(),
                     guests, comboId, request.getDiscountCode(),
                     request.getGuestName(), request.getGuestPhone(), request.getGuestEmail(), points,
-                    request.getGiftCode(), userDetails != null, Boolean.TRUE.equals(request.getNonRefundable())
+                    request.getGiftCode(), true, Boolean.TRUE.equals(request.getNonRefundable())
             );
             if ((request.getRequestTags() != null && !request.getRequestTags().isEmpty())
                     || (request.getSpecialRequests() != null && !request.getSpecialRequests().isBlank())) {
@@ -232,7 +226,7 @@ public class CustomerBookingController {
             if (companyInfo != null) {
                 companyInvoiceService.save(booking, companyInfo);
             }
-            // Kem ma truy cap de khach vang lai xem lai duoc don (khong can dang nhap)
+            // Kem ma truy cap de link van mo duoc khi phien dang nhap het han
             return "redirect:/customer/bookings/" + booking.getId() + "?token=" + booking.getAccessToken();
         } catch (BusinessException ex) {
             model.addAttribute("errorMessage", userMessages.of(ex));

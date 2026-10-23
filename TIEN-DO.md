@@ -1,7 +1,7 @@
 # Tiến độ dự án Sóng Xanh Resort (beach-hotel)
 
 > File bàn giao giữa các phiên làm việc với Claude. Mở phiên mới, bảo Claude: **"đọc file TIEN-DO.md"**.
-> Cập nhật lần cuối: 20/10/2026, sau đợt 12 (chuyển 28 sơ đồ chương 2 sang đen trắng, soát lại nét; sắp xếp lại chương 3 / 4 của báo cáo; thêm Hình 3.173 lịch .ics mở trong Outlook; vẽ lại biểu đồ chương 2 theo báo cáo tham khảo `docs/bieudothamkhao.pdf`).
+> Cập nhật lần cuối: 23/10/2026, sau đợt 15 (khách vãng lai chỉ xem, đặt phòng bắt buộc đăng nhập).
 
 ## 1. Dự án
 
@@ -33,6 +33,11 @@
    - MockMvc đọc JSON không charset là ISO-8859-1: dùng `getContentAsString(StandardCharsets.UTF_8)`.
 
 ## 3. Đã làm (theo thứ tự gần nhất trước)
+
+### Đợt 15 (23/10/2026) - Khách vãng lai chỉ được xem, muốn đặt phòng phải đăng nhập
+| Commit | Chức năng |
+|---|---|
+| (xem `git log`) | **Đặt phòng bắt buộc đăng nhập** theo yêu cầu chủ dự án: `SecurityConfig` chuyển `/customer/bookings/new`, `/customer/bookings/check-discount`, `/customer/bookings/group/new` sang `hasRole("CUSTOMER")` (đặt **trước** mẫu `/customer/bookings/*` vì mẫu đó cũng khớp `/new`). Khách vãng lai bấm đặt → về `/login` kèm lời nhắc «chỉ xem được phòng, đăng nhập / đăng ký để đặt» (`AuthController` đọc request đã lưu); đăng nhập xong `CustomerPortalSuccessHandler` đưa về đúng trang đặt phòng đang dở (link có thêm `&continue` của Spring Security). Trang chi tiết phòng: khách chưa đăng nhập thấy nút «Đăng nhập để đặt phòng» + link Đăng ký. Bỏ nhánh tự tạo tài khoản ẩn (`findOrCreateGuestCustomer`) ở 2 controller đặt phòng; câu hướng dẫn trên trang xác nhận và chatbot sửa theo. **Giữ** link `?token=` để xem / hủy / cọc / đặt dịch vụ cho đơn đã có (đơn lễ tân tạo tại quầy, đơn OTA, đơn cũ). Vẫn không cần đăng nhập: xem / tìm phòng, chatbot, liên hệ, «báo tôi khi phòng trống», mua thẻ quà tặng. Sửa 14 lớp test cũ (helper `ItFixtures.asNewCustomer()`), thêm test khách vãng lai bị chuyển về đăng nhập và quay lại sau khi đăng nhập. **Lưu ý tài liệu**: use case / báo cáo / slide đang vẽ theo quy ước cũ (Khách vãng lai đặt phòng không cần đăng nhập) → cần vẽ lại: Khách vãng lai chỉ còn xem phòng, tìm phòng, chatbot, liên hệ, đăng ký; các UC đặt phòng chuyển sang Khách hàng và include Đăng nhập |
 
 ### Đợt 14 (21/10/2026) - Use case phân rã có Đăng nhập, làm lại slide
 | Commit | Chức năng |

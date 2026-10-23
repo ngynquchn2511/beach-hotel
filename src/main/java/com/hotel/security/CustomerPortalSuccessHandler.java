@@ -32,14 +32,23 @@ public class CustomerPortalSuccessHandler extends SimpleUrlAuthenticationSuccess
             return;
         }
 
-        // Bam "Dat tour nay" khi chua dang nhap -> dang nhap xong quay lai dung buoc chon don dat tour
+        // Bam "Dat tour nay" / "Dat phong ngay" khi chua dang nhap -> dang nhap xong quay lai dung trang dang do
         SavedRequest saved = requestCache.getRequest(request, response);
-        if (saved != null && "GET".equals(saved.getMethod())
-                && java.net.URI.create(saved.getRedirectUrl()).getPath().startsWith("/customer/services/tours/")) {
+        if (saved != null && "GET".equals(saved.getMethod()) && isResumable(saved)) {
             requestCache.removeRequest(request, response);
             getRedirectStrategy().sendRedirect(request, response, saved.getRedirectUrl());
             return;
         }
         getRedirectStrategy().sendRedirect(request, response, "/customer/rooms");
+    }
+
+    private static boolean isResumable(SavedRequest saved) {
+        String path = java.net.URI.create(saved.getRedirectUrl()).getPath();
+        return path.startsWith("/customer/services/tours/") || isBookingPath(path);
+    }
+
+    // Trang dat phong moi (1 phong / nhieu phong) - khach vang lai bi chuyen ve /login khi mo
+    public static boolean isBookingPath(String path) {
+        return "/customer/bookings/new".equals(path) || "/customer/bookings/group/new".equals(path);
     }
 }

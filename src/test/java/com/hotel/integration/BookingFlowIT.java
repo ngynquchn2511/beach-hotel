@@ -50,12 +50,65 @@ class BookingFlowIT {
                 .password(passwordEncoder.encode("Abc12345")).role(UserRole.CUSTOMER).customerType(CustomerType.NEW).build());
     }
 
+    // Khach vang lai chi xem: mo trang dat phong / gui form dat phong / kiem tra ma -> chuyen ve /login, khong tao don
     @Test
-    void createBooking_asGuest_succeedsAndRedirectsToBookingView() throws Exception {
+    void anonymousGuest_cannotBook_redirectedToLogin() throws Exception {
+        LocalDate in = LocalDate.now().plusDays(5);
+        long before = bookingRepository.count();
+
+        mockMvc.perform(get("/customer/bookings/new").param("roomId", room.getId().toString())
+                        .param("checkIn", in.toString()).param("checkOut", in.plusDays(2).toString()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrlPattern("**/login"));
+        mockMvc.perform(post("/customer/bookings/new").with(csrf())
+                        .param("roomId", room.getId().toString())
+                        .param("checkIn", in.toString()).param("checkOut", in.plusDays(2).toString())
+                        .param("checkInTime", "14:00").param("checkOutTime", "12:00")
+                        .param("guestName", "Khach Vang Lai").param("guestPhone", "0909001122").param("guestEmail", "guest.flow@mail.com"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrlPattern("**/login"));
+        mockMvc.perform(get("/customer/bookings/check-discount").param("code", "X").param("roomId", room.getId().toString())
+                        .param("checkIn", in.toString()).param("checkOut", in.plusDays(1).toString()))
+                .andExpect(redirectedUrlPattern("**/login"));
+        mockMvc.perform(get("/customer/bookings/group/new").param("checkIn", in.toString()).param("checkOut", in.plusDays(1).toString()))
+                .andExpect(redirectedUrlPattern("**/login"));
+
+        assertEquals(before, bookingRepository.count());
+        org.junit.jupiter.api.Assertions.assertTrue(userRepository.findByEmail("guest.flow@mail.com").isEmpty(),
+                "khong con tu tao tai khoan an cho khach vang lai");
+        // Xem phong van khong can dang nhap
+        mockMvc.perform(get("/customer/rooms/{id}", room.getId())
+                        .param("checkIn", in.toString()).param("checkOut", in.plusDays(2).toString()))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Đăng nhập để đặt phòng")));
+    }
+
+    // Bi chuyen ve /login tu trang dat phong: trang dang nhap bao ly do, dang nhap xong quay lai dung trang dat phong
+    @Test
+    void anonymousGuest_loginThenResumesBooking() throws Exception {
+        persistCustomer("resume.flow@mail.com");
+        LocalDate in = LocalDate.now().plusDays(6);
+        String bookUrl = "/customer/bookings/new?roomId=" + room.getId() + "&checkIn=" + in + "&checkOut=" + in.plusDays(1);
+        org.springframework.mock.web.MockHttpSession session = new org.springframework.mock.web.MockHttpSession();
+
+        mockMvc.perform(get(bookUrl).session(session)).andExpect(redirectedUrlPattern("**/login"));
+        mockMvc.perform(get("/login").session(session))
+                .andExpect(model().attribute("bookingLoginRequired", true));
+        mockMvc.perform(post("/login").session(session).with(csrf())
+                        .param("username", "resume.flow@mail.com").param("password", "Abc12345"))
+                // Spring Security them "&continue" vao link quay lai
+                .andExpect(header().string("Location", org.hamcrest.Matchers.startsWith("http://localhost" + bookUrl)));
+        // Mo /login binh thuong (khong tu trang dat phong) thi khong hien thong bao
+        mockMvc.perform(get("/login")).andExpect(model().attributeDoesNotExist("bookingLoginRequired"));
+    }
+
+    @Test
+    void createBooking_asCustomer_succeedsAndRedirectsToBookingView() throws Exception {
         LocalDate in = LocalDate.now().plusDays(5);
         LocalDate out = LocalDate.now().plusDays(7);
+        User me = persistCustomer("guest.flow@mail.com");
 
-        mockMvc.perform(post("/customer/bookings/new").with(csrf())
+        mockMvc.perform(post("/customer/bookings/new").with(csrf()).with(user(new CustomUserDetails(me)))
                         .param("roomId", room.getId().toString())
                         .param("checkIn", in.toString())
                         .param("checkOut", out.toString())
@@ -83,7 +136,7 @@ class BookingFlowIT {
                 .totalAmount(BigDecimal.valueOf(800000)).discountAmount(BigDecimal.ZERO).status(BookingStatus.PENDING).build());
         long before = bookingRepository.count();
 
-        mockMvc.perform(post("/customer/bookings/new").with(csrf())
+        mockMvc.perform(post("/customer/bookings/new").with(csrf()).with(user(new CustomUserDetails(persistCustomer("overlap2@mail.com"))))
                         .param("roomId", room.getId().toString())
                         .param("checkIn", in.toString())
                         .param("checkOut", out.toString())
@@ -142,9 +195,10 @@ class BookingFlowIT {
     }
 
     @Test
-    void createBooking_asGuest_redirectLinkContainsWorkingAccessToken() throws Exception {
+    void createBooking_redirectLinkContainsAccessToken_worksWithoutSession() throws Exception {
         LocalDate in = LocalDate.now().plusDays(20);
         String location = mockMvc.perform(post("/customer/bookings/new").with(csrf())
+                        .with(user(new CustomUserDetails(persistCustomer("token.flow@mail.com"))))
                         .param("roomId", room.getId().toString())
                         .param("checkIn", in.toString()).param("checkOut", in.plusDays(1).toString())
                         .param("checkInTime", "14:00").param("checkOutTime", "12:00")
@@ -173,7 +227,7 @@ class BookingFlowIT {
 
     @Test
     void checkDiscountCode_unknownCode_returnsInvalidJson() throws Exception {
-        mockMvc.perform(get("/customer/bookings/check-discount")
+        mockMvc.perform(get("/customer/bookings/check-discount").with(user(new CustomUserDetails(persistCustomer("disc.flow@mail.com"))))
                         .param("code", "KHONGTONTAI")
                         .param("roomId", room.getId().toString())
                         .param("checkIn", LocalDate.now().plusDays(1).toString())

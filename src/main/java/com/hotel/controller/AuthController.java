@@ -32,7 +32,14 @@ public class AuthController {
     // ?locked=temp&minutes=N (tu failure handler khi khoa tam) - doc so phut o day (gioi han 1..LOCK_MINUTES)
     // vi template hien thong bao bang th:utext, khong duoc doc thang tham so request
     @GetMapping("/login")
-    public String loginPage(@RequestParam(required = false) String minutes, Model model) {
+    public String loginPage(@RequestParam(required = false) String minutes, Model model,
+                            jakarta.servlet.http.HttpServletRequest request, jakarta.servlet.http.HttpServletResponse response) {
+        // Khach vang lai bam dat phong -> Spring Security luu lai trang dat phong roi chuyen ve day
+        var saved = new org.springframework.security.web.savedrequest.HttpSessionRequestCache().getRequest(request, response);
+        if (saved != null && com.hotel.security.CustomerPortalSuccessHandler.isBookingPath(
+                java.net.URI.create(saved.getRedirectUrl()).getPath())) {
+            model.addAttribute("bookingLoginRequired", true);
+        }
         int lockMinutes = com.hotel.security.LoginAttemptService.LOCK_MINUTES;
         try {
             lockMinutes = Math.min(lockMinutes, Math.max(1, Integer.parseInt(minutes)));

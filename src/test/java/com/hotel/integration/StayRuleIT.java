@@ -43,7 +43,7 @@ class StayRuleIT extends ItFixtures {
     }
 
     private ResultActions book(Room room, LocalDate in, LocalDate out) throws Exception {
-        return mockMvc.perform(post("/customer/bookings/new").with(csrf())
+        return mockMvc.perform(post("/customer/bookings/new").with(csrf()).with(asNewCustomer())
                 .param("roomId", room.getId().toString()).param("checkIn", in.toString()).param("checkOut", out.toString())
                 .param("guests", "2").param("checkInTime", "14:00").param("checkOutTime", "12:00")
                 .param("guestName", "Khách Luật").param("guestPhone", "0909001122").param("guestEmail", "luat" + seq() + "@mail.vn"));

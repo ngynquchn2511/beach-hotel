@@ -47,7 +47,7 @@ class StaffNotificationIT extends ItFixtures {
     @Test
     void newOnlineBooking_and_contactMessage_notifyStaffAfterCommit() throws Exception {
         LocalDate in = LocalDate.now().plusDays(40);
-        mockMvc.perform(post("/customer/bookings/new").with(csrf())
+        mockMvc.perform(post("/customer/bookings/new").with(csrf()).with(asNewCustomer())
                         .param("roomId", room.getId().toString()).param("checkIn", in.toString()).param("checkOut", in.plusDays(2).toString())
                         .param("guests", "2").param("checkInTime", "14:00").param("checkOutTime", "12:00")
                         .param("guestName", "Khách Thông Báo").param("guestPhone", "0909001122").param("guestEmail", "tb@mail.vn"))

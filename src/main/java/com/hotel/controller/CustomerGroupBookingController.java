@@ -100,13 +100,13 @@ public class CustomerGroupBookingController {
             }
         });
         try {
-            User customer = userDetails != null ? userDetails.getUser()
-                    : customerManagementService.findOrCreateGuestCustomer(guestName, guestEmail, guestPhone);
+            // Dat nhieu phong bat buoc dang nhap (SecurityConfig) - gan vao tai khoan dang dung
+            User customer = userDetails.getUser();
             BookingGroup group = bookingService.createGroupBooking(customer, roomIds, checkIn, checkOut,
                     checkInTime != null ? checkInTime : StayTimePolicy.STANDARD_CHECK_IN,
                     checkOutTime != null ? checkOutTime : StayTimePolicy.STANDARD_CHECK_OUT,
                     guests, guestName, guestPhone, guestEmail, discountCode,
-                    userDetails != null && pointsToUse != null ? pointsToUse : 0, giftCode, userDetails != null,
+                    pointsToUse != null ? pointsToUse : 0, giftCode, true,
                     Boolean.TRUE.equals(nonRefundable));
             return "redirect:/customer/bookings/group/" + group.getId() + "?token=" + group.getAccessToken();
         } catch (BusinessException ex) {

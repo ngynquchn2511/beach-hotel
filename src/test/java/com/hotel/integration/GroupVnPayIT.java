@@ -53,7 +53,7 @@ class GroupVnPayIT extends ItFixtures {
         Room a = persistRoom(type, 800_000, RoomStatus.AVAILABLE);
         Room b = persistRoom(type, 800_000, RoomStatus.AVAILABLE);
         LocalDate in = LocalDate.now().plusDays(25);
-        MockHttpServletRequestBuilder req = post("/customer/bookings/group/new").with(csrf())
+        MockHttpServletRequestBuilder req = post("/customer/bookings/group/new").with(csrf()).with(asNewCustomer())
                 .param("checkIn", in.toString()).param("checkOut", in.plusDays(2).toString())
                 .param("checkInTime", "14:00").param("checkOutTime", "12:00")
                 .param("guestName", "Gia Đình Trần").param("guestPhone", "0912345678").param("guestEmail", "doan@mail.vn");
