@@ -1,7 +1,7 @@
 # Tiến độ dự án Sóng Xanh Resort (beach-hotel)
 
 > File bàn giao giữa các phiên làm việc với Claude. Mở phiên mới, bảo Claude: **"đọc file TIEN-DO.md"**.
-> Cập nhật lần cuối: 23/10/2026, sau đợt 18 (vẽ lại use case tổng quát + phân rã 1-5 theo kiểu chủ dự án vẽ).
+> Cập nhật lần cuối: 23/10/2026, sau đợt 17 (bắt buộc đăng nhập, sơ đồ vẽ «include» Đăng nhập).
 
 ## 1. Dự án
 
@@ -33,11 +33,6 @@
    - MockMvc đọc JSON không charset là ISO-8859-1: dùng `getContentAsString(StandardCharsets.UTF_8)`.
 
 ## 3. Đã làm (theo thứ tự gần nhất trước)
-
-### Đợt 18 (23/10/2026) - Vẽ lại use case tổng quát và phân rã 1-5 theo kiểu chủ dự án tự vẽ
-| Commit | Chức năng |
-|---|---|
-| (xem `git log`) | Chủ dự án tự vẽ lại `ucn1..3` và BFD trong draw.io rồi bảo «dựa vào cách vẽ 1 2 3 sửa lại use case tổng quát và 4 5», «sửa lại 1 2 3 luôn». Kiểu vẽ: tác nhân đứng hết bên trái, «Người dùng» trên cùng nối thẳng tới «Đăng nhập» (góc trên phải khung), mỗi chức năng cần đăng nhập có 1 mũi tên «include» riêng có nhãn tới Đăng nhập. Sửa theo nhận xét: mũi tên tổng quát hóa chỉ vào tác nhân cha (bản tự vẽ bị ngược), use case gắn đúng tác nhân (không gắn hết cho Người dùng), khung có tên hệ thống. Sinh bằng `docs/so-do-rut-gon-dang-lam/uc_v2.py` (`uc0`, `ucn1..5`); `ucn6` và `uc1..9` vẫn theo `uc.py` cũ. Bản tự vẽ `ucn1..3` của chủ dự án chép dự phòng ở thư mục tạm của phiên (`bak/user-ve`). Báo cáo thay 6 hình + sửa mô tả dưới Hình 2.2, 2.3, 2.5, 2.7; 337 trang. Slide thay hình use case tổng quát. **Chưa đụng**: BFD và `uc8` chủ dự án đang sửa dở (chưa commit, báo cáo vẫn dùng BFD cũ) |
 
 ### Đợt 17 (23/10/2026) - Mọi chức năng của khách bắt buộc đăng nhập; sơ đồ vẽ «include» Đăng nhập
 | Commit | Chức năng |
