@@ -100,6 +100,11 @@ public class AdminBookingController {
         model.addAttribute("requestTagOptions", com.hotel.entity.GuestRequestTag.values());
         model.addAttribute("messages", messageService.thread(id));
         model.addAttribute("quickReplies", quickReplyService.forBooking(booking));
+        if (callReminderService != null) {
+            model.addAttribute("calls", callReminderService.forBooking(id));
+            model.addAttribute("callPurposes", com.hotel.entity.CallReminder.Purpose.values());
+            model.addAttribute("callResults", com.hotel.entity.CallReminder.Result.values());
+        }
         messageService.markReadByStaff(id);
         model.addAttribute("upgradeCandidates", upgradeService.candidates(booking));
         // So lan khach nay khong den o cac don KHAC (canh bao nen yeu cau coc)
@@ -411,6 +416,12 @@ public class AdminBookingController {
 
     private com.hotel.service.BookingMessageService messageService;
     private com.hotel.service.QuickReplyService quickReplyService;
+    private com.hotel.service.CallReminderService callReminderService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setCallReminderService(com.hotel.service.CallReminderService callReminderService) {
+        this.callReminderService = callReminderService;
+    }
 
     @org.springframework.beans.factory.annotation.Autowired
     void setQuickReplyService(com.hotel.service.QuickReplyService quickReplyService) {

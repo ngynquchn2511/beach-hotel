@@ -56,7 +56,8 @@ import org.springframework.web.bind.annotation.ModelAttribute;
         AdminProfitController.class,
         AdminInsightController.class,
         AdminBudgetController.class,
-        AdminRevenueForecastController.class
+        AdminRevenueForecastController.class,
+        AdminCallReminderController.class
 })
 public class AdminSidebarModelAdvice {
 
@@ -85,6 +86,19 @@ public class AdminSidebarModelAdvice {
     @ModelAttribute("unreadMessageCount")
     public long unreadMessageCount() {
         return messageService != null ? messageService.unreadForStaff() : 0;
+    }
+
+    // So khach can goi nhac (sap den / sap het han coc) - hien so o muc "Goi nhac khach"
+    private com.hotel.service.CallReminderService callReminderService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setCallReminderService(com.hotel.service.CallReminderService callReminderService) {
+        this.callReminderService = callReminderService;
+    }
+
+    @ModelAttribute("callsDueCount")
+    public long callsDueCount() {
+        return callReminderService != null ? callReminderService.countDue() : 0;
     }
 
     @ModelAttribute("pendingFacilityCount")

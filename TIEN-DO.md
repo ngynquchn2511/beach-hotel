@@ -1,7 +1,7 @@
 # Tiến độ dự án Sóng Xanh Resort (beach-hotel)
 
 > File bàn giao giữa các phiên làm việc với Claude. Mở phiên mới, bảo Claude: **"đọc file TIEN-DO.md"**.
-> Cập nhật lần cuối: 23/10/2026, sau đợt 18 (chatbot, liên hệ bắt buộc đăng nhập; chủ dự án tự vẽ lại sơ đồ).
+> Cập nhật lần cuối: 25/10/2026, sau đợt 19 (lễ tân gọi điện nhắc khách).
 
 ## 1. Dự án
 
@@ -33,6 +33,11 @@
    - MockMvc đọc JSON không charset là ISO-8859-1: dùng `getContentAsString(StandardCharsets.UTF_8)`.
 
 ## 3. Đã làm (theo thứ tự gần nhất trước)
+
+### Đợt 19 (25/10/2026) - Lễ tân gọi điện nhắc khách
+| Commit | Chức năng |
+|---|---|
+| (xem `git log`) | Theo yêu cầu chủ dự án «thêm 1 cái để nhân viên gọi điện nhắc khách hàng». Trang **`/admin/call-reminders`** «Gọi nhắc khách» (STAFF + ADMIN, sidebar nhóm Quầy lễ tân, số đỏ = số khách cần gọi). Danh sách tự lập: khách đến nhận phòng trong `ARRIVAL_DAYS`=2 ngày tới (đơn chờ xác nhận / đã xác nhận) và đơn chưa chuyển cọc có hạn cọc trong `DEPOSIT_HOURS`=48 giờ tới. Mỗi dòng có nút `tel:` bấm gọi (số trên đơn, không có thì lấy số tài khoản), ô chọn kết quả + ghi chú. Kết quả «Không nghe máy», «Hẹn gọi lại» thì khách vẫn ở danh sách (hiện số lần đã gọi, lần gần nhất); «Khách xác nhận», «Khách muốn đổi / hủy», «Sai số» thì rời danh sách (theo từng mục đích: nhắc ngày đến, nhắc cọc). Lịch sử cuộc gọi phân trang ở dưới. Trang chi tiết đơn có khung «Cuộc gọi nhắc khách» (lịch sử + ghi nhanh, `back=booking`), số điện thoại khách thành link `tel:`. Bảng mới `call_reminders` (`CallReminder`, `CallReminderService`, `AdminCallReminderController`), migration `sql/2026-10-25_goi-nhac-khach.sql`. Test `CallReminderIT` |
 
 ### Đợt 18 (23/10/2026) - Chatbot và liên hệ bắt buộc đăng nhập; chủ dự án tự vẽ lại sơ đồ
 | Commit | Chức năng |

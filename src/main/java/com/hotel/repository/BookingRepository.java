@@ -106,6 +106,18 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             + "and b.depositDeadline > :now and b.depositDeadline <= :until")
     List<Booking> findDepositDueSoon(@Param("now") java.time.LocalDateTime now, @Param("until") java.time.LocalDateTime until);
 
+    // Danh sach goi nhac khach: don sap den (cho xac nhan / da xac nhan) trong khoang ngay
+    @Query("select b from Booking b join fetch b.room r join fetch r.roomType left join fetch b.customer "
+            + "where b.status in (com.hotel.entity.BookingStatus.PENDING, com.hotel.entity.BookingStatus.CONFIRMED) "
+            + "and b.checkInDate between :from and :to order by b.checkInDate, b.id")
+    List<Booking> findArrivalsToCall(@Param("from") LocalDate from, @Param("to") LocalDate to);
+
+    // Danh sach goi nhac khach: don chua chuyen coc, han coc trong khoang (now, until]
+    @Query("select b from Booking b join fetch b.room r join fetch r.roomType left join fetch b.customer "
+            + "where b.status = com.hotel.entity.BookingStatus.PENDING and b.depositAmount > 0 and b.depositPaidAt is null "
+            + "and b.depositDeadline > :now and b.depositDeadline <= :until order by b.depositDeadline, b.id")
+    List<Booking> findDepositsToCall(@Param("now") java.time.LocalDateTime now, @Param("until") java.time.LocalDateTime until);
+
     // Don can xuat hoa don cong ty: chua xuat len dau
     @Query("select b from Booking b join fetch b.room where b.invoiceTaxCode is not null "
             + "order by case when b.eInvoiceIssuedAt is null then 0 else 1 end, b.checkOutDate desc")

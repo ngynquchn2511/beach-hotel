@@ -50,6 +50,12 @@
         <span th:if="${arrivalsLeftToday != null and arrivalsLeftToday > 0}" class="badge rounded-pill bg-primary"
               th:text="${arrivalsLeftToday}" title="Khách đến hôm nay chưa nhận phòng"></span>
     </a>
+    <a th:href="@{/admin/call-reminders}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+       th:classappend="${p.startsWith('/admin/call-reminders')} ? 'active'">
+        <span><i class="bi bi-telephone-outbound"></i>Gọi nhắc khách</span>
+        <span th:if="${callsDueCount != null and callsDueCount > 0}" class="badge rounded-pill bg-primary"
+              th:text="${callsDueCount}" title="Khách cần gọi nhắc"></span>
+    </a>
     <a th:href="@{/admin/dashboard}" class="list-group-item list-group-item-action"
        th:classappend="${p.startsWith('/admin/dashboard')} ? 'active'"><i class="bi bi-speedometer2"></i>Tổng quan</a>
     <a th:href="@{/admin/forecast}" class="list-group-item list-group-item-action"

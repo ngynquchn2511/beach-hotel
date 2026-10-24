@@ -39,7 +39,8 @@
 
                 <h6 class="fw-bold mt-3">Thông tin khách</h6>
                 <p class="mb-1">Họ tên: <span th:text="${booking.guestName != null} ? ${booking.guestName} : ${booking.customer.fullName}"></span></p>
-                <p class="mb-1">Số điện thoại: <span th:text="${booking.guestPhone != null} ? ${booking.guestPhone} : ${booking.customer.phoneNumber}"></span></p>
+                <p class="mb-1" th:with="tel=${booking.guestPhone != null} ? ${booking.guestPhone} : ${booking.customer.phoneNumber}">Số điện thoại:
+                    <a th:if="${tel != null}" th:href="'tel:' + ${tel}" th:text="${tel}"></a></p>
                 <p class="mb-1">Loại khách hàng: <span th:text="${booking.customer.customerType.vietnameseLabel}"></span></p>
 
                 <h6 class="fw-bold mt-3">Thông tin phòng</h6>
@@ -186,6 +187,29 @@
                       th:action="@{/admin/bookings/{id}/invoice/email(id=${booking.id})}" method="post">
                     <button type="submit" class="btn btn-outline-secondary">Gửi hóa đơn qua email</button>
                 </form>
+
+                <div th:if="${calls != null}" class="border rounded p-3 my-3" id="cuoc-goi">
+                    <div class="fw-semibold mb-2"><i class="bi bi-telephone me-1"></i>Cuộc gọi nhắc khách</div>
+                    <div th:if="${#lists.isEmpty(calls)}" class="small text-muted mb-2">Chưa gọi lần nào.</div>
+                    <div th:each="c : ${calls}" class="small mb-1">
+                        <span th:text="${#temporals.format(c.calledAt, 'dd/MM HH:mm')}"></span> ·
+                        <span th:text="${c.purpose.label}"></span> ·
+                        <span class="badge" th:classappend="${c.result.badgeClass}" th:text="${c.result.label}"></span>
+                        <span th:if="${c.staffName != null}" class="text-muted" th:text="'· ' + ${c.staffName}"></span>
+                        <span th:if="${c.note != null}" th:text="'- ' + ${c.note}"></span>
+                    </div>
+                    <form th:action="@{/admin/call-reminders/{id}(id=${booking.id})}" method="post" class="row g-2 mt-1">
+                        <input type="hidden" name="back" value="booking">
+                        <div class="col-md-3"><select name="purpose" class="form-select form-select-sm" required>
+                            <option th:each="p : ${callPurposes}" th:value="${p}" th:text="${p.label}"
+                                    th:selected="${p.name() == 'DEPOSIT' and booking.awaitingDeposit}"></option></select></div>
+                        <div class="col-md-3"><select name="result" class="form-select form-select-sm" required>
+                            <option value="">-- Kết quả --</option>
+                            <option th:each="r : ${callResults}" th:value="${r}" th:text="${r.label}"></option></select></div>
+                        <div class="col-md-4"><input type="text" name="note" class="form-control form-control-sm" maxlength="300" placeholder="Ghi chú"></div>
+                        <div class="col-md-2"><button type="submit" class="btn btn-sm btn-outline-primary w-100">Ghi</button></div>
+                    </form>
+                </div>
 
                 <div class="border rounded p-3 my-3" id="tin-nhan">
                     <div class="fw-semibold mb-2"><i class="bi bi-chat-dots me-1"></i>Tin nhắn với khách</div>
