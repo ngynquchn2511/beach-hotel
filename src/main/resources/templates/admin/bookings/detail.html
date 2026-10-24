@@ -200,13 +200,13 @@
                     </div>
                     <form th:action="@{/admin/call-reminders/{id}(id=${booking.id})}" method="post" class="row g-2 mt-1">
                         <input type="hidden" name="back" value="booking">
-                        <div class="col-md-3"><select name="purpose" class="form-select form-select-sm" required>
+                        <div class="col-md-4"><select name="purpose" class="form-select form-select-sm" required>
                             <option th:each="p : ${callPurposes}" th:value="${p}" th:text="${p.label}"
                                     th:selected="${p.name() == 'DEPOSIT' and booking.awaitingDeposit}"></option></select></div>
                         <div class="col-md-3"><select name="result" class="form-select form-select-sm" required>
                             <option value="">-- Kết quả --</option>
                             <option th:each="r : ${callResults}" th:value="${r}" th:text="${r.label}"></option></select></div>
-                        <div class="col-md-4"><input type="text" name="note" class="form-control form-control-sm" maxlength="300" placeholder="Ghi chú"></div>
+                        <div class="col-md-3"><input type="text" name="note" class="form-control form-control-sm" maxlength="300" placeholder="Ghi chú"></div>
                         <div class="col-md-2"><button type="submit" class="btn btn-sm btn-outline-primary w-100">Ghi</button></div>
                     </form>
                 </div>

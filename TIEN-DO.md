@@ -1,7 +1,7 @@
 # Tiến độ dự án Sóng Xanh Resort (beach-hotel)
 
 > File bàn giao giữa các phiên làm việc với Claude. Mở phiên mới, bảo Claude: **"đọc file TIEN-DO.md"**.
-> Cập nhật lần cuối: 25/10/2026, sau đợt 19 (lễ tân gọi điện nhắc khách).
+> Cập nhật lần cuối: 25/10/2026, sau đợt 20 (sơ đồ chủ dự án tự vẽ đưa vào báo cáo; gọi nhắc khách vào báo cáo, slide).
 
 ## 1. Dự án
 
@@ -33,6 +33,11 @@
    - MockMvc đọc JSON không charset là ISO-8859-1: dùng `getContentAsString(StandardCharsets.UTF_8)`.
 
 ## 3. Đã làm (theo thứ tự gần nhất trước)
+
+### Đợt 20 (25/10/2026) - Báo cáo dùng sơ đồ chủ dự án tự vẽ; gọi nhắc khách vào báo cáo và slide
+| Commit | Chức năng |
+|---|---|
+| (xem `git log`) | **Sơ đồ** theo yêu cầu «thay sơ đồ phân cấp chức năng, use case tổng quát và 5 sơ đồ tôi vẽ vào word luôn, những use case tôi không vẽ hãy bỏ khỏi word»: báo cáo dùng đúng 7 hình chủ dự án vẽ (`phan-cap-chuc-nang`, `uc0-tong-quat`, `ucn1..3`, `uc8-cham-soc-khach`, `uc7-lai-lo-ai`; ảnh `docs/hinh/*.png`, nguồn `.drawio` commit kèm). Bỏ khỏi Word: phân rã `ucn4..6` (mục 2.3.4 - 2.3.6) và 7 use case đặc tả `uc1..6`, `uc9` (mục 2.4 cũ cùng bảng đặc tả). Mục 2.3 còn 3 nhóm, mục 2.4 còn 2.4.1 Chăm sóc khách, 2.4.2 Phân tích lãi lỗ và trợ lý AI (theo thứ tự slide của chủ dự án); đánh lại số hình, bảng chương 2; sửa câu mô tả 2.2, 2.3, 2.3.2, 2.4, Phụ lục 2. `ucn5` (đang sửa dở, không thuộc 7 hình) chưa commit. **Gọi nhắc khách vào báo cáo**: Bảng 1.3 (lễ tân), phác thảo Hình 2.99 (`docs/thiet-ke/giao-dien/gd84-goi-nhac-khach.drawio`, dựng từ khung gd58), Bảng 2.17 `call_reminders`, mục 3.5.3 thêm Hình 3.125 - 3.127 (ảnh `docs/hinh/ket-qua/l11*.png`, chụp bằng Chrome headless + script CDP Python trên bản sao CSDL `beach_hotel_shots`, đã xóa sau khi chụp), số liệu Bảng 3.2, mục 3.4, 3.5, 4.1 (1.923 test, 178 ảnh); báo cáo 324 trang, cập nhật mục lục, danh mục và PDF bằng Word COM. Trang chi tiết đơn: ô mục đích cuộc gọi rộng hơn (không bị cắt chữ). **Slide** (artifact «Khảo sát hệ thống Sóng Xanh Resort»): thêm slide 18 «Lễ tân gọi điện nhắc khách» (ảnh trang thật + 3 thẻ), slide Phạm vi thêm «Gọi nhắc khách» vào ô Chức năng. Chưa vẽ thêm use case cho chức năng này vì sơ đồ use case là của chủ dự án |
 
 ### Đợt 19 (25/10/2026) - Lễ tân gọi điện nhắc khách
 | Commit | Chức năng |
