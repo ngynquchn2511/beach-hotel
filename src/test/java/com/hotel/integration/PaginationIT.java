@@ -33,7 +33,7 @@ class PaginationIT extends ItFixtures {
     }
 
     @Test
-    void guestRegistrations_20PerPage_numberingContinues() throws Exception {
+    void guestRegistrations_10PerPage_numberingContinues() throws Exception {
         User staff = persistUser(UserRole.STAFF, null);
         User customer = persistUser(UserRole.CUSTOMER, CustomerType.REGULAR);
         Room room = persistRoom(persistRoomType("Hang KBLT IT", 800000, 30), 800000, RoomStatus.AVAILABLE);
@@ -45,11 +45,11 @@ class PaginationIT extends ItFixtures {
 
         mockMvc.perform(get("/admin/guest-registrations").param("from", today).param("to", today).with(as(staff)))
                 .andExpect(status().isOk())
-                .andExpect(model().attribute("guests", hasSize(20)))
+                .andExpect(model().attribute("guests", hasSize(10)))
                 .andExpect(content().string(containsString("Tổng: 25 khách")))
                 .andExpect(content().string(containsString("from=" + today + "&amp;to=" + today + "&amp;page=2")));
         mockMvc.perform(get("/admin/guest-registrations").param("from", today).param("to", today)
-                        .param("page", "2").with(as(staff)))
+                        .param("page", "3").with(as(staff)))
                 .andExpect(model().attribute("guests", hasSize(5)))
                 .andExpect(content().string(containsString("<td>21</td>")));
     }
@@ -133,7 +133,7 @@ class PaginationIT extends ItFixtures {
     }
 
     @Test
-    void roomCalendar_20RoomsPerPage_navigationKeepsPage() throws Exception {
+    void roomCalendar_10RoomsPerPage_navigationKeepsPage() throws Exception {
         User staff = persistUser(UserRole.STAFF, null);
         RoomType type = persistRoomType("Hang Lich IT", 700000, 2);
         for (int i = 0; i < 25; i++) {
@@ -143,7 +143,7 @@ class PaginationIT extends ItFixtures {
 
         mockMvc.perform(get("/admin/room-calendar").param("page", "2").with(as(staff)))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Hiển thị 21–" + Math.min(40, total) + " trên tổng " + total)))
+                .andExpect(content().string(containsString("Hiển thị 11–" + Math.min(20, total) + " trên tổng " + total)))
                 // Nut sang khoang ngay sau van o trang 2
                 .andExpect(content().string(containsString("days=14&amp;page=2")));
     }

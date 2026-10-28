@@ -44,7 +44,7 @@
                     <table class="table table-sm align-middle small">
                         <thead><tr><th>Kênh</th><th>Phòng</th><th>Nhận - trả</th><th>Đêm</th><th>Ghi chú của kênh</th><th>Trạng thái</th><th></th></tr></thead>
                         <tbody>
-                        <tr th:each="r : ${rows}" th:with="b=${r.block}" th:classappend="${r.conflict} ? 'table-danger'">
+                        <tr th:each="r : ${rowPager.items}" th:with="b=${r.block}" th:classappend="${r.conflict} ? 'table-danger'">
                             <td th:text="${b.feed.channel.label}"></td>
                             <td class="fw-semibold" th:text="${b.room.roomNumber}"></td>
                             <td th:text="${#temporals.format(b.startDate, 'dd/MM/yyyy')} + ' - ' + ${#temporals.format(b.endDate, 'dd/MM/yyyy')}"></td>
@@ -66,7 +66,8 @@
                         </tr>
                         </tbody>
                     </table>
-                    <div th:each="r : ${rows}" th:if="${r.block.booking == null}" th:id="'link' + ${r.block.id}" class="collapse border rounded p-3 mb-2">
+                    <div th:replace="~{fragments/pagination :: pager(${rowPager})}"></div>
+                    <div th:each="r : ${rowPager.items}" th:if="${r.block.booking == null}" th:id="'link' + ${r.block.id}" class="collapse border rounded p-3 mb-2">
                         <div class="fw-semibold small mb-2" th:text="'Ghi nhận lượt đặt ' + ${r.block.feed.channel.label} + ' - phòng ' + ${r.block.room.roomNumber}
                              + ' (' + ${#temporals.format(r.block.startDate, 'dd/MM')} + ' - ' + ${#temporals.format(r.block.endDate, 'dd/MM')} + ')'"></div>
                         <form method="post" th:action="@{/admin/ota/blocks/{id}/link(id=${r.block.id})}" class="row g-2">
@@ -101,7 +102,7 @@
                 <table class="table table-sm align-middle small" th:unless="${#lists.isEmpty(feeds)}">
                     <thead><tr><th>Phòng</th><th>Kênh</th><th>Lần đồng bộ gần nhất</th><th>Kết quả</th><th></th></tr></thead>
                     <tbody>
-                    <tr th:each="f : ${feeds}" th:classappend="${!f.open} ? 'text-muted'">
+                    <tr th:each="f : ${feedPager.items}" th:classappend="${!f.open} ? 'text-muted'">
                         <td class="fw-semibold" th:text="${f.room.roomNumber}"></td>
                         <td th:text="${f.channel.label}"></td>
                         <td th:text="${f.lastSyncAt != null} ? ${#temporals.format(f.lastSyncAt, 'dd/MM HH:mm')} : 'Chưa'"></td>
@@ -118,6 +119,7 @@
                     </tr>
                     </tbody>
                 </table>
+                <div th:replace="~{fragments/pagination :: pager(${feedPager})}"></div>
             </div>
 
             <!-- Link xuat cho kenh (chieu ra) -->
@@ -128,7 +130,7 @@
                 <table class="table table-sm small align-middle">
                     <thead><tr><th>Phòng</th><th>Dán vào Booking.com</th><th>Dán vào Airbnb</th></tr></thead>
                     <tbody>
-                    <tr th:each="r : ${rooms}">
+                    <tr th:each="r : ${roomPager.items}">
                         <td class="fw-semibold" th:text="${r.roomNumber}"></td>
                         <td><input class="form-control form-control-sm" readonly onclick="this.select()"
                                    th:value="${exportBase} + ${r.id} + '.ics?key=' + ${exportKey} + '&channel=BOOKING'"></td>
@@ -137,6 +139,7 @@
                     </tr>
                     </tbody>
                 </table>
+                <div th:replace="~{fragments/pagination :: pager(${roomPager})}"></div>
             </div>
         </div>
     </div>

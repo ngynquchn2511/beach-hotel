@@ -36,11 +36,13 @@ public class AdminExpenseController {
     }
 
     @GetMapping
-    public String page(@RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM") YearMonth month, Model model) {
+    public String page(@RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM") YearMonth month,
+                       @RequestParam(defaultValue = "1") int page, Model model) {
         YearMonth m = month != null ? month : YearMonth.now();
         List<Expense> expenses = expenseService.forMonth(m);
         model.addAttribute("month", m);
         model.addAttribute("expenses", expenses);
+        model.addAttribute("expensePager", com.hotel.util.Pager.of(expenses, page, com.hotel.util.PaginationUtil.DEFAULT_PAGE_SIZE));
         model.addAttribute("totals", expenseService.totalsByCategory(m));
         model.addAttribute("total", expenses.stream().map(Expense::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add));
         model.addAttribute("categories", Expense.Category.values());

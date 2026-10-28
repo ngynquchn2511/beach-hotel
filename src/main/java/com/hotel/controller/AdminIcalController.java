@@ -26,11 +26,12 @@ public class AdminIcalController {
     }
 
     @GetMapping("/admin/ical")
-    public String page(Model model) {
+    public String page(@org.springframework.web.bind.annotation.RequestParam(defaultValue = "1") int page, Model model) {
         String base = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
         String key = icalService.token();
         List<Room> rooms = roomRepository.findAll().stream().sorted(Comparator.comparing(Room::getRoomNumber)).toList();
         model.addAttribute("rooms", rooms);
+        model.addAttribute("roomPager", com.hotel.util.Pager.of(rooms, page, com.hotel.util.PaginationUtil.DEFAULT_PAGE_SIZE));
         model.addAttribute("baseUrl", base);
         model.addAttribute("icalKey", key);
         model.addAttribute("allUrl", base + "/ical/all.ics?key=" + key);

@@ -27,7 +27,7 @@ public class AdminGiftVoucherController {
 
     @GetMapping
     public String list(@RequestParam(defaultValue = "1") int page, Model model) {
-        Pager<GiftVoucher> pager = Pager.of(giftVoucherService.all(), page, PaginationUtil.DEFAULT_PAGE_SIZE * 2);
+        Pager<GiftVoucher> pager = Pager.of(giftVoucherService.all(), page, PaginationUtil.DEFAULT_PAGE_SIZE);
         model.addAttribute("pager", pager);
         model.addAttribute("vouchers", pager.items());
         return "admin/gift-vouchers/list";

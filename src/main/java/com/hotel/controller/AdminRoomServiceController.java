@@ -28,10 +28,18 @@ public class AdminRoomServiceController {
     }
 
     @GetMapping
-    public String page(Model model) {
-        model.addAttribute("pendingOrders", roomServiceService.pending());
-        model.addAttribute("deliveredToday", roomServiceService.deliveredToday());
-        model.addAttribute("menuItems", roomServiceService.allItems());
+    public String page(@RequestParam(defaultValue = "1") int pendingPage, @RequestParam(defaultValue = "1") int deliveredPage,
+                       @RequestParam(defaultValue = "1") int menuPage, Model model) {
+        var pending = roomServiceService.pending();
+        var delivered = roomServiceService.deliveredToday();
+        var items = roomServiceService.allItems();
+        model.addAttribute("pendingOrders", pending);
+        model.addAttribute("deliveredToday", delivered);
+        model.addAttribute("menuItems", items);
+        // 3 danh sach tren cung trang -> moi danh sach 1 tham so trang rieng
+        model.addAttribute("pendingPager", com.hotel.util.Pager.of(pending, pendingPage, com.hotel.util.PaginationUtil.DEFAULT_PAGE_SIZE, "pendingPage"));
+        model.addAttribute("deliveredPager", com.hotel.util.Pager.of(delivered, deliveredPage, com.hotel.util.PaginationUtil.DEFAULT_PAGE_SIZE, "deliveredPage"));
+        model.addAttribute("menuPager", com.hotel.util.Pager.of(items, menuPage, com.hotel.util.PaginationUtil.DEFAULT_PAGE_SIZE, "menuPage"));
         model.addAttribute("categories", RoomServiceItem.Category.values());
         return "admin/room-service/index";
     }

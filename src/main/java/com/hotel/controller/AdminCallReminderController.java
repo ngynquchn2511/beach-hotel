@@ -32,7 +32,7 @@ public class AdminCallReminderController {
     @GetMapping
     public String page(@RequestParam(defaultValue = "1") int page, Model model) {
         model.addAttribute("tasks", service.due(LocalDateTime.now()));
-        Pager<CallReminder> pager = Pager.of(service.history(), page, PaginationUtil.DEFAULT_PAGE_SIZE * 2);
+        Pager<CallReminder> pager = Pager.of(service.history(), page, PaginationUtil.DEFAULT_PAGE_SIZE);
         model.addAttribute("pager", pager);
         model.addAttribute("results", CallReminder.Result.values());
         model.addAttribute("arrivalDays", CallReminderService.ARRIVAL_DAYS);

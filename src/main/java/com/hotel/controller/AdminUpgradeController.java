@@ -30,7 +30,7 @@ public class AdminUpgradeController {
     @GetMapping
     public String page(@RequestParam(defaultValue = "1") int page, Model model) {
         List<UpgradeOffer> all = upgradeService.all();
-        Pager<UpgradeOffer> pager = Pager.of(all, page, PaginationUtil.DEFAULT_PAGE_SIZE * 2);
+        Pager<UpgradeOffer> pager = Pager.of(all, page, PaginationUtil.DEFAULT_PAGE_SIZE);
         List<UpgradeOffer> accepted = all.stream().filter(o -> o.getStatus() == UpgradeOffer.Status.ACCEPTED).toList();
         long bookingsOffered = all.stream().map(o -> o.getBooking().getId()).distinct().count();
         model.addAttribute("pager", pager);

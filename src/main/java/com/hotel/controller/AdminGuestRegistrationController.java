@@ -27,7 +27,7 @@ public class AdminGuestRegistrationController {
     // Gioi han khoang ngay de trang khong qua nang
     private static final int MAX_RANGE_DAYS = 92;
 
-    static final int GUESTS_PER_PAGE = 20;
+    static final int GUESTS_PER_PAGE = 10;
 
     private final GuestRegistrationService guestRegistrationService;
     private final GuestRegistrationExportService exportService;

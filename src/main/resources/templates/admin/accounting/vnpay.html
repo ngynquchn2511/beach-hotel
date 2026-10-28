@@ -88,7 +88,7 @@
                     <table class="table table-sm align-middle mb-0">
                         <thead><tr><th>Giờ</th><th>Mã GD</th><th>Loại</th><th>Nội dung</th><th class="text-end">Số tiền</th></tr></thead>
                         <tbody>
-                        <tr th:each="t : ${txns}">
+                        <tr th:each="t : ${txnPager.items}">
                             <td class="small" th:text="${#temporals.format(t.time, 'HH:mm')}"></td>
                             <td class="small font-monospace" th:text="${t.ref}"></td>
                             <td class="small" th:text="${t.kind.label}"></td>
@@ -98,6 +98,7 @@
                         </tr>
                         </tbody>
                     </table>
+                    <div th:replace="~{fragments/pagination :: pager(${txnPager})}"></div>
                 </div>
             </div>
         </div>

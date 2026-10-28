@@ -30,7 +30,7 @@ public class AdminCompanyInvoiceController {
 
     @GetMapping
     public String list(@RequestParam(defaultValue = "1") int page, Model model) {
-        Pager<Booking> pager = Pager.of(companyInvoiceService.list(), page, PaginationUtil.DEFAULT_PAGE_SIZE * 2);
+        Pager<Booking> pager = Pager.of(companyInvoiceService.list(), page, PaginationUtil.DEFAULT_PAGE_SIZE);
         model.addAttribute("pager", pager);
         model.addAttribute("bookings", pager.items());
         return "admin/company-invoices/list";

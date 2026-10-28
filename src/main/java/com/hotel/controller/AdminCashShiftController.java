@@ -42,7 +42,7 @@ public class AdminCashShiftController {
             model.addAttribute("expectedCash", shift.getOpeningCash().add(cashIn));
         }, () -> cashShiftService.lastClosed().ifPresent(last -> model.addAttribute("lastClosed", last)));
         Pager<CashShift> pager = Pager.of(cashShiftService.all().stream().filter(s -> !s.isOpen()).toList(), page,
-                PaginationUtil.DEFAULT_PAGE_SIZE * 2);
+                PaginationUtil.DEFAULT_PAGE_SIZE);
         model.addAttribute("pager", pager);
         model.addAttribute("history", pager.items());
         model.addAttribute("noteRequiredDiff", CashShiftService.NOTE_REQUIRED_DIFF);

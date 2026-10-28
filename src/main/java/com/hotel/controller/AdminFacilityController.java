@@ -34,7 +34,7 @@ public class AdminFacilityController {
                        @RequestParam(required = false) ServiceStatus status,
                        @RequestParam(defaultValue = "1") int page, Model model) {
         LocalDate fromDate = from != null ? from : LocalDate.now();
-        Pager<FacilityReservation> pager = Pager.of(facilityService.forStaff(fromDate, status), page, PaginationUtil.DEFAULT_PAGE_SIZE * 2);
+        Pager<FacilityReservation> pager = Pager.of(facilityService.forStaff(fromDate, status), page, PaginationUtil.DEFAULT_PAGE_SIZE);
         model.addAttribute("from", fromDate);
         model.addAttribute("status", status);
         model.addAttribute("statuses", ServiceStatus.values());

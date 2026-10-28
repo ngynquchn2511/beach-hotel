@@ -31,7 +31,7 @@ public class AdminRoomAlertController {
     @GetMapping
     public String list(@RequestParam(defaultValue = "1") int page, Model model) {
         List<RoomAlert> alerts = roomAlertService.pending(LocalDate.now());
-        Pager<RoomAlert> pager = Pager.of(alerts, page, PaginationUtil.DEFAULT_PAGE_SIZE * 2);
+        Pager<RoomAlert> pager = Pager.of(alerts, page, PaginationUtil.DEFAULT_PAGE_SIZE);
         model.addAttribute("demand", RoomAlertService.demand(alerts));
         model.addAttribute("pager", pager);
         model.addAttribute("alerts", pager.items());

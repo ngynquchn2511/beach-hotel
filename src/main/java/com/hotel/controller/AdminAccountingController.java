@@ -47,9 +47,10 @@ public class AdminAccountingController {
     }
 
     @GetMapping("/vnpay")
-    public String vnpay(@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate day, Model model) {
+    public String vnpay(@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate day,
+                        @RequestParam(defaultValue = "1") int page, Model model) {
         LocalDate d = day != null ? day : LocalDate.now().minusDays(1);
-        fillVnpay(model, d);
+        fillVnpay(model, d, page);
         return "admin/accounting/vnpay";
     }
 
@@ -62,7 +63,7 @@ public class AdminAccountingController {
     @PostMapping("/vnpay")
     public String reconcile(@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate day,
                             @RequestParam(required = false) MultipartFile statement, Model model) {
-        fillVnpay(model, day);
+        fillVnpay(model, day, 1);
         try {
             model.addAttribute("reconciliation", reconcile(day, statement));
             model.addAttribute("statementName", statement.getOriginalFilename());
@@ -79,7 +80,7 @@ public class AdminAccountingController {
         try {
             return excel(accountingService.vnpayExcel(day, reconcile(day, statement)), "doi-soat-vnpay-" + day + ".xlsx");
         } catch (BusinessException ex) {
-            fillVnpay(model, day);
+            fillVnpay(model, day, 1);
             model.addAttribute("errorMessage", ex.getMessage());
             return "admin/accounting/vnpay";
         }
@@ -96,11 +97,12 @@ public class AdminAccountingController {
                 AccountingService.parseStatement(statement != null ? statement.getOriginalFilename() : null, content));
     }
 
-    private void fillVnpay(Model model, LocalDate day) {
+    private void fillVnpay(Model model, LocalDate day, int page) {
         var txns = accountingService.vnpayDay(day);
         model.addAttribute("day", day);
         model.addAttribute("dayLabel", day.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
         model.addAttribute("txns", txns);
+        model.addAttribute("txnPager", com.hotel.util.Pager.of(txns, page, com.hotel.util.PaginationUtil.DEFAULT_PAGE_SIZE));
         model.addAttribute("totalIn", txns.stream().filter(t -> t.kind() != AccountingService.VnPayKind.REFUND)
                 .map(AccountingService.VnPayTxn::amount).reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add));
         model.addAttribute("totalOut", txns.stream().filter(t -> t.kind() == AccountingService.VnPayKind.REFUND)

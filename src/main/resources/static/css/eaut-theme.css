@@ -282,6 +282,14 @@ body.eaut .admin-sidebar {
     background: var(--paper); border: var(--line); border-radius: 14px; box-shadow: var(--pop);
     padding: .6rem; position: sticky; top: 88px;
 }
+/* Thanh cuon chung cua trang (khach hang + quan tri) va cac vung tu cuon (bang, khung chat): tone xanh baby */
+html { scrollbar-width: auto; scrollbar-color: #3d9bd6 #e8f5fd; }
+::-webkit-scrollbar { width: 12px; height: 12px; }
+::-webkit-scrollbar-track { background: #e8f5fd; }
+::-webkit-scrollbar-thumb { background: #3d9bd6; border-radius: 10px; border: 3px solid #e8f5fd; }
+::-webkit-scrollbar-thumb:hover { background: #13395e; }
+::-webkit-scrollbar-corner { background: #e8f5fd; }
+
 /* Menu dai hon man hinh: tu cuon ben trong, thanh truot mong theo tone xanh baby */
 @media (min-width: 768px) {
     body.eaut .admin-sidebar {

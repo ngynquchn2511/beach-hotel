@@ -57,7 +57,9 @@ class CustomerSelfServiceIT extends ItFixtures {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("320")))
                 .andExpect(content().string(containsString("khoảng 200 điểm")))
-                .andExpect(content().string(containsString("+21")))
+                .andExpect(content().string(containsString("+21")));
+        // 12 dong, 10 dong / trang -> dong cu nhat o trang 2
+        mockMvc.perform(get("/customer/account/points").param("page", "2").with(as(customer)))
                 .andExpect(content().string(containsString("+10")));
         mockMvc.perform(get("/customer/account").with(as(customer)))
                 .andExpect(content().string(containsString("Xem toàn bộ lịch sử điểm")));

@@ -17,7 +17,7 @@ import java.time.LocalDate;
 public class AdminRoomCalendarController {
 
     // So phong (hang) moi trang lich
-    static final int ROOMS_PER_PAGE = 20;
+    static final int ROOMS_PER_PAGE = 10;
 
     private final RoomCalendarService roomCalendarService;
 

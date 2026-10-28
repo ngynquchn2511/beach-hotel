@@ -35,7 +35,7 @@
                     <table class="table align-middle mb-0">
                         <thead><tr><th>Gọi lúc</th><th>Phòng</th><th>Món</th><th>Tiền</th><th></th></tr></thead>
                         <tbody>
-                        <tr th:each="o : ${pendingOrders}">
+                        <tr th:each="o : ${pendingPager.items}">
                             <td class="text-nowrap fw-semibold" th:text="${#temporals.format(o.createdAt, 'HH:mm')}"></td>
                             <td><b th:text="'P.' + ${o.booking.room.roomNumber}"></b>
                                 <div class="small"><a th:href="@{/admin/bookings/{id}(id=${o.booking.id})}" th:text="${o.booking.guestName}"></a></div></td>
@@ -56,6 +56,7 @@
                         </tr>
                         </tbody>
                     </table>
+                <div th:replace="~{fragments/pagination :: pager(${pendingPager})}"></div>
                 </div>
             </div>
 
@@ -63,12 +64,13 @@
                 <h5 class="fw-bold mb-3"><i class="bi bi-check2-circle me-1 text-success"></i>Đã giao hôm nay</h5>
                 <p th:if="${#lists.isEmpty(deliveredToday)}" class="text-muted mb-0">Chưa có.</p>
                 <ul class="list-unstyled small mb-0" th:unless="${#lists.isEmpty(deliveredToday)}">
-                    <li th:each="o : ${deliveredToday}" class="d-flex justify-content-between border-bottom py-1">
+                    <li th:each="o : ${deliveredPager.items}" class="d-flex justify-content-between border-bottom py-1">
                         <span><b th:text="'P.' + ${o.booking.room.roomNumber}"></b> · <span th:text="${o.summary}"></span></span>
                         <span class="text-muted text-nowrap ms-2"
                               th:text="${#temporals.format(o.deliveredAt, 'HH:mm')} + (${o.handledBy != null} ? ' · ' + ${o.handledBy} : '')"></span>
                     </li>
                 </ul>
+                <div th:replace="~{fragments/pagination :: pager(${deliveredPager})}"></div>
             </div>
 
             <!-- Thuc don: ai cung xem, chi admin sua -->
@@ -89,7 +91,7 @@
                 </form>
                 <table class="table table-sm align-middle mb-0">
                     <tbody>
-                    <tr th:each="i : ${menuItems}" th:classappend="${!i.active} ? 'text-muted'">
+                    <tr th:each="i : ${menuPager.items}" th:classappend="${!i.active} ? 'text-muted'">
                         <td class="small" th:text="${i.category.vietnameseLabel}"></td>
                         <td class="fw-semibold" th:text="${i.name}"></td>
                         <td th:text="${#numbers.formatDecimal(i.price, 1, 'POINT', 0, 'COMMA')}"></td>
@@ -102,6 +104,7 @@
                     </tr>
                     </tbody>
                 </table>
+                <div th:replace="~{fragments/pagination :: pager(${menuPager})}"></div>
             </div>
         </div>
     </div>

@@ -24,7 +24,7 @@ public class AdminMessageController {
     public String inbox(@RequestParam(defaultValue = "false") boolean unread, @RequestParam(defaultValue = "1") int page, Model model) {
         var all = messageService.inbox().stream().filter(c -> !unread || c.unread() > 0)
                 .sorted(java.util.Comparator.comparing((BookingMessageService.Conversation c) -> c.unread() == 0)).toList();
-        Pager<BookingMessageService.Conversation> pager = Pager.of(all, page, PaginationUtil.DEFAULT_PAGE_SIZE * 2);
+        Pager<BookingMessageService.Conversation> pager = Pager.of(all, page, PaginationUtil.DEFAULT_PAGE_SIZE);
         model.addAttribute("pager", pager);
         model.addAttribute("conversations", pager.items());
         model.addAttribute("onlyUnread", unread);

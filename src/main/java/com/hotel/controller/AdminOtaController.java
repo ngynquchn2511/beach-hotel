@@ -44,13 +44,18 @@ public class AdminOtaController {
     }
 
     @GetMapping
-    public String page(Model model) {
+    public String page(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "1") int feedPage,
+                       @RequestParam(defaultValue = "1") int roomPage, Model model) {
         List<Room> rooms = roomRepository.findAll().stream().sorted(Comparator.comparing(Room::getRoomNumber)).toList();
         model.addAttribute("rooms", rooms);
+        model.addAttribute("roomPager", com.hotel.util.Pager.of(rooms, roomPage, com.hotel.util.PaginationUtil.DEFAULT_PAGE_SIZE, "roomPage"));
         model.addAttribute("channels", OtaFeed.Channel.values());
-        model.addAttribute("feeds", syncService.feeds());
+        var feeds = syncService.feeds();
+        model.addAttribute("feeds", feeds);
+        model.addAttribute("feedPager", com.hotel.util.Pager.of(feeds, feedPage, com.hotel.util.PaginationUtil.DEFAULT_PAGE_SIZE, "feedPage"));
         List<OtaSyncService.Row> rows = syncService.upcoming();
         model.addAttribute("rows", rows);
+        model.addAttribute("rowPager", com.hotel.util.Pager.of(rows, page, com.hotel.util.PaginationUtil.DEFAULT_PAGE_SIZE));
         model.addAttribute("conflictCount", rows.stream().filter(OtaSyncService.Row::conflict).count());
         model.addAttribute("removedCount", rows.stream().filter(r -> r.block().getRemovedAt() != null && r.block().getBooking() != null).count());
         model.addAttribute("exportBase", ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString() + "/ical/rooms/");

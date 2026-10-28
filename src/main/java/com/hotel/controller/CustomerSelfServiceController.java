@@ -64,7 +64,7 @@ public class CustomerSelfServiceController {
     @GetMapping("/points")
     public String points(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestParam(defaultValue = "1") int page, Model model) {
         User user = userService.findById(userDetails.getUser().getId());
-        Pager<PointTransaction> pager = Pager.of(loyaltyService.fullHistory(user.getId()), page, PaginationUtil.DEFAULT_PAGE_SIZE * 2);
+        Pager<PointTransaction> pager = Pager.of(loyaltyService.fullHistory(user.getId()), page, PaginationUtil.DEFAULT_PAGE_SIZE);
         // Diem du kien: cac ky nghi chua tra phong, tinh theo hang hien tai (so that cong khi tra phong)
         List<Booking> upcoming = bookingService.findAllForCustomer(user.getId()).stream()
                 .filter(b -> UPCOMING.contains(b.getStatus()) && b.getPointsEarned() == null).toList();

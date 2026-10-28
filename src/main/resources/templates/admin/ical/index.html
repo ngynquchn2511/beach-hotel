@@ -57,7 +57,7 @@
                 <div class="table-responsive">
                     <table class="table table-sm align-middle mb-0">
                         <tbody>
-                        <tr th:each="r : ${rooms}" th:with="url=${baseUrl + '/ical/rooms/' + r.id + '.ics?key=' + icalKey}">
+                        <tr th:each="r : ${roomPager.items}" th:with="url=${baseUrl + '/ical/rooms/' + r.id + '.ics?key=' + icalKey}">
                             <td class="fw-semibold text-nowrap" th:text="'Phòng ' + ${r.roomNumber}"></td>
                             <td class="small text-muted" th:text="${r.roomType.name}"></td>
                             <td class="w-50"><input type="text" class="form-control form-control-sm ical-url" readonly th:value="${url}"></td>
@@ -68,6 +68,7 @@
                         </tr>
                         </tbody>
                     </table>
+                <div th:replace="~{fragments/pagination :: pager(${roomPager})}"></div>
                 </div>
             </div>
         </div>

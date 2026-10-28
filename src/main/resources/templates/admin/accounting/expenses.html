@@ -73,7 +73,7 @@
                 <table class="table table-sm align-middle mb-0" th:unless="${#lists.isEmpty(expenses)}">
                     <thead><tr><th>Nhóm</th><th>Nội dung</th><th>Loại</th><th class="text-end">Số tiền</th><th></th></tr></thead>
                     <tbody>
-                    <tr th:each="e : ${expenses}">
+                    <tr th:each="e : ${expensePager.items}">
                         <td class="small" th:text="${e.category.label}"></td>
                         <td><span th:text="${e.description}"></span>
                             <div class="small text-muted" th:if="${e.createdBy != null}" th:text="'Nhập bởi ' + ${e.createdBy}"></div></td>
@@ -93,6 +93,7 @@
                     </tr>
                     </tbody>
                 </table>
+                <div th:replace="~{fragments/pagination :: pager(${expensePager})}"></div>
             </div>
 
             <div class="bg-white p-4 rounded shadow-sm" id="gia-von">

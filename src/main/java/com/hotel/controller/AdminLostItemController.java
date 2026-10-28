@@ -35,7 +35,7 @@ public class AdminLostItemController {
 
     @GetMapping
     public String list(@RequestParam(defaultValue = "1") int page, Model model) {
-        Pager<LostItem> pager = Pager.of(lostItemService.all(), page, PaginationUtil.DEFAULT_PAGE_SIZE * 2);
+        Pager<LostItem> pager = Pager.of(lostItemService.all(), page, PaginationUtil.DEFAULT_PAGE_SIZE);
         model.addAttribute("pager", pager);
         model.addAttribute("items", pager.items());
         model.addAttribute("rooms", roomRepository.findAll().stream().sorted(Comparator.comparing(Room::getRoomNumber)).toList());
