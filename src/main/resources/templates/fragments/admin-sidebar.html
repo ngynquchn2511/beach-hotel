@@ -183,4 +183,5 @@
     <a th:href="@{/admin/audit-logs}" class="list-group-item list-group-item-action" sec:authorize="hasRole('ADMIN')"
        th:classappend="${p.startsWith('/admin/audit-logs')} ? 'active'"><i class="bi bi-clock-history"></i>Nhật ký thao tác</a>
     </th:block>
+    <script th:src="@{/js/admin-sidebar.js}" defer></script>
 </nav>

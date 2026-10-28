@@ -282,6 +282,17 @@ body.eaut .admin-sidebar {
     background: var(--paper); border: var(--line); border-radius: 14px; box-shadow: var(--pop);
     padding: .6rem; position: sticky; top: 88px;
 }
+/* Menu dai hon man hinh: tu cuon ben trong, thanh truot mong theo tone xanh baby */
+@media (min-width: 768px) {
+    body.eaut .admin-sidebar {
+        max-height: calc(100vh - 140px); overflow-y: auto; overscroll-behavior: contain;
+        scrollbar-width: thin; scrollbar-color: var(--baby-deep) var(--baby-soft);
+    }
+    body.eaut .admin-sidebar::-webkit-scrollbar { width: 8px; }
+    body.eaut .admin-sidebar::-webkit-scrollbar-track { background: var(--baby-soft); border-radius: 8px; margin: 10px 0; }
+    body.eaut .admin-sidebar::-webkit-scrollbar-thumb { background: var(--baby-deep); border-radius: 8px; }
+    body.eaut .admin-sidebar::-webkit-scrollbar-thumb:hover { background: var(--ink); }
+}
 body.eaut .admin-sidebar-title {
     font-size: .7rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-soft);
     padding: .7rem .7rem .3rem; border-top: 1.5px dashed #b9dcf0; margin-top: .35rem;

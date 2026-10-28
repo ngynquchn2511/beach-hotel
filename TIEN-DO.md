@@ -38,6 +38,7 @@
 | Commit | Chức năng |
 |---|---|
 | (xem `git log`) | Theo yêu cầu «cái hôm nay của admin khó nhìn quá»: `admin/today.html` viết lại, không đổi controller/service. Ô số liệu có biểu tượng, bấm nhảy tới mục. «Cần xử lý ngay» thành từng dòng có nút Check-out / Gọi khách (`tel:`) / Xem đơn / Khách không đến thay cho câu dài. Khách đến / đi mỗi khách 1 dòng: giờ to + số phòng nổi bật, tên, SĐT bấm gọi, nhãn trạng thái to có biểu tượng (đỏ = phòng chưa sẵn sàng, vàng = chờ xác nhận/cọc), yêu cầu đặc biệt và ghi chú khách trong ô riêng, nút thao tác to bên phải; khách đã nhận/trả phòng gom vào mục gập «Đã nhận phòng (n)» (tự mở khi in). Sửa test `NoShowIT`, `FrontDeskTodayIT` theo chữ mới |
+| (xem `git log`) | **Thanh cuộn cho menu quản trị** («thêm 1 cái thanh trượt cho thanh bar của admin»): từ màn hình `md` trở lên `.admin-sidebar` cao tối đa `100vh - 140px`, tự cuộn bên trong, thanh trượt mỏng màu xanh baby (`eaut-theme.css`). `static/js/admin-sidebar.js` (gắn ở cuối fragment sidebar) nhớ vị trí cuộn khi chuyển trang (sessionStorage) và cuộn tới mục đang mở nếu nó bị khuất |
 
 ### Đợt 20 (25/10/2026) - Báo cáo dùng sơ đồ chủ dự án tự vẽ; gọi nhắc khách vào báo cáo và slide
 | Commit | Chức năng |
