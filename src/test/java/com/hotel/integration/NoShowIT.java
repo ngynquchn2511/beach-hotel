@@ -51,7 +51,7 @@ class NoShowIT extends ItFixtures {
     void markNoShow_keepsDeposit_freesRoom_warnsOnNextBooking() throws Exception {
         Booking late = lateBooking();
         mockMvc.perform(get("/admin/today").with(as(staff)))
-                .andExpect(content().string(containsString("đánh dấu không đến")));
+                .andExpect(content().string(containsString("Khách không đến</button>")));
         mockMvc.perform(post("/admin/bookings/{id}/no-show", late.getId()).with(csrf()).with(as(staff)).param("back", "today"))
                 .andExpect(redirectedUrl("/admin/today"))
                 .andExpect(flash().attribute("successMessage", containsString("Giữ cọc 300.000 VND")));

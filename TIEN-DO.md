@@ -1,7 +1,7 @@
 # Tiến độ dự án Sóng Xanh Resort (beach-hotel)
 
 > File bàn giao giữa các phiên làm việc với Claude. Mở phiên mới, bảo Claude: **"đọc file TIEN-DO.md"**.
-> Cập nhật lần cuối: 25/10/2026, sau đợt 20 (sơ đồ chủ dự án tự vẽ đưa vào báo cáo; gọi nhắc khách vào báo cáo, slide).
+> Cập nhật lần cuối: 29/10/2026, sau đợt 21 (làm lại giao diện trang Hôm nay của lễ tân).
 
 ## 1. Dự án
 
@@ -33,6 +33,11 @@
    - MockMvc đọc JSON không charset là ISO-8859-1: dùng `getContentAsString(StandardCharsets.UTF_8)`.
 
 ## 3. Đã làm (theo thứ tự gần nhất trước)
+
+### Đợt 21 (29/10/2026) - Trang «Hôm nay» dễ nhìn, dễ thao tác hơn
+| Commit | Chức năng |
+|---|---|
+| (xem `git log`) | Theo yêu cầu «cái hôm nay của admin khó nhìn quá»: `admin/today.html` viết lại, không đổi controller/service. Ô số liệu có biểu tượng, bấm nhảy tới mục. «Cần xử lý ngay» thành từng dòng có nút Check-out / Gọi khách (`tel:`) / Xem đơn / Khách không đến thay cho câu dài. Khách đến / đi mỗi khách 1 dòng: giờ to + số phòng nổi bật, tên, SĐT bấm gọi, nhãn trạng thái to có biểu tượng (đỏ = phòng chưa sẵn sàng, vàng = chờ xác nhận/cọc), yêu cầu đặc biệt và ghi chú khách trong ô riêng, nút thao tác to bên phải; khách đã nhận/trả phòng gom vào mục gập «Đã nhận phòng (n)» (tự mở khi in). Sửa test `NoShowIT`, `FrontDeskTodayIT` theo chữ mới |
 
 ### Đợt 20 (25/10/2026) - Báo cáo dùng sơ đồ chủ dự án tự vẽ; gọi nhắc khách vào báo cáo và slide
 | Commit | Chức năng |

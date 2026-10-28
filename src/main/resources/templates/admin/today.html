@@ -8,20 +8,81 @@
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
     <style>
-        .fd-stat { background: var(--paper); border: var(--line); border-radius: 10px; padding: 12px 16px; height: 100%; }
-        .fd-stat .num { font-size: 1.8rem; font-weight: 800; line-height: 1.1; }
-        .fd-card { background: var(--paper); border: var(--line); border-radius: 10px; box-shadow: var(--pop); padding: 18px; margin-bottom: 20px; }
-        .fd-card h5 { font-weight: 800; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
-        .fd-card table { margin-bottom: 0; }
-        .fd-card td, .fd-card th { vertical-align: middle; }
-        tr.done td { color: #7a8794; }
-        tr.done td .guest { text-decoration: line-through; text-decoration-thickness: 1px; }
-        .fd-flags .badge { font-weight: 600; }
+        /* O so lieu: bam vao thi nhay toi muc tuong ung */
+        .fd-stat { display: flex; align-items: center; gap: 14px; background: var(--paper); border: var(--line); border-radius: 12px;
+                   padding: 14px 16px; height: 100%; text-decoration: none !important; transition: transform .12s, box-shadow .12s; }
+        .fd-stat:hover { transform: translate(-2px, -2px); box-shadow: 4px 4px 0 var(--baby); }
+        .fd-stat .ico { width: 46px; height: 46px; border-radius: 12px; display: grid; place-items: center; font-size: 1.35rem; flex-shrink: 0; }
+        .fd-stat .num { font-size: 1.9rem; font-weight: 800; line-height: 1; }
+        .fd-stat .num small { font-size: 1rem; font-weight: 600; color: var(--ink-soft); }
+        .fd-stat .lbl { font-size: .9rem; white-space: nowrap; font-weight: 600; color: var(--ink-soft); margin-top: 2px; }
+        .t-blue   { background: #e3f1fb; color: #1f6fa8; }
+        .t-amber  { background: #fff1cc; color: #8a5a00; }
+        .t-green  { background: #def5e6; color: #1d7a43; }
+        .t-violet { background: #ece6fb; color: #5b3fb0; }
+        .t-red    { background: #fde3e3; color: #b42323; }
+
+        .fd-card { background: var(--paper); border: var(--line); border-radius: 12px; box-shadow: var(--pop); margin-bottom: 22px; overflow: hidden; scroll-margin-top: 16px; }
+        .fd-card-head { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1.5px solid var(--ink); background: var(--baby-soft); }
+        .fd-card-head h5 { margin: 0; font-size: 1.1rem; display: flex; align-items: center; gap: 10px; }
+        .fd-card-head .count { font-size: .85rem; font-weight: 800; padding: .15rem .6rem; border-radius: 99px; border: 1.5px solid var(--ink); background: var(--paper); }
+        .fd-card-head .sub { font-size: .88rem; color: var(--ink-soft); font-weight: 500; }
+        .fd-card.danger { border-color: #b42323; box-shadow: 5px 5px 0 #f4b9b9; }
+        .fd-card.danger .fd-card-head { background: #fde3e3; border-color: #b42323; color: #b42323; }
+        .fd-card.danger .fd-card-head h5 { color: #b42323; }
+        .fd-card.warn .fd-card-head { background: #fff1cc; }
+        .fd-empty { padding: 22px 18px; color: var(--ink-soft); display: flex; align-items: center; gap: 10px; }
+        .fd-empty i { font-size: 1.3rem; color: #1d7a43; }
+
+        /* Moi khach 1 dong: [gio + phong] [thong tin] [nut] */
+        .fd-row { display: grid; grid-template-columns: 92px 1fr auto; gap: 16px; align-items: center; padding: 14px 18px; border-top: 1.5px dashed #b9dcf0; }
+        .fd-row:first-child { border-top: 0; }
+        .fd-when { text-align: center; }
+        .fd-when .time { font-size: 1.3rem; font-weight: 800; line-height: 1.1; }
+        .fd-when .label { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-soft); }
+        .room-pill { display: inline-block; margin-top: 4px; padding: .15rem .55rem; border: 1.5px solid var(--ink); border-radius: 8px;
+                     background: var(--sun); font-weight: 800; font-size: .92rem; white-space: nowrap; }
+        .fd-guest { font-size: 1.08rem; font-weight: 700; }
+        .fd-meta { font-size: .92rem; color: var(--ink-soft); margin-top: 2px; display: flex; flex-wrap: wrap; gap: 4px 14px; }
+        .fd-meta a { color: var(--ink-soft) !important; }
+        .fd-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+        .chip { display: inline-flex; align-items: center; gap: 5px; font-size: .84rem; font-weight: 600; padding: .22rem .65rem; border-radius: 99px; line-height: 1.3; }
+        .chip.muted { background: #eef2f6; color: #4d6b88; }
+        .chip.info  { background: #e3f1fb; color: #1f6fa8; }
+        .fd-note { margin-top: 8px; padding: 7px 12px; border-left: 4px solid var(--sun); background: #fffbea; border-radius: 0 8px 8px 0; font-size: .92rem; }
+        .fd-note.staff { border-left-color: #e08a00; background: #fff4e0; }
+        .fd-actions { display: flex; flex-direction: column; gap: 6px; align-items: stretch; min-width: 170px; }
+        .fd-actions .btn { font-weight: 700; white-space: nowrap; }
+        .fd-actions form { margin: 0; }
+        .fd-actions form .btn { width: 100%; }
+        .fd-hint { font-size: .8rem; color: #b42323; text-align: center; }
+
+        /* Dong da xong: gom lai, mo khi can */
+        .fd-done summary { cursor: pointer; padding: 10px 18px; border-top: 1.5px solid var(--ink); background: #f6f9fc; font-weight: 600; color: var(--ink-soft); list-style: none; }
+        .fd-done summary::-webkit-details-marker { display: none; }
+        .fd-done summary .bi-chevron-down { transition: transform .15s; }
+        .fd-done[open] summary .bi-chevron-down { transform: rotate(180deg); }
+        .fd-done .fd-row { opacity: .6; }
+        .fd-done .fd-row .fd-guest a { text-decoration: line-through; text-decoration-thickness: 1px; }
+
+        /* Danh sach gon: phong cho don, dang o */
+        .fd-list { list-style: none; margin: 0; padding: 0; }
+        .fd-list li { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 18px; border-top: 1.5px dashed #b9dcf0; }
+        .fd-list li:first-child { border-top: 0; }
+        .fd-list .room-pill { margin-top: 0; margin-right: 8px; }
+
+        .fd-toolbar .btn { font-weight: 700; }
+
+        @media (max-width: 767.98px) {
+            .fd-row { grid-template-columns: 76px 1fr; }
+            .fd-actions { grid-column: 1 / -1; min-width: 0; }
+        }
         /* In danh sach cho ca truc: bo menu, nut bam */
         @media print {
             .eaut-header, header, nav, .admin-sidebar, .no-print, .col-md-3 { display: none !important; }
             .col-md-9 { width: 100% !important; flex: 0 0 100% !important; max-width: 100% !important; }
             .fd-card { box-shadow: none; break-inside: avoid; }
+            .fd-row { grid-template-columns: 92px 1fr; }
             body { background: #fff !important; }
         }
     </style>
@@ -37,184 +98,188 @@
         </div>
 
         <div class="col-md-9">
-            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+            <div class="d-flex justify-content-between align-items-end flex-wrap gap-3 mb-4">
                 <div>
                     <h3 class="fw-bold m-0" th:text="${day.today} ? 'Hôm nay' : 'Lịch trực'">Hôm nay</h3>
-                    <div class="text-muted"
+                    <div class="fs-5 fw-semibold" style="color: var(--ink-soft)"
                          th:text="${ {'Thứ Hai','Thứ Ba','Thứ Tư','Thứ Năm','Thứ Sáu','Thứ Bảy','Chủ nhật'}[day.date.dayOfWeek.value - 1] } + ', ' + ${#temporals.format(day.date, 'dd/MM/yyyy')}"></div>
                 </div>
-                <form th:action="@{/admin/today}" method="get" class="d-flex gap-2 align-items-center no-print">
+                <form th:action="@{/admin/today}" method="get" class="d-flex gap-2 align-items-center flex-wrap no-print fd-toolbar">
                     <div class="btn-group">
-                        <a class="btn btn-sm btn-outline-primary" th:href="@{/admin/today(date=${day.date.minusDays(1)})}" title="Ngày trước"><i class="bi bi-chevron-left"></i></a>
-                        <a class="btn btn-sm btn-outline-primary" th:href="@{/admin/today}">Hôm nay</a>
-                        <a class="btn btn-sm btn-outline-primary" th:href="@{/admin/today(date=${day.date.plusDays(1)})}" title="Ngày sau"><i class="bi bi-chevron-right"></i></a>
+                        <a class="btn btn-outline-primary" th:href="@{/admin/today(date=${day.date.minusDays(1)})}" title="Ngày trước"><i class="bi bi-chevron-left"></i></a>
+                        <a class="btn" th:classappend="${day.today} ? 'btn-primary' : 'btn-outline-primary'" th:href="@{/admin/today}">Hôm nay</a>
+                        <a class="btn btn-outline-primary" th:href="@{/admin/today(date=${day.date.plusDays(1)})}" title="Ngày sau"><i class="bi bi-chevron-right"></i></a>
                     </div>
-                    <input type="date" name="date" class="form-control form-control-sm" style="width:auto" th:value="${day.date}" onchange="this.form.submit()">
-                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="window.print()"><i class="bi bi-printer me-1"></i>In</button>
+                    <input type="date" name="date" class="form-control" style="width:auto" th:value="${day.date}" onchange="this.form.submit()" title="Chọn ngày">
+                    <button type="button" class="btn btn-outline-secondary" onclick="window.print()"><i class="bi bi-printer me-1"></i>In</button>
                 </form>
             </div>
 
-            <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
-            <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+            <div th:if="${errorMessage}" class="alert alert-danger fw-semibold"><i class="bi bi-x-circle me-2"></i><span th:text="${errorMessage}"></span></div>
+            <div th:if="${successMessage}" class="alert alert-success fw-semibold"><i class="bi bi-check-circle me-2"></i><span th:text="${successMessage}"></span></div>
 
-            <!-- Yeu cau nhan som / tra muon cho duyet -->
-            <div class="fd-card border-warning" th:unless="${#lists.isEmpty(stayTimeRequests)}">
-                <h5><i class="bi bi-clock-history text-warning"></i>Yêu cầu nhận sớm / trả muộn chờ duyệt
-                    <span class="badge bg-warning text-dark" th:text="${#lists.size(stayTimeRequests)}"></span></h5>
-                <table class="table table-sm align-middle">
-                    <tbody>
-                    <tr th:each="b : ${stayTimeRequests}">
-                        <td><a class="fw-semibold" th:href="@{/admin/bookings/{id}(id=${b.id})} + '#doi-gio'" th:text="'#' + ${b.id} + ' · P.' + ${b.room.roomNumber}"></a>
-                            <div class="small text-muted" th:text="${b.guestName}"></div></td>
-                        <td class="small">
-                            <div th:if="${b.requestedCheckInTime != null}" th:text="'Nhận ' + ${b.requestedCheckInTime} + ' ngày ' + ${#temporals.format(b.checkInDate, 'dd/MM')}"></div>
-                            <div th:if="${b.requestedCheckOutTime != null}" th:text="'Trả ' + ${b.requestedCheckOutTime} + ' ngày ' + ${#temporals.format(b.checkOutDate, 'dd/MM')}"></div>
-                        </td>
-                        <td class="small text-nowrap" th:text="${#numbers.formatDecimal(b.timeRequestFee, 1, 'POINT', 0, 'COMMA')} + ' VND'"></td>
-                        <td class="text-end no-print text-nowrap">
-                            <form class="d-inline" method="post" th:action="@{/admin/bookings/{id}/stay-time/approve(id=${b.id}, back='today')}">
-                                <button type="submit" class="btn btn-sm btn-success">Duyệt</button>
-                            </form>
-                            <form class="d-inline" method="post" th:action="@{/admin/bookings/{id}/stay-time/reject(id=${b.id}, back='today')}">
-                                <button type="submit" class="btn btn-sm btn-outline-danger">Từ chối</button>
-                            </form>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Tong quan nhanh -->
+            <!-- Tong quan nhanh: bam de nhay toi muc -->
             <div class="row g-3 mb-4">
-                <div class="col-6 col-lg-3"><div class="fd-stat">
-                    <div class="text-muted small">Khách đến còn chờ</div>
-                    <div class="num text-primary" th:text="${day.arrivalsLeft()} + '/' + ${#lists.size(day.arrivals)}"></div>
-                </div></div>
-                <div class="col-6 col-lg-3"><div class="fd-stat">
-                    <div class="text-muted small">Khách đi còn chờ</div>
-                    <div class="num" th:text="${day.departuresLeft()} + '/' + ${#lists.size(day.departures)}"></div>
-                </div></div>
-                <div class="col-6 col-lg-3"><div class="fd-stat">
-                    <div class="text-muted small">Đang ở</div>
-                    <div class="num text-success" th:text="${#lists.size(day.inHouse)}"></div>
-                </div></div>
-                <div class="col-6 col-lg-3"><div class="fd-stat">
-                    <div class="text-muted small">Phòng chờ dọn</div>
-                    <div class="num" th:classappend="${!#lists.isEmpty(day.roomsToClean)} ? 'text-warning'" th:text="${#lists.size(day.roomsToClean)}"></div>
-                </div></div>
+                <div class="col-6 col-xl-3"><a class="fd-stat" href="#khach-den">
+                    <div class="ico t-blue"><i class="bi bi-box-arrow-in-right"></i></div>
+                    <div><div class="num"><span th:text="${day.arrivalsLeft()}"></span><small th:text="' / ' + ${#lists.size(day.arrivals)}"></small></div>
+                        <div class="lbl">Khách đến chờ</div></div>
+                </a></div>
+                <div class="col-6 col-xl-3"><a class="fd-stat" href="#khach-di">
+                    <div class="ico t-amber"><i class="bi bi-box-arrow-right"></i></div>
+                    <div><div class="num"><span th:text="${day.departuresLeft()}"></span><small th:text="' / ' + ${#lists.size(day.departures)}"></small></div>
+                        <div class="lbl">Khách đi chờ</div></div>
+                </a></div>
+                <div class="col-6 col-xl-3"><a class="fd-stat" href="#dang-o">
+                    <div class="ico t-green"><i class="bi bi-house-check"></i></div>
+                    <div><div class="num" th:text="${#lists.size(day.inHouse)}"></div>
+                        <div class="lbl">Phòng đang ở</div></div>
+                </a></div>
+                <div class="col-6 col-xl-3"><a class="fd-stat" href="#cho-don">
+                    <div class="ico t-violet"><i class="bi bi-stars"></i></div>
+                    <div><div class="num" th:text="${#lists.size(day.roomsToClean)}"></div>
+                        <div class="lbl">Phòng chờ dọn</div></div>
+                </a></div>
             </div>
 
             <!-- Can xu ly: qua han tra phong / khach khong den -->
-            <div class="fd-card border-danger" th:if="${day.attentionCount() > 0}">
-                <h5 class="text-danger"><i class="bi bi-exclamation-octagon"></i>Cần xử lý</h5>
-                <ul class="mb-0">
-                    <li th:each="b : ${day.overdueCheckOuts}">
-                        <b th:text="'Phòng ' + ${b.room.roomNumber}"></b> —
-                        <span th:text="${b.guestName}"></span> quá hạn trả phòng
-                        (<span th:text="${#temporals.format(b.checkOutDate, 'dd/MM')}"></span>) —
-                        <a th:href="@{/admin/bookings/{id}/check-out(id=${b.id})}">Check-out</a> hoặc liên hệ khách
-                    </li>
-                    <li th:each="b : ${day.noShows}">
-                        <b th:text="'Đơn #' + ${b.id}"></b> —
-                        <span th:text="${b.guestName}"></span> chưa đến nhận phòng từ
-                        <span th:text="${#temporals.format(b.checkInDate, 'dd/MM')}"></span>
-                        (phòng <span th:text="${b.room.roomNumber}"></span>, SĐT <span th:text="${b.guestPhone}"></span>) —
-                        <a th:href="@{/admin/bookings/{id}(id=${b.id})}">Xem đơn</a> để gọi khách, hoặc
-                        <form method="post" class="d-inline" th:action="@{/admin/bookings/{id}/no-show(id=${b.id}, back='today')}"
+            <div class="fd-card danger" th:if="${day.attentionCount() > 0}">
+                <div class="fd-card-head">
+                    <h5><i class="bi bi-exclamation-octagon-fill"></i>Cần xử lý ngay</h5>
+                    <span class="count" th:text="${day.attentionCount()}"></span>
+                </div>
+                <div class="fd-row" th:each="b : ${day.overdueCheckOuts}">
+                    <div class="fd-when">
+                        <div class="label">Phải trả</div>
+                        <div class="time" th:text="${#temporals.format(b.checkOutDate, 'dd/MM')}"></div>
+                        <span class="room-pill" th:text="${b.room.roomNumber}"></span>
+                    </div>
+                    <div>
+                        <div class="fd-guest"><a th:href="@{/admin/bookings/{id}(id=${b.id})}" th:text="${b.guestName}"></a></div>
+                        <div class="fd-chips"><span class="chip t-red"><i class="bi bi-alarm"></i>Khách quá hạn trả phòng</span></div>
+                        <div class="fd-meta mt-2"><span><i class="bi bi-telephone"></i> <a th:href="'tel:' + ${b.guestPhone}" th:text="${b.guestPhone}"></a></span></div>
+                    </div>
+                    <div class="fd-actions no-print">
+                        <a class="btn btn-warning" th:href="@{/admin/bookings/{id}/check-out(id=${b.id})}"><i class="bi bi-box-arrow-right me-1"></i>Check-out</a>
+                        <a class="btn btn-outline-primary" th:href="'tel:' + ${b.guestPhone}"><i class="bi bi-telephone me-1"></i>Gọi khách</a>
+                    </div>
+                </div>
+                <div class="fd-row" th:each="b : ${day.noShows}">
+                    <div class="fd-when">
+                        <div class="label">Lẽ ra đến</div>
+                        <div class="time" th:text="${#temporals.format(b.checkInDate, 'dd/MM')}"></div>
+                        <span class="room-pill" th:text="${b.room.roomNumber}"></span>
+                    </div>
+                    <div>
+                        <div class="fd-guest"><a th:href="@{/admin/bookings/{id}(id=${b.id})}" th:text="${b.guestName}"></a></div>
+                        <div class="fd-chips"><span class="chip t-red"><i class="bi bi-person-x"></i>Chưa đến nhận phòng</span></div>
+                        <div class="fd-meta mt-2">
+                            <span th:text="'Đơn #' + ${b.id}"></span>
+                            <span><i class="bi bi-telephone"></i> <a th:href="'tel:' + ${b.guestPhone}" th:text="${b.guestPhone}"></a></span>
+                        </div>
+                    </div>
+                    <div class="fd-actions no-print">
+                        <a class="btn btn-primary" th:href="'tel:' + ${b.guestPhone}"><i class="bi bi-telephone me-1"></i>Gọi khách</a>
+                        <a class="btn btn-outline-primary" th:href="@{/admin/bookings/{id}(id=${b.id})}">Xem đơn</a>
+                        <form method="post" th:action="@{/admin/bookings/{id}/no-show(id=${b.id}, back='today')}"
                               onsubmit="return confirm('Đánh dấu khách không đến? Đơn sẽ đóng, phòng trả lại để bán, tiền cọc không hoàn.')">
-                            <button type="submit" class="btn btn-link btn-sm p-0 align-baseline no-print">đánh dấu không đến</button>
+                            <button type="submit" class="btn btn-outline-danger"><i class="bi bi-x-circle me-1"></i>Khách không đến</button>
                         </form>
-                    </li>
-                </ul>
+                    </div>
+                </div>
             </div>
 
-            <!-- Khach den -->
-            <div class="fd-card">
-                <h5><i class="bi bi-box-arrow-in-right text-primary"></i>Khách đến
-                    <span class="badge bg-primary-subtle text-primary-emphasis" th:text="${#lists.size(day.arrivals)}"></span></h5>
-                <p th:if="${#lists.isEmpty(day.arrivals)}" class="text-muted mb-0">Không có khách nhận phòng.</p>
-                <div class="table-responsive" th:unless="${#lists.isEmpty(day.arrivals)}">
-                    <table class="table table-sm align-middle">
-                        <thead><tr><th>Giờ</th><th>Phòng</th><th>Khách</th><th>Đêm / khách</th><th>Lưu ý</th><th class="text-end no-print"></th></tr></thead>
-                        <tbody>
-                        <tr th:each="e : ${day.arrivals}" th:with="b=${e.booking}" th:classappend="${e.done} ? 'done'">
-                            <td class="fw-bold" th:text="${#temporals.format(b.checkInTime, 'HH:mm')}"></td>
-                            <td th:text="${b.room.roomNumber}"></td>
-                            <td>
-                                <a class="guest fw-semibold" th:href="@{/admin/bookings/{id}(id=${b.id})}" th:text="${b.guestName}"></a>
-                                <div class="small text-muted" th:text="'#' + ${b.id} + ' · ' + ${b.guestPhone}"></div>
-                            </td>
-                            <td th:text="${b.nights} + ' đêm · ' + ${b.numberOfGuests != null ? b.numberOfGuests : '?'} + ' khách'"></td>
-                            <td class="fd-flags">
-                                <span th:if="${e.done}" class="badge bg-success">Đã nhận phòng</span>
-                                <span th:if="${!e.done and b.status.name() == 'PENDING'}" class="badge bg-warning text-dark">Chờ xác nhận</span>
-                                <span th:if="${b.awaitingDeposit}" class="badge bg-warning text-dark">Chưa chuyển cọc</span>
-                                <span th:if="${e.roomNotReady}" class="badge bg-danger"
-                                      th:text="${b.room.status.name() == 'OCCUPIED'} ? 'Khách trước chưa trả phòng' : (${b.room.status.name() == 'MAINTENANCE'} ? 'Phòng đang bảo trì' : 'Phòng chưa dọn')"></span>
-                                <span th:if="${!e.done and e.declaredGuests == 0}" class="badge bg-secondary">Chưa khai báo lưu trú</span>
-                                <span th:if="${b.combo != null}" class="badge bg-info text-dark" th:text="${b.combo.name}"></span>
-                                <span th:each="tg : ${b.requestTagList}" class="badge bg-light text-dark border" th:text="${tg.vietnameseLabel}"></span>
-                                <div class="small fst-italic" th:if="${b.specialRequests != null}" th:text="'“' + ${b.specialRequests} + '”'"></div>
-                                <div class="small text-warning-emphasis" th:if="${b.customer != null and b.customer.staffNotes != null}">
-                                    <i class="bi bi-person-exclamation"></i> <span th:text="${b.customer.staffNotes}"></span></div>
-                            </td>
-                            <td class="text-end no-print text-nowrap">
-                                <form th:if="${b.status.name() == 'CONFIRMED' and e.declaredGuests > 0}" class="d-inline" method="post"
-                                      th:action="@{/admin/bookings/{id}/check-in(id=${b.id}, back='today')}">
-                                    <button type="submit" class="btn btn-sm btn-success" th:disabled="${e.roomNotReady}"
-                                            th:title="${e.roomNotReady} ? 'Phòng chưa sẵn sàng' : null">Check-in</button>
-                                </form>
-                                <a th:if="${b.status.name() == 'CONFIRMED' and e.declaredGuests == 0}" class="btn btn-sm btn-outline-primary"
-                                   th:href="@{/admin/bookings/{id}(id=${b.id})}">Khai báo &amp; check-in</a>
-                                <a th:if="${b.status.name() == 'PENDING'}" class="btn btn-sm btn-outline-primary"
-                                   th:href="@{/admin/bookings/{id}(id=${b.id})}">Xác nhận</a>
-                            </td>
-                        </tr>
-                        </tbody>
-                    </table>
+            <!-- Yeu cau nhan som / tra muon cho duyet -->
+            <div class="fd-card warn" th:unless="${#lists.isEmpty(stayTimeRequests)}">
+                <div class="fd-card-head">
+                    <h5><i class="bi bi-clock-history"></i>Yêu cầu nhận sớm / trả muộn chờ duyệt</h5>
+                    <span class="count" th:text="${#lists.size(stayTimeRequests)}"></span>
                 </div>
+                <div class="fd-row" th:each="b : ${stayTimeRequests}">
+                    <div class="fd-when">
+                        <div class="label" th:text="'Đơn #' + ${b.id}"></div>
+                        <span class="room-pill" th:text="${b.room.roomNumber}"></span>
+                    </div>
+                    <div>
+                        <div class="fd-guest"><a th:href="@{/admin/bookings/{id}(id=${b.id})} + '#doi-gio'" th:text="${b.guestName}"></a></div>
+                        <div class="fd-chips">
+                            <span th:if="${b.requestedCheckInTime != null}" class="chip t-blue"><i class="bi bi-box-arrow-in-right"></i>
+                                <span th:text="'Nhận ' + ${b.requestedCheckInTime} + ' ngày ' + ${#temporals.format(b.checkInDate, 'dd/MM')}"></span></span>
+                            <span th:if="${b.requestedCheckOutTime != null}" class="chip t-amber"><i class="bi bi-box-arrow-right"></i>
+                                <span th:text="'Trả ' + ${b.requestedCheckOutTime} + ' ngày ' + ${#temporals.format(b.checkOutDate, 'dd/MM')}"></span></span>
+                            <span class="chip muted" th:text="'Phụ thu ' + ${#numbers.formatDecimal(b.timeRequestFee, 1, 'POINT', 0, 'COMMA')} + ' VND'"></span>
+                        </div>
+                    </div>
+                    <div class="fd-actions no-print">
+                        <form method="post" th:action="@{/admin/bookings/{id}/stay-time/approve(id=${b.id}, back='today')}">
+                            <button type="submit" class="btn btn-success"><i class="bi bi-check-lg me-1"></i>Duyệt</button>
+                        </form>
+                        <form method="post" th:action="@{/admin/bookings/{id}/stay-time/reject(id=${b.id}, back='today')}">
+                            <button type="submit" class="btn btn-outline-danger">Từ chối</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Khach den: viec con phai lam o tren, khach da nhan phong gom xuong duoi -->
+            <div class="fd-card" id="khach-den">
+                <div class="fd-card-head">
+                    <h5><i class="bi bi-box-arrow-in-right" style="color:#1f6fa8"></i>Khách đến</h5>
+                    <span class="count" th:text="${#lists.size(day.arrivals)}"></span>
+                    <span class="sub ms-auto" th:unless="${#lists.isEmpty(day.arrivals)}"
+                          th:text="'Còn ' + ${day.arrivalsLeft()} + ' khách chưa nhận phòng'"></span>
+                </div>
+                <div th:if="${#lists.isEmpty(day.arrivals)}" class="fd-empty"><i class="bi bi-check2-circle"></i>Không có khách nhận phòng.</div>
+                <th:block th:each="e : ${day.arrivals}" th:unless="${e.done}">
+                    <div th:replace="~{:: arrivalRow(${e})}"></div>
+                </th:block>
+                <details class="fd-done" th:if="${day.arrivalsLeft() < #lists.size(day.arrivals)}">
+                    <summary><i class="bi bi-check2-circle me-1"></i>Đã nhận phòng
+                        (<span th:text="${#lists.size(day.arrivals) - day.arrivalsLeft()}"></span>)
+                        <i class="bi bi-chevron-down ms-1"></i></summary>
+                    <th:block th:each="e : ${day.arrivals}" th:if="${e.done}">
+                        <div th:replace="~{:: arrivalRow(${e})}"></div>
+                    </th:block>
+                </details>
             </div>
 
             <!-- Khach di -->
-            <div class="fd-card">
-                <h5><i class="bi bi-box-arrow-right text-warning"></i>Khách đi
-                    <span class="badge bg-warning-subtle text-warning-emphasis" th:text="${#lists.size(day.departures)}"></span></h5>
-                <p th:if="${#lists.isEmpty(day.departures)}" class="text-muted mb-0">Không có khách trả phòng.</p>
-                <div class="table-responsive" th:unless="${#lists.isEmpty(day.departures)}">
-                    <table class="table table-sm align-middle">
-                        <thead><tr><th>Giờ</th><th>Phòng</th><th>Khách</th><th>Tổng tiền</th><th>Trạng thái</th><th class="text-end no-print"></th></tr></thead>
-                        <tbody>
-                        <tr th:each="e : ${day.departures}" th:with="b=${e.booking}" th:classappend="${b.status.name() == 'CHECKED_OUT'} ? 'done'">
-                            <td class="fw-bold" th:text="${#temporals.format(b.checkOutTime, 'HH:mm')}"></td>
-                            <td th:text="${b.room.roomNumber}"></td>
-                            <td>
-                                <a class="guest fw-semibold" th:href="@{/admin/bookings/{id}(id=${b.id})}" th:text="${b.guestName}"></a>
-                                <div class="small text-muted" th:text="'#' + ${b.id} + ' · ' + ${b.guestPhone}"></div>
-                            </td>
-                            <td th:text="${#numbers.formatDecimal(b.totalAmount, 1, 'POINT', 0, 'COMMA')} + ' VND'"></td>
-                            <td><span th:class="'badge ' + ${b.status.badgeClass}" th:text="${b.status.vietnameseLabel}"></span></td>
-                            <td class="text-end no-print">
-                                <a th:if="${b.status.name() == 'CHECKED_IN'}" class="btn btn-sm btn-warning"
-                                   th:href="@{/admin/bookings/{id}/check-out(id=${b.id})}">Check-out &amp; thanh toán</a>
-                            </td>
-                        </tr>
-                        </tbody>
-                    </table>
+            <div class="fd-card" id="khach-di">
+                <div class="fd-card-head">
+                    <h5><i class="bi bi-box-arrow-right" style="color:#8a5a00"></i>Khách đi</h5>
+                    <span class="count" th:text="${#lists.size(day.departures)}"></span>
+                    <span class="sub ms-auto" th:unless="${#lists.isEmpty(day.departures)}"
+                          th:text="'Còn ' + ${day.departuresLeft()} + ' phòng chưa trả'"></span>
                 </div>
+                <div th:if="${#lists.isEmpty(day.departures)}" class="fd-empty"><i class="bi bi-check2-circle"></i>Không có khách trả phòng.</div>
+                <th:block th:each="e : ${day.departures}" th:if="${e.booking.status.name() == 'CHECKED_IN'}">
+                    <div th:replace="~{:: departureRow(${e.booking})}"></div>
+                </th:block>
+                <details class="fd-done" th:if="${day.departuresLeft() < #lists.size(day.departures)}">
+                    <summary><i class="bi bi-check2-circle me-1"></i>Đã trả phòng
+                        (<span th:text="${#lists.size(day.departures) - day.departuresLeft()}"></span>)
+                        <i class="bi bi-chevron-down ms-1"></i></summary>
+                    <th:block th:each="e : ${day.departures}" th:unless="${e.booking.status.name() == 'CHECKED_IN'}">
+                        <div th:replace="~{:: departureRow(${e.booking})}"></div>
+                    </th:block>
+                </details>
             </div>
 
-            <div class="row g-3">
+            <div class="row g-4">
                 <!-- Phong cho don -->
                 <div class="col-lg-6">
-                    <div class="fd-card h-100">
-                        <h5><i class="bi bi-stars text-info"></i>Phòng chờ dọn
-                            <a th:href="@{/admin/housekeeping}" class="ms-auto small fw-normal no-print">Bảng dọn phòng &rarr;</a></h5>
-                        <p th:if="${#lists.isEmpty(day.roomsToClean)}" class="text-muted mb-0">Tất cả phòng đã sẵn sàng.</p>
-                        <ul class="list-unstyled mb-0" th:unless="${#lists.isEmpty(day.roomsToClean)}">
-                            <li th:each="r : ${day.roomsToClean}" class="d-flex justify-content-between align-items-center py-1 border-bottom">
-                                <span><b th:text="'Phòng ' + ${r.roomNumber}"></b> <span class="text-muted small" th:text="${r.roomType.name}"></span></span>
-                                <form class="no-print" method="post" th:action="@{/admin/rooms/{id}/mark-ready(id=${r.id}, back='today')}">
-                                    <button type="submit" class="btn btn-sm btn-outline-success">Đã dọn xong</button>
+                    <div class="fd-card h-100" id="cho-don">
+                        <div class="fd-card-head">
+                            <h5><i class="bi bi-stars" style="color:#5b3fb0"></i>Phòng chờ dọn</h5>
+                            <span class="count" th:text="${#lists.size(day.roomsToClean)}"></span>
+                            <a th:href="@{/admin/housekeeping}" class="ms-auto small fw-semibold no-print">Bảng dọn phòng &rarr;</a>
+                        </div>
+                        <div th:if="${#lists.isEmpty(day.roomsToClean)}" class="fd-empty"><i class="bi bi-check2-circle"></i>Tất cả phòng đã sẵn sàng.</div>
+                        <ul class="fd-list" th:unless="${#lists.isEmpty(day.roomsToClean)}">
+                            <li th:each="r : ${day.roomsToClean}">
+                                <span><span class="room-pill" th:text="${r.roomNumber}"></span><span class="text-muted" th:text="${r.roomType.name}"></span></span>
+                                <form class="no-print m-0" method="post" th:action="@{/admin/rooms/{id}/mark-ready(id=${r.id}, back='today')}">
+                                    <button type="submit" class="btn btn-sm btn-outline-success fw-semibold"><i class="bi bi-check-lg me-1"></i>Đã dọn xong</button>
                                 </form>
                             </li>
                         </ul>
@@ -222,14 +287,17 @@
                 </div>
                 <!-- Dang o -->
                 <div class="col-lg-6">
-                    <div class="fd-card h-100">
-                        <h5><i class="bi bi-house-check text-success"></i>Đang ở</h5>
-                        <p th:if="${#lists.isEmpty(day.inHouse)}" class="text-muted mb-0">Chưa có khách nào đang ở.</p>
-                        <ul class="list-unstyled mb-0" th:unless="${#lists.isEmpty(day.inHouse)}">
-                            <li th:each="b : ${day.inHouse}" class="d-flex justify-content-between py-1 border-bottom">
-                                <span><b th:text="'Phòng ' + ${b.room.roomNumber}"></b> ·
-                                    <a th:href="@{/admin/bookings/{id}(id=${b.id})}" th:text="${b.guestName}"></a></span>
-                                <span class="small text-muted" th:text="'trả ' + ${#temporals.format(b.checkOutDate, 'dd/MM')}"></span>
+                    <div class="fd-card h-100" id="dang-o">
+                        <div class="fd-card-head">
+                            <h5><i class="bi bi-house-check" style="color:#1d7a43"></i>Đang ở</h5>
+                            <span class="count" th:text="${#lists.size(day.inHouse)}"></span>
+                        </div>
+                        <div th:if="${#lists.isEmpty(day.inHouse)}" class="fd-empty"><i class="bi bi-info-circle"></i>Chưa có khách nào đang ở.</div>
+                        <ul class="fd-list" th:unless="${#lists.isEmpty(day.inHouse)}">
+                            <li th:each="b : ${day.inHouse}">
+                                <span><span class="room-pill" th:text="${b.room.roomNumber}"></span><a class="fw-semibold" th:href="@{/admin/bookings/{id}(id=${b.id})}" th:text="${b.guestName}"></a></span>
+                                <span class="small text-nowrap" th:classappend="${b.checkOutDate.isAfter(day.date)} ? 'text-muted' : 'text-danger fw-bold'"
+                                      th:text="'trả ' + ${#temporals.format(b.checkOutDate, 'dd/MM')}"></span>
                             </li>
                         </ul>
                     </div>
@@ -239,7 +307,78 @@
     </div>
 </main>
 
+<!-- Mau 1 dong khach den -->
+<th:block th:if="false">
+<div th:fragment="arrivalRow(e)" class="fd-row" th:with="b=${e.booking}">
+    <div class="fd-when">
+        <div class="time" th:text="${#temporals.format(b.checkInTime, 'HH:mm')}"></div>
+        <span class="room-pill" th:text="${b.room.roomNumber}"></span>
+    </div>
+    <div>
+        <div class="fd-guest"><a th:href="@{/admin/bookings/{id}(id=${b.id})}" th:text="${b.guestName}"></a></div>
+        <div class="fd-meta">
+            <span th:text="'#' + ${b.id}"></span>
+            <span><i class="bi bi-telephone"></i> <a th:href="'tel:' + ${b.guestPhone}" th:text="${b.guestPhone}"></a></span>
+            <span><i class="bi bi-moon"></i> <span th:text="${b.nights} + ' đêm'"></span></span>
+            <span><i class="bi bi-people"></i> <span th:text="${b.numberOfGuests != null ? b.numberOfGuests : '?'} + ' khách'"></span></span>
+        </div>
+        <div class="fd-chips">
+            <span th:if="${e.done}" class="chip t-green"><i class="bi bi-check-circle"></i>Đã nhận phòng</span>
+            <span th:if="${!e.done and b.status.name() == 'PENDING'}" class="chip t-amber"><i class="bi bi-hourglass-split"></i>Chờ xác nhận</span>
+            <span th:if="${b.awaitingDeposit}" class="chip t-amber"><i class="bi bi-cash-coin"></i>Chưa chuyển cọc</span>
+            <span th:if="${e.roomNotReady}" class="chip t-red"><i class="bi bi-exclamation-triangle"></i>
+                <span th:text="${b.room.status.name() == 'OCCUPIED'} ? 'Khách trước chưa trả phòng' : (${b.room.status.name() == 'MAINTENANCE'} ? 'Phòng đang bảo trì' : 'Phòng chưa dọn')"></span></span>
+            <span th:if="${!e.done and e.declaredGuests == 0}" class="chip muted"><i class="bi bi-person-vcard"></i>Chưa khai báo lưu trú</span>
+            <span th:if="${b.combo != null}" class="chip info"><i class="bi bi-gift"></i><span th:text="${b.combo.name}"></span></span>
+            <span th:each="tg : ${b.requestTagList}" class="chip info" th:text="${tg.vietnameseLabel}"></span>
+        </div>
+        <div class="fd-note" th:if="${b.specialRequests != null}"><i class="bi bi-chat-quote me-1"></i><span th:text="${b.specialRequests}"></span></div>
+        <div class="fd-note staff" th:if="${b.customer != null and b.customer.staffNotes != null}">
+            <i class="bi bi-person-exclamation me-1"></i><b>Lưu ý khách:</b> <span th:text="${b.customer.staffNotes}"></span></div>
+    </div>
+    <div class="fd-actions no-print">
+        <th:block th:if="${b.status.name() == 'CONFIRMED' and e.declaredGuests > 0}">
+            <form method="post" th:action="@{/admin/bookings/{id}/check-in(id=${b.id}, back='today')}">
+                <button type="submit" class="btn btn-success" th:disabled="${e.roomNotReady}"><i class="bi bi-door-open me-1"></i>Check-in</button>
+            </form>
+            <div class="fd-hint" th:if="${e.roomNotReady}">Phòng chưa sẵn sàng</div>
+        </th:block>
+        <a th:if="${b.status.name() == 'CONFIRMED' and e.declaredGuests == 0}" class="btn btn-primary"
+           th:href="@{/admin/bookings/{id}(id=${b.id})}"><i class="bi bi-person-vcard me-1"></i>Khai báo &amp; check-in</a>
+        <a th:if="${b.status.name() == 'PENDING'}" class="btn btn-outline-primary"
+           th:href="@{/admin/bookings/{id}(id=${b.id})}"><i class="bi bi-check2-square me-1"></i>Xác nhận</a>
+        <a th:if="${e.done}" class="btn btn-sm btn-outline-secondary" th:href="@{/admin/bookings/{id}(id=${b.id})}">Xem đơn</a>
+    </div>
+</div>
+
+<!-- Mau 1 dong khach di -->
+<div th:fragment="departureRow(b)" class="fd-row">
+    <div class="fd-when">
+        <div class="time" th:text="${#temporals.format(b.checkOutTime, 'HH:mm')}"></div>
+        <span class="room-pill" th:text="${b.room.roomNumber}"></span>
+    </div>
+    <div>
+        <div class="fd-guest"><a th:href="@{/admin/bookings/{id}(id=${b.id})}" th:text="${b.guestName}"></a></div>
+        <div class="fd-meta">
+            <span th:text="'#' + ${b.id}"></span>
+            <span><i class="bi bi-telephone"></i> <a th:href="'tel:' + ${b.guestPhone}" th:text="${b.guestPhone}"></a></span>
+            <span><i class="bi bi-receipt"></i> <b th:text="${#numbers.formatDecimal(b.totalAmount, 1, 'POINT', 0, 'COMMA')} + ' VND'"></b></span>
+        </div>
+        <div class="fd-chips"><span th:class="'badge ' + ${b.status.badgeClass}" th:text="${b.status.vietnameseLabel}"></span></div>
+    </div>
+    <div class="fd-actions no-print">
+        <a th:if="${b.status.name() == 'CHECKED_IN'}" class="btn btn-warning"
+           th:href="@{/admin/bookings/{id}/check-out(id=${b.id})}"><i class="bi bi-box-arrow-right me-1"></i>Check-out &amp; thanh toán</a>
+        <a th:unless="${b.status.name() == 'CHECKED_IN'}" class="btn btn-sm btn-outline-secondary" th:href="@{/admin/bookings/{id}(id=${b.id})}">Xem đơn</a>
+    </div>
+</div>
+</th:block>
+
 <div th:replace="~{fragments/footer :: footer}"></div>
 
+<script>
+    // In: mo het cac muc "da xong" de ban in day du
+    window.addEventListener('beforeprint', () => document.querySelectorAll('details.fd-done').forEach(d => d.open = true));
+</script>
 </body>
 </html>

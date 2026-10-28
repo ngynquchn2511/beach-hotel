@@ -125,7 +125,7 @@ class FrontDeskTodayIT {
         mockMvc.perform(get("/admin/today").param("date", TODAY.plusDays(1).toString()).with(user(staff)))
                 .andExpect(content().string(containsString("Khach Ngay Mai")))
                 .andExpect(content().string(containsString("Lịch trực")))
-                .andExpect(content().string(not(containsString("Khach Hom Nay</a>"))));
+                .andExpect(content().string(containsString("Còn 1 khách chưa nhận phòng")));
 
         mockMvc.perform(get("/admin/bookings").with(user(staff)))
                 .andExpect(model().attribute("arrivalsLeftToday", org.hamcrest.Matchers.greaterThanOrEqualTo(1L)));
