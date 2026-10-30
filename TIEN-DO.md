@@ -1,7 +1,7 @@
 # Tiến độ dự án Sóng Xanh Resort (beach-hotel)
 
 > File bàn giao giữa các phiên làm việc với Claude. Mở phiên mới, bảo Claude: **"đọc file TIEN-DO.md"**.
-> Cập nhật lần cuối: 29/10/2026, sau đợt 21 (làm lại giao diện trang Hôm nay của lễ tân).
+> Cập nhật lần cuối: 30/10/2026, sau đợt 22 (soát và sửa báo cáo Word).
 
 ## 1. Dự án
 
@@ -33,6 +33,11 @@
    - MockMvc đọc JSON không charset là ISO-8859-1: dùng `getContentAsString(StandardCharsets.UTF_8)`.
 
 ## 3. Đã làm (theo thứ tự gần nhất trước)
+
+### Đợt 22 (30/10/2026) - Soát báo cáo Word, sửa chỗ lệch với code / sơ đồ mới
+| Commit | Chức năng |
+|---|---|
+| (xem `git log`) | Theo yêu cầu «kiểm tra word xem đã đúng hết chưa» → «sửa hết đi, giữ mô tả OTP». Soát `docs/BaoCao-DoAn.docx` (đánh số hình / bảng, danh mục, mục lục, tham chiếu đều đúng) và sửa 6 chỗ lệch: **Hình 2.2** thay bằng ảnh xuất từ `uc0-tong-quat.drawio` chủ dự án sửa 28/10 (bỏ tác nhân VNPay), bỏ câu «VNPay là hệ thống ngoài...» ở mục 2.2; **phân trang** 20 → 10 (Hình 2.71 quản lý đặt phòng, Hình 2.78 lịch phòng); **Phụ lục 1**: OTP cổng quản trị đang tắt mặc định (`ADMIN_OTP=false`), bật lại bằng `ADMIN_OTP=true` (mô tả OTP ở chương 1 - 3 giữ nguyên vì tính năng vẫn có); **màn hình Hôm nay mới**: phác thảo Hình 2.68 vẽ lại (`gd28-hom-nay.drawio`, giữ header + menu, vùng nội dung theo `admin/today.html` mới, mô tả (1) - (6) viết lại), ảnh Hình 3.68 chụp lại (`docs/hinh/ket-qua/l01-hom-nay.png`, Chrome headless + CDP trên bản sao CSDL `beach_hotel_shots` dời ngày đơn +11 ngày để «hôm nay» giống ngày dữ liệu demo, đã xóa sau khi chụp), các bước (1) - (3) viết lại; **số liệu**: 1.926 ca kiểm thử (mục 3.4, 4.1, Bảng 3.2), dòng mã 31.945 / 18.976, 52 tệp migration, nguồn bảng ngày 30/10/2026; mục 4.1 «177 thao tác» → 178. Báo cáo 325 trang, cập nhật mục lục / danh mục, xuất lại PDF. `ucn5` vẫn chưa commit (không thuộc báo cáo). draw.io Desktop 32.6.1 cài sẵn ở `%LOCALAPPDATA%\Programs\draw.io` xuất PNG được |
 
 ### Đợt 21 (29/10/2026) - Trang «Hôm nay» dễ nhìn, dễ thao tác hơn
 | Commit | Chức năng |
