@@ -19,8 +19,8 @@
         <mxCell id="a1" parent="1" style="fontFamily=Arial;fontColor=#000000;rounded=1;whiteSpace=wrap;html=1;arcSize=35;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontSize=13;spacing=6;" value="Mở màn hình trả phòng&lt;br&gt;của đơn đang ở" vertex="1">
           <mxGeometry height="54" width="214" x="63.0" y="153" as="geometry" />
         </mxCell>
-        <mxCell id="d1" parent="1" style="fontFamily=Arial;fontColor=#000000;rhombus;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontSize=12;" value="Có phụ phí" vertex="1">
-          <mxGeometry height="66" width="150" x="95.0" y="252.60000000000002" as="geometry" />
+        <mxCell id="d1" parent="1" style="fontFamily=Arial;fontColor=#000000;rhombus;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontSize=12;" value="Có phát sinh&lt;br&gt;phụ phí?" vertex="1">
+          <mxGeometry height="76" width="170" x="85.0" y="247.60000000000002" as="geometry" />
         </mxCell>
         <mxCell id="a2" parent="1" style="fontFamily=Arial;fontColor=#000000;rounded=1;whiteSpace=wrap;html=1;arcSize=35;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontSize=13;spacing=6;" value="Thêm phụ phí&lt;br&gt;(minibar, hư hỏng...)" vertex="1">
           <mxGeometry height="54" width="214" x="63.0" y="364.2" as="geometry" />
@@ -40,16 +40,16 @@
         <mxCell id="m2" parent="1" style="fontFamily=Arial;fontColor=#000000;rhombus;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontSize=12;" value="" vertex="1">
           <mxGeometry height="30" width="30" x="835.0" y="781.4" as="geometry" />
         </mxCell>
-        <mxCell id="a6" parent="1" style="fontFamily=Arial;fontColor=#000000;rounded=1;whiteSpace=wrap;html=1;arcSize=35;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontSize=13;spacing=6;" value="Dọn phòng,&lt;br&gt;bấm «Xong»" vertex="1">
+        <mxCell id="a6" parent="1" style="fontFamily=Arial;fontColor=#000000;rounded=1;whiteSpace=wrap;html=1;arcSize=35;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontSize=13;spacing=6;" value="Dọn phòng (làm lại theo&lt;br&gt;ghi chú nếu có), «Xong»" vertex="1">
           <mxGeometry height="54" width="214" x="743.0" y="848.6" as="geometry" />
         </mxCell>
-        <mxCell id="d2" parent="1" style="fontFamily=Arial;fontColor=#000000;rhombus;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontSize=12;" value="Bật kiểm phòng" vertex="1">
-          <mxGeometry height="66" width="150" x="435.0" y="842.6" as="geometry" />
+        <mxCell id="d2" parent="1" style="fontFamily=Arial;fontColor=#000000;rhombus;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontSize=12;" value="Có yêu cầu&lt;br&gt;kiểm tra phòng?" vertex="1">
+          <mxGeometry height="80" width="190" x="415.0" y="835.6" as="geometry" />
         </mxCell>
         <mxCell id="a7" parent="1" style="fontFamily=Arial;fontColor=#000000;rounded=1;whiteSpace=wrap;html=1;arcSize=35;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontSize=13;spacing=6;" value="Kiểm tra phòng" vertex="1">
           <mxGeometry height="54" width="214" x="63.0" y="848.6" as="geometry" />
         </mxCell>
-        <mxCell id="d3" parent="1" style="fontFamily=Arial;fontColor=#000000;rhombus;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontSize=12;" value="Đạt" vertex="1">
+        <mxCell id="d3" parent="1" style="fontFamily=Arial;fontColor=#000000;rhombus;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontSize=12;" value="Phòng đạt?" vertex="1">
           <mxGeometry height="66" width="150" x="95.0" y="948.2" as="geometry" />
         </mxCell>
         <mxCell id="m3" parent="1" style="fontFamily=Arial;fontColor=#000000;rhombus;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontSize=12;" value="" vertex="1">
@@ -122,13 +122,9 @@
             <mxPoint as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="edge16" edge="1" parent="1" source="d3" style="fontFamily=Arial;fontColor=#000000;edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;endSize=7;strokeColor=#000000;strokeWidth=1.2;fontSize=12;labelBackgroundColor=#FFFFFF;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="m2" value="[Không đạt]">
-          <mxGeometry relative="1" x="-0.3814" y="-24" as="geometry">
+        <mxCell id="edge16" edge="1" parent="1" source="d3" style="fontFamily=Arial;fontColor=#000000;edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;endSize=7;strokeColor=#000000;strokeWidth=1.2;fontSize=12;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="fb" value="[Không đạt]">
+          <mxGeometry relative="1" x="-0.2" y="40" as="geometry">
             <mxPoint as="offset" />
-            <Array as="points">
-              <mxPoint x="36.0" y="981.2" />
-              <mxPoint x="36.0" y="796.4" />
-            </Array>
           </mxGeometry>
         </mxCell>
         <mxCell id="edge17" edge="1" parent="1" source="m3" style="fontFamily=Arial;fontColor=#000000;edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;endSize=7;strokeColor=#000000;strokeWidth=1.2;fontSize=12;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="a8" value="">
@@ -168,6 +164,17 @@
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="850.0" y="746.0" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="fb" value="Ghi lý do chưa đạt,&lt;br&gt;báo buồng phòng làm lại" style="fontFamily=Arial;fontColor=#000000;rounded=1;whiteSpace=wrap;html=1;arcSize=35;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1.3;fontSize=13;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="63.0" y="1044.2" width="214.0" height="54.0" as="geometry" />
+        </mxCell>
+        <mxCell id="efb" value="" style="fontFamily=Arial;fontColor=#000000;edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;endSize=7;strokeColor=#000000;strokeWidth=1.2;fontSize=12;labelBackgroundColor=#FFFFFF;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="fb" target="m2">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="36.0" y="1071.2" />
+              <mxPoint x="36.0" y="796.4" />
             </Array>
           </mxGeometry>
         </mxCell>
