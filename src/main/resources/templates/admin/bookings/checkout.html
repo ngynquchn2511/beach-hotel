@@ -51,6 +51,34 @@
                 </table>
             </div>
 
+            <!-- Kiem phong truoc khi tra: buong phong kiem do mat / hu hong, le tan dua vao do them phu phi -->
+            <div class="bg-white p-4 rounded shadow-sm mb-4 section-anchor" id="kiem-phong">
+                <h6 class="fw-bold mb-3">Kiểm tra phòng (đồ mất / hư hỏng)</h6>
+                <th:block th:if="${booking.roomCheckRequestedAt == null}">
+                    <p class="text-muted small mb-2">Chưa yêu cầu kiểm phòng. Báo buồng phòng kiểm minibar, đồ dùng, hư hỏng trước khi tính tiền.</p>
+                </th:block>
+                <div th:if="${booking.roomCheckPending}" class="alert alert-warning small mb-2">
+                    <i class="bi bi-hourglass-split me-1"></i>Đang chờ buồng phòng kiểm (yêu cầu lúc
+                    <span th:text="${#temporals.format(booking.roomCheckRequestedAt, 'HH:mm dd/MM')}"></span>).
+                </div>
+                <th:block th:if="${booking.roomCheckDone}">
+                    <div th:if="${booking.roomCheckHasIssue}" class="alert alert-danger small mb-2">
+                        <i class="bi bi-exclamation-triangle me-1"></i><b>Có đồ mất / hư hỏng:</b>
+                        <span th:text="${booking.roomCheckNote}"></span>
+                        <div class="text-muted" th:text="|${booking.roomCheckedBy} · ${#temporals.format(booking.roomCheckedAt, 'HH:mm dd/MM')}|"></div>
+                    </div>
+                    <div th:unless="${booking.roomCheckHasIssue}" class="alert alert-success small mb-2">
+                        <i class="bi bi-check2-circle me-1"></i>Không mất / hỏng gì<span th:if="${booking.roomCheckNote}" th:text="' - ' + ${booking.roomCheckNote}"></span>
+                        <div class="text-muted" th:text="|${booking.roomCheckedBy} · ${#temporals.format(booking.roomCheckedAt, 'HH:mm dd/MM')}|"></div>
+                    </div>
+                </th:block>
+                <form th:unless="${paid}" method="post" th:action="@{/admin/bookings/{id}/room-check(id=${booking.id})}">
+                    <button type="submit" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-clipboard-check me-1"></i><span th:text="${booking.roomCheckRequestedAt == null} ? 'Yêu cầu buồng phòng kiểm phòng' : 'Yêu cầu kiểm lại'"></span>
+                    </button>
+                </form>
+            </div>
+
             <!-- Phu phi phat sinh: chi them/xoa khi chua thanh toan -->
             <div class="bg-white p-4 rounded shadow-sm mb-4 section-anchor" id="phu-phi">
                 <h6 class="fw-bold mb-3">Phụ phí phát sinh</h6>

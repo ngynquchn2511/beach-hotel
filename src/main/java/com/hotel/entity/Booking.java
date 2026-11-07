@@ -382,6 +382,39 @@ public class Booking {
     @Column(name = "refund_online_ref", length = 40)
     private String refundOnlineRef;
 
+    // Kiem phong truoc khi tra: le tan yeu cau -> nhan vien buong phong kiem do mat / hu hong -> bao lai le tan tinh phu phi
+    @Column(name = "room_check_requested_at")
+    private LocalDateTime roomCheckRequestedAt;
+
+    @Column(name = "room_check_requested_by", length = 100)
+    private String roomCheckRequestedBy;
+
+    @Column(name = "room_checked_at")
+    private LocalDateTime roomCheckedAt;
+
+    @Column(name = "room_checked_by", length = 100)
+    private String roomCheckedBy;
+
+    // true = co do mat / hu hong (ghi trong roomCheckNote)
+    @Column(name = "room_check_issue")
+    private Boolean roomCheckIssue;
+
+    @Column(name = "room_check_note", length = 300)
+    private String roomCheckNote;
+
+    // Da yeu cau kiem phong, buong phong chua bao ket qua
+    public boolean isRoomCheckPending() {
+        return roomCheckRequestedAt != null && roomCheckedAt == null;
+    }
+
+    public boolean isRoomCheckDone() {
+        return roomCheckedAt != null;
+    }
+
+    public boolean isRoomCheckHasIssue() {
+        return Boolean.TRUE.equals(roomCheckIssue);
+    }
+
     // Hoan tu dong qua VNPay duoc khi: coc tra qua VNPay (co du thong tin giao dich) va dang cho hoan
     public boolean isRefundableViaVnpay() {
         return isRefundPending() && isDepositPaidOnline() && depositOnlineTxnRef != null && depositOnlinePayDate != null;

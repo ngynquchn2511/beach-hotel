@@ -38,6 +38,7 @@ public class AdminHousekeepingController {
         model.addAttribute("myId", user != null ? user.getUser().getId() : null);
         model.addAttribute("housekeepers", housekeepingService.housekeepers());
         model.addAttribute("inspectionRequired", housekeepingService.inspectionRequired());
+        model.addAttribute("roomChecks", housekeepingService.pendingRoomChecks());
         return "admin/housekeeping/index";
     }
 
@@ -83,6 +84,15 @@ public class AdminHousekeepingController {
                        @AuthenticationPrincipal CustomUserDetails user, RedirectAttributes redirectAttributes) {
         return run(() -> housekeepingService.fail(roomId, note, staffName(user)), "Đã trả phòng cho buồng phòng làm lại",
                 redirectAttributes, false);
+    }
+
+    // Kiem phong truoc khi tra: nhan vien buong phong bao co / khong co do mat, hu hong
+    @PostMapping("/room-checks/{bookingId}")
+    public String reportRoomCheck(@PathVariable Long bookingId, @RequestParam(defaultValue = "false") boolean issue,
+                                  @RequestParam(required = false) String note, @RequestParam(defaultValue = "false") boolean mine,
+                                  @AuthenticationPrincipal CustomUserDetails user, RedirectAttributes redirectAttributes) {
+        return run(() -> housekeepingService.reportRoomCheck(bookingId, issue, note, staffName(user)),
+                "Đã báo kết quả kiểm phòng cho lễ tân", redirectAttributes, mine);
     }
 
     // Thong ke nang suat / chat luong buong phong (mac dinh 30 ngay gan nhat)

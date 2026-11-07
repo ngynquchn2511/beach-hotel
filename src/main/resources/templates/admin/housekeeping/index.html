@@ -52,6 +52,31 @@
             <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
             <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
 
+            <!-- Kiem phong truoc khi khach tra: do mat / hu hong -> bao le tan -->
+            <div th:unless="${#lists.isEmpty(roomChecks)}" class="hk-col mb-3" id="kiem-truoc-tra">
+                <h5><i class="bi bi-search text-danger"></i>Kiểm trước khi trả phòng
+                    <span class="badge bg-danger" th:text="${#lists.size(roomChecks)}"></span></h5>
+                <div class="row g-2">
+                    <div th:each="b : ${roomChecks}" class="col-md-6">
+                        <div class="hk-room priority">
+                            <div class="num" th:text="'Phòng ' + ${b.room.roomNumber}"></div>
+                            <div class="small text-muted" th:text="|Khách đang trả phòng · lễ tân ${b.roomCheckRequestedBy != null ? b.roomCheckRequestedBy : ''} yêu cầu lúc ${#temporals.format(b.roomCheckRequestedAt, 'HH:mm')}|"></div>
+                            <form method="post" th:action="@{/admin/housekeeping/room-checks/{id}(id=${b.id})}" class="mt-2">
+                                <input type="hidden" name="mine" th:value="${mine}">
+                                <input type="text" name="note" class="form-control form-control-sm mb-1" maxlength="300"
+                                       placeholder="Đồ mất / hư hỏng, minibar đã dùng (nếu có)">
+                                <div class="d-flex gap-1">
+                                    <button type="submit" name="issue" value="false" class="btn btn-sm btn-success flex-fill">
+                                        <i class="bi bi-check2 me-1"></i>Không mất / hỏng</button>
+                                    <button type="submit" name="issue" value="true" class="btn btn-sm btn-outline-danger flex-fill">
+                                        <i class="bi bi-exclamation-triangle me-1"></i>Có mất / hỏng</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="row g-3">
                 <!-- Cho don: phong co khach den hom nay len dau -->
                 <div class="col-lg-6 col-xl-3">

@@ -276,6 +276,69 @@ public class HousekeepingService {
                 Level.WARNING, "Phòng " + room.getRoomNumber() + " kiểm chưa đạt", text + (inspectorName != null ? " · " + inspectorName : ""));
     }
 
+    // ===== Kiem phong truoc khi tra phong (do mat / hu hong) =====
+
+    // Le tan mo man hinh tra phong -> yeu cau buong phong kiem phong cua don dang o (yeu cau lai thi xoa ket qua cu)
+    @Transactional
+    public Booking requestRoomCheck(Long bookingId, String byName) {
+        Booking booking = requireStaying(bookingId);
+        booking.setRoomCheckRequestedAt(LocalDateTime.now());
+        booking.setRoomCheckRequestedBy(byName);
+        booking.setRoomCheckedAt(null);
+        booking.setRoomCheckedBy(null);
+        booking.setRoomCheckIssue(null);
+        booking.setRoomCheckNote(null);
+        bookingRepository.save(booking);
+        notify(EnumSet.of(Audience.HOUSEKEEPING), null, Level.WARNING, "Kiểm phòng " + booking.getRoom().getRoomNumber() + " trước khi trả",
+                "Kiểm đồ mất / hư hỏng, minibar rồi báo lễ tân", "/admin/housekeeping");
+        return booking;
+    }
+
+    // Nhan vien buong phong bao ket qua: khong co gi / co do mat, hu hong (bat buoc ghi ro) -> bao le tan tinh phu phi
+    @Transactional
+    public Booking reportRoomCheck(Long bookingId, boolean issue, String note, String checkerName) {
+        Booking booking = requireStaying(bookingId);
+        if (!booking.isRoomCheckPending()) {
+            throw new BusinessException("Phòng " + booking.getRoom().getRoomNumber() + " không có yêu cầu kiểm trước khi trả");
+        }
+        String text = note == null ? "" : note.trim();
+        if (issue && text.isEmpty()) {
+            throw new BusinessException("Vui lòng ghi đồ bị mất / hư hỏng");
+        }
+        if (text.length() > NOTE_MAX) {
+            throw new BusinessException("Ghi chú tối đa " + NOTE_MAX + " ký tự");
+        }
+        booking.setRoomCheckedAt(LocalDateTime.now());
+        booking.setRoomCheckedBy(checkerName);
+        booking.setRoomCheckIssue(issue);
+        booking.setRoomCheckNote(text.isEmpty() ? null : text);
+        bookingRepository.save(booking);
+        String room = booking.getRoom().getRoomNumber();
+        notify(EnumSet.of(Audience.FRONT_DESK), null, issue ? Level.WARNING : Level.SUCCESS,
+                issue ? "Phòng " + room + " có đồ mất / hư hỏng" : "Phòng " + room + " kiểm xong, không mất / hỏng gì",
+                (text.isEmpty() ? "" : text + " · ") + (checkerName != null ? checkerName : ""),
+                "/admin/bookings/" + booking.getId() + "/check-out");
+        return booking;
+    }
+
+    // Cac phong dang cho buong phong kiem truoc khi tra (yeu cau cu nhat len dau)
+    @Transactional(readOnly = true)
+    public List<Booking> pendingRoomChecks() {
+        return bookingRepository.findByStatusOrderByCreatedAtDesc(BookingStatus.CHECKED_IN).stream()
+                .filter(Booking::isRoomCheckPending)
+                .sorted(Comparator.comparing(Booking::getRoomCheckRequestedAt))
+                .toList();
+    }
+
+    private Booking requireStaying(Long bookingId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new BusinessException("Không tìm thấy đơn #" + bookingId));
+        if (booking.getStatus() != BookingStatus.CHECKED_IN) {
+            throw new BusinessException("Chỉ kiểm phòng trước khi trả cho đơn đang ở (CHECKED_IN)");
+        }
+        return booking;
+    }
+
     // ===== Thong ke buong phong =====
 
     public record CleanerStats(String name, long cleaned, Double avgMinutes, long inspected, long failed) {
@@ -317,8 +380,12 @@ public class HousekeepingService {
     }
 
     private void notify(java.util.Set<Audience> to, Long userId, Level level, String title, String message) {
+        notify(to, userId, level, title, message, "/admin/housekeeping");
+    }
+
+    private void notify(java.util.Set<Audience> to, Long userId, Level level, String title, String message, String link) {
         if (notifier != null) {
-            notifier.notify(to, userId, "housekeeping", level, title, message, "/admin/housekeeping");
+            notifier.notify(to, userId, "housekeeping", level, title, message, link);
         }
     }
 

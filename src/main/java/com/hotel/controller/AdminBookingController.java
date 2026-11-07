@@ -36,6 +36,13 @@ public class AdminBookingController {
     private final com.hotel.service.VnPayService vnPayService;
     private com.hotel.service.CompanyInvoiceService companyInvoiceService;
 
+    private com.hotel.service.HousekeepingService housekeepingService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setHousekeepingService(com.hotel.service.HousekeepingService housekeepingService) {
+        this.housekeepingService = housekeepingService;
+    }
+
     @org.springframework.beans.factory.annotation.Autowired
     void setCompanyInvoiceService(com.hotel.service.CompanyInvoiceService companyInvoiceService) {
         this.companyInvoiceService = companyInvoiceService;
@@ -211,6 +218,20 @@ public class AdminBookingController {
         model.addAttribute("amountDue", paymentService.amountDue(booking));
         model.addAttribute("chargeTypes", ChargeType.manualTypes());
         return "admin/bookings/checkout";
+    }
+
+    // Yeu cau nhan vien buong phong kiem phong (do mat / hu hong) truoc khi tinh tien tra phong
+    @PostMapping("/{id}/room-check")
+    public String requestRoomCheck(@PathVariable Long id,
+                                   @org.springframework.security.core.annotation.AuthenticationPrincipal com.hotel.security.CustomUserDetails user,
+                                   RedirectAttributes redirectAttributes) {
+        try {
+            housekeepingService.requestRoomCheck(id, user != null ? user.getUser().getFullName() : null);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã báo buồng phòng kiểm phòng");
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "redirect:/admin/bookings/" + id + "/check-out#kiem-phong";
     }
 
     // Them phu phi phat sinh truoc khi thu tien (minibar, giat ui, hu hong, tra phong muon...)
