@@ -91,7 +91,7 @@ class AccountingIT extends ItFixtures {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Sổ quỹ tháng")))
                 .andExpect(content().string(containsString("1.750.000")))
-                .andExpect(content().string(containsString("Hoàn cọc đơn #" + refunded.getId())));
+                .andExpect(content().string(containsString("Hoàn cọc đơn #" + refunded.getCode())));
 
         byte[] xlsx = mockMvc.perform(get("/admin/accounting/ledger.xlsx").with(as(accountant)).param("month", "2025-03"))
                 .andExpect(status().isOk())

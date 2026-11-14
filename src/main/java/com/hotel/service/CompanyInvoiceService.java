@@ -129,7 +129,7 @@ public class CompanyInvoiceService {
             int r = 1;
             for (Booking b : list()) {
                 Row row = sheet.createRow(r++);
-                row.createCell(0).setCellValue("#" + b.getId());
+                row.createCell(0).setCellValue("#" + b.getCode());
                 row.createCell(1).setCellValue(b.getCheckOutDate().format(date));
                 row.createCell(2).setCellValue(b.getStatus().getVietnameseLabel());
                 row.createCell(3).setCellValue(b.getInvoiceCompanyName());

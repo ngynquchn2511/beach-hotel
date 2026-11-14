@@ -65,7 +65,7 @@
                                 <div class="small text-muted" th:if="${r.note != null}" th:text="${r.note}"></div>
                                 <div class="small" th:if="${r.rated}"><span class="text-warning" th:text="${#strings.repeat('★', r.rating)} + ${#strings.repeat('☆', 5 - r.rating)}"></span>
                                     <span class="fst-italic" th:if="${r.feedback != null}" th:text="${r.feedback}"></span></div></td>
-                            <td><a th:href="@{/admin/bookings/{id}(id=${r.booking.id})}" th:text="'#' + ${r.booking.id} + ' ' + ${r.booking.guestName}"></a>
+                            <td><a th:href="@{/admin/bookings/{id}(id=${r.booking.id})}" th:text="'#' + ${r.booking.code} + ' ' + ${r.booking.guestName}"></a>
                                 <div class="small text-muted" th:text="'Phòng ' + ${r.booking.room.roomNumber}"></div></td>
                             <td><span class="badge" th:classappend="${r.status.name() == 'CONFIRMED'} ? 'bg-success' : (${r.status.name() == 'PENDING'} ? 'bg-warning text-dark' : 'bg-secondary')"
                                       th:text="${r.status.vietnameseLabel}"></span></td>

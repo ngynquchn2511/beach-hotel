@@ -116,7 +116,7 @@ public class VnPayService {
         req.put("vnp_CreateBy", staffName == null || staffName.isBlank() ? "le tan" : staffName);
         req.put("vnp_CreateDate", now.format(VNP_TIME));
         req.put("vnp_IpAddr", clientIp == null || clientIp.isBlank() ? "127.0.0.1" : clientIp);
-        req.put("vnp_OrderInfo", "Hoan coc don HB" + booking.getId());
+        req.put("vnp_OrderInfo", "Hoan coc don HB" + booking.getCode());
         req.put("vnp_SecureHash", hmacSha512(pipeJoin(req, REFUND_REQUEST_FIELDS)));
 
         Map<String, String> res;
@@ -183,7 +183,7 @@ public class VnPayService {
         params.put("vnp_CurrCode", "VND");
         // Ma giao dich duy nhat moi lan bam: <ma don>_<thoi diem>, khach bam lai van tao giao dich moi
         params.put("vnp_TxnRef", booking.getId() + "_" + now.toEpochSecond());
-        params.put("vnp_OrderInfo", "Dat coc don HB" + booking.getId());
+        params.put("vnp_OrderInfo", "Dat coc don HB" + booking.getCode());
         params.put("vnp_OrderType", "other");
         params.put("vnp_Locale", english ? "en" : "vn");
         params.put("vnp_ReturnUrl", returnUrl);

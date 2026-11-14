@@ -38,7 +38,7 @@
                     <thead><tr><th>Đơn</th><th>Ngày đặt</th><th>Khách</th><th class="text-end">Giảm</th><th class="text-end">Tổng đơn</th><th>Trạng thái</th></tr></thead>
                     <tbody>
                     <tr th:each="b : ${bookings}" th:classappend="${b.status.name() == 'CANCELLED'} ? 'text-muted'">
-                        <td><a th:href="@{/admin/bookings/{id}(id=${b.id})}" th:text="'#' + ${b.id}"></a>
+                        <td><a th:href="@{/admin/bookings/{id}(id=${b.id})}" th:text="'#' + ${b.code}"></a>
                             <span th:if="${b.group != null}" class="badge bg-primary-subtle text-primary-emphasis">Đoàn</span></td>
                         <td class="small" th:text="${#temporals.format(b.createdAt, 'dd/MM/yyyy')}"></td>
                         <td th:text="${b.guestName}"></td>

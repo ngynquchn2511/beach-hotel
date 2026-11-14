@@ -32,7 +32,7 @@
             <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
 
             <div class="bg-white p-4 rounded shadow-sm mb-4">
-                <h4 class="fw-bold mb-3" th:text="'Check-out đơn #' + ${booking.id}"></h4>
+                <h4 class="fw-bold mb-3" th:text="'Check-out đơn #' + ${booking.code}"></h4>
                 <p class="mb-1">Khách: <span class="fw-semibold" th:text="${booking.guestName != null} ? ${booking.guestName} : ${booking.customer.fullName}"></span></p>
                 <p class="mb-1" th:text="'Phòng ' + ${booking.room.roomNumber} + ' - ' + ${booking.room.roomType.name} + ' (' + ${nights} + ' đêm)'"></p>
                 <p class="mb-1">Từ <span th:text="${#temporals.format(booking.checkInDate, 'dd/MM/yyyy')}"></span>

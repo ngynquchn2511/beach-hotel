@@ -53,7 +53,7 @@ class RoomMoveIT extends ItFixtures {
     void movePage_listsOnlyFreeRooms_sameTypeFirst() throws Exception {
         MvcResult result = mockMvc.perform(get("/admin/bookings/{id}/move", booking.getId()).with(as(staff)))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Đổi phòng cho đơn #" + booking.getId())))
+                .andExpect(content().string(containsString("Đổi phòng cho đơn #" + booking.getCode())))
                 .andReturn();
         @SuppressWarnings("unchecked")
         List<BookingService.RoomMoveOption> options =

@@ -59,8 +59,8 @@ public class AdminReviewController {
         try {
             Review review = reviewService.reply(id, reply);
             redirectAttributes.addFlashAttribute("successMessage", review.isReplied()
-                    ? "Đã lưu câu trả lời cho đánh giá của đơn #" + review.getBooking().getId()
-                    : "Đã gỡ câu trả lời của đánh giá đơn #" + review.getBooking().getId());
+                    ? "Đã lưu câu trả lời cho đánh giá của đơn #" + review.getBooking().getCode()
+                    : "Đã gỡ câu trả lời của đánh giá đơn #" + review.getBooking().getCode());
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
@@ -89,8 +89,8 @@ public class AdminReviewController {
         try {
             Review review = reviewService.toggleHidden(id);
             redirectAttributes.addFlashAttribute("successMessage",
-                    review.isHidden() ? "Đã ẩn đánh giá của đơn #" + review.getBooking().getId()
-                            : "Đã hiện lại đánh giá của đơn #" + review.getBooking().getId());
+                    review.isHidden() ? "Đã ẩn đánh giá của đơn #" + review.getBooking().getCode()
+                            : "Đã hiện lại đánh giá của đơn #" + review.getBooking().getCode());
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }

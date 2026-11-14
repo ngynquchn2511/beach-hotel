@@ -29,7 +29,7 @@
                     <select name="roomId" class="form-select form-select-sm"><option value="">--</option>
                         <option th:each="r : ${rooms}" th:value="${r.id}" th:text="${r.roomNumber}"></option></select></div>
                 <div class="col-md-2"><label class="form-label small">Mã đơn (nếu biết)</label>
-                    <input type="number" name="bookingId" class="form-control form-control-sm" min="1"></div>
+                    <input type="text" name="bookingCode" class="form-control form-control-sm" maxlength="13" placeholder="VD: 11140001"></div>
                 <div class="col-md-5"><label class="form-label small">Đồ vật</label>
                     <input type="text" name="description" class="form-control form-control-sm" maxlength="200" required placeholder="VD: Sạc điện thoại màu trắng"></div>
                 <div class="col-md-3"><label class="form-label small">Cất ở</label>
@@ -50,7 +50,7 @@
                                  th:text="${(i.room != null ? 'Phòng ' + i.room.roomNumber + ' · ' : '') + 'tìm thấy ' + #temporals.format(i.foundAt, 'HH:mm dd/MM/yyyy')
                                           + (i.foundBy != null ? ' bởi ' + i.foundBy : '') + (i.storageLocation != null ? ' · cất ở ' + i.storageLocation : '')}"></div>
                             <div class="small" th:if="${i.booking != null}">
-                                Khách: <a th:href="@{/admin/bookings/{id}(id=${i.booking.id})}" th:text="'#' + ${i.booking.id} + ' ' + ${i.booking.guestName}"></a>
+                                Khách: <a th:href="@{/admin/bookings/{id}(id=${i.booking.id})}" th:text="'#' + ${i.booking.code} + ' ' + ${i.booking.guestName}"></a>
                                 <span class="text-muted" th:text="${i.booking.guestPhone}"></span>
                                 <span class="text-success" th:if="${i.guestNotifiedAt != null}" th:text="' · đã báo ' + ${#temporals.format(i.guestNotifiedAt, 'dd/MM')}"></span>
                             </div>

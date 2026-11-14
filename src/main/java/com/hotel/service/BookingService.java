@@ -261,7 +261,7 @@ public class BookingService {
                 .findFirst()
                 .ifPresent(other -> {
                     throw new BusinessException("Không thể xác nhận: phòng " + booking.getRoom().getRoomNumber()
-                            + " đã có đơn #" + other.getId() + " (" + other.getStatus().getVietnameseLabel() + ") từ "
+                            + " đã có đơn #" + other.getCode() + " (" + other.getStatus().getVietnameseLabel() + ") từ "
                             + other.getCheckInDate().format(DAY_FMT) + " đến " + other.getCheckOutDate().format(DAY_FMT)
                             + ". Hãy liên hệ khách để đổi phòng/ngày hoặc hủy đơn này");
                 });
@@ -402,7 +402,7 @@ public class BookingService {
         }
         if (group == null) {
             emailService.sendBookingConfirmation(savedBooking);
-            notifyStaff("booking", com.hotel.service.StaffNotificationService.Level.INFO, "Đơn đặt phòng mới #" + savedBooking.getId(),
+            notifyStaff("booking", com.hotel.service.StaffNotificationService.Level.INFO, "Đơn đặt phòng mới #" + savedBooking.getCode(),
                     "Phòng " + savedBooking.getRoom().getRoomNumber() + " · " + stayLabel(savedBooking) + " · " + savedBooking.getGuestName(),
                     "/admin/bookings/" + savedBooking.getId());
         }
@@ -994,7 +994,7 @@ public class BookingService {
         booking.setTimeRequestNote(null);
         Booking saved = bookingRepository.save(booking);
         notifyStaff("stay-time", com.hotel.service.StaffNotificationService.Level.INFO, "Yêu cầu " + (early && late ? "nhận sớm và trả muộn" : early ? "nhận phòng sớm" : "trả phòng muộn")
-                        + " · đơn #" + saved.getId(),
+                        + " · đơn #" + saved.getCode(),
                 "Phòng " + saved.getRoom().getRoomNumber() + (early ? " · nhận " + in.format(TIME_FMT) : "") + (late ? " · trả " + out.format(TIME_FMT) : ""),
                 "/admin/bookings/" + saved.getId());
         return saved;
@@ -1390,7 +1390,7 @@ public class BookingService {
             // de le tan lien he khach (doi phong hoac huy + hoan coc 100%)
             bookingRepository.save(booking);
             if (booking.getGroup() == null) {
-                notifyStaff("deposit", com.hotel.service.StaffNotificationService.Level.WARNING, "Cọc VNPay đơn #" + booking.getId() + " nhưng phòng đã bị giữ",
+                notifyStaff("deposit", com.hotel.service.StaffNotificationService.Level.WARNING, "Cọc VNPay đơn #" + booking.getCode() + " nhưng phòng đã bị giữ",
                         "Liên hệ khách đổi phòng hoặc hủy và hoàn cọc", "/admin/bookings/" + booking.getId());
             }
             return OnlineDepositResult.PAID_BUT_ROOM_TAKEN;
@@ -1399,7 +1399,7 @@ public class BookingService {
         Booking confirmedBooking = bookingRepository.save(booking);
         emailService.sendBookingConfirmation(confirmedBooking);
         if (confirmedBooking.getGroup() == null) {
-            notifyStaff("deposit", com.hotel.service.StaffNotificationService.Level.SUCCESS, "Đã nhận cọc VNPay đơn #" + confirmedBooking.getId(),
+            notifyStaff("deposit", com.hotel.service.StaffNotificationService.Level.SUCCESS, "Đã nhận cọc VNPay đơn #" + confirmedBooking.getCode(),
                     com.hotel.util.Money.format(confirmedBooking.getDepositAmount()) + " VND" + " · đơn đã tự xác nhận", "/admin/bookings/" + confirmedBooking.getId());
         }
         return OnlineDepositResult.CONFIRMED;
@@ -1535,7 +1535,7 @@ public class BookingService {
     public Booking createOtaBooking(com.hotel.entity.OtaBlock block, User customer, String guestName, String guestPhone,
                                     String guestEmail, Integer guests, BigDecimal amount, String note) {
         if (block.getBooking() != null) {
-            throw new BusinessException("Lượt đặt này đã được ghi nhận thành đơn #" + block.getBooking().getId());
+            throw new BusinessException("Lượt đặt này đã được ghi nhận thành đơn #" + block.getBooking().getCode());
         }
         if (block.getRemovedAt() != null) {
             throw new BusinessException("Kênh đã hủy lượt đặt này");
@@ -1645,7 +1645,7 @@ public class BookingService {
                 summary = summary.isEmpty() ? clean : summary + " · " + clean;
             }
             notifyStaff("requests", com.hotel.service.StaffNotificationService.Level.INFO,
-                    "Khách cập nhật yêu cầu đặc biệt · đơn #" + saved.getId(),
+                    "Khách cập nhật yêu cầu đặc biệt · đơn #" + saved.getCode(),
                     summary.isEmpty() ? "Đã bỏ hết yêu cầu" : (summary.length() > 120 ? summary.substring(0, 120) + "…" : summary),
                     "/admin/bookings/" + saved.getId());
         }
@@ -1783,6 +1783,10 @@ public class BookingService {
         String name = b.getGuestName() != null ? b.getGuestName() : b.getCustomer().getFullName();
         String phone = b.getGuestPhone() != null ? b.getGuestPhone() : b.getCustomer().getPhoneNumber();
         String email = b.getGuestEmail() != null ? b.getGuestEmail() : b.getCustomer().getEmail();
+        String code = keyword.startsWith("#") ? keyword.substring(1) : keyword;
+        if (!code.isEmpty() && b.getCode().equals(code)) {
+            return true;
+        }
         return containsIgnoreCase(name, keyword)
                 || containsIgnoreCase(phone, keyword)
                 || containsIgnoreCase(email, keyword);

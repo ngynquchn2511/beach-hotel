@@ -36,7 +36,7 @@
                         <thead><tr><th>Đơn</th><th>Đơn vị</th><th class="text-end">Tổng tiền</th><th>Hóa đơn</th></tr></thead>
                         <tbody>
                         <tr th:each="b : ${bookings}">
-                            <td><a th:href="@{/admin/bookings/{id}(id=${b.id})}" th:text="'#' + ${b.id}"></a>
+                            <td><a th:href="@{/admin/bookings/{id}(id=${b.id})}" th:text="'#' + ${b.code}"></a>
                                 <div class="small text-muted" th:text="'Trả ' + ${#temporals.format(b.checkOutDate, 'dd/MM/yyyy')} + ' · ' + ${b.status.vietnameseLabel}"></div></td>
                             <td><div class="fw-semibold" th:text="${b.invoiceCompanyName}"></div>
                                 <div class="small" th:text="'MST ' + ${b.invoiceTaxCode}"></div>

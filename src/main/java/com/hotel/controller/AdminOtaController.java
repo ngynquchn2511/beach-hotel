@@ -118,7 +118,7 @@ public class AdminOtaController {
             }
             var customer = customerService.findOrCreateWalkInCustomer(guestName.trim(), guestPhone.trim());
             Booking b = bookingService.createOtaBooking(block, customer, guestName, guestPhone, guestEmail, guests, amount, note);
-            ra.addFlashAttribute("successMessage", "Đã tạo đơn #" + b.getId() + " từ lượt đặt " + block.getFeed().getChannel().getLabel());
+            ra.addFlashAttribute("successMessage", "Đã tạo đơn #" + b.getCode() + " từ lượt đặt " + block.getFeed().getChannel().getLabel());
             return "redirect:/admin/bookings/" + b.getId();
         } catch (BusinessException ex) {
             ra.addFlashAttribute("errorMessage", ex.getMessage());

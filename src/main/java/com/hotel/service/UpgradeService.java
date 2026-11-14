@@ -162,7 +162,7 @@ public class UpgradeService {
             }
         }
         notifier.notify("upgrade", StaffNotificationService.Level.SUCCESS,
-                "Khách nhận nâng hạng đơn #" + booking.getId(),
+                "Khách nhận nâng hạng đơn #" + booking.getCode(),
                 "Phòng " + oldRoom + " → " + offer.getRoom().getRoomNumber() + " (" + offer.getRoom().getRoomType().getName()
                         + ") · +" + com.hotel.util.Money.format(offer.getPrice()) + " VND", "/admin/bookings/" + booking.getId());
         return moved;

@@ -174,7 +174,7 @@
                         <div class="fd-guest"><a th:href="@{/admin/bookings/{id}(id=${b.id})}" th:text="${b.guestName}"></a></div>
                         <div class="fd-chips"><span class="chip t-red"><i class="bi bi-person-x"></i>Chưa đến nhận phòng</span></div>
                         <div class="fd-meta mt-2">
-                            <span th:text="'Đơn #' + ${b.id}"></span>
+                            <span th:text="'Đơn #' + ${b.code}"></span>
                             <span><i class="bi bi-telephone"></i> <a th:href="'tel:' + ${b.guestPhone}" th:text="${b.guestPhone}"></a></span>
                         </div>
                     </div>
@@ -197,7 +197,7 @@
                 </div>
                 <div class="fd-row" th:each="b : ${stayTimeRequests}">
                     <div class="fd-when">
-                        <div class="label" th:text="'Đơn #' + ${b.id}"></div>
+                        <div class="label" th:text="'Đơn #' + ${b.code}"></div>
                         <span class="room-pill" th:text="${b.room.roomNumber}"></span>
                     </div>
                     <div>
@@ -317,7 +317,7 @@
     <div>
         <div class="fd-guest"><a th:href="@{/admin/bookings/{id}(id=${b.id})}" th:text="${b.guestName}"></a></div>
         <div class="fd-meta">
-            <span th:text="'#' + ${b.id}"></span>
+            <span th:text="'#' + ${b.code}"></span>
             <span><i class="bi bi-telephone"></i> <a th:href="'tel:' + ${b.guestPhone}" th:text="${b.guestPhone}"></a></span>
             <span><i class="bi bi-moon"></i> <span th:text="${b.nights} + ' đêm'"></span></span>
             <span><i class="bi bi-people"></i> <span th:text="${b.numberOfGuests != null ? b.numberOfGuests : '?'} + ' khách'"></span></span>
@@ -360,7 +360,7 @@
     <div>
         <div class="fd-guest"><a th:href="@{/admin/bookings/{id}(id=${b.id})}" th:text="${b.guestName}"></a></div>
         <div class="fd-meta">
-            <span th:text="'#' + ${b.id}"></span>
+            <span th:text="'#' + ${b.code}"></span>
             <span><i class="bi bi-telephone"></i> <a th:href="'tel:' + ${b.guestPhone}" th:text="${b.guestPhone}"></a></span>
             <span><i class="bi bi-receipt"></i> <b th:text="${#numbers.formatDecimal(b.totalAmount, 1, 'POINT', 0, 'COMMA')} + ' VND'"></b></span>
         </div>

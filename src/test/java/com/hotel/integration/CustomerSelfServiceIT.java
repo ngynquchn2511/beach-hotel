@@ -107,7 +107,7 @@ class CustomerSelfServiceIT extends ItFixtures {
                 .andExpect(content().string(containsString("Số dư 600.000 / 1.000.000 VND")))
                 .andExpect(content().string(containsString("Người Mua tặng bạn")))
                 .andExpect(content().string(containsString("token=" + pending.getAccessToken())))
-                .andExpect(content().string(containsString("#" + used.getId())))
+                .andExpect(content().string(containsString("#" + used.getCode())))
                 .andExpect(content().string(not(containsString(other.getCode()))));
 
         // Nguoi nhan khong gui lai duoc; the chua thanh toan khong gui lai duoc

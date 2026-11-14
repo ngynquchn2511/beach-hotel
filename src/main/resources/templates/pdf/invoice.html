@@ -53,7 +53,7 @@
             </div>
         </td>
         <td class="right">
-            <div class="bold">Đơn đặt phòng #<span th:text="${booking.id}"></span></div>
+            <div class="bold">Đơn đặt phòng #<span th:text="${booking.code}"></span></div>
             <div th:text="'Phòng ' + ${booking.room.roomNumber} + ' - ' + ${booking.room.roomType.name}"></div>
             <div th:text="'Nhận phòng: ' + ${#temporals.format(booking.checkInDate, 'dd/MM/yyyy')} + ' ' + ${booking.checkInTime}"></div>
             <div th:text="'Trả phòng: ' + ${#temporals.format(booking.checkOutDate, 'dd/MM/yyyy')} + ' ' + ${booking.checkOutTime}"></div>

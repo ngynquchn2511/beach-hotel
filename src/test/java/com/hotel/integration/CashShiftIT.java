@@ -43,7 +43,7 @@ class CashShiftIT extends ItFixtures {
                 .status(PaymentStatus.PAID).paymentDate(LocalDateTime.now()).build());
 
         mockMvc.perform(get("/admin/shifts").with(as(morning)))
-                .andExpect(content().string(containsString("Thanh toán đơn #" + booking.getId())))
+                .andExpect(content().string(containsString("Thanh toán đơn #" + booking.getCode())))
                 .andExpect(content().string(containsString("1.200.000 đ")));
 
         // Chi 1 ca mo

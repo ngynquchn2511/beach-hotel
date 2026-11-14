@@ -53,8 +53,8 @@
                             <td>
                                 <span th:if="${r.conflict}" class="badge bg-danger">Trùng đơn website</span>
                                 <span th:if="${b.booking != null and b.removedAt == null}" class="badge bg-success">
-                                    <a class="text-white" th:href="@{/admin/bookings/{id}(id=${b.booking.id})}" th:text="'Đơn #' + ${b.booking.id}"></a></span>
-                                <span th:if="${b.booking != null and b.removedAt != null}" class="badge bg-warning text-dark">Kênh đã hủy · đơn #<span th:text="${b.booking.id}"></span></span>
+                                    <a class="text-white" th:href="@{/admin/bookings/{id}(id=${b.booking.id})}" th:text="'Đơn #' + ${b.booking.code}"></a></span>
+                                <span th:if="${b.booking != null and b.removedAt != null}" class="badge bg-warning text-dark">Kênh đã hủy · đơn #<span th:text="${b.booking.code}"></span></span>
                                 <span th:if="${b.booking == null and !r.conflict}" class="badge bg-secondary">Đang khóa phòng</span>
                             </td>
                             <td class="text-end">

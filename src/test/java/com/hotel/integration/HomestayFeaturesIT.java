@@ -189,7 +189,7 @@ class HomestayFeaturesIT {
         mockMvc.perform(get("/customer/bookings/{id}", b.getId()).param("token", b.getAccessToken()).with(user(new CustomUserDetails(b.getCustomer()))))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Chuyển cọc để giữ phòng")))
-                .andExpect(content().string(containsString("HB" + b.getId() + " COC")))
+                .andExpect(content().string(containsString("HB" + b.getCode() + " COC")))
                 .andExpect(content().string(containsString("img.vietqr.io")));
 
         // Nhan vien xac nhan da nhan coc -> don CONFIRMED
@@ -320,7 +320,7 @@ class HomestayFeaturesIT {
 
         // Hien o danh sach loc "cho hoan coc", dashboard va trang don cua khach
         mockMvc.perform(get("/admin/bookings").param("refund", "pending").with(user(new CustomUserDetails(staff))))
-                .andExpect(content().string(containsString("#" + b.getId())))
+                .andExpect(content().string(containsString("#" + b.getCode())))
                 .andExpect(content().string(containsString("Chờ hoàn 300.000")));
         mockMvc.perform(get("/admin/dashboard").with(user(new CustomUserDetails(admin))))
                 .andExpect(status().isOk())

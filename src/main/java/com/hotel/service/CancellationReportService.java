@@ -140,7 +140,7 @@ public class CancellationReportService {
                 row.createCell(2).setCellValue(g.customer().getPhoneNumber() != null ? g.customer().getPhoneNumber() : "");
                 row.createCell(3).setCellValue(g.cancelled());
                 row.createCell(4).setCellValue(g.noShows());
-                row.createCell(5).setCellValue("#" + g.last().getId());
+                row.createCell(5).setCellValue("#" + g.last().getCode());
             }
             for (int c = 0; c < h2.length; c++) {
                 rep.autoSizeColumn(c);

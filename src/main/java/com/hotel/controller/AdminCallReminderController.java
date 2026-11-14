@@ -50,7 +50,7 @@ public class AdminCallReminderController {
         try {
             CallReminder call = service.record(bookingId, purpose, result, note, user != null ? user.getUser().getFullName() : null);
             redirectAttributes.addFlashAttribute("successMessage",
-                    "Đã ghi cuộc gọi đơn #" + bookingId + ": " + call.getResult().getLabel());
+                    "Đã ghi cuộc gọi đơn #" + call.getBooking().getCode() + ": " + call.getResult().getLabel());
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }

@@ -396,7 +396,7 @@ class AdminOperationsParamIT extends ItFixtures {
             assertThat(sheet.getRow(0).getCell(0).getStringCellValue()).isEqualTo("Mã đơn");
             boolean found = false;
             for (var row : sheet) {
-                if (row.getRowNum() > 0 && ("#" + b.getId()).equals(row.getCell(0).getStringCellValue())) {
+                if (row.getRowNum() > 0 && ("#" + b.getCode()).equals(row.getCell(0).getStringCellValue())) {
                     found = true;
                     assertThat(row.getCell(4).getStringCellValue()).isEqualTo(room.getRoomNumber());
                     assertThat(row.getCell(11).getNumericCellValue()).isEqualTo(b.getTotalAmount().doubleValue());

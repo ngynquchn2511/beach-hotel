@@ -112,7 +112,7 @@ public class EmailService {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom("Sóng Xanh Resort <" + senderEmail + ">");
         message.setTo(booking.getGuestEmail());
-        message.setSubject("Sóng Xanh Resort - Đã hoàn tiền cọc đơn #" + booking.getId());
+        message.setSubject("Sóng Xanh Resort - Đã hoàn tiền cọc đơn #" + booking.getCode());
         StringBuilder sb = new StringBuilder();
         sb.append("Xin chào ").append(booking.getGuestName()).append(",\n\n");
         sb.append("Sóng Xanh Resort đã chuyển hoàn ").append(money(booking.getRefundAmount()))
@@ -175,7 +175,7 @@ public class EmailService {
             sb.append("- Đặt thêm xe đưa đón sân bay hoặc tour lặn biển: ").append(link).append("\n");
         }
         sb.append("\nChúc bạn có chuyến đi vui vẻ!\nSóng Xanh Resort");
-        return queue(booking, "Sóng Xanh Resort - Nhắc lịch nhận phòng đơn #" + booking.getId(), sb.toString(), "nhac lich");
+        return queue(booking, "Sóng Xanh Resort - Nhắc lịch nhận phòng đơn #" + booking.getCode(), sb.toString(), "nhac lich");
     }
 
     // Khach tu doi ngay nhan/tra phong - gui lai thong tin don theo ngay moi (tien phong tinh lai)
@@ -183,9 +183,9 @@ public class EmailService {
         if (!canEmail(booking)) {
             return false;
         }
-        String body = buildBody(booking, "Bạn vừa đổi ngày lưu trú cho đơn #" + booking.getId()
+        String body = buildBody(booking, "Bạn vừa đổi ngày lưu trú cho đơn #" + booking.getCode()
                 + ". Tiền phòng đã được tính lại theo ngày mới. Thông tin đơn sau khi đổi:");
-        return queue(booking, "Sóng Xanh Resort - Đã đổi ngày lưu trú đơn #" + booking.getId(), body, "doi ngay");
+        return queue(booking, "Sóng Xanh Resort - Đã đổi ngày lưu trú đơn #" + booking.getCode(), body, "doi ngay");
     }
 
     // The qua tang da thanh toan: gui ma cho nguoi nhan (kem loi nhan) va bao nguoi mua
@@ -243,7 +243,7 @@ public class EmailService {
             sb.append(" hoặc nhắn Zalo ").append(zaloPhone);
         }
         sb.append(" để hẹn lấy lại hoặc nhờ gửi bưu điện (phí gửi do bạn chi trả).\n\nSóng Xanh Resort");
-        return queue(booking, "Sóng Xanh Resort - Bạn có để quên đồ? (đơn #" + booking.getId() + ")", sb.toString(), "do that lac");
+        return queue(booking, "Sóng Xanh Resort - Bạn có để quên đồ? (đơn #" + booking.getCode() + ")", sb.toString(), "do that lac");
     }
 
     // Nhac chuyen coc truoc khi het han (don se tu huy)
@@ -261,13 +261,13 @@ public class EmailService {
                 .append(" - quá hạn đơn sẽ tự hủy để nhường phòng cho khách khác.\n\n");
         sb.append("Số tiền cọc: ").append(money(booking.getDepositAmount())).append(" VND\n");
         sb.append("Chuyển khoản: ").append(bankId).append(" ").append(accountNo).append(" (").append(accountName).append(")\n");
-        sb.append("Nội dung: HB").append(booking.getId()).append(" COC\n");
+        sb.append("Nội dung: HB").append(booking.getCode()).append(" COC\n");
         String link = bookingLink(booking, "");
         if (link != null) {
             sb.append("\nThanh toán nhanh bằng mã QR hoặc VNPay tại: ").append(link).append("\n");
         }
         sb.append("\nNếu bạn đã chuyển khoản, vui lòng bỏ qua email này - lễ tân sẽ xác nhận sớm.\n\nSóng Xanh Resort");
-        return queue(booking, "Sóng Xanh Resort - Nhắc chuyển cọc đơn #" + booking.getId(), sb.toString(), "nhac coc");
+        return queue(booking, "Sóng Xanh Resort - Nhắc chuyển cọc đơn #" + booking.getCode(), sb.toString(), "nhac coc");
     }
 
     // Dat nhieu phong: 1 email tong hop cho ca nhom (cancelled = bao da huy)
@@ -313,11 +313,11 @@ public class EmailService {
         if (!canEmail(booking)) {
             return false;
         }
-        String body = buildBody(booking, "Sóng Xanh Resort đã chuyển đơn #" + booking.getId() + " từ phòng " + oldRoomNumber
+        String body = buildBody(booking, "Sóng Xanh Resort đã chuyển đơn #" + booking.getCode() + " từ phòng " + oldRoomNumber
                 + " sang phòng " + booking.getRoom().getRoomNumber() + " (" + booking.getRoom().getRoomType().getName() + ")."
                 + (booking.getRoomMoveNote() != null ? " Lý do: " + booking.getRoomMoveNote() + "." : "")
                 + " Thông tin đơn sau khi đổi:");
-        return queue(booking, "Sóng Xanh Resort - Đổi phòng cho đơn #" + booking.getId(), body, "doi phong");
+        return queue(booking, "Sóng Xanh Resort - Đổi phòng cho đơn #" + booking.getCode(), body, "doi phong");
     }
 
     // Le tan tra loi tin nhan cua khach tren don
@@ -326,9 +326,9 @@ public class EmailService {
             return false;
         }
         String link = bookingLink(booking, "#tin-nhan");
-        String text = "Xin chào " + booking.getGuestName() + ",\n\nLễ tân Sóng Xanh Resort đã trả lời tin nhắn về đơn #" + booking.getId() + ":\n\n"
+        String text = "Xin chào " + booking.getGuestName() + ",\n\nLễ tân Sóng Xanh Resort đã trả lời tin nhắn về đơn #" + booking.getCode() + ":\n\n"
                 + body + "\n\n" + (link != null ? "Xem và nhắn tiếp: " + link : "Mở trang đơn của bạn để nhắn tiếp.") + "\n\nSóng Xanh Resort";
-        return queue(booking, "Sóng Xanh Resort - Trả lời tin nhắn đơn #" + booking.getId(), text, "tin nhan");
+        return queue(booking, "Sóng Xanh Resort - Trả lời tin nhắn đơn #" + booking.getCode(), text, "tin nhan");
     }
 
     // Loi moi nang hang phong (truoc ngay den): danh sach loai phong + gia them, link toi trang don de dong y
@@ -352,7 +352,7 @@ public class EmailService {
         String link = bookingLink(booking, "#nang-hang");
         sb.append("\n").append(link != null ? "Xem và nhận nâng hạng: " + link : "Mở trang đơn của bạn để nhận nâng hạng.")
                 .append("\nƯu đãi có hiệu lực đến giờ nhận phòng, tùy phòng còn trống.\n\nSóng Xanh Resort");
-        return queue(booking, "Sóng Xanh Resort - Nâng hạng phòng cho kỳ nghỉ của bạn (đơn #" + booking.getId() + ")",
+        return queue(booking, "Sóng Xanh Resort - Nâng hạng phòng cho kỳ nghỉ của bạn (đơn #" + booking.getCode() + ")",
                 sb.toString(), "nang hang");
     }
 
@@ -385,7 +385,7 @@ public class EmailService {
             sb.append("\nXem đơn: ").append(link).append("\n");
         }
         sb.append("\nSóng Xanh Resort");
-        return queue(booking, "Sóng Xanh Resort - " + (approved ? "Đã duyệt" : "Phản hồi") + " yêu cầu đổi giờ đơn #" + booking.getId(),
+        return queue(booking, "Sóng Xanh Resort - " + (approved ? "Đã duyệt" : "Phản hồi") + " yêu cầu đổi giờ đơn #" + booking.getCode(),
                 sb.toString(), approved ? "duyet doi gio" : "tu choi doi gio");
     }
 
@@ -709,7 +709,7 @@ public class EmailService {
             MimeMessageHelper helper = new MimeMessageHelper(message, pdf != null, "UTF-8");
             helper.setFrom(senderEmail, "Sóng Xanh Resort");
             helper.setTo(booking.getGuestEmail());
-            helper.setSubject("Sóng Xanh Resort - Hóa đơn " + payment.getInvoiceNo() + " (đơn #" + booking.getId() + ")");
+            helper.setSubject("Sóng Xanh Resort - Hóa đơn " + payment.getInvoiceNo() + " (đơn #" + booking.getCode() + ")");
             helper.setText(buildInvoiceHtml(booking, payment, charges), true);
             if (pdf != null) {
                 helper.addAttachment(InvoicePdfService.fileName(payment.getInvoiceNo()),
@@ -825,11 +825,11 @@ public class EmailService {
 
     private String buildSubject(Booking booking) {
         return switch (booking.getStatus()) {
-            case PENDING -> "Sóng Xanh Resort - Da nhan yeu cau dat phong #" + booking.getId();
-            case CONFIRMED -> "Sóng Xanh Resort - Don dat phong #" + booking.getId() + " da duoc xac nhan";
-            case CANCELLED -> "Sóng Xanh Resort - Don dat phong #" + booking.getId() + " da bi huy";
-            case CHECKED_IN -> "Sóng Xanh Resort - Ban da check-in booking #" + booking.getId();
-            case CHECKED_OUT -> "Sóng Xanh Resort - Ban da check-out booking #" + booking.getId();
+            case PENDING -> "Sóng Xanh Resort - Da nhan yeu cau dat phong #" + booking.getCode();
+            case CONFIRMED -> "Sóng Xanh Resort - Don dat phong #" + booking.getCode() + " da duoc xac nhan";
+            case CANCELLED -> "Sóng Xanh Resort - Don dat phong #" + booking.getCode() + " da bi huy";
+            case CHECKED_IN -> "Sóng Xanh Resort - Ban da check-in booking #" + booking.getCode();
+            case CHECKED_OUT -> "Sóng Xanh Resort - Ban da check-out booking #" + booking.getCode();
         };
     }
 
@@ -844,7 +844,7 @@ public class EmailService {
             sb.append("Số tiền cọc: ").append(money(booking.getDepositAmount())).append(" VND\n");
             sb.append("Ngân hàng: ").append(bankId).append(" - STK: ").append(accountNo)
                     .append(" - Chủ TK: ").append(accountName).append("\n");
-            sb.append("Nội dung chuyển khoản: HB").append(booking.getId()).append(" COC\n");
+            sb.append("Nội dung chuyển khoản: HB").append(booking.getCode()).append(" COC\n");
             if (booking.getDepositDeadline() != null) {
                 sb.append("Hạn chuyển cọc: ").append(booking.getDepositDeadline().format(deadlineFmt))
                         .append(". Quá hạn chưa nhận được cọc, đơn sẽ tự động hủy.\n");

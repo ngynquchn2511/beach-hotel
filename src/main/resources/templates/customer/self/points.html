@@ -45,7 +45,7 @@
             <tr th:each="t : ${transactions}">
                 <td class="text-nowrap" th:text="${#temporals.format(t.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
                 <td th:text="#{'points.type.' + ${t.type}}">Tích điểm</td>
-                <td><a th:if="${t.booking != null}" th:href="@{/customer/bookings/{id}(id=${t.booking.id})}" th:text="'#' + ${t.booking.id}"></a></td>
+                <td><a th:if="${t.booking != null}" th:href="@{/customer/bookings/{id}(id=${t.booking.id})}" th:text="'#' + ${t.booking.code}"></a></td>
                 <td class="text-end fw-semibold" th:classappend="${t.points > 0} ? 'text-success' : 'text-danger'"
                     th:text="${t.points > 0 ? '+' + t.points : t.points}"></td>
                 <td class="text-end" th:text="${t.balanceAfter}"></td>

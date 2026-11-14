@@ -39,8 +39,8 @@ public class AdminCompanyInvoiceController {
     @PostMapping("/{id}/issued")
     public String issued(@PathVariable Long id, @RequestParam(required = false) String invoiceNumber, RedirectAttributes redirectAttributes) {
         try {
-            companyInvoiceService.markIssued(id, invoiceNumber);
-            redirectAttributes.addFlashAttribute("successMessage", "Đã ghi nhận số hóa đơn cho đơn #" + id);
+            var booking = companyInvoiceService.markIssued(id, invoiceNumber);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã ghi nhận số hóa đơn cho đơn #" + booking.getCode());
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }

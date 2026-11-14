@@ -164,7 +164,7 @@ public class ReviewService {
                         || contains(r.getCustomer().getFullName(), q)
                         || contains(r.getCustomer().getEmail(), q)
                         || contains(r.getComment(), q)
-                        || ("#" + r.getBooking().getId()).equals(q) || String.valueOf(r.getBooking().getId()).equals(q))
+                        || ("#" + r.getBooking().getCode()).equals(q) || r.getBooking().getCode().equals(q) || String.valueOf(r.getBooking().getId()).equals(q))
                 .toList();
     }
 

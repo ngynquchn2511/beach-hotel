@@ -92,7 +92,7 @@
                         <div th:text="'Đơn mới: ' + ${r.newBookings} + ' (' + ${#numbers.formatDecimal(r.newBookingsValue, 1, 'POINT', 0, 'COMMA')} + ' VND)'"></div>
                         <div th:text="'Đơn hủy: ' + ${#lists.size(r.cancellations)}"></div>
                         <ul class="mb-0 mt-1" th:unless="${#lists.isEmpty(r.noShowsMarked)}">
-                            <li th:each="b : ${r.noShowsMarked}"><a th:href="@{/admin/bookings/{id}(id=${b.id})}" th:text="'#' + ${b.id}"></a>
+                            <li th:each="b : ${r.noShowsMarked}"><a th:href="@{/admin/bookings/{id}(id=${b.id})}" th:text="'#' + ${b.code}"></a>
                                 <span th:text="' không đến · phòng ' + ${b.room.roomNumber} + ' · ' + ${b.guestName}"></span></li>
                         </ul>
                     </div>
@@ -113,7 +113,7 @@
             <div class="bg-white rounded shadow-sm p-3" th:unless="${#lists.isEmpty(r.stillNotArrived)}">
                 <h6 class="fw-bold text-danger">Khách quá giờ nhận phòng mà chưa đến</h6>
                 <ul class="small mb-0">
-                    <li th:each="b : ${r.stillNotArrived}"><a th:href="@{/admin/bookings/{id}(id=${b.id})}" th:text="'#' + ${b.id}"></a>
+                    <li th:each="b : ${r.stillNotArrived}"><a th:href="@{/admin/bookings/{id}(id=${b.id})}" th:text="'#' + ${b.code}"></a>
                         <span th:text="' · phòng ' + ${b.room.roomNumber} + ' · ' + ${b.guestName} + ' · ' + ${b.guestPhone} + ' · nhận ' + ${#temporals.format(b.checkInDate, 'dd/MM')}"></span></li>
                 </ul>
             </div>

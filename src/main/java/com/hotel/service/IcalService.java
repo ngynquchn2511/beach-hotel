@@ -117,9 +117,9 @@ public class IcalService {
             // Ngay ca ngay: DTEND la ngay tra phong (khong tinh) -> dem cuoi la dem truoc ngay tra
             line(ics, "DTSTART;VALUE=DATE:" + b.getCheckInDate().format(DATE));
             line(ics, "DTEND;VALUE=DATE:" + b.getCheckOutDate().format(DATE));
-            line(ics, "SUMMARY:" + escape("Phòng " + room.getRoomNumber() + " · Đã đặt (#" + b.getId() + ")"
+            line(ics, "SUMMARY:" + escape("Phòng " + room.getRoomNumber() + " · Đã đặt (#" + b.getCode() + ")"
                     + (firm ? "" : " - chờ xác nhận")));
-            line(ics, "DESCRIPTION:" + escape("Đơn #" + b.getId() + " · nhận " + b.getCheckInTime()
+            line(ics, "DESCRIPTION:" + escape("Đơn #" + b.getCode() + " · nhận " + b.getCheckInTime()
                     + " · trả " + b.getCheckOutTime() + " · " + b.getStatus().name()));
             line(ics, "STATUS:" + (firm ? "CONFIRMED" : "TENTATIVE"));
             line(ics, "TRANSP:OPAQUE");

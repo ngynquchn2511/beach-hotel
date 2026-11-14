@@ -35,7 +35,7 @@
             </tr></thead>
             <tbody>
             <tr th:each="l : ${lines}" th:with="b=${l.booking}">
-                <td><a class="fw-bold" th:href="@{/customer/bookings/{id}(id=${b.id})}" th:text="'#' + ${b.id}"></a>
+                <td><a class="fw-bold" th:href="@{/customer/bookings/{id}(id=${b.id})}" th:text="'#' + ${b.code}"></a>
                     <div class="small text-muted" th:text="#{common.room(${b.room.roomNumber})} + ' · ' + ${#temporals.format(b.checkInDate, 'dd/MM')} + ' - ' + ${#temporals.format(b.checkOutDate, 'dd/MM/yyyy')}"></div></td>
                 <td class="text-nowrap" th:text="${#temporals.format(l.payment.paymentDate, 'dd/MM/yyyy')}"></td>
                 <td class="text-end text-nowrap" th:text="${#numbers.formatDecimal(l.payment.amount, 1, 'POINT', 0, 'COMMA')} + ' VND'"></td>

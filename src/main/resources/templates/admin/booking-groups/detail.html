@@ -30,7 +30,7 @@
                     <thead><tr><th>Đơn</th><th>Phòng</th><th>Ngày</th><th>Trạng thái</th><th class="text-end">Tiền</th></tr></thead>
                     <tbody>
                     <tr th:each="b : ${bookings}">
-                        <td><a th:href="@{/admin/bookings/{id}(id=${b.id})}" th:text="'#' + ${b.id}"></a></td>
+                        <td><a th:href="@{/admin/bookings/{id}(id=${b.id})}" th:text="'#' + ${b.code}"></a></td>
                         <td th:text="${b.room.roomNumber} + ' · ' + ${b.room.roomType.name}"></td>
                         <td class="small" th:text="${#temporals.format(b.checkInDate, 'dd/MM')} + ' – ' + ${#temporals.format(b.checkOutDate, 'dd/MM')}"></td>
                         <td><span th:class="'badge ' + ${b.status.badgeClass}" th:text="${b.status.vietnameseLabel}"></span>

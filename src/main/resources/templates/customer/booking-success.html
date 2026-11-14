@@ -29,7 +29,7 @@
 <main class="container py-5 flex-grow-1" style="max-width: 720px;">
     <div class="eaut-head">
         <div class="eyebrow" th:text="#{success.title}">Chi tiết đặt phòng</div>
-        <h1><span th:text="#{success.heading}">Đơn</span> <span class="gradient-text" th:text="'#' + ${booking.id}"></span></h1>
+        <h1><span th:text="#{success.heading}">Đơn</span> <span class="gradient-text" th:text="'#' + ${booking.code}"></span></h1>
         <div class="divider"></div>
     </div>
 
@@ -333,7 +333,7 @@
 
     <div class="bg-white p-4 rounded shadow-sm mb-4 ticket">
         <div class="d-flex justify-content-between align-items-start mb-3">
-            <h4 class="fw-bold m-0" th:text="#{success.bookingNo(${booking.id.toString()})}"></h4>
+            <h4 class="fw-bold m-0" th:text="#{success.bookingNo(${booking.code})}"></h4>
             <span th:class="'badge ' + ${booking.status.badgeClass}" th:text="#{'enum.BookingStatus.' + ${booking.status}}"></span>
         </div>
 

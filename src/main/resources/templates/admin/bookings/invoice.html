@@ -52,7 +52,7 @@
             </div>
         </div>
         <div class="col-sm-6 text-sm-end">
-            <h6 class="fw-bold">Đơn đặt phòng #<span th:text="${booking.id}"></span></h6>
+            <h6 class="fw-bold">Đơn đặt phòng #<span th:text="${booking.code}"></span></h6>
             <div th:text="'Phòng ' + ${booking.room.roomNumber} + ' - ' + ${booking.room.roomType.name}"></div>
             <div>Nhận phòng: <span th:text="${#temporals.format(booking.checkInDate, 'dd/MM/yyyy')} + ' ' + ${booking.checkInTime}"></span></div>
             <div>Trả phòng: <span th:text="${#temporals.format(booking.checkOutDate, 'dd/MM/yyyy')} + ' ' + ${booking.checkOutTime}"></span></div>

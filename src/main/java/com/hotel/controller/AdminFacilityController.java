@@ -54,8 +54,8 @@ public class AdminFacilityController {
         try {
             FacilityReservation r = facilityService.confirm(id);
             redirectAttributes.addFlashAttribute("successMessage", r.isSpa()
-                    ? "Đã xác nhận lịch spa, tiền spa đã cộng vào đơn phòng #" + r.getBooking().getId()
-                    : "Đã xác nhận đặt bàn cho đơn #" + r.getBooking().getId());
+                    ? "Đã xác nhận lịch spa, tiền spa đã cộng vào đơn phòng #" + r.getBooking().getCode()
+                    : "Đã xác nhận đặt bàn cho đơn #" + r.getBooking().getCode());
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }

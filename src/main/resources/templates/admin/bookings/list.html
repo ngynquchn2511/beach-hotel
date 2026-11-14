@@ -69,7 +69,7 @@
                 <tbody>
                 <!-- Don moi chua duoc staff xem qua se to nguyen ca dong 1 mau rieng, de len tren mau soc xen ke -->
                 <tr th:each="b : ${bookings}" th:classappend="${b.newBooking} ? 'table-danger'">
-                    <td th:text="'#' + ${b.id}"></td>
+                    <td th:text="'#' + ${b.code}"></td>
                     <td th:text="${b.guestName != null} ? ${b.guestName} : ${b.customer.fullName}"></td>
                     <td th:text="${b.guestPhone != null} ? ${b.guestPhone} : ${b.customer.phoneNumber}"></td>
                     <td th:text="'Phòng ' + ${b.room.roomNumber}"></td>

@@ -207,7 +207,7 @@ public class RevenueExportService {
             BigDecimal charge = charges.getOrDefault(b.getId(), BigDecimal.ZERO);
             Payment payment = payments.get(b.getId());
             int c = 0;
-            row.createCell(c++).setCellValue("#" + b.getId());
+            row.createCell(c++).setCellValue("#" + b.getCode());
             row.createCell(c++).setCellValue(b.getCreatedAt().format(DATE_TIME));
             row.createCell(c++).setCellValue(b.getGuestName() != null ? b.getGuestName() : b.getCustomer().getFullName());
             row.createCell(c++).setCellValue(b.getGuestPhone() != null ? b.getGuestPhone() : b.getCustomer().getPhoneNumber());

@@ -80,12 +80,12 @@ public class PaymentService {
     }
 
     public String transferContent(Booking booking) {
-        return TRANSFER_PREFIX + booking.getId();
+        return TRANSFER_PREFIX + booking.getCode();
     }
 
     // Noi dung chuyen coc, VD "HB15 COC" - phan biet voi tien thanh toan khi tra phong
     public String depositTransferContent(Booking booking) {
-        return TRANSFER_PREFIX + booking.getId() + " COC";
+        return TRANSFER_PREFIX + booking.getCode() + " COC";
     }
 
     // Anh QR VietQR (chuan Napas) - app ngan hang nao quet cung tu dien san so tien va noi dung chuyen khoan
@@ -300,7 +300,7 @@ public class PaymentService {
     }
 
     // Mot dong so quy: khoan thu (duong) hoac chi (am) - bookingId null voi ban the qua tang
-    public record LedgerEntry(LocalDateTime time, Long bookingId, String label, PaymentMethod method, BigDecimal amount) {
+    public record LedgerEntry(LocalDateTime time, Long bookingId, String bookingCode, String label, PaymentMethod method, BigDecimal amount) {
     }
 
     // So quy chi tiet trong khoang thoi gian (dung cho doanh thu theo phuong thuc va so quy ca le tan)
@@ -308,18 +308,18 @@ public class PaymentService {
     public List<LedgerEntry> ledger(LocalDateTime from, LocalDateTime to) {
         List<LedgerEntry> entries = new ArrayList<>();
         for (Payment p : paymentRepository.findByStatusAndPaymentDateBetween(PaymentStatus.PAID, from, to)) {
-            entries.add(new LedgerEntry(p.getPaymentDate(), p.getBooking().getId(), "Thanh toán đơn #" + p.getBooking().getId(),
+            entries.add(new LedgerEntry(p.getPaymentDate(), p.getBooking().getId(), p.getBooking().getCode(), "Thanh toán đơn #" + p.getBooking().getCode(),
                     p.getPaymentMethod(), p.getAmount()));
         }
         // Coc tra qua VNPay tinh vao "online", coc chuyen khoan QR tinh vao "chuyen khoan"
         for (Booking b : bookingRepository.findByDepositPaidAtBetween(from, to)) {
-            entries.add(new LedgerEntry(b.getDepositPaidAt(), b.getId(), "Đặt cọc đơn #" + b.getId(),
+            entries.add(new LedgerEntry(b.getDepositPaidAt(), b.getId(), b.getCode(), "Đặt cọc đơn #" + b.getCode(),
                     b.isDepositPaidOnline() ? PaymentMethod.ONLINE : PaymentMethod.BANK_TRANSFER, b.getDepositPaidAmount()));
         }
         // Ban the qua tang: tinh doanh thu luc khach tra tien the (VNPay -> online, chuyen khoan -> chuyen khoan)
         if (giftVoucherRepository != null) {
             for (com.hotel.entity.GiftVoucher v : giftVoucherRepository.findByPaidAtBetween(from, to)) {
-                entries.add(new LedgerEntry(v.getPaidAt(), null, "Bán thẻ quà tặng " + v.getCode(),
+                entries.add(new LedgerEntry(v.getPaidAt(), null, null, "Bán thẻ quà tặng " + v.getCode(),
                         v.getOnlineRef() != null ? PaymentMethod.ONLINE : PaymentMethod.BANK_TRANSFER, v.getAmount()));
             }
         }
@@ -327,7 +327,7 @@ public class PaymentService {
         for (Booking b : bookingRepository.findByRefundedAtBetween(from, to)) {
             if (b.getRefundAmount() != null) {
                 // Hoan qua VNPay tru vao muc online, hoan bang chuyen khoan tay tru vao muc chuyen khoan
-                entries.add(new LedgerEntry(b.getRefundedAt(), b.getId(), "Hoàn cọc đơn #" + b.getId(),
+                entries.add(new LedgerEntry(b.getRefundedAt(), b.getId(), b.getCode(), "Hoàn cọc đơn #" + b.getCode(),
                         b.getRefundOnlineRef() != null ? PaymentMethod.ONLINE : PaymentMethod.BANK_TRANSFER, b.getRefundAmount().negate()));
             }
         }

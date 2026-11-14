@@ -43,7 +43,7 @@
             </thead>
             <tbody>
             <tr th:each="b : ${bookings}">
-                <td class="fw-bold" th:text="'#' + ${b.id}"></td>
+                <td class="fw-bold" th:text="'#' + ${b.code}"></td>
                 <td th:text="#{common.room(${b.room.roomNumber})}"></td>
                 <td th:text="${#temporals.format(b.checkInDate, 'dd/MM/yyyy')} + ' – ' + ${#temporals.format(b.checkOutDate, 'dd/MM/yyyy')}"></td>
                 <td><span th:class="'badge ' + ${b.status.badgeClass}" th:text="#{'enum.BookingStatus.' + ${b.status}}"></span></td>

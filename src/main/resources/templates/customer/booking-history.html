@@ -44,7 +44,7 @@
             </thead>
             <tbody>
             <tr th:each="b : ${bookings}">
-                <td class="fw-bold" style="color: var(--blue-dark)" th:text="'#' + ${b.id}"></td>
+                <td class="fw-bold" style="color: var(--blue-dark)" th:text="'#' + ${b.code}"></td>
                 <td th:text="#{common.room(${b.room.roomNumber})}"></td>
                 <td th:text="${#temporals.format(b.checkInDate, 'dd/MM/yyyy')} + ' ' + ${b.checkInTime}"></td>
                 <td th:text="${#temporals.format(b.checkOutDate, 'dd/MM/yyyy')} + ' ' + ${b.checkOutTime}"></td>

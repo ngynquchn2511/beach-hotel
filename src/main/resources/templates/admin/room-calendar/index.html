@@ -158,11 +158,11 @@
                                th:classappend="|st-${b.status} ${bar.clippedLeft ? 'clip-l' : ''} ${bar.clippedRight ? 'clip-r' : ''} ${b.awaitingDeposit ? 'awaiting' : ''} ${bar.isShort() ? 'short' : ''}|"
                                th:style="|grid-column: ${bar.gridStart} / ${bar.gridEnd}|"
                                th:href="@{/admin/bookings/{id}(id=${b.id})}"
-                               th:title="|#${b.id} · ${bar.guestName()} · ${b.status.vietnameseLabel}${b.awaitingDeposit ? ' (chờ cọc)' : ''}
+                               th:title="|#${b.code} · ${bar.guestName()} · ${b.status.vietnameseLabel}${b.awaitingDeposit ? ' (chờ cọc)' : ''}
 ${#temporals.format(b.checkInDate, 'dd/MM')} ${b.checkInTime} → ${#temporals.format(b.checkOutDate, 'dd/MM')} ${b.checkOutTime} · ${b.nights} đêm · ${b.numberOfGuests != null ? b.numberOfGuests : '?'} khách|">
                                 <span th:if="${b.newBooking}" class="dot" title="Đơn mới"></span>
                                 <span class="name" th:text="${bar.displayName()}"></span>
-                                <span class="id" th:text="'#' + ${b.id}"></span>
+                                <span class="id" th:text="'#' + ${b.code}"></span>
                             </a>
                             <a th:each="ob : ${row.otaBars}" class="rc-bar st-OTA"
                                th:classappend="|${ob.clippedLeft ? 'clip-l' : ''} ${ob.clippedRight ? 'clip-r' : ''} ${ob.gridEnd - ob.gridStart <= 2 ? 'short' : ''}|"

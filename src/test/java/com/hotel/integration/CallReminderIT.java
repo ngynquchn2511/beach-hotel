@@ -70,7 +70,7 @@ class CallReminderIT extends ItFixtures {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Gọi nhắc khách")))
                 .andExpect(content().string(containsString("tel:" + guest.getPhoneNumber())))
-                .andExpect(content().string(containsString("#" + b.getId())));
+                .andExpect(content().string(containsString("#" + b.getCode())));
 
         mockMvc.perform(post("/admin/call-reminders/" + b.getId()).with(as(staff)).with(csrf())
                         .param("purpose", "ARRIVAL").param("result", "CALL_BACK").param("note", "Gọi lại sau 17h"))

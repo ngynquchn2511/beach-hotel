@@ -65,7 +65,7 @@ class CompanyInvoiceIT extends ItFixtures {
         mockMvc.perform(get("/admin/bookings/{id}/invoice", b.getId()).with(as(staff)))
                 .andExpect(content().string(containsString("MST: 0101234567")));
         mockMvc.perform(post("/admin/company-invoices/{id}/issued", b.getId()).with(csrf()).with(as(staff)).param("invoiceNumber", "0000123"))
-                .andExpect(flash().attribute("successMessage", containsString("#" + b.getId())));
+                .andExpect(flash().attribute("successMessage", containsString("#" + b.getCode())));
         assertThat(bookingRepository.findById(b.getId()).orElseThrow().getEInvoiceNumber()).isEqualTo("0000123");
 
         // Da xuat -> le tan khong sua duoc nua

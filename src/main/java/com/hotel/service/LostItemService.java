@@ -52,6 +52,18 @@ public class LostItemService {
 
     // bookingId null -> tu tim don tra phong gan nhat cua phong do trong LINK_DAYS ngay
     @Transactional
+    // Le tan nhap ma don dang thay tren giay to (VD "11140001" hoac "#11140001")
+    public LostItem recordByCode(Long roomId, String bookingCode, String description, String storageLocation, String foundBy) {
+        Long bookingId = null;
+        String code = bookingCode == null ? "" : bookingCode.trim().replaceFirst("^#", "");
+        if (!code.isEmpty()) {
+            bookingId = bookingRepository.findFirstByBookingCodeOrderByIdDesc(code)
+                    .orElseThrow(() -> new BusinessException("Không tìm thấy đơn #" + code))
+                    .getId();
+        }
+        return record(roomId, bookingId, description, storageLocation, foundBy);
+    }
+
     public LostItem record(Long roomId, Long bookingId, String description, String storageLocation, String foundBy) {
         String text = description == null ? "" : description.trim();
         if (text.isEmpty() || text.length() > 200) {

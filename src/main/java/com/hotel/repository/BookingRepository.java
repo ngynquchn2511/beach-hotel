@@ -13,6 +13,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     List<Booking> findByCustomerIdOrderByCreatedAtDesc(Long customerId);
 
+    // Ma don (MMdd + so thu tu) co the lap lai sau 1 nam - lay don moi nhat
+    java.util.Optional<Booking> findFirstByBookingCodeOrderByIdDesc(String bookingCode);
+
     // Cac don da tru tien bang 1 the qua tang
     List<Booking> findByGiftVoucherCodeIgnoreCaseOrderByCreatedAtDesc(String giftVoucherCode);
 

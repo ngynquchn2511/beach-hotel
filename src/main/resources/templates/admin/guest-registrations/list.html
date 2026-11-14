@@ -58,7 +58,7 @@
                         <td><span class="small text-muted" th:text="${g.idType.vietnameseLabel}"></span><br><span th:text="${g.idNumber}"></span></td>
                         <td th:text="${g.nationality}"></td>
                         <td><a th:href="@{/admin/bookings/{id}(id=${g.booking.id})}"
-                               th:text="${g.booking.room.roomNumber} + ' · #' + ${g.booking.id}"></a></td>
+                               th:text="${g.booking.room.roomNumber} + ' · #' + ${g.booking.code}"></a></td>
                         <td class="small" th:text="${#temporals.format(g.booking.checkInDate, 'dd/MM')} + ' – ' + ${#temporals.format(g.booking.checkOutDate, 'dd/MM')}"></td>
                     </tr>
                     </tbody>

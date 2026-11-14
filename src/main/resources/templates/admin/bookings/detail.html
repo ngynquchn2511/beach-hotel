@@ -26,7 +26,7 @@
 
             <div class="bg-white p-4 rounded shadow-sm mb-4">
                 <div class="d-flex justify-content-between align-items-start mb-3">
-                    <h4 class="fw-bold m-0" th:text="'Đơn đặt phòng #' + ${booking.id}"></h4>
+                    <h4 class="fw-bold m-0" th:text="'Đơn đặt phòng #' + ${booking.code}"></h4>
                     <span>
                         <span th:if="${booking.noShow}" class="badge bg-dark">Khách không đến</span>
                         <span th:class="'badge ' + ${booking.status.badgeClass}" th:text="${booking.status.vietnameseLabel}"></span>

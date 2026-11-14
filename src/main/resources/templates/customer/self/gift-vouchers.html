@@ -59,8 +59,8 @@
             <span class="text-muted" th:text="#{self.gv.used}">Đã dùng cho đơn</span>
             <th:block th:each="b, st : ${usages[v.id]}">
                 <a th:if="${b.customer != null and #strings.equalsIgnoreCase(b.customer.email, myEmail)}"
-                   th:href="@{/customer/bookings/{id}(id=${b.id})}" th:text="'#' + ${b.id}"></a><span
-                    th:unless="${b.customer != null and #strings.equalsIgnoreCase(b.customer.email, myEmail)}" th:text="'#' + ${b.id}"></span>
+                   th:href="@{/customer/bookings/{id}(id=${b.id})}" th:text="'#' + ${b.code}"></a><span
+                    th:unless="${b.customer != null and #strings.equalsIgnoreCase(b.customer.email, myEmail)}" th:text="'#' + ${b.code}"></span>
                 <span th:text="'(-' + ${#numbers.formatDecimal(b.giftVoucherAmount, 1, 'POINT', 0, 'COMMA')} + ')' + (${st.last} ? '' : ',')"></span>
             </th:block>
         </div>

@@ -84,7 +84,7 @@ public class GuestRegistrationExportService {
                 id.setCellStyle(text);
                 row.createCell(c++).setCellValue(g.getAddress() != null ? g.getAddress() : "");
                 row.createCell(c++).setCellValue(b.getRoom().getRoomNumber());
-                row.createCell(c++).setCellValue("#" + b.getId());
+                row.createCell(c++).setCellValue("#" + b.getCode());
                 row.createCell(c++).setCellValue(b.getCheckInDate().format(DATE));
                 row.createCell(c++).setCellValue(b.getCheckOutDate().format(DATE));
                 row.createCell(c).setCellValue("Du lịch");

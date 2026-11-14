@@ -50,7 +50,7 @@
             <tbody>
             <tr th:each="b : ${bookings}">
                 <td><b th:text="#{common.room(${b.room.roomNumber})}"></b>
-                    <div class="small text-muted" th:text="${b.room.roomType.localizedName} + ' · #' + ${b.id}"></div></td>
+                    <div class="small text-muted" th:text="${b.room.roomType.localizedName} + ' · #' + ${b.code}"></div></td>
                 <td><span th:class="'badge ' + ${b.status.badgeClass}" th:text="#{'enum.BookingStatus.' + ${b.status}}"></span></td>
                 <td class="text-end" th:text="${#numbers.formatDecimal(b.totalAmount, 1, 'POINT', 0, 'COMMA')} + ' VND'"></td>
                 <td class="text-end"><a class="btn btn-sm btn-outline-primary"

@@ -70,7 +70,7 @@ public class BookingMessageService {
         BookingMessage m = repository.save(BookingMessage.builder().booking(booking).fromGuest(true).body(body).imageUrl(imageUrl).build());
         String preview = body.isEmpty() ? "[Ảnh]" : (body.length() > 100 ? body.substring(0, 100) + "…" : body) + (hasImage ? " [kèm ảnh]" : "");
         notifier.notify("message", StaffNotificationService.Level.INFO,
-                "Tin nhắn từ " + booking.getGuestName() + " · đơn #" + booking.getId(),
+                "Tin nhắn từ " + booking.getGuestName() + " · đơn #" + booking.getCode(),
                 (booking.getRoom() != null ? "Phòng " + booking.getRoom().getRoomNumber() + ": " : "") + preview,
                 "/admin/bookings/" + booking.getId() + "#tin-nhan");
         return m;

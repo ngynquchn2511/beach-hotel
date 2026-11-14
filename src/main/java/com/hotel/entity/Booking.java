@@ -12,7 +12,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "bookings")
+@Table(name = "bookings", indexes = @Index(name = "idx_bookings_code", columnList = "booking_code"))
+@EntityListeners(com.hotel.service.BookingCodeListener.class)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -325,6 +326,16 @@ public class Booking {
     // Don tao truoc khi co tinh nang nay de null -> chi chu don da dang nhap moi xem duoc
     @Column(name = "access_token", length = 32, unique = true)
     private String accessToken;
+
+    // Ma don hien thi cho khach / nhan vien: thang + ngay tao don + so thu tu 4 chu so trong ngay, VD "11140001".
+    // Gan tu dong khi luu don moi (BookingCodeListener). URL va khoa ngoai van dung id
+    @Column(name = "booking_code", length = 12)
+    private String bookingCode;
+
+    // Don cu chua co ma (truoc khi chay migration) thi hien id
+    public String getCode() {
+        return bookingCode != null ? bookingCode : String.valueOf(id);
+    }
 
     // Danh dau don moi tao (khach vua dat) de hien thi cham do thong bao cho admin/staff - tat khi staff mo xem chi tiet
     @Column(name = "new_booking", nullable = false)

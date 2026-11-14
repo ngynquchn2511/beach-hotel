@@ -78,7 +78,7 @@
                         <td class="small" th:text="${g.customer.email} + (${g.customer.phoneNumber != null} ? ' · ' + ${g.customer.phoneNumber} : '')"></td>
                         <td class="text-end" th:text="${g.cancelled}"></td>
                         <td class="text-end" th:classappend="${g.noShows > 0} ? 'text-danger fw-semibold'" th:text="${g.noShows}"></td>
-                        <td><a th:href="@{/admin/bookings/{id}(id=${g.last.id})}" th:text="'#' + ${g.last.id}"></a></td>
+                        <td><a th:href="@{/admin/bookings/{id}(id=${g.last.id})}" th:text="'#' + ${g.last.code}"></a></td>
                     </tr>
                     </tbody>
                 </table>

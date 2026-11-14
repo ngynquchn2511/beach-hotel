@@ -188,7 +188,7 @@ public class AdminBookingController {
         try {
             var booking = bookingService.checkIn(id);
             redirectAttributes.addFlashAttribute("successMessage",
-                    "Đã check-in đơn #" + id + " - phòng " + booking.getRoom().getRoomNumber());
+                    "Đã check-in đơn #" + booking.getCode() + " - phòng " + booking.getRoom().getRoomNumber());
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
@@ -508,7 +508,7 @@ public class AdminBookingController {
     public String noShow(@PathVariable Long id, @RequestParam(required = false) String back, RedirectAttributes redirectAttributes) {
         try {
             Booking booking = bookingService.markNoShow(id);
-            redirectAttributes.addFlashAttribute("successMessage", "Đã đánh dấu khách không đến đơn #" + id + ", phòng "
+            redirectAttributes.addFlashAttribute("successMessage", "Đã đánh dấu khách không đến đơn #" + booking.getCode() + ", phòng "
                     + booking.getRoom().getRoomNumber() + " đã trả lại để bán"
                     + (booking.getDepositPaidAmount().signum() > 0
                     ? ". Giữ cọc " + com.hotel.util.Money.format(booking.getDepositPaidAmount()) + " VND" : ""));

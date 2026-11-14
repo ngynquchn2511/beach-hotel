@@ -324,7 +324,7 @@ public class OtaSyncService {
                 removed++;
                 notifier.notify("ota", StaffNotificationService.Level.WARNING,
                         f.getChannel().getLabel() + " đã hủy đặt phòng " + room.getRoomNumber(),
-                        "Đơn #" + b.getBooking().getId() + " (" + b.getStartDate().format(DAY) + " - " + b.getEndDate().format(DAY)
+                        "Đơn #" + b.getBooking().getCode() + " (" + b.getStartDate().format(DAY) + " - " + b.getEndDate().format(DAY)
                                 + ") không còn trên lịch của kênh - kiểm tra và hủy đơn nếu đúng",
                         "/admin/bookings/" + b.getBooking().getId());
             }

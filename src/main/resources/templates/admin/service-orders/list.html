@@ -63,7 +63,7 @@
                                 <div class="small text-muted" th:if="${o.note}" th:text="'Ghi chú: ' + ${o.note}"></div>
                             </td>
                             <td>
-                                <a th:href="@{/admin/bookings/{id}(id=${o.booking.id})}" th:text="'#' + ${o.booking.id} + ' · P.' + ${o.booking.room.roomNumber}"></a>
+                                <a th:href="@{/admin/bookings/{id}(id=${o.booking.id})}" th:text="'#' + ${o.booking.code} + ' · P.' + ${o.booking.room.roomNumber}"></a>
                                 <div class="small" th:text="${o.booking.guestName}"></div>
                                 <div class="small text-muted" th:text="${o.booking.guestPhone}"></div>
                                 <div class="small text-danger" th:if="${o.booking.status.name() == 'CANCELLED'}">Đơn phòng đã hủy</div>
@@ -113,7 +113,7 @@
                                 <div class="small text-muted" th:if="${o.note}" th:text="'Ghi chú: ' + ${o.note}"></div>
                             </td>
                             <td>
-                                <a th:href="@{/admin/bookings/{id}(id=${o.booking.id})}" th:text="'#' + ${o.booking.id} + ' · P.' + ${o.booking.room.roomNumber}"></a>
+                                <a th:href="@{/admin/bookings/{id}(id=${o.booking.id})}" th:text="'#' + ${o.booking.code} + ' · P.' + ${o.booking.room.roomNumber}"></a>
                                 <div class="small" th:text="${o.booking.guestName}"></div>
                                 <div class="small text-muted" th:text="${o.booking.guestPhone}"></div>
                                 <div class="small text-danger" th:if="${o.booking.status.name() == 'CANCELLED'}">Đơn phòng đã hủy</div>

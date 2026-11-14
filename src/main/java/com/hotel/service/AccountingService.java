@@ -127,7 +127,7 @@ public class AccountingService {
                 Row row = detail.createRow(r++);
                 row.createCell(0).setCellValue(e.time().format(DAY_TIME));
                 row.createCell(1).setCellValue(e.label());
-                row.createCell(2).setCellValue(e.bookingId() != null ? "#" + e.bookingId() : "");
+                row.createCell(2).setCellValue(e.bookingCode() != null ? "#" + e.bookingCode() : "");
                 row.createCell(3).setCellValue(e.method().getVietnameseLabel());
                 if (e.amount().signum() >= 0) {
                     money(row, 4, e.amount(), st);
@@ -232,10 +232,10 @@ public class AccountingService {
                 boolean group = b.getGroup() != null;
                 deposits.put(b.getDepositOnlineRef(), new VnPayTxn(b.getDepositOnlineRef(), b.getDepositPaidAt(),
                         group ? VnPayKind.GROUP_DEPOSIT : VnPayKind.DEPOSIT,
-                        group ? "Đoàn " + b.getGroup().getCode() + ": đơn #" + b.getId() : "Đơn #" + b.getId(), amount));
+                        group ? "Đoàn " + b.getGroup().getCode() + ": đơn #" + b.getCode() : "Đơn #" + b.getCode(), amount));
             } else {
                 deposits.put(prev.ref(), new VnPayTxn(prev.ref(), prev.time(), VnPayKind.GROUP_DEPOSIT,
-                        prev.description() + ", #" + b.getId(), prev.amount().add(amount)));
+                        prev.description() + ", #" + b.getCode(), prev.amount().add(amount)));
             }
         }
         List<VnPayTxn> list = new ArrayList<>(deposits.values());
@@ -246,7 +246,7 @@ public class AccountingService {
         }
         for (Booking b : bookingRepository.findByRefundedAtBetween(from, to)) {
             if (b.getRefundOnlineRef() != null && b.getRefundAmount() != null) {
-                list.add(new VnPayTxn(b.getRefundOnlineRef(), b.getRefundedAt(), VnPayKind.REFUND, "Hoàn cọc đơn #" + b.getId(),
+                list.add(new VnPayTxn(b.getRefundOnlineRef(), b.getRefundedAt(), VnPayKind.REFUND, "Hoàn cọc đơn #" + b.getCode(),
                         b.getRefundAmount()));
             }
         }

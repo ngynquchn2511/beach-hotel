@@ -90,7 +90,7 @@
                             <div class="text-muted" th:text="${r.customer.email}"></div>
                         </td>
                         <td>
-                            <a th:href="@{/admin/bookings/{id}(id=${r.booking.id})}" th:text="|Đơn #${r.booking.id}|"></a>
+                            <a th:href="@{/admin/bookings/{id}(id=${r.booking.id})}" th:text="|Đơn #${r.booking.code}|"></a>
                             <div class="text-muted" th:text="|Phòng ${r.booking.room.roomNumber} - ${r.booking.room.roomType.name}|"></div>
                         </td>
                         <td class="stars text-nowrap">

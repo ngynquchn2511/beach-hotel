@@ -1285,12 +1285,28 @@ public class DemoDataSeeder implements CommandLineRunner {
 
     // ===================== Ngay tao: ghi de created_at (cot updatable = false) =====================
 
+    // Ma don duoc gan theo ngay luu (hom nay) - danh lai theo ngay tao gia lap, giong sql/2026-11-14_ma-don.sql
+    private void renumberBookingCodes() {
+        Map<LocalDate, Integer> perDay = new HashMap<>();
+        List<Object[]> rows = new ArrayList<>();
+        jdbc.query("select id, created_at from bookings order by created_at, id", rs -> {
+            LocalDate day = rs.getTimestamp(2).toLocalDateTime().toLocalDate();
+            int n = perDay.merge(day, 1, Integer::sum);
+            rows.add(new Object[]{com.hotel.service.BookingCodeGenerator.format(day, n), rs.getLong(1)});
+        });
+        jdbc.batchUpdate("update bookings set booking_code = ? where id = ?", rows);
+        jdbc.update("delete from booking_code_counters");
+        jdbc.batchUpdate("insert into booking_code_counters (code_date, last_number) values (?, ?)",
+                perDay.entrySet().stream().map(e -> new Object[]{java.sql.Date.valueOf(e.getKey()), e.getValue()}).toList());
+    }
+
     private void fix(String table, Long id, LocalDateTime at) {
         fixes.computeIfAbsent(table, k -> new ArrayList<>()).add(new Object[]{java.sql.Timestamp.valueOf(at), id});
     }
 
     private void applyFixes() {
         fixes.forEach((table, rows) -> jdbc.batchUpdate("update " + table + " set created_at = ? where id = ?", rows));
+        renumberBookingCodes();
         // Hang thanh vien + diem hien tai theo lich su
         jdbc.update("update users u set customer_type = case when (select count(*) from bookings b where b.customer_id = u.id and b.status = 'CHECKED_OUT') >= 5 then 'VIP' "
                 + "when (select count(*) from bookings b where b.customer_id = u.id and b.status = 'CHECKED_OUT') >= 2 then 'REGULAR' else 'NEW' end, "

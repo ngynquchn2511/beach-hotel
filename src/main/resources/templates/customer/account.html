@@ -72,7 +72,7 @@
                         <li th:each="t : ${pointHistory}" class="d-flex justify-content-between border-top py-1">
                             <span>
                                 <span th:text="#{'points.type.' + ${t.type}}">Tích điểm</span>
-                                <span class="text-muted" th:if="${t.booking != null}" th:text="'· #' + ${t.booking.id}"></span>
+                                <span class="text-muted" th:if="${t.booking != null}" th:text="'· #' + ${t.booking.code}"></span>
                                 <span class="text-muted" th:text="'· ' + ${#temporals.format(t.createdAt, 'dd/MM/yyyy')}"></span>
                             </span>
                             <span class="fw-semibold" th:classappend="${t.points > 0} ? 'text-success' : 'text-danger'"

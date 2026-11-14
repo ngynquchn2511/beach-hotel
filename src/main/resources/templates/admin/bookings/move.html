@@ -20,7 +20,7 @@
 
         <div class="col-md-9">
             <a th:href="@{/admin/bookings/{id}(id=${booking.id})}" class="small">&laquo; Quay lại đơn</a>
-            <h3 class="fw-bold mt-2 mb-1" th:text="'Đổi phòng cho đơn #' + ${booking.id}">Đổi phòng</h3>
+            <h3 class="fw-bold mt-2 mb-1" th:text="'Đổi phòng cho đơn #' + ${booking.code}">Đổi phòng</h3>
             <p class="text-muted" th:text="'Đang ở phòng ' + ${booking.room.roomNumber} + ' (' + ${booking.room.roomType.name} + ') · '
                 + ${#temporals.format(booking.checkInDate, 'dd/MM')} + ' – ' + ${#temporals.format(booking.checkOutDate, 'dd/MM/yyyy')}
                 + ' · ' + ${booking.numberOfGuests != null ? booking.numberOfGuests : 1} + ' khách'"></p>

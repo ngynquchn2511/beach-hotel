@@ -45,14 +45,14 @@ public class AdminLostItemController {
     }
 
     @PostMapping
-    public String record(@RequestParam(required = false) Long roomId, @RequestParam(required = false) Long bookingId,
+    public String record(@RequestParam(required = false) Long roomId, @RequestParam(required = false) String bookingCode,
                          @RequestParam(required = false) String description, @RequestParam(required = false) String storageLocation,
                          @AuthenticationPrincipal CustomUserDetails user, RedirectAttributes redirectAttributes) {
         return run(() -> {
-            LostItem item = lostItemService.record(roomId, bookingId, description, storageLocation,
+            LostItem item = lostItemService.recordByCode(roomId, bookingCode, description, storageLocation,
                     user != null ? user.getUser().getFullName() : null);
             redirectAttributes.addFlashAttribute("successMessage", item.getBooking() != null
-                    ? "Đã ghi nhận, gắn với đơn #" + item.getBooking().getId() + " (" + item.getBooking().getGuestName() + ")"
+                    ? "Đã ghi nhận, gắn với đơn #" + item.getBooking().getCode() + " (" + item.getBooking().getGuestName() + ")"
                     : "Đã ghi nhận (chưa gắn được đơn khách nào)");
         }, redirectAttributes);
     }

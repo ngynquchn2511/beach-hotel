@@ -49,7 +49,7 @@ class LostItemIT extends ItFixtures {
         mockMvc.perform(post("/admin/lost-found").with(csrf()).with(as(staff))
                         .param("roomId", room.getId().toString()).param("description", "Sạc điện thoại trắng")
                         .param("storageLocation", "Tủ lễ tân"))
-                .andExpect(flash().attribute("successMessage", containsString("#" + lastStay.getId())));
+                .andExpect(flash().attribute("successMessage", containsString("#" + lastStay.getCode())));
         LostItem item = latest();
         assertThat(item.getBooking().getId()).isEqualTo(lastStay.getId());
         assertThat(item.getFoundBy()).isEqualTo(staff.getFullName());

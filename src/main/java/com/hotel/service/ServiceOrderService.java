@@ -145,7 +145,7 @@ public class ServiceOrderService {
         if (byStaff) {
             confirmTour(order.getId());
         } else {
-            notifyStaff("service", com.hotel.service.StaffNotificationService.Level.INFO, "Đặt tour mới · đơn #" + booking.getId(),
+            notifyStaff("service", com.hotel.service.StaffNotificationService.Level.INFO, "Đặt tour mới · đơn #" + booking.getCode(),
                     participants + " khách · " + tourDate.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM")), "/admin/service-orders");
         }
         return order;
@@ -244,7 +244,7 @@ public class ServiceOrderService {
         if (byStaff) {
             confirmTransfer(order.getId());
         } else {
-            notifyStaff("service", com.hotel.service.StaffNotificationService.Level.INFO, "Đặt xe đưa đón · đơn #" + booking.getId(),
+            notifyStaff("service", com.hotel.service.StaffNotificationService.Level.INFO, "Đặt xe đưa đón · đơn #" + booking.getCode(),
                     passengers + " khách · " + airport.getVietnameseLabel(), "/admin/service-orders");
         }
         return order;
