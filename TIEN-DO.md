@@ -221,6 +221,18 @@
 
 ## 6. Gợi ý việc làm tiếp (chưa làm)
 
+**ĐANG LÀM DỞ (14/11/2026, chưa commit code - file sửa dở vẫn nằm trong working tree, xem `git status` / `git diff`).** Chủ dự án yêu cầu 3 việc:
+
+- **(a) Phân tích AI nhanh hơn + có biểu đồ** (trang `/admin/accounting/insights`). Đã sửa dở, CHƯA biên dịch / test:
+  - `ClaudeAiGateway`: với Haiku 5.x tắt thinking (`ThinkingConfigDisabled`, `canDisableThinking`) cho cả phân tích lẫn hỏi đáp; hỏi đáp đặt `effort` LOW; thêm `streamAnswer` (stream bằng `createStreaming` + `MessageAccumulator` để lấy số token). Opus 5.5 / Sonnet 5.5 không được tắt thinking (400) nên chỉ hạ effort.
+  - `AiGateway`: thêm `default streamAnswer(...)` (gateway giả trong test trả cả câu 1 lần).
+  - `AiAdvisorService`: tách `ask` thành `validQuestion` + `askSystemPrompt` (@Transactional readOnly) + `askStreaming` + `saveAnswer` - không giữ transaction trong lúc chờ AI.
+  - `AdminInsightController`: thêm `POST /ask/stream` (ResponseBodyEmitter, text/plain từng đoạn, lỗi = dòng bắt đầu bằng ký tự `\u0000`, pool luồng riêng `ai-stream`), trang dùng `profitService.report(m)` và đưa `charts` (12 tháng doanh thu / chi phí / lãi / công suất, cơ cấu doanh thu & chi phí tháng, đơn vị triệu đồng) ra model. **Cảnh báo:** file này được sửa qua heredoc nên chữ tiếng Việt trong đó (VD "Tiền phòng", "Giá vốn dịch vụ"...) có thể bị lỗi mã hóa - mở ra kiểm tra / gõ lại bằng Edit trước khi biên dịch.
+  - Còn phải làm: `static/js/mini-charts.js` (SVG thuần, tooltip khi rê chuột, bảng số liệu đi kèm; màu theo skill dataviz: doanh thu `#2a78d6`, chi phí `#eb6834`, lãi âm `#e34948`), thêm khối biểu đồ vào `insights.html`, JS gửi câu hỏi bằng `fetch` tới `/ask/stream` và hiện chữ dần (form cũ `/ask` giữ làm dự phòng), nút "Phân tích" hiện trạng thái chờ; test (gateway giả) cho `/ask/stream` + dữ liệu biểu đồ; chạy `mvn test`; thử 1 lần với khóa thật (Haiku rẻ ~0,002 USD/lần).
+- **(b) Admin biết ai trực ca hôm nay** - chưa làm. Dự kiến: bảng `staff_duty_shifts` (ngày, ca Sáng 6-14 / Chiều 14-22 / Đêm 22-6, nhân viên, ghi chú), trang admin xếp lịch theo tuần, khung "Đang trực / Trực hôm nay" ở dashboard và trang Hôm nay (kèm ca thu ngân đang mở - `CashShift` OPEN), dữ liệu demo lịch trực 2 tuần trước / sau.
+- **(c) Dự báo thời tiết** - chưa làm. Dự kiến: Open-Meteo (miễn phí, không cần khóa, chỉ gửi tọa độ Hạ Long ~20.95, 107.08), cache 30 phút, hiện 7 ngày ở trang chủ / trang đặt phòng (ngày lưu trú nếu trong 16 ngày tới) / trang Hôm nay của lễ tân; chatbot trả lời thời tiết bằng số liệu thật.
+- Sau đó: hướng web trung gian (đã bàn - khuyên làm "chuỗi nhiều cơ sở" trên `main`, sàn đầy đủ thì làm ở nhánh riêng `marketplace` sau khi bảo vệ đồ án) và mã xác nhận kiểu Booking.com (10 số + PIN) - chờ chủ dự án chọn.
+
 1. Nạp credit cho tài khoản Anthropic (khóa `ANTHROPIC_API_KEY` đã đặt trên máy dev), chạy thử phân tích AI một tháng có số liệu; chỉnh prompt (`AiAdvisorService.ANALYST_PROMPT`) theo phản hồi của chủ resort.
 2. Thử VNPay sandbox thật theo checklist mục 7 (cần chủ dự án đăng ký tài khoản sandbox), kèm thử đối soát với file sao kê thật.
 3. Điền thông tin wifi thật vào mẫu trả lời nhanh rồi bật mẫu.
