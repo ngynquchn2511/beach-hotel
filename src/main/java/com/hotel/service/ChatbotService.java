@@ -91,6 +91,13 @@ public class ChatbotService {
         this.transferRateRepository = transferRateRepository;
     }
 
+    private WeatherService weatherService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setWeatherService(WeatherService weatherService) {
+        this.weatherService = weatherService;
+    }
+
     public String answer(String rawMessage) {
         return reply(rawMessage).text();
     }
@@ -110,6 +117,24 @@ public class ChatbotService {
 
         Conversation(Locale locale) {
             this.locale = locale;
+        }
+
+        // Du bao that 3 ngay toi (null neu khong lay duoc)
+        private String liveWeather() {
+            if (weatherService == null) {
+                return null;
+            }
+            var days = weatherService.next(3);
+            if (days.isEmpty()) {
+                return null;
+            }
+            StringBuilder sb = new StringBuilder(t("chat.weather.live"));
+            for (var d : days) {
+                sb.append("\n- ").append(t("chat.weather.day", d.date().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM")),
+                        t("weather.kind." + d.getKind().name()), String.valueOf(d.minTemp()), String.valueOf(d.maxTemp()),
+                        d.rainChance() == null ? "?" : String.valueOf(d.rainChance())));
+            }
+            return sb.toString();
         }
 
         private String t(String code, Object... args) {
@@ -197,6 +222,8 @@ public class ChatbotService {
             // Dich vu them: tour lan bien va xe dua don san bay (tra loi bang du lieu that trong DB)
             boolean askTour = containsAny(q, "tour lan", "lan bien", "lan ong tho", "lan binh", "lan ngam", "san ho", "kayak",
                     "snorkel", "diving", "dive", "scuba", "coral");
+            boolean askSuggestRoom = containsAny(q, "goi y phong", "tu van phong", "phong nao hop", "phong nao phu hop", "nen chon phong",
+                    "nen dat phong nao", "chon phong nao", "phong nao tot", "recommend a room", "which room", "suggest a room", "best room for");
             boolean askTransfer = containsAny(q, "dua don", "don san bay", "tien san bay", "xe san bay", "ra san bay",
                     "tu san bay", "xe don", "van don", "noi bai", "cat bi",
                     "airport", "transfer", "shuttle", "pick up", "pickup", "drop off", "dropoff");
@@ -264,8 +291,13 @@ public class ChatbotService {
                 sections.add(t("chat.checkTime.times", CHECK_IN_TIME, CHECK_OUT_TIME) + "\n" + t("chat.checkTime.note"));
                 suggestions.add(t("chat.sg.howToBook"));
             }
+            if (askSuggestRoom) {
+                sections.add(t("chat.suggestRoom"));
+                actions.add(action("chat.btn.suggestRoom", "/rooms/suggest"));
+            }
             if (askWeather) {
-                sections.add(t("chat.weather"));
+                String live = liveWeather();
+                sections.add(live != null ? live + "\n\n" + t("chat.weather") : t("chat.weather"));
                 suggestions.add(t("chat.sg.explore"));
             }
             if (askExplore) {

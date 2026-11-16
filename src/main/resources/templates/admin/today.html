@@ -119,6 +119,11 @@
             <div th:if="${successMessage}" class="alert alert-success fw-semibold"><i class="bi bi-check-circle me-2"></i><span th:text="${successMessage}"></span></div>
 
             <th:block th:if="${onDuty != null}"><div th:replace="~{fragments/on-duty :: box(${onDuty})}"></div></th:block>
+            <th:block th:if="${weatherDays != null and !#lists.isEmpty(weatherDays)}">
+                <div th:replace="~{fragments/weather :: strip(${weatherDays}, 'Thời tiết Hạ Long 3 ngày tới')}"></div>
+                <div th:if="${weatherDays[0].rough}" class="alert alert-warning small"><i class="bi bi-wind me-1"></i>Hôm nay gió mạnh / có giông:
+                    nhắc khách đặt tour biển, du thuyền, lặn biển kiểm tra lịch với bên tour.</div>
+            </th:block>
 
             <!-- Tong quan nhanh: bam de nhay toi muc -->
             <div class="row g-3 mb-4">

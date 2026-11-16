@@ -103,6 +103,10 @@
                 </div>
             </div>
 
+            <div class="mt-4" th:if="${weatherDays != null and !#lists.isEmpty(weatherDays)}">
+                <div th:replace="~{fragments/weather :: strip(${weatherDays}, #{weather.titleStay})}"></div>
+            </div>
+
             <!-- Danh gia cua khach da o cung loai phong -->
             <div class="bg-white p-4 rounded shadow-sm mt-4" id="danh-gia-phong">
                 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">

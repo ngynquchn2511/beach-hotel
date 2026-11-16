@@ -90,6 +90,10 @@
         </div>
     </section>
 
+    <div class="container mt-4" th:if="${weatherDays != null and !#lists.isEmpty(weatherDays)}">
+        <div th:replace="~{fragments/weather :: strip(${weatherDays}, #{weather.title7})}"></div>
+    </div>
+
     <!-- Anh minh hoa Ha Long (static/page-images/beach-*.jpg) -->
     <section class="postcards">
         <div class="text-center mb-4">

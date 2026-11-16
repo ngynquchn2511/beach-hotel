@@ -1,7 +1,7 @@
 # Tiến độ dự án Sóng Xanh Resort (beach-hotel)
 
 > File bàn giao giữa các phiên làm việc với Claude. Mở phiên mới, bảo Claude: **"đọc file TIEN-DO.md"**.
-> Cập nhật lần cuối: 30/10/2026, sau đợt 22 (soát và sửa báo cáo Word).
+> Cập nhật lần cuối: 17/11/2026, sau đợt 23 (phân ca, chấm công, lương, khách cọc theo ngày, gợi ý phòng, thời tiết, AI có biểu đồ).
 
 ## 1. Dự án
 
@@ -33,6 +33,17 @@
    - MockMvc đọc JSON không charset là ISO-8859-1: dùng `getContentAsString(StandardCharsets.UTF_8)`.
 
 ## 3. Đã làm (theo thứ tự gần nhất trước)
+
+### Đợt 23 (17/11/2026) - Nhân sự, khách cọc theo ngày, gợi ý phòng, thời tiết, AI nhanh hơn
+Chủ dự án yêu cầu: «phân ca nhân viên, biết ai là người trực. cho xem danh sách khách cọc hôm nào, cho phép khách hỏi sở thích, gợi ý phòng. tự động chấm công, trả lương nhân viên theo ngày làm,.. đọc tiendo md và làm» (toàn quyền, không cần hỏi).
+
+| Commit | Chức năng |
+|---|---|
+| (xem `git log`) | **Phân tích AI nhanh hơn + biểu đồ** (việc dở (a) của đợt trước): Haiku 5.x tắt thinking, hỏi đáp effort LOW, trả lời hiện dần (`POST /admin/accounting/insights/ask/stream`, `ResponseBodyEmitter`, lỗi = dòng bắt đầu ký tự NUL), trang có biểu đồ SVG 12 tháng doanh thu / chi phí / lãi, công suất, cơ cấu doanh thu & chi phí tháng (`static/js/mini-charts.js`, không thư viện ngoài, rê chuột hiện số). Form `/ask` cũ giữ làm dự phòng. Test `AiAdvisorIT`. Chưa thử với khóa thật |
+| (xem `git log`) | **Phân ca + ai đang trực + chấm công tự động + lương theo ngày công**. Bảng `staff_duty_shifts`, `staff_attendances`, `staff_payslips`, cột `users.daily_wage`; migration `sql/2026-11-17_phan-ca-cham-cong-luong.sql`. 3 ca: sáng 06-14, chiều 14-22, đêm 22-06 (ca đêm tính vào ngày bắt đầu ca). **Lịch trực** `/admin/duty-roster` (mọi nhân viên xem; ADMIN xếp ca theo khoảng ngày + chọn thứ, bỏ ca, chép sang tuần sau; báo ca chưa có ai). **Ai đang trực**: khung «Đang trực» ở Hôm nay, Tổng quan, Lịch trực (ai trong lịch ca hiện tại đã vào / chưa vào / đi muộn, ai đang làm ngoài lịch; «có mặt» = thao tác trong 30 phút). **Chấm công tự động** (`AttendanceInterceptor` trên `/admin/**`, ghi CSDL tối đa 5 phút / lần / phiên): lần đầu mở cổng quản trị trong ngày = giờ vào (khớp ca trong lịch → tính đi muộn, quá 5 phút), mỗi lần thao tác đẩy giờ ra; nút «Kết thúc ca» ở `/admin/attendance/me`. Từ 4 tiếng = 1 công, ít hơn = nửa công. ADMIN xem / sửa công (bắt buộc lý do) / thêm công tay ở `/admin/attendance`. **Bảng lương** `/admin/payroll` (ADMIN + kế toán; đặt lương ngày chỉ ADMIN): công × lương ngày + thưởng − khấu trừ; «Trả lương» lưu phiếu + ghi khoản chi «Lương & bảo hiểm» (ONE_OFF, ngày cuối tháng lương hoặc hôm nay) vào lãi lỗ; ADMIN hủy phiếu thì xóa luôn khoản chi. Dữ liệu demo `StaffRosterDemoSeeder` (chạy khi `DEMO_DATA=true` và chưa có lịch trực: 6 tuần trước → 2 tuần tới, chấm công các ngày đã qua, lương ngày 300-420k). Test `StaffShiftIT` |
+| (xem `git log`) | **Khách đặt cọc theo ngày** `/admin/deposits` (lễ tân, kế toán, quản trị): 3 tab - đã cọc trong ngày (VNPay / tại quầy-CK), khách đến ngày đó đã cọc chưa, đơn hết hạn cọc ngày đó; dải 14 ngày số khách cọc, bấm để xem. Test `DepositListIT` |
+| (xem `git log`) | **Khách khai sở thích → gợi ý phòng** `/rooms/suggest` (ai cũng xem, song ngữ, link ở header + trang Danh sách phòng + chatbot): số người, mục đích (cặp đôi / gia đình / nhóm bạn / công tác / một mình), ngân sách / đêm, cảnh (biển / vườn / hồ bơi), ưu tiên (bồn tắm, ban công, rộng, giường King, phòng khách, riêng tư, tiết kiệm), ngày ở (tùy chọn → chỉ loại còn phòng). `RoomSuggestionService` chấm điểm từng loại phòng theo sức chứa, giá, từ khóa trong tên / tiện nghi / mô tả → 3 loại hợp nhất + % phù hợp + lý do. Khách đã đăng nhập: lưu sở thích (bảng `guest_preferences`, migration `sql/2026-11-17_so-thich-khach.sql`), điền sẵn lần sau, lễ tân thấy «Sở thích khách tự khai» ở trang đơn. Test `RoomSuggestionIT` |
+| (xem `git log`) | **Dự báo thời tiết** (việc (c) đợt trước): `WeatherService` gọi Open-Meteo (miễn phí, không khóa, chỉ gửi tọa độ Bãi Cháy), lưu tạm 30 phút, lỗi mạng thì ẩn khung. Hiện 7 ngày ở trang chủ, ngày lưu trú ở trang chi tiết phòng (nếu trong 16 ngày tới), 3 ngày ở Hôm nay của lễ tân (cảnh báo gió mạnh / giông để nhắc khách đi tour biển); chatbot trả lời thời tiết bằng số liệu thật. `WEATHER_ENABLED=false` để tắt. Test `WeatherIT` |
 
 ### Đợt 22 (30/10/2026) - Soát báo cáo Word, sửa chỗ lệch với code / sơ đồ mới
 | Commit | Chức năng |
@@ -198,7 +209,9 @@
 - Chạy **tất cả** các file trong `sql/` theo thứ tự tên file (`2026-10-10_*`, `2026-10-15_*`, `2026-10-16_*`, `2026-10-18_*`, rồi `2026-10-19_*`) **trước khi** chạy bản mới.
   - `2026-10-18_goi-spa.sql` vừa tạo bảng vừa **chuyển dữ liệu** lịch spa cũ (cột `treatment`) sang `spa_package_id`; cột `treatment` cũ được giữ lại, app không đọc nữa.
   - `2026-10-18_thoi-luong-spa-theo-lich.sql` phải chạy **sau** `2026-10-18_goi-spa.sql` (thứ tự tên file đã đúng) vì điền thời lượng từ bảng gói.
+- Đợt 23 thêm 2 file: `2026-11-17_phan-ca-cham-cong-luong.sql`, `2026-11-17_so-thich-khach.sql`.
 - Biến môi trường:
+  - Thời tiết: `WEATHER_ENABLED=false` để tắt (máy chủ phải ra được Internet tới `api.open-meteo.com`).
   - VNPay: `VNPAY_TMN_CODE`, `VNPAY_HASH_SECRET`. Chưa thử với sandbox thật (xem mục 7).
   - Mail: OTP quản trị tự bật khi đã cấu hình mail; đặt `ADMIN_OTP=false` để tắt.
   - AI: `ANTHROPIC_API_KEY` (tạo ở console.anthropic.com) để bật phân tích AI; `AI_MODEL` (mặc định `claude-haiku-5-5` - 0,10 / 0,50 USD mỗi triệu token vào / ra; đổi sang `claude-opus-5-5` nếu cần phân tích sâu hơn), `AI_ENABLED=false` để tắt hẳn, `AI_FALLBACKS` (`auto` mặc định: chỉ gửi `fallbacks` với model có hỗ trợ - Haiku thì không). Máy dev để khóa trong file `secrets.properties` ở thư mục gốc (gitignore, nạp qua `spring.config.import`; khóa hết hạn 18/11/2026) - KHÔNG đặt biến môi trường `ANTHROPIC_API_KEY` cho cả Windows vì Claude Code sẽ dùng khóa trả phí thay cho gói claude.ai. Tài khoản Anthropic **đã nạp credit** (chủ dự án báo 20/10), phân tích AI chạy thật; hết credit thì API trả 400 "credit balance is too low" và trang hiện thông báo nạp tiền.
@@ -217,11 +230,16 @@
 - Lãi lỗ chỉ đúng khi kế toán nhập đủ chi phí; công suất các tháng cũ tính theo số phòng hiện tại. Mỗi lần bấm phân tích / hỏi AI với Haiku 5.5 tốn khoảng 0,001-0,005 USD.
 - No-show không tự động: lễ tân bấm "Khách không đến" (hệ thống chỉ nhắc lúc 23h).
 - Gửi lại email thẻ quà tặng giới hạn 1 lần / 10 phút / thẻ, lưu trong bộ nhớ (khởi động lại app thì đếm lại).
+- Chấm công dựa trên thao tác trên cổng quản trị: nhân viên làm mà không mở máy (buồng phòng) thì ADMIN thêm công tay; giờ ra = lần thao tác cuối (bấm «Kết thúc ca» cho chính xác). Lương chưa tính hệ số ca đêm / ngày lễ, chưa có bảo hiểm / thuế TNCN.
+- Bảng lương ghi khoản chi «Lương & bảo hiểm» riêng từng người: nếu ở «Chi phí vận hành» còn khoản lương cố định hàng tháng (dữ liệu demo có) thì lãi lỗ tính trùng - dừng khoản cố định khi bắt đầu trả lương theo công.
+- Gợi ý phòng dựa trên từ khóa trong tên / tiện nghi / mô tả loại phòng (VD «hướng biển», «bồn tắm»): admin nhập tiện nghi rõ ràng thì gợi ý chuẩn hơn.
 - Mã đơn `MMdd####` không có năm nên lặp lại sau 1 năm (cùng ngày năm trước); tìm theo mã có thể ra 2 đơn, trang đồ thất lạc lấy đơn mới nhất. Muốn duy nhất tuyệt đối thì thêm 2 số năm (`yyMMdd####`).
 
 ## 6. Gợi ý việc làm tiếp (chưa làm)
 
-**ĐANG LÀM DỞ (14/11/2026, chưa commit code - file sửa dở vẫn nằm trong working tree, xem `git status` / `git diff`).** Chủ dự án yêu cầu 3 việc:
+**Đợt 23 đã làm xong (a), (b), (c) dưới đây** - giữ lại để tham khảo. Việc mới gợi ý thêm cho nhân sự: xuất bảng lương Excel, nhân viên đăng ký đổi ca / xin nghỉ, gửi email lịch trực tuần, phụ cấp ca đêm (hệ số lương ca đêm).
+
+~~ĐANG LÀM DỞ (14/11/2026)~~ Chủ dự án yêu cầu 3 việc:
 
 - **(a) Phân tích AI nhanh hơn + có biểu đồ** (trang `/admin/accounting/insights`). Đã sửa dở, CHƯA biên dịch / test:
   - `ClaudeAiGateway`: với Haiku 5.x tắt thinking (`ThinkingConfigDisabled`, `canDisableThinking`) cho cả phân tích lẫn hỏi đáp; hỏi đáp đặt `effort` LOW; thêm `streamAnswer` (stream bằng `createStreaming` + `MessageAccumulator` để lấy số token). Opus 5.5 / Sonnet 5.5 không được tắt thinking (400) nên chỉ hạ effort.

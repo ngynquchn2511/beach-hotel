@@ -26,8 +26,19 @@ public class HomeController {
         this.reviewService = reviewService;
     }
 
+    private com.hotel.service.WeatherService weatherService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setWeatherService(com.hotel.service.WeatherService weatherService) {
+        this.weatherService = weatherService;
+    }
+
     @GetMapping({"/", "/home"})
-    public String home() {
+    public String home(Model model) {
+        // Du bao 7 ngay toi o Ha Long (an khung neu khong lay duoc)
+        if (weatherService != null) {
+            model.addAttribute("weatherDays", weatherService.next(7));
+        }
         return "home";
     }
 

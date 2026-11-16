@@ -1,0 +1,28 @@
+<!-- Du bao thoi tiet Ha Long (Open-Meteo): dai ngay ngang. days = List<WeatherService.Day>, title = tieu de -->
+<div th:fragment="strip(days, title)" th:if="${days != null and !#lists.isEmpty(days)}" class="weather-strip bg-white p-3 rounded shadow-sm mb-4"
+     xmlns:th="http://www.thymeleaf.org">
+    <style>
+        .weather-strip .wx { display: flex; gap: 8px; overflow-x: auto; }
+        .weather-strip .wx-day { flex: 1 0 84px; text-align: center; border-radius: 10px; padding: 8px 4px; background: #f4f8fb; }
+        .weather-strip .wx-day.rough { background: #fff1e6; }
+        .weather-strip .wx-day i { font-size: 1.5rem; display: block; color: #2a78d6; }
+        .weather-strip .wx-day.rough i { color: #c2410c; }
+        .weather-strip .wx-t { font-weight: 800; }
+        .weather-strip .wx-s { font-size: .75rem; color: #5b6b7b; }
+    </style>
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="fw-bold"><i class="bi bi-cloud-sun me-1"></i><span th:text="${title}"></span></div>
+        <div class="small text-muted" th:text="#{weather.source}">Open-Meteo</div>
+    </div>
+    <div class="wx">
+        <div th:each="d : ${days}" class="wx-day" th:classappend="${d.rough} ? 'rough'"
+             th:title="#{'weather.kind.' + ${d.kind}} + (${d.rough} ? ' - ' + #{weather.rough(${d.windKmh})} : '')">
+            <div class="wx-s fw-semibold" th:text="${#temporals.format(d.date, 'dd/MM')}"></div>
+            <i class="bi" th:classappend="${d.kind.icon}"></i>
+            <div class="wx-t" th:text="${d.maxTemp} + '° / ' + ${d.minTemp} + '°'"></div>
+            <div class="wx-s" th:text="#{'weather.kind.' + ${d.kind}}"></div>
+            <div class="wx-s" th:if="${d.rainChance != null}"><i class="bi bi-droplet" style="font-size:.75rem;display:inline;color:inherit"></i>
+                <span th:text="${d.rainChance} + '%'"></span></div>
+        </div>
+    </div>
+</div>

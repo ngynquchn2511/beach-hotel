@@ -120,6 +120,13 @@ public class CustomerController {
 
     // Xem chi tiet phong, giu lai ngay da chon (neu co) de tinh tong tien va kiem tra con trong
     // Cho phep chon combo dich vu di kem (an nuong / lau / phong thuong)
+    private com.hotel.service.WeatherService weatherService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setWeatherService(com.hotel.service.WeatherService weatherService) {
+        this.weatherService = weatherService;
+    }
+
     @GetMapping("/customer/rooms/{id}")
     public String viewRoomDetail(
             @PathVariable Long id,
@@ -167,6 +174,10 @@ public class CustomerController {
         model.addAttribute("alertEmail", userDetails != null ? userDetails.getUser().getEmail() : null);
         // Chi noi "con trong dung ngay ban chon" khi ngay hop le (ngay sai thi goi y khong loc theo ngay)
         model.addAttribute("similarByDates", RoomService.isValidStay(checkIn, checkOut));
+        // Thoi tiet nhung ngay khach o (neu trong 16 ngay toi)
+        if (weatherService != null && RoomService.isValidStay(checkIn, checkOut)) {
+            model.addAttribute("weatherDays", weatherService.between(checkIn, checkOut.plusDays(1)));
+        }
 
         if (checkIn != null && checkOut != null) {
             try {

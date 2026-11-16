@@ -24,6 +24,13 @@ public class AdminTodayController {
     }
 
     private com.hotel.service.StaffShiftService staffShiftService;
+    private com.hotel.service.WeatherService weatherService;
+
+    // Thoi tiet 3 ngay: le tan nhac khach tour bien / du thuyen khi gio manh, mua bao
+    @org.springframework.beans.factory.annotation.Autowired
+    void setWeatherService(com.hotel.service.WeatherService weatherService) {
+        this.weatherService = weatherService;
+    }
 
     @org.springframework.beans.factory.annotation.Autowired
     void setStaffShiftService(com.hotel.service.StaffShiftService staffShiftService) {
@@ -37,6 +44,9 @@ public class AdminTodayController {
         model.addAttribute("day", frontDeskService.day(date != null ? date : today, today));
         // Yeu cau nhan som / tra muon cho le tan duyet (moi ngay)
         model.addAttribute("stayTimeRequests", bookingService.findPendingStayTimeRequests());
+        if (weatherService != null) {
+            model.addAttribute("weatherDays", weatherService.next(3));
+        }
         if (staffShiftService != null && (date == null || date.equals(today))) {
             model.addAttribute("onDuty", staffShiftService.onDuty(java.time.LocalDateTime.now()));
         }
