@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Khách đặt cọc theo ngày</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+    <style>
+        .day-strip { display: grid; grid-template-columns: repeat(14, 1fr); gap: 4px; }
+        .day-strip a { display: block; text-align: center; padding: 6px 2px; border-radius: 8px; background: #f4f7fa; color: inherit;
+                       text-decoration: none; font-size: .75rem; line-height: 1.25; }
+        .day-strip a.active { background: #2a78d6; color: #fff; }
+        .day-strip a .n { font-weight: 800; font-size: .95rem; }
+        .day-strip a.zero .n { opacity: .4; }
+    </style>
+</head>
+<body class="eaut eaut-admin">
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="container py-5">
+    <div class="row g-4">
+        <div class="col-md-3">
+            <div th:replace="~{fragments/admin-sidebar :: sidebar}"></div>
+        </div>
+        <div class="col-md-9">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                <div>
+                    <h3 class="fw-bold mb-1">Khách đặt cọc theo ngày</h3>
+                    <p class="text-muted small mb-0">Xem ai đã cọc ngày nào, khách đến trong ngày đã cọc chưa, đơn nào sắp hết hạn cọc.</p>
+                </div>
+                <form method="get" class="d-flex gap-2">
+                    <input type="hidden" name="view" th:value="${view}">
+                    <a class="btn btn-sm btn-outline-secondary" th:href="@{/admin/deposits(date=${day.minusDays(1)}, view=${view})}" title="Ngày trước"><i class="bi bi-chevron-left"></i></a>
+                    <input type="date" name="date" class="form-control form-control-sm" th:value="${day}" onchange="this.form.submit()">
+                    <a class="btn btn-sm btn-outline-secondary" th:href="@{/admin/deposits(date=${day.plusDays(1)}, view=${view})}" title="Ngày sau"><i class="bi bi-chevron-right"></i></a>
+                    <a th:unless="${isToday}" class="btn btn-sm btn-outline-primary text-nowrap" th:href="@{/admin/deposits(view=${view})}">Hôm nay</a>
+                </form>
+            </div>
+
+            <!-- 14 ngay gan nhat -->
+            <div class="bg-white p-3 rounded shadow-sm mb-3">
+                <div class="small fw-semibold mb-2">Số khách cọc 14 ngày (bấm để xem ngày đó)</div>
+                <div class="day-strip">
+                    <a th:each="d : ${days}" th:href="@{/admin/deposits(date=${d.date}, view='paid')}"
+                       th:classappend="(${d.date == day and view == 'paid'} ? 'active ' : '') + (${d.count == 0} ? 'zero' : '')"
+                       th:title="${d.count} + ' khách · ' + ${#numbers.formatDecimal(d.amount, 1, 'POINT', 0, 'COMMA')} + ' đ'">
+                        <div th:text="${#temporals.format(d.date, 'dd/MM')}"></div>
+                        <div class="n" th:text="${d.count}"></div>
+                    </a>
+                </div>
+            </div>
+
+            <ul class="nav nav-tabs mb-0">
+                <li class="nav-item"><a class="nav-link" th:classappend="${view == 'paid'} ? 'active'" th:href="@{/admin/deposits(date=${day}, view='paid')}">
+                    <i class="bi bi-cash-coin me-1"></i>Đã cọc trong ngày</a></li>
+                <li class="nav-item"><a class="nav-link" th:classappend="${view == 'arrival'} ? 'active'" th:href="@{/admin/deposits(date=${day}, view='arrival')}">
+                    <i class="bi bi-box-arrow-in-right me-1"></i>Khách đến ngày này</a></li>
+                <li class="nav-item"><a class="nav-link" th:classappend="${view == 'due'} ? 'active'" th:href="@{/admin/deposits(date=${day}, view='due')}">
+                    <i class="bi bi-hourglass-split me-1"></i>Hết hạn cọc ngày này</a></li>
+            </ul>
+            <div class="bg-white p-4 rounded-bottom shadow-sm">
+                <div class="d-flex flex-wrap gap-4 mb-3 small">
+                    <div><span class="text-muted">Số đơn:</span> <b th:text="${#lists.size(list)}"></b></div>
+                    <div th:if="${view != 'due'}"><span class="text-muted">Tiền cọc đã nhận:</span>
+                        <b class="text-success" th:text="${#numbers.formatDecimal(paidTotal, 1, 'POINT', 0, 'COMMA')} + ' đ'"></b></div>
+                    <div th:if="${view != 'paid'}"><span class="text-muted">Tổng cọc yêu cầu:</span>
+                        <b th:text="${#numbers.formatDecimal(total, 1, 'POINT', 0, 'COMMA')} + ' đ'"></b></div>
+                    <div th:if="${view == 'paid'}"><span class="text-muted">Qua VNPay:</span> <b th:text="${onlineCount}"></b></div>
+                </div>
+
+                <div th:if="${#lists.isEmpty(list)}" class="text-muted small">
+                    <span th:if="${view == 'paid'}">Không có khách nào đặt cọc trong ngày này.</span>
+                    <span th:if="${view == 'arrival'}">Không có khách đến (có yêu cầu cọc) ngày này.</span>
+                    <span th:if="${view == 'due'}">Không có đơn nào hết hạn cọc ngày này.</span>
+                </div>
+                <div class="table-responsive" th:unless="${#lists.isEmpty(list)}">
+                    <table class="table table-sm small align-middle mb-0">
+                        <thead><tr>
+                            <th>Mã đơn</th><th>Khách</th><th>Phòng</th><th>Nhận - trả</th>
+                            <th class="text-end">Tiền cọc</th>
+                            <th th:text="${view == 'due'} ? 'Hạn cọc' : 'Cọc lúc'"></th><th>Hình thức</th><th>Trạng thái</th>
+                        </tr></thead>
+                        <tbody>
+                        <tr th:each="b : ${list}">
+                            <td><a class="fw-semibold" th:href="@{/admin/bookings/{id}(id=${b.id})}" th:text="${b.code}"></a></td>
+                            <td><div th:text="${b.guestName != null} ? ${b.guestName} : ${b.customer.fullName}"></div>
+                                <th:block th:with="ph=${b.guestPhone != null ? b.guestPhone : b.customer.phoneNumber}">
+                                    <a class="text-muted" th:if="${ph != null}" th:href="'tel:' + ${ph}" th:text="${ph}"></a></th:block></td>
+                            <td th:text="${b.room.roomNumber} + ' · ' + ${b.room.roomType.name}"></td>
+                            <td class="text-nowrap" th:text="${#temporals.format(b.checkInDate, 'dd/MM')} + ' - ' + ${#temporals.format(b.checkOutDate, 'dd/MM')}"></td>
+                            <td class="text-end fw-semibold" th:text="${#numbers.formatDecimal(b.depositAmount, 1, 'POINT', 0, 'COMMA')}"></td>
+                            <td class="text-nowrap">
+                                <span th:if="${view == 'due'}" th:text="${#temporals.format(b.depositDeadline, 'HH:mm dd/MM')}"></span>
+                                <span th:if="${view != 'due' and b.depositPaid}" th:text="${#temporals.format(b.depositPaidAt, 'HH:mm dd/MM')}"></span>
+                                <span th:if="${view != 'due' and !b.depositPaid}" class="text-danger">Chưa cọc</span>
+                            </td>
+                            <td><span th:if="${b.depositPaidOnline}" class="badge bg-primary">VNPay</span>
+                                <span th:if="${b.depositPaid and !b.depositPaidOnline}" class="badge bg-secondary">Tại quầy / CK</span></td>
+                            <td><span class="badge bg-light text-dark border" th:text="${b.status.vietnameseLabel}"></span>
+                                <span th:if="${b.refunded}" class="badge bg-info text-dark">Đã hoàn cọc</span></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

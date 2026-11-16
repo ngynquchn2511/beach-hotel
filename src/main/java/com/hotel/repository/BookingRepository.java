@@ -135,4 +135,20 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByCreatedAtBetweenOrderByCreatedAtDesc(java.time.LocalDateTime from, java.time.LocalDateTime to);
 
     boolean existsByRoomId(Long roomId);
+
+    // Danh sach khach coc theo ngay: da coc trong khoang gio / nhan phong trong khoang ngay (co yeu cau coc) / cho coc het han trong khoang gio
+    @Query("select b from Booking b join fetch b.room r join fetch r.roomType left join fetch b.customer "
+            + "where b.depositPaidAt >= :from and b.depositPaidAt < :to order by b.depositPaidAt")
+    List<Booking> findDepositsPaidBetween(@org.springframework.data.repository.query.Param("from") java.time.LocalDateTime from,
+                                          @org.springframework.data.repository.query.Param("to") java.time.LocalDateTime to);
+
+    @Query("select b from Booking b join fetch b.room r join fetch r.roomType left join fetch b.customer "
+            + "where b.checkInDate = :day and b.depositAmount > 0 and b.status <> com.hotel.entity.BookingStatus.CANCELLED order by r.roomNumber")
+    List<Booking> findArrivalsWithDeposit(@org.springframework.data.repository.query.Param("day") java.time.LocalDate day);
+
+    @Query("select b from Booking b join fetch b.room r join fetch r.roomType left join fetch b.customer "
+            + "where b.status = com.hotel.entity.BookingStatus.PENDING and b.depositAmount > 0 and b.depositPaidAt is null "
+            + "and b.depositDeadline >= :from and b.depositDeadline < :to order by b.depositDeadline")
+    List<Booking> findDepositsDueBetween(@org.springframework.data.repository.query.Param("from") java.time.LocalDateTime from,
+                                         @org.springframework.data.repository.query.Param("to") java.time.LocalDateTime to);
 }
