@@ -128,6 +128,8 @@ class AiAdvisorIT extends ItFixtures {
         StringBuilder chunks = new StringBuilder();
         AiReport saved = advisor.askStreaming(m, " Lãi tháng này? ", advisor.askSystemPrompt(m), "B", chunks::append);
         assertThat(chunks.toString()).isEqualTo("Lãi tăng khoảng 3 triệu.");
+        // Yeu cau AI tra loi it chu, kem khoi chi so + bieu do de trang ve
+        assertThat(advisor.askSystemPrompt(m)).contains("```kpi").contains("```chart").contains("\"type\":\"bar\"");
         assertThat(saved.getQuestion()).isEqualTo("Lãi tháng này?");
         assertThat(advisor.questions(m)).hasSize(1);
 
@@ -136,7 +138,9 @@ class AiAdvisorIT extends ItFixtures {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("chart-pnl")))
                 .andExpect(content().string(containsString("revenueMix")))
-                .andExpect(content().string(containsString("mini-charts.js")));
+                .andExpect(content().string(containsString("mini-charts.js")))
+                .andExpect(content().string(containsString("ai-answer.js")))
+                .andExpect(content().string(containsString("class=\"ai-answer mt-2\"")));
 
         // Bean that khong co API key -> dong bao loi bat dau bang ky tu NUL
         var result = mockMvc.perform(post("/admin/accounting/insights/ask/stream").with(csrf()).with(as(acc))
@@ -144,9 +148,9 @@ class AiAdvisorIT extends ItFixtures {
                 .andExpect(request().asyncStarted()).andReturn();
         long until = System.currentTimeMillis() + 5000;
         String body = "";
-        while (System.currentTimeMillis() < until && !(body = result.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8)).contains(" ")) {
+        while (System.currentTimeMillis() < until && !(body = result.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8)).contains("\u0000")) {
             Thread.sleep(20);
         }
-        assertThat(body).startsWith(" ").contains("ANTHROPIC_API_KEY");
+        assertThat(body).startsWith("\u0000").contains("ANTHROPIC_API_KEY");
     }
 }

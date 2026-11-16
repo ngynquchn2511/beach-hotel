@@ -158,9 +158,27 @@ public class AiAdvisorService {
     // So lieu dat trong system (co cache) de nhieu cau hoi cung thang dung lai
     @Transactional(readOnly = true)
     public String askSystemPrompt(YearMonth month) {
-        return ANALYST_PROMPT + "\nTrả lời ngắn gọn câu hỏi của quản lý dựa trên số liệu tháng " + month + " dưới đây"
-                + " (có thể dùng gạch đầu dòng). Không đủ dữ liệu thì nói rõ cần thêm gì.\n\nSỐ LIỆU:\n" + dataJson(month);
+        return ANALYST_PROMPT + "\nTrả lời câu hỏi của quản lý dựa trên số liệu tháng " + month + " dưới đây.\n" + ASK_FORMAT
+                + "\n\nSỐ LIỆU:\n" + dataJson(month);
     }
+
+    // Cach trinh bay cau tra loi hoi dap: it chu, uu tien bieu do. Trang ve khoi ```kpi / ```chart bang static/js/ai-answer.js
+    static final String ASK_FORMAT = """
+            CÁCH TRÌNH BÀY (bắt buộc - người đọc muốn nhìn biểu đồ, không muốn đọc nhiều chữ):
+            1. Mở đầu bằng khối chỉ số chính (2-4 ô), đúng cú pháp:
+            ```kpi
+            [{"label":"Lãi vận hành","value":"-83,7 tr","note":"biên -14,2%","tone":"bad"},{"label":"Công suất","value":"26,6%","note":"-10,1 điểm so với T10","tone":"bad"}]
+            ```
+            tone là "good", "bad" hoặc "neutral".
+            2. Sau đó 1-2 biểu đồ minh họa trực tiếp cho câu hỏi, mỗi biểu đồ 1 khối JSON hợp lệ (số liệu lấy đúng từ SỐ LIỆU,
+            tiền đổi sang triệu đồng, làm tròn 1 chữ số thập phân):
+            ```chart
+            {"type":"bar","title":"Doanh thu và chi phí (triệu đồng)","unit":"tr","labels":["T9","T10","T11"],"series":[{"name":"Doanh thu","values":[620.5,640.2,560.1]},{"name":"Chi phí","values":[580,600,643.8]}]}
+            ```
+            type: "bar" (cột, nhiều series), "line" (đường, 1 series: "values" thay cho "series"), "hbar" (thanh ngang
+            xếp hạng / cơ cấu: "rows":[["Tiền phòng",500.2],["Lặn biển",15.7]]).
+            3. Cuối cùng tối đa 3 gạch đầu dòng ngắn (mỗi dòng dưới 20 từ): nhận định chính và việc nên làm.
+            Không viết đoạn văn dài, không lặp lại số đã có trong kpi / biểu đồ. Không đủ dữ liệu thì nói ngắn cần thêm gì.""";
 
     private AiReport saveAnswer(YearMonth month, String q, AiGateway.Result<String> result, String requestedBy) {
         return repository.save(AiReport.builder().reportMonth(month.atDay(1)).kind(AiReport.Kind.QUESTION).question(q)

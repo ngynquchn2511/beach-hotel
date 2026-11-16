@@ -145,11 +145,11 @@
                 </form>
                 <div id="ask-live" class="border-top pt-2 mb-2 d-none">
                     <div class="small fw-semibold"><i class="bi bi-person me-1"></i><span class="q"></span></div>
-                    <div class="small a" style="white-space: pre-line"></div>
+                    <div class="a mt-2" style="white-space: pre-line"></div>
                 </div>
                 <div th:each="q : ${questions}" class="border-top pt-2 mb-2">
                     <div class="small fw-semibold"><i class="bi bi-person me-1"></i><span th:text="${q.question}"></span></div>
-                    <div class="small" style="white-space: pre-line" th:text="${q.content}"></div>
+                    <div class="ai-answer mt-2" style="white-space: pre-line" th:data-text="${q.content}" th:text="${q.content}"></div>
                     <div class="text-muted" style="font-size: .75rem" th:text="${#temporals.format(q.createdAt, 'dd/MM HH:mm')} + (${q.createdBy != null} ? ' · ' + ${q.createdBy} : '')"></div>
                 </div>
             </div>
@@ -159,6 +159,7 @@
 
 <div th:replace="~{fragments/footer :: footer}"></div>
 <script th:src="@{/js/mini-charts.js}"></script>
+<script th:src="@{/js/ai-answer.js}"></script>
 <script th:inline="javascript">
     (function () {
         var c = /*[[${charts}]]*/ {};
@@ -197,13 +198,16 @@
                             return;
                         }
                         if (first) { first = false; }
-                        out.textContent = text;
+                        AiAnswer.render(out, text, true);
                         return pump();
                     });
                 }
                 return pump();
             }).then(function () {
-                if (!out.classList.contains('text-danger')) input.value = '';
+                if (!out.classList.contains('text-danger')) {
+                    AiAnswer.render(out, text, false);
+                    input.value = '';
+                }
             }).catch(function () {
                 out.textContent = 'Mất kết nối khi đang nhận câu trả lời. Thử lại.';
                 out.classList.add('text-danger');
