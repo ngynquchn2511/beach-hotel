@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>Bảng lương</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+</head>
+<body class="eaut eaut-admin">
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="container py-5">
+    <div class="row g-4">
+        <div class="col-md-3">
+            <div th:replace="~{fragments/admin-sidebar :: sidebar}"></div>
+        </div>
+        <div class="col-md-9">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                <div>
+                    <h3 class="fw-bold mb-1">Bảng lương tháng <span th:text="${month.monthValue} + '/' + ${month.year}"></span></h3>
+                    <p class="text-muted small mb-0">Lương = số công (chấm công tự động) × lương ngày + thưởng - khấu trừ.
+                        Bấm «Trả lương» để chốt: lưu phiếu lương và ghi khoản chi «Lương &amp; bảo hiểm» vào lãi lỗ tháng đó.</p>
+                </div>
+                <form method="get" class="d-flex gap-2">
+                    <input type="month" name="month" class="form-control form-control-sm" th:value="${month}">
+                    <button class="btn btn-sm btn-outline-primary">Xem</button>
+                </form>
+            </div>
+
+            <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+            <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-sm-6"><div class="bg-white p-3 rounded shadow-sm h-100"><div class="small text-muted">Còn phải trả (tạm tính)</div>
+                    <div class="fw-bold fs-5" th:text="${#numbers.formatDecimal(sheet.totalDue, 1, 'POINT', 0, 'COMMA')} + ' đ'"></div></div></div>
+                <div class="col-sm-6"><div class="bg-white p-3 rounded shadow-sm h-100"><div class="small text-muted">Đã trả</div>
+                    <div class="fw-bold fs-5 text-success" th:text="${#numbers.formatDecimal(sheet.totalPaid, 1, 'POINT', 0, 'COMMA')} + ' đ'"></div></div></div>
+            </div>
+
+            <div class="bg-white p-4 rounded shadow-sm mb-3">
+                <div class="table-responsive">
+                    <table class="table table-sm small align-middle">
+                        <thead><tr><th>Nhân viên</th><th class="text-end">Công</th><th>Lương ngày</th><th class="text-end">Thành tiền</th><th style="min-width: 300px">Trả lương</th></tr></thead>
+                        <tbody>
+                        <tr th:each="l : ${sheet.lines}">
+                            <td><div class="fw-semibold" th:text="${l.staff.fullName}"></div>
+                                <div class="text-muted" th:text="${l.staff.role.vietnameseLabel}"></div>
+                                <a class="text-muted" th:href="@{/admin/attendance(month=${month}, staffId=${l.staff.id})}"
+                                   sec:authorize="hasRole('ADMIN')">Xem chấm công</a></td>
+                            <td class="text-end fw-bold" th:text="${l.payslip != null} ? ${l.payslip.workUnits} : ${l.units}"></td>
+                            <td>
+                                <form sec:authorize="hasRole('ADMIN')" method="post" th:action="@{/admin/payroll/wage(month=${month})}" class="d-flex gap-1">
+                                    <input type="hidden" name="staffId" th:value="${l.staff.id}">
+                                    <input type="number" name="dailyWage" min="0" step="1000" class="form-control form-control-sm" style="width: 110px"
+                                           th:value="${l.staff.dailyWage != null} ? ${l.staff.dailyWage.longValue()} : ''" placeholder="đ / ngày">
+                                    <button class="btn btn-sm btn-outline-secondary" title="Lưu lương ngày"><i class="bi bi-check"></i></button>
+                                </form>
+                                <span sec:authorize="!hasRole('ADMIN')" th:text="${l.wage.signum() > 0} ? ${#numbers.formatDecimal(l.wage, 1, 'POINT', 0, 'COMMA')} : 'Chưa đặt'"></span>
+                            </td>
+                            <td class="text-end fw-bold" th:text="${#numbers.formatDecimal(l.payslip != null ? l.payslip.amount : l.gross, 1, 'POINT', 0, 'COMMA')}"></td>
+                            <td>
+                                <div th:if="${l.payslip != null}" class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-success">Đã trả</span>
+                                    <span class="text-muted" th:text="${#temporals.format(l.payslip.paidAt, 'dd/MM HH:mm')} + (${l.payslip.paidBy != null} ? ' · ' + ${l.payslip.paidBy} : '')
+                                        + (${l.payslip.bonus != null and l.payslip.bonus.signum() > 0} ? ' · thưởng ' + ${#numbers.formatDecimal(l.payslip.bonus, 1, 'POINT', 0, 'COMMA')} : '')
+                                        + (${l.payslip.deduction != null and l.payslip.deduction.signum() > 0} ? ' · trừ ' + ${#numbers.formatDecimal(l.payslip.deduction, 1, 'POINT', 0, 'COMMA')} : '')"></span>
+                                    <form sec:authorize="hasRole('ADMIN')" method="post" th:action="@{/admin/payroll/{id}/cancel(id=${l.payslip.id}, month=${month})}"
+                                          onsubmit="return confirm('Hủy phiếu lương này? Khoản chi lương đã ghi cũng bị xóa.')">
+                                        <button class="btn btn-sm btn-link text-danger p-0">Hủy</button>
+                                    </form>
+                                </div>
+                                <form th:if="${l.payslip == null and canPay}" method="post" th:action="@{/admin/payroll/pay}" class="d-flex gap-1"
+                                      onsubmit="return confirm('Chốt và trả lương tháng cho nhân viên này?')">
+                                    <input type="hidden" name="staffId" th:value="${l.staff.id}">
+                                    <input type="hidden" name="month" th:value="${month}">
+                                    <input type="number" name="bonus" min="0" step="1000" class="form-control form-control-sm" placeholder="Thưởng">
+                                    <input type="number" name="deduction" min="0" step="1000" class="form-control form-control-sm" placeholder="Khấu trừ">
+                                    <button class="btn btn-sm btn-primary text-nowrap" th:disabled="${l.wage.signum() <= 0}">Trả lương</button>
+                                </form>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <p class="small text-muted">Lưu ý: nếu ở «Chi phí vận hành» đang có khoản lương cố định hàng tháng thì dừng khoản đó để không tính trùng.</p>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

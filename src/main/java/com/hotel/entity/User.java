@@ -86,6 +86,10 @@ public class User {
     @Column(name = "login_locked_until")
     private LocalDateTime loginLockedUntil;
 
+    // Luong theo ngay cong (nhan vien noi bo): luong thang = so cong cham tu dong x luong ngay
+    @Column(name = "daily_wage", precision = 12, scale = 2)
+    private java.math.BigDecimal dailyWage;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

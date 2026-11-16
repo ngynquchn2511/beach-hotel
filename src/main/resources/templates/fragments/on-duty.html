@@ -1,0 +1,32 @@
+<!-- Ai dang truc: ca dang dien ra, ai da vao (gio vao, di muon), ai chua vao, nguoi lam ngoai lich, cac ca khac trong ngay -->
+<div th:fragment="box(od)" class="bg-white p-3 rounded shadow-sm mb-4" id="dang-truc" xmlns:th="http://www.thymeleaf.org">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+        <h6 class="fw-bold mb-0"><i class="bi bi-person-badge me-1"></i>Đang trực:
+            <span th:text="${od.shift.label} + ' (' + ${od.shift.timeRange} + ')'"></span>
+            <span class="badge bg-success ms-1" th:text="${od.presentCount} + ' người có mặt'"></span></h6>
+        <a class="small" th:href="@{/admin/duty-roster}">Lịch trực tuần <i class="bi bi-arrow-right"></i></a>
+    </div>
+    <div th:if="${#lists.isEmpty(od.scheduled) and #lists.isEmpty(od.extra)}" class="small text-muted">
+        Ca này chưa xếp ai trực.
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <span th:each="d : ${od.scheduled}" class="badge rounded-pill border px-3 py-2"
+              th:classappend="${d.present} ? 'bg-success-subtle text-success-emphasis border-success' : (${d.attendance != null} ? 'bg-light text-dark' : 'bg-warning-subtle text-warning-emphasis border-warning')"
+              th:title="${d.attendance != null} ? 'Vào lúc ' + ${#temporals.format(d.attendance.checkInAt, 'HH:mm')} + ', thao tác gần nhất ' + ${#temporals.format(d.attendance.checkOutAt, 'HH:mm')} : 'Chưa thấy vào ca'">
+            <i class="bi" th:classappend="${d.present} ? 'bi-circle-fill' : 'bi-circle'"></i>
+            <span th:text="${d.staff.fullName}"></span>
+            <small class="fw-normal" th:text="'· ' + ${d.staff.role.vietnameseLabel}"></small>
+            <small class="fw-normal" th:if="${d.attendance == null}">· chưa vào</small>
+            <small class="fw-normal" th:if="${d.attendance != null}" th:text="'· vào ' + ${#temporals.format(d.attendance.checkInAt, 'HH:mm')}"></small>
+            <small class="fw-normal text-danger" th:if="${d.attendance != null and d.attendance.late}" th:text="'(muộn ' + ${d.attendance.lateMinutes} + 'p)'"></small>
+        </span>
+        <span th:each="d : ${od.extra}" class="badge rounded-pill border px-3 py-2 bg-info-subtle text-info-emphasis border-info"
+              title="Đang làm nhưng không có trong lịch ca này">
+            <i class="bi bi-circle-fill"></i> <span th:text="${d.staff.fullName}"></span>
+            <small class="fw-normal" th:text="'· ngoài lịch, vào ' + ${#temporals.format(d.attendance.checkInAt, 'HH:mm')}"></small>
+        </span>
+    </div>
+    <div class="small text-muted mt-2" th:if="${!#maps.isEmpty(od.dayRoster)}">
+        <span th:each="e, st : ${od.dayRoster}"><b th:text="${e.key.label}"></b>: <span th:text="${#strings.listJoin(e.value, ', ')}"></span><span th:unless="${st.last}"> · </span></span>
+    </div>
+</div>

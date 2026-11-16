@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Chấm công của tôi</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+</head>
+<body class="eaut eaut-admin">
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="container py-5">
+    <div class="row g-4">
+        <div class="col-md-3">
+            <div th:replace="~{fragments/admin-sidebar :: sidebar}"></div>
+        </div>
+        <div class="col-md-9">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                <div>
+                    <h3 class="fw-bold mb-1">Chấm công của tôi</h3>
+                    <p class="text-muted small mb-0">Hệ thống tự ghi giờ vào khi bạn mở cổng quản trị và giờ ra theo lần thao tác cuối.
+                        Làm từ 4 tiếng trở lên tính 1 công, ít hơn tính nửa công.</p>
+                </div>
+                <form method="get" class="d-flex gap-2">
+                    <input type="month" name="month" class="form-control form-control-sm" th:value="${month}">
+                    <button class="btn btn-sm btn-outline-primary">Xem</button>
+                </form>
+            </div>
+
+            <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+            <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+
+            <div class="bg-white p-4 rounded shadow-sm mb-4">
+                <div th:if="${todayAttendance != null}" class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                        <div class="fw-bold">Hôm nay
+                            <span th:if="${todayAttendance.shift != null}" class="badge bg-primary" th:text="${todayAttendance.shift.label}"></span>
+                            <span th:if="${todayAttendance.shift == null}" class="badge bg-secondary">Ngoài lịch trực</span></div>
+                        <div class="small">Vào <b th:text="${#temporals.format(todayAttendance.checkInAt, 'HH:mm')}"></b>
+                            <span th:if="${todayAttendance.late}" class="text-danger" th:text="'(muộn ' + ${todayAttendance.lateMinutes} + ' phút)'"></span>
+                            · <span th:text="${todayAttendance.ended} ? 'Kết thúc ca lúc' : 'Thao tác gần nhất'"></span>
+                            <b th:text="${#temporals.format(todayAttendance.checkOutAt, 'HH:mm')}"></b>
+                            · đã làm <b th:text="${todayAttendance.workedText}"></b></div>
+                    </div>
+                    <form th:unless="${todayAttendance.ended}" method="post" th:action="@{/admin/attendance/end}"
+                          onsubmit="return confirm('Kết thúc ca làm việc bây giờ?')">
+                        <button class="btn btn-outline-danger"><i class="bi bi-box-arrow-right me-1"></i>Kết thúc ca</button>
+                    </form>
+                </div>
+                <div th:if="${todayAttendance == null}" class="small text-muted">Chưa có chấm công hôm nay.</div>
+            </div>
+
+            <div class="row g-3 mb-4" th:if="${summary != null}">
+                <div class="col-sm-3"><div class="bg-white p-3 rounded shadow-sm h-100"><div class="small text-muted">Số công</div>
+                    <div class="fw-bold fs-5" th:text="${summary.units}"></div></div></div>
+                <div class="col-sm-3"><div class="bg-white p-3 rounded shadow-sm h-100"><div class="small text-muted">Ngày đi làm</div>
+                    <div class="fw-bold fs-5" th:text="${summary.days}"></div></div></div>
+                <div class="col-sm-3"><div class="bg-white p-3 rounded shadow-sm h-100"><div class="small text-muted">Tổng giờ</div>
+                    <div class="fw-bold fs-5" th:text="${summary.hours} + 'h'"></div></div></div>
+                <div class="col-sm-3"><div class="bg-white p-3 rounded shadow-sm h-100"><div class="small text-muted">Đi muộn</div>
+                    <div class="fw-bold fs-5" th:text="${summary.lateCount} + ' lần'"></div></div></div>
+            </div>
+
+            <div class="bg-white p-4 rounded shadow-sm">
+                <h5 class="fw-bold" th:text="'Tháng ' + ${month.monthValue} + '/' + ${month.year}"></h5>
+                <div th:if="${#lists.isEmpty(list)}" class="small text-muted">Chưa có ngày công nào.</div>
+                <table th:unless="${#lists.isEmpty(list)}" class="table table-sm small align-middle">
+                    <thead><tr><th>Ngày</th><th>Ca</th><th>Vào</th><th>Ra</th><th>Giờ làm</th><th>Công</th><th>Ghi chú</th></tr></thead>
+                    <tbody>
+                    <tr th:each="a : ${list}">
+                        <td th:text="${#temporals.format(a.workDate, 'dd/MM')}"></td>
+                        <td th:text="${a.shift != null} ? ${a.shift.label} : 'Ngoài lịch'"></td>
+                        <td><span th:text="${#temporals.format(a.checkInAt, 'HH:mm')}"></span>
+                            <span th:if="${a.late}" class="text-danger" th:text="'(+' + ${a.lateMinutes} + 'p)'"></span></td>
+                        <td th:text="${#temporals.format(a.checkOutAt, 'HH:mm')}"></td>
+                        <td th:text="${a.workedText}"></td>
+                        <td class="fw-semibold" th:text="${a.units}"></td>
+                        <td class="text-muted" th:text="${a.note}"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

@@ -23,6 +23,13 @@ public class AdminTodayController {
         this.frontDeskService = frontDeskService;
     }
 
+    private com.hotel.service.StaffShiftService staffShiftService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setStaffShiftService(com.hotel.service.StaffShiftService staffShiftService) {
+        this.staffShiftService = staffShiftService;
+    }
+
     @GetMapping("/admin/today")
     public String today(@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
                         Model model) {
@@ -30,6 +37,9 @@ public class AdminTodayController {
         model.addAttribute("day", frontDeskService.day(date != null ? date : today, today));
         // Yeu cau nhan som / tra muon cho le tan duyet (moi ngay)
         model.addAttribute("stayTimeRequests", bookingService.findPendingStayTimeRequests());
+        if (staffShiftService != null && (date == null || date.equals(today))) {
+            model.addAttribute("onDuty", staffShiftService.onDuty(java.time.LocalDateTime.now()));
+        }
         return "admin/today";
     }
 

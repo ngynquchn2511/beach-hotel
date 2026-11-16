@@ -67,7 +67,13 @@ public class WebConfig implements WebMvcConfigurer {
         interceptor.setParamName("lang");
         interceptor.setIgnoreInvalidLocale(true);
         registry.addInterceptor(interceptor);
+        // Cham cong tu dong khi nhan vien thao tac tren cong quan tri (bo qua trang dang nhap, OTP, luong thong bao)
+        registry.addInterceptor(new AttendanceInterceptor(staffShiftService)).addPathPatterns("/admin/**")
+                .excludePathPatterns("/admin/login", "/admin/otp", "/admin/otp/**", "/admin/notifications/**", "/admin/logout");
     }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private org.springframework.beans.factory.ObjectProvider<com.hotel.service.StaffShiftService> staffShiftService;
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {

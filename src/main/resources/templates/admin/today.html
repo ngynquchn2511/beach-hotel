@@ -118,6 +118,8 @@
             <div th:if="${errorMessage}" class="alert alert-danger fw-semibold"><i class="bi bi-x-circle me-2"></i><span th:text="${errorMessage}"></span></div>
             <div th:if="${successMessage}" class="alert alert-success fw-semibold"><i class="bi bi-check-circle me-2"></i><span th:text="${successMessage}"></span></div>
 
+            <th:block th:if="${onDuty != null}"><div th:replace="~{fragments/on-duty :: box(${onDuty})}"></div></th:block>
+
             <!-- Tong quan nhanh: bam de nhay toi muc -->
             <div class="row g-3 mb-4">
                 <div class="col-6 col-xl-3"><a class="fd-stat" href="#khach-den">

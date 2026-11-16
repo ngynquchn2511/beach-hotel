@@ -18,6 +18,8 @@
            th:classappend="${p.startsWith('/admin/dashboard')} ? 'active'"><i class="bi bi-speedometer2"></i>Doanh thu</a>
         <a th:href="@{/admin/shifts}" class="list-group-item list-group-item-action"
            th:classappend="${p.startsWith('/admin/shifts')} ? 'active'"><i class="bi bi-cash-coin"></i>Sổ quỹ ca</a>
+        <a th:href="@{/admin/deposits}" class="list-group-item list-group-item-action"
+           th:classappend="${p.startsWith('/admin/deposits')} ? 'active'"><i class="bi bi-piggy-bank"></i>Khách đặt cọc theo ngày</a>
         <a th:href="@{/admin/accounting/ledger}" class="list-group-item list-group-item-action"
            th:classappend="${p.startsWith('/admin/accounting/ledger')} ? 'active'"><i class="bi bi-journal-text"></i>Sổ quỹ tháng</a>
         <a th:href="@{/admin/accounting/vnpay}" class="list-group-item list-group-item-action"
@@ -70,6 +72,8 @@
                   class="rounded-circle bg-danger new-dot d-inline-block" style="width:10px;height:10px;" th:title="|${newBookingCount} đơn mới|"></span>
         </span>
     </a>
+    <a th:href="@{/admin/deposits}" class="list-group-item list-group-item-action"
+       th:classappend="${p.startsWith('/admin/deposits')} ? 'active'"><i class="bi bi-piggy-bank"></i>Khách đặt cọc theo ngày</a>
     <a th:href="@{/admin/room-calendar}" class="list-group-item list-group-item-action"
        th:classappend="${p.startsWith('/admin/room-calendar')} ? 'active'"><i class="bi bi-calendar3-range"></i>Lịch phòng</a>
     <a th:href="@{/admin/ota}" class="list-group-item list-group-item-action"
@@ -183,5 +187,14 @@
     <a th:href="@{/admin/audit-logs}" class="list-group-item list-group-item-action" sec:authorize="hasRole('ADMIN')"
        th:classappend="${p.startsWith('/admin/audit-logs')} ? 'active'"><i class="bi bi-clock-history"></i>Nhật ký thao tác</a>
     </th:block>
+    <div class="admin-sidebar-title">Nhân sự</div>
+    <a th:href="@{/admin/duty-roster}" class="list-group-item list-group-item-action"
+       th:classappend="${p.startsWith('/admin/duty-roster')} ? 'active'"><i class="bi bi-calendar-week"></i>Lịch trực ca</a>
+    <a th:href="@{/admin/attendance/me}" class="list-group-item list-group-item-action"
+       th:classappend="${p.startsWith('/admin/attendance/me')} ? 'active'"><i class="bi bi-fingerprint"></i>Chấm công của tôi</a>
+    <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin/attendance}" class="list-group-item list-group-item-action"
+       th:classappend="${p == '/admin/attendance'} ? 'active'"><i class="bi bi-person-check"></i>Chấm công nhân viên</a>
+    <a sec:authorize="hasAnyRole('ADMIN','ACCOUNTANT')" th:href="@{/admin/payroll}" class="list-group-item list-group-item-action"
+       th:classappend="${p.startsWith('/admin/payroll')} ? 'active'"><i class="bi bi-cash-stack"></i>Bảng lương</a>
     <script th:src="@{/js/admin-sidebar.js}" defer></script>
 </nav>

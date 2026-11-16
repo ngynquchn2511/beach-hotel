@@ -103,6 +103,13 @@ public class SecurityConfig {
                         // Moi vai tro cong quan tri: trang chu theo vai tro + nhap ma OTP
                         .requestMatchers("/admin/home", "/admin/otp", "/admin/otp/**")
                                 .hasAnyRole("ADMIN", "STAFF", "HOUSEKEEPER", "ACCOUNTANT")
+                        // Nhan su: moi nhan vien xem lich truc + cham cong cua minh; xep ca / sua cong chi ADMIN; luong ADMIN + ke toan
+                        .requestMatchers(HttpMethod.POST, "/admin/duty-roster/**").hasRole("ADMIN")
+                        .requestMatchers("/admin/duty-roster", "/admin/attendance/me", "/admin/attendance/end")
+                                .hasAnyRole("ADMIN", "STAFF", "HOUSEKEEPER", "ACCOUNTANT")
+                        .requestMatchers("/admin/attendance", "/admin/attendance/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/admin/payroll/wage", "/admin/payroll/*/cancel").hasRole("ADMIN")
+                        .requestMatchers("/admin/payroll", "/admin/payroll/**").hasAnyRole("ADMIN", "ACCOUNTANT")
                         // Quan ly tai khoan nhan vien va xem nhat ky thao tac - chi danh rieng cho ADMIN
                         .requestMatchers("/admin/staff-accounts", "/admin/staff-accounts/**",
                                 "/admin/audit-logs", "/admin/audit-logs/**").hasRole("ADMIN")
@@ -149,6 +156,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/admin/dashboard", "/admin/dashboard/export", "/admin/forecast",
                                 "/admin/shifts", "/admin/shifts/*", "/admin/gift-vouchers",
                                 "/admin/bookings/*/invoice", "/admin/bookings/*/invoice.pdf").hasAnyRole("ADMIN", "STAFF", "ACCOUNTANT")
+                        .requestMatchers(HttpMethod.GET, "/admin/deposits").hasAnyRole("ADMIN", "STAFF", "ACCOUNTANT")
                         .requestMatchers("/admin/**").hasAnyRole("ADMIN", "STAFF")
                         .requestMatchers("/staff/**").hasAnyRole("STAFF", "ADMIN")
                         .anyRequest().authenticated()

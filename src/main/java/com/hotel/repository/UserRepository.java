@@ -15,6 +15,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     List<User> findByRoleOrderByCreatedAtDesc(UserRole role);
 
+    // Nhan vien noi bo (xep ca, cham cong, tinh luong)
+    List<User> findByRoleInOrderByFullNameAsc(java.util.Collection<UserRole> roles);
+
     Optional<User> findByPhoneNumber(String phoneNumber);
 
     Optional<User> findByResetToken(String resetToken);

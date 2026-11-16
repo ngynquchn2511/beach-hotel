@@ -51,6 +51,13 @@ public class AdminController {
         this.periodComparisonService = periodComparisonService;
     }
 
+    private com.hotel.service.StaffShiftService staffShiftService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setStaffShiftService(com.hotel.service.StaffShiftService staffShiftService) {
+        this.staffShiftService = staffShiftService;
+    }
+
     @GetMapping("/admin/dashboard")
     public String dashboard(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
@@ -63,6 +70,9 @@ public class AdminController {
         model.addAttribute("fromDate", fromDate);
         model.addAttribute("toDate", toDate);
 
+        if (staffShiftService != null) {
+            model.addAttribute("onDuty", staffShiftService.onDuty(java.time.LocalDateTime.now()));
+        }
         model.addAttribute("totalRooms", roomService.findAll().size());
         model.addAttribute("availableRooms", roomService.countByStatus(RoomStatus.AVAILABLE));
         model.addAttribute("occupiedRooms", roomService.countByStatus(RoomStatus.OCCUPIED));
