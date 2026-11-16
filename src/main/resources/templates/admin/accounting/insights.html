@@ -56,6 +56,19 @@
                     <div class="small text-muted" th:if="${#lists.isEmpty(topExpenses)}">Chưa nhập chi phí</div></div></div>
             </div>
 
+            <!-- Bieu do 12 thang -->
+            <div class="bg-white p-4 rounded shadow-sm mb-4" id="bieu-do">
+                <h5 class="fw-bold mb-3"><i class="bi bi-bar-chart me-1"></i>Biểu đồ 12 tháng gần nhất</h5>
+                <div class="small fw-semibold mb-1">Doanh thu, chi phí và lãi vận hành (triệu đồng)</div>
+                <div id="chart-pnl" class="mb-4"></div>
+                <div class="small fw-semibold mb-1">Công suất phòng (%)</div>
+                <div id="chart-occ" class="mb-4"></div>
+                <div class="row g-4">
+                    <div class="col-md-6"><div class="small fw-semibold mb-2">Cơ cấu doanh thu tháng này</div><div id="chart-rev-mix"></div></div>
+                    <div class="col-md-6"><div class="small fw-semibold mb-2">Cơ cấu chi phí tháng này</div><div id="chart-cost-mix"></div></div>
+                </div>
+            </div>
+
             <!-- Nhan dinh theo quy tac -->
             <h5 class="fw-bold">Nhận định tự động</h5>
             <div th:each="i : ${insights}" class="bg-white p-3 rounded shadow-sm mb-2 insight" th:classappend="${i.level.css}">
@@ -125,11 +138,15 @@
             <div class="bg-white p-4 rounded shadow-sm mt-4" id="hoi-ai" th:if="${aiEnabled or !#lists.isEmpty(questions)}">
                 <h5 class="fw-bold mb-2"><i class="bi bi-chat-square-text me-1"></i>Hỏi AI về số liệu tháng</h5>
                 <form th:if="${aiEnabled}" method="post" th:action="@{/admin/accounting/insights/ask(month=${month})}" class="d-flex gap-2 mb-3"
-                      onsubmit="this.querySelector('button').disabled = true;">
+                      id="ask-form" th:data-stream="@{/admin/accounting/insights/ask/stream(month=${month})}">
                     <input type="text" name="question" class="form-control form-control-sm" maxlength="1000" required
                            th:value="${lastQuestion}" placeholder="VD: Nếu tăng giá cuối tuần 10% thì lãi tháng thay đổi khoảng bao nhiêu?">
                     <button class="btn btn-sm btn-primary text-nowrap">Hỏi</button>
                 </form>
+                <div id="ask-live" class="border-top pt-2 mb-2 d-none">
+                    <div class="small fw-semibold"><i class="bi bi-person me-1"></i><span class="q"></span></div>
+                    <div class="small a" style="white-space: pre-line"></div>
+                </div>
                 <div th:each="q : ${questions}" class="border-top pt-2 mb-2">
                     <div class="small fw-semibold"><i class="bi bi-person me-1"></i><span th:text="${q.question}"></span></div>
                     <div class="small" style="white-space: pre-line" th:text="${q.content}"></div>
@@ -141,5 +158,58 @@
 </main>
 
 <div th:replace="~{fragments/footer :: footer}"></div>
+<script th:src="@{/js/mini-charts.js}"></script>
+<script th:inline="javascript">
+    (function () {
+        var c = /*[[${charts}]]*/ {};
+        MiniCharts.bars(document.getElementById('chart-pnl'), {labels: c.labels, unit: 'tr', series: [
+            {name: 'Doanh thu', color: '#2a78d6', values: c.revenue},
+            {name: 'Chi phí', color: '#eb6834', values: c.cost},
+            {name: 'Lãi vận hành', color: '#0ca30c', negColor: '#e34948', values: c.profit}]});
+        MiniCharts.line(document.getElementById('chart-occ'), {labels: c.labels, values: c.occupancy, name: 'Công suất', color: '#2a78d6', unit: '%', max: 100});
+        MiniCharts.hbars(document.getElementById('chart-rev-mix'), {rows: c.revenueMix, color: '#2a78d6', unit: 'tr'});
+        MiniCharts.hbars(document.getElementById('chart-cost-mix'), {rows: c.costMix, color: '#eb6834', unit: 'tr'});
+
+        // Hoi AI: tra loi hien dan (stream). Trinh duyet cu khong co ReadableStream -> gui form binh thuong
+        var form = document.getElementById('ask-form');
+        if (!form || !window.fetch || !window.ReadableStream || !window.TextDecoder) return;
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            var btn = form.querySelector('button'), input = form.querySelector('input[name=question]');
+            var live = document.getElementById('ask-live'), out = live.querySelector('.a');
+            live.querySelector('.q').textContent = input.value;
+            out.textContent = 'Đang trả lời...';
+            out.classList.remove('text-danger');
+            live.classList.remove('d-none');
+            btn.disabled = true;
+            var first = true, text = '';
+            fetch(form.dataset.stream, {method: 'POST', body: new FormData(form)}).then(function (res) {
+                if (!res.ok || !res.body) throw new Error('HTTP ' + res.status);
+                var reader = res.body.getReader(), dec = new TextDecoder('utf-8');
+                function pump() {
+                    return reader.read().then(function (r) {
+                        if (r.done) return;
+                        text += dec.decode(r.value, {stream: true});
+                        var err = text.indexOf('\u0000');
+                        if (err >= 0) {
+                            out.textContent = text.substring(err + 1);
+                            out.classList.add('text-danger');
+                            return;
+                        }
+                        if (first) { first = false; }
+                        out.textContent = text;
+                        return pump();
+                    });
+                }
+                return pump();
+            }).then(function () {
+                if (!out.classList.contains('text-danger')) input.value = '';
+            }).catch(function () {
+                out.textContent = 'Mất kết nối khi đang nhận câu trả lời. Thử lại.';
+                out.classList.add('text-danger');
+            }).finally(function () { btn.disabled = false; });
+        });
+    })();
+</script>
 </body>
 </html>

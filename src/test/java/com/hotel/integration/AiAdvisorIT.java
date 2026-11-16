@@ -119,4 +119,34 @@ class AiAdvisorIT extends ItFixtures {
                 .andExpect(flash().attribute("errorMessage", containsString("ANTHROPIC_API_KEY")));
         mockMvc.perform(get("/admin/accounting/insights").with(as(persistUser(UserRole.STAFF, null)))).andExpect(status().isForbidden());
     }
+
+    @Test
+    void askStreaming_sendsChunks_savesAnswer_pageHasCharts_streamEndpointReportsError() throws Exception {
+        FakeGateway g = new FakeGateway();
+        AiAdvisorService advisor = advisor(g);
+        YearMonth m = YearMonth.of(2025, 7);
+        StringBuilder chunks = new StringBuilder();
+        AiReport saved = advisor.askStreaming(m, " Lãi tháng này? ", advisor.askSystemPrompt(m), "B", chunks::append);
+        assertThat(chunks.toString()).isEqualTo("Lãi tăng khoảng 3 triệu.");
+        assertThat(saved.getQuestion()).isEqualTo("Lãi tháng này?");
+        assertThat(advisor.questions(m)).hasSize(1);
+
+        User acc = persistUser(UserRole.ACCOUNTANT, null);
+        mockMvc.perform(get("/admin/accounting/insights").with(as(acc)).param("month", "2025-07"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("chart-pnl")))
+                .andExpect(content().string(containsString("revenueMix")))
+                .andExpect(content().string(containsString("mini-charts.js")));
+
+        // Bean that khong co API key -> dong bao loi bat dau bang ky tu NUL
+        var result = mockMvc.perform(post("/admin/accounting/insights/ask/stream").with(csrf()).with(as(acc))
+                        .param("month", "2025-07").param("question", "Doanh thu?"))
+                .andExpect(request().asyncStarted()).andReturn();
+        long until = System.currentTimeMillis() + 5000;
+        String body = "";
+        while (System.currentTimeMillis() < until && !(body = result.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8)).contains(" ")) {
+            Thread.sleep(20);
+        }
+        assertThat(body).startsWith(" ").contains("ANTHROPIC_API_KEY");
+    }
 }

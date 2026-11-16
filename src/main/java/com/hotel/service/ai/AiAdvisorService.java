@@ -133,14 +133,36 @@ public class AiAdvisorService {
 
     @Transactional
     public AiReport ask(YearMonth month, String question, String requestedBy) {
+        String q = validQuestion(question);
+        AiGateway.Result<String> result = gateway.answer(askSystemPrompt(month), q);
+        return saveAnswer(month, q, result, requestedBy);
+    }
+
+    // Hoi dap dang dong chay: so lieu gom truoc (askSystemPrompt, transaction rieng) roi moi goi AI -
+    // khong giu ket noi CSDL trong luc cho AI viet. Luu cau tra loi khi xong
+    public AiReport askStreaming(YearMonth month, String question, String systemPrompt, String requestedBy,
+                                 java.util.function.Consumer<String> onText) {
+        String q = validQuestion(question);
+        AiGateway.Result<String> result = gateway.streamAnswer(systemPrompt, q, onText);
+        return saveAnswer(month, q, result, requestedBy);
+    }
+
+    public static String validQuestion(String question) {
         String q = question == null ? "" : question.trim();
         if (q.isEmpty() || q.length() > QUESTION_MAX) {
             throw new BusinessException("Vui lòng nhập câu hỏi (tối đa " + QUESTION_MAX + " ký tự)");
         }
-        // So lieu dat trong system (co cache) de nhieu cau hoi cung thang dung lai
-        String system = ANALYST_PROMPT + "\nTrả lời ngắn gọn câu hỏi của quản lý dựa trên số liệu tháng " + month + " dưới đây"
+        return q;
+    }
+
+    // So lieu dat trong system (co cache) de nhieu cau hoi cung thang dung lai
+    @Transactional(readOnly = true)
+    public String askSystemPrompt(YearMonth month) {
+        return ANALYST_PROMPT + "\nTrả lời ngắn gọn câu hỏi của quản lý dựa trên số liệu tháng " + month + " dưới đây"
                 + " (có thể dùng gạch đầu dòng). Không đủ dữ liệu thì nói rõ cần thêm gì.\n\nSỐ LIỆU:\n" + dataJson(month);
-        AiGateway.Result<String> result = gateway.answer(system, q);
+    }
+
+    private AiReport saveAnswer(YearMonth month, String q, AiGateway.Result<String> result, String requestedBy) {
         return repository.save(AiReport.builder().reportMonth(month.atDay(1)).kind(AiReport.Kind.QUESTION).question(q)
                 .content(result.value()).model(gateway.model()).inputTokens(result.inputTokens())
                 .outputTokens(result.outputTokens()).createdBy(requestedBy).build());

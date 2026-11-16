@@ -14,6 +14,10 @@ import com.anthropic.models.messages.StopReason;
 import com.anthropic.models.messages.StructuredMessage;
 import com.anthropic.models.messages.StructuredMessageCreateParams;
 import com.anthropic.models.messages.TextBlockParam;
+import com.anthropic.models.messages.ThinkingConfigDisabled;
+import com.anthropic.helpers.MessageAccumulator;
+import com.anthropic.core.http.StreamResponse;
+import com.anthropic.models.messages.RawMessageStreamEvent;
 import com.hotel.exception.BusinessException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +26,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.function.Consumer;
 
 // Goi Claude qua Java SDK chinh thuc. Bat khi co ANTHROPIC_API_KEY (app.ai.api-key); khong co -> isEnabled() = false
 @Component
@@ -77,15 +82,19 @@ public class ClaudeAiGateway implements AiGateway {
     @Override
     public Result<AiAnalysis> analyze(String systemPrompt, String userContent) {
         requireEnabled();
-        StructuredMessageCreateParams<AiAnalysis> params = MessageCreateParams.builder()
+        StructuredMessageCreateParams.Builder<AiAnalysis> builder = MessageCreateParams.builder()
                 .model(model)
                 .maxTokens(16000L)
                 .systemOfTextBlockParams(system(systemPrompt))
                 .addUserMessage(userContent)
                 .outputConfig(AiAnalysis.class)
                 .putAllAdditionalHeaders(fallbackHeaders())
-                .putAllAdditionalBodyProperties(fallbackBody())
-                .build();
+                .putAllAdditionalBodyProperties(fallbackBody());
+        // Bo buoc suy nghi truoc khi tra loi (model cho phep) - so lieu da tong hop san, viet thang ra nhanh hon nhieu
+        if (canDisableThinking(model)) {
+            builder.thinking(ThinkingConfigDisabled.builder().build());
+        }
+        StructuredMessageCreateParams<AiAnalysis> params = builder.build();
         try {
             StructuredMessage<AiAnalysis> response = client().messages().create(params);
             checkStop(response.stopReason().orElse(null));
@@ -100,15 +109,7 @@ public class ClaudeAiGateway implements AiGateway {
     @Override
     public Result<String> answer(String systemPrompt, String userContent) {
         requireEnabled();
-        MessageCreateParams params = MessageCreateParams.builder()
-                .model(model)
-                .maxTokens(8000L)
-                .systemOfTextBlockParams(system(systemPrompt))
-                .addUserMessage(userContent)
-                .outputConfig(OutputConfig.builder().effort(OutputConfig.Effort.MEDIUM).build())
-                .putAllAdditionalHeaders(fallbackHeaders())
-                .putAllAdditionalBodyProperties(fallbackBody())
-                .build();
+        MessageCreateParams params = answerParams(systemPrompt, userContent);
         try {
             Message response = client().messages().create(params);
             checkStop(response.stopReason().orElse(null));
@@ -118,6 +119,49 @@ public class ClaudeAiGateway implements AiGateway {
         } catch (AnthropicServiceException ex) {
             throw translate(ex);
         }
+    }
+
+    // Tra loi tung doan chu ngay khi Claude viet ra (hien dan tren trang) - nguoi dung thay chu sau ~1 giay
+    @Override
+    public Result<String> streamAnswer(String systemPrompt, String userContent, Consumer<String> onText) {
+        requireEnabled();
+        MessageAccumulator acc = MessageAccumulator.create();
+        StringBuilder sb = new StringBuilder();
+        try (StreamResponse<RawMessageStreamEvent> stream = client().messages().createStreaming(answerParams(systemPrompt, userContent))) {
+            stream.stream().map(acc::accumulate)
+                    .flatMap(e -> e.contentBlockDelta().stream())
+                    .flatMap(d -> d.delta().text().stream())
+                    .forEach(t -> {
+                        sb.append(t.text());
+                        onText.accept(t.text());
+                    });
+        } catch (AnthropicServiceException ex) {
+            throw translate(ex);
+        }
+        Message response = acc.message();
+        checkStop(response.stopReason().orElse(null));
+        return new Result<>(sb.toString().trim(), response.usage().inputTokens(), response.usage().outputTokens());
+    }
+
+    private MessageCreateParams answerParams(String systemPrompt, String userContent) {
+        MessageCreateParams.Builder builder = MessageCreateParams.builder()
+                .model(model)
+                .maxTokens(8000L)
+                .systemOfTextBlockParams(system(systemPrompt))
+                .addUserMessage(userContent)
+                // Hoi dap ngan ve so lieu: muc no luc thap la du, tra loi nhanh hon
+                .outputConfig(OutputConfig.builder().effort(OutputConfig.Effort.LOW).build())
+                .putAllAdditionalHeaders(fallbackHeaders())
+                .putAllAdditionalBodyProperties(fallbackBody());
+        if (canDisableThinking(model)) {
+            builder.thinking(ThinkingConfigDisabled.builder().build());
+        }
+        return builder.build();
+    }
+
+    // Haiku 5.x cho tat thinking (o muc effort <= high); Opus 5.5 / Sonnet 5.5 / Fable bao loi 400 neu tat -> chi ha effort
+    static boolean canDisableThinking(String model) {
+        return model != null && model.startsWith("claude-haiku-5");
     }
 
     boolean fallbacksEnabled() {

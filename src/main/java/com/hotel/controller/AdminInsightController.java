@@ -15,7 +15,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.math.BigDecimal;
 import java.time.YearMonth;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 // Phan tich quan tri: nhan dinh theo quy tac (luon co) + phan tich / hoi dap bang AI khi co ANTHROPIC_API_KEY
 // (ADMIN + ACCOUNTANT theo /admin/accounting/**)
@@ -27,6 +34,12 @@ public class AdminInsightController {
     private final ProfitService profitService;
     private final AiAdvisorService advisor;
     private com.hotel.service.MonthlyReportService monthlyReportService;
+    // Luong rieng cho hoi dap AI dang dong chay (khong dung chung pool gui mail)
+    private final ExecutorService aiStreamPool = Executors.newFixedThreadPool(4, r -> {
+        Thread t = new Thread(r, "ai-stream");
+        t.setDaemon(true);
+        return t;
+    });
 
     public AdminInsightController(InsightService insightService, ProfitService profitService, AiAdvisorService advisor) {
         this.insightService = insightService;
@@ -52,7 +65,9 @@ public class AdminInsightController {
     @GetMapping
     public String page(@RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM") YearMonth month, Model model) {
         YearMonth m = month != null ? month : YearMonth.now();
-        ProfitService.MonthPnl pnl = profitService.month(m);
+        ProfitService.Report report = profitService.report(m);
+        ProfitService.MonthPnl pnl = report.current();
+        model.addAttribute("charts", charts(report));
         model.addAttribute("month", m);
         model.addAttribute("pnl", pnl);
         model.addAttribute("insights", insightService.analyze(m));
@@ -78,6 +93,95 @@ public class AdminInsightController {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
         return "redirect:/admin/accounting/insights?month=" + month + "#ai";
+    }
+
+    // Hoi AI, tra loi hien dan: tra ve text/plain theo tung doan. Loi -> dong cuoi bat dau bang ky tu \u0000
+    @PostMapping(value = "/ask/stream", produces = "text/plain;charset=UTF-8")
+    public org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter askStream(
+            @RequestParam @DateTimeFormat(pattern = "yyyy-MM") YearMonth month, @RequestParam(required = false) String question,
+            @AuthenticationPrincipal CustomUserDetails user) {
+        var emitter = new org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter(180_000L);
+        org.springframework.http.MediaType text = new org.springframework.http.MediaType("text", "plain", java.nio.charset.StandardCharsets.UTF_8);
+        String by = user != null ? user.getUser().getFullName() : null;
+        aiStreamPool.execute(() -> {
+            try {
+                AiAdvisorService.validQuestion(question);
+                String system = advisor.askSystemPrompt(month);
+                advisor.askStreaming(month, question, system, by, chunk -> {
+                    try {
+                        emitter.send(chunk, text);
+                    } catch (java.io.IOException ex) {
+                        throw new java.io.UncheckedIOException(ex);
+                    }
+                });
+                emitter.complete();
+            } catch (BusinessException ex) {
+                try {
+                    emitter.send("\u0000" + ex.getMessage(), text);
+                    emitter.complete();
+                } catch (java.io.IOException ignored) {
+                    emitter.complete();
+                }
+            } catch (RuntimeException ex) {
+                // Nguoi dung dong trang giua chung (UncheckedIOException) hoac loi khac
+                emitter.completeWithError(ex);
+            }
+        });
+        return emitter;
+    }
+
+    @jakarta.annotation.PreDestroy
+    void shutdown() {
+        aiStreamPool.shutdownNow();
+    }
+
+    // Du lieu bieu do (don vi trieu dong cho tien) - ve phia trinh duyet bang static/js/mini-charts.js
+    static Map<String, Object> charts(ProfitService.Report report) {
+        List<String> labels = new ArrayList<>();
+        List<Double> revenue = new ArrayList<>();
+        List<Double> cost = new ArrayList<>();
+        List<Double> profit = new ArrayList<>();
+        List<Double> occupancy = new ArrayList<>();
+        for (ProfitService.MonthPnl p : report.trend()) {
+            labels.add(String.format("%02d/%02d", p.month().getMonthValue(), p.month().getYear() % 100));
+            revenue.add(million(p.totalRevenue()));
+            cost.add(million(p.totalCost()));
+            profit.add(million(p.operatingProfit()));
+            occupancy.add(Math.round(p.occupancy() * 10) / 10.0);
+        }
+        ProfitService.MonthPnl c = report.current();
+        Map<String, Double> revenueMix = new LinkedHashMap<>();
+        revenueMix.put("Tiền phòng", million(c.roomRevenue()));
+        c.serviceRevenue().forEach((k, v) -> revenueMix.put(k.getVietnameseLabel(), million(v)));
+        if (c.forfeitedDeposits().signum() > 0) {
+            revenueMix.put("Cọc khách bỏ", million(c.forfeitedDeposits()));
+        }
+        Map<String, Double> costMix = new LinkedHashMap<>();
+        BigDecimal serviceCost = c.serviceCost().values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+        costMix.put("Giá vốn dịch vụ", million(serviceCost));
+        costMix.put("Chi phí phòng-đêm", million(c.variableRoomCost()));
+        costMix.put("Phí thanh toán", million(c.paymentFees()));
+        c.expenses().forEach((k, v) -> costMix.put(k.getLabel(), million(v)));
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("labels", labels);
+        out.put("revenue", revenue);
+        out.put("cost", cost);
+        out.put("profit", profit);
+        out.put("occupancy", occupancy);
+        out.put("revenueMix", sortDesc(revenueMix));
+        out.put("costMix", sortDesc(costMix));
+        return out;
+    }
+
+    private static double million(BigDecimal v) {
+        return v == null ? 0 : Math.round(v.doubleValue() / 100_000) / 10.0;
+    }
+
+    // [[ten, gia tri], ...] giam dan, bo dong = 0
+    private static List<List<Object>> sortDesc(Map<String, Double> m) {
+        return m.entrySet().stream().filter(e -> e.getValue() > 0)
+                .sorted((a, b) -> Double.compare(b.getValue(), a.getValue()))
+                .map(e -> List.<Object>of(e.getKey(), e.getValue())).toList();
     }
 
     @PostMapping("/ask")
