@@ -87,6 +87,14 @@ public class AdminBookingController {
 
     // Xem chi tiet 1 don - cung noi thao tac xac nhan/check-in/check-out/huy
     // Mo xem chi tiet se tat cac canh bao (don moi / doi gio nhan phong) cua don nay
+    private com.hotel.service.RoomSuggestionService roomSuggestionService;
+
+    // So thich khach tu khai o trang "Goi y phong" - le tan chuan bi phong theo y khach
+    @org.springframework.beans.factory.annotation.Autowired
+    void setRoomSuggestionService(com.hotel.service.RoomSuggestionService roomSuggestionService) {
+        this.roomSuggestionService = roomSuggestionService;
+    }
+
     @GetMapping("/{id}")
     public String detail(@PathVariable Long id, Model model) {
         Booking booking = bookingService.findByIdAndMarkSeenByStaff(id);
@@ -97,6 +105,9 @@ public class AdminBookingController {
         model.addAttribute("canEditGuests", guestRegistrationService.canEdit(booking));
         model.addAttribute("genders", Gender.values());
         model.addAttribute("idTypes", IdDocumentType.values());
+        if (roomSuggestionService != null && booking.getCustomer() != null) {
+            roomSuggestionService.preferenceOf(booking.getCustomer().getId()).ifPresent(p -> model.addAttribute("guestPreference", p));
+        }
         if (booking.isAwaitingDeposit()) {
             model.addAttribute("depositTransferContent", paymentService.depositTransferContent(booking));
         }

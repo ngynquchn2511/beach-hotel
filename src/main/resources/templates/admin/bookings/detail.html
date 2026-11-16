@@ -251,6 +251,16 @@
                     <div class="fw-semibold mb-2"><i class="bi bi-chat-heart me-1"></i>Yêu cầu đặc biệt &amp; sở thích</div>
                     <div class="alert alert-warning py-2 small" th:if="${booking.customer != null and booking.customer.staffNotes != null}">
                         <b>Lưu ý về khách:</b> <span th:text="${booking.customer.staffNotes}"></span></div>
+                    <div class="alert alert-info py-2 small" th:if="${guestPreference != null}" id="so-thich-khach">
+                        <b><i class="bi bi-heart me-1"></i>Sở thích khách tự khai:</b>
+                        <span th:text="${guestPreference.guests} + ' người'"></span>
+                        <span th:if="${guestPreference.purpose != null}" th:text="' · ' + #{'suggest.purpose.' + ${guestPreference.purpose}}"></span>
+                        <span th:if="${guestPreference.preferredView != null and guestPreference.preferredView.name() != 'ANY'}"
+                              th:text="' · thích nhìn ra ' + #{'suggest.view.' + ${guestPreference.preferredView}}"></span>
+                        <span th:if="${guestPreference.maxBudget != null}" th:text="' · ngân sách ≤ ' + ${#numbers.formatDecimal(guestPreference.maxBudget, 1, 'POINT', 0, 'COMMA')} + ' đ/đêm'"></span>
+                        <span th:each="p : ${guestPreference.prioritySet}" class="badge bg-light text-dark border ms-1" th:text="#{'suggest.priority.' + ${p}}"></span>
+                        <div th:if="${guestPreference.note != null}"><b>Yêu cầu:</b> <span th:text="${guestPreference.note}"></span></div>
+                    </div>
                     <form method="post" th:action="@{/admin/bookings/{id}/requests(id=${booking.id})}" class="mb-2">
                         <div class="d-flex flex-wrap gap-2 mb-2">
                             <div class="form-check form-check-inline m-0" th:each="tg : ${requestTagOptions}">

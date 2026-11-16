@@ -40,6 +40,7 @@
                         </select>
                     </div>
                     <a th:if="${roomTypeId != null or not #strings.isEmpty(price)}" th:href="@{/rooms}" class="btn btn-outline-secondary" th:text="#{common.clearFilter}">Bỏ lọc</a>
+                    <a th:href="@{/rooms/suggest}" class="btn btn-primary ms-auto text-nowrap"><i class="bi bi-magic me-1"></i><span th:text="#{suggest.nav}">Gợi ý phòng</span></a>
                 </form>
             </div>
 
