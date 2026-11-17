@@ -151,15 +151,29 @@
                            th:value="${lastQuestion}" placeholder="VD: Nếu tăng giá cuối tuần 10% thì lãi tháng thay đổi khoảng bao nhiêu?">
                     <button class="btn btn-sm btn-primary text-nowrap">Hỏi</button>
                 </form>
-                <div id="ask-live" class="border-top pt-2 mb-2 d-none">
-                    <div class="small fw-semibold"><i class="bi bi-person me-1"></i><span class="q"></span></div>
-                    <div class="a mt-2" style="white-space: pre-line"></div>
+                <!-- Chi hien cau tra loi moi nhat; cac lan hoi truoc gom vao "Lich su", bam vao moi mo -->
+                <div id="ask-latest" class="border-top pt-2 mb-2" th:classappend="${#lists.isEmpty(questions)} ? 'd-none'"
+                     th:with="q=${#lists.isEmpty(questions) ? null : questions[0]}">
+                    <div class="small fw-semibold"><i class="bi bi-person me-1"></i><span class="q" th:text="${q != null} ? ${q.question} : ''"></span></div>
+                    <div class="a ai-answer mt-2" style="white-space: pre-line" th:attr="data-text=${q != null ? q.content : null}"
+                         th:text="${q != null} ? ${q.content} : ''"></div>
+                    <div class="text-muted time" style="font-size: .75rem"
+                         th:text="${q != null} ? ${#temporals.format(q.createdAt, 'dd/MM HH:mm')} + (${q.createdBy != null} ? ' · ' + ${q.createdBy} : '') : ''"></div>
                 </div>
-                <div th:each="q : ${questions}" class="border-top pt-2 mb-2">
-                    <div class="small fw-semibold"><i class="bi bi-person me-1"></i><span th:text="${q.question}"></span></div>
-                    <div class="ai-answer mt-2" style="white-space: pre-line" th:data-text="${q.content}" th:text="${q.content}"></div>
-                    <div class="text-muted" style="font-size: .75rem" th:text="${#temporals.format(q.createdAt, 'dd/MM HH:mm')} + (${q.createdBy != null} ? ' · ' + ${q.createdBy} : '')"></div>
-                </div>
+                <details id="ask-history" class="border-top pt-2" th:classappend="${#lists.size(questions) <= 1} ? 'd-none'">
+                    <summary class="small fw-semibold text-primary" style="cursor: pointer">
+                        <i class="bi bi-clock-history me-1"></i>Lịch sử câu hỏi (<span class="cnt" th:text="${#lists.size(questions) > 0 ? #lists.size(questions) - 1 : 0}">0</span>)
+                    </summary>
+                    <div class="list mt-2">
+                        <details th:each="q, st : ${questions}" th:unless="${st.first}" class="hist-item border rounded px-2 py-1 mb-1">
+                            <summary class="small d-flex justify-content-between gap-2" style="cursor: pointer">
+                                <span class="fw-semibold" th:text="${q.question}"></span>
+                                <span class="text-muted text-nowrap" th:text="${#temporals.format(q.createdAt, 'dd/MM HH:mm')}"></span>
+                            </summary>
+                            <div class="hist-body mt-2" style="white-space: pre-line" th:attr="data-text=${q.content}" th:text="${q.content}"></div>
+                        </details>
+                    </div>
+                </details>
             </div>
         </div>
     </div>
@@ -179,14 +193,57 @@
         MiniCharts.hbars(document.getElementById('chart-rev-mix'), {rows: c.revenueMix, color: '#2a78d6', unit: 'tr'});
         MiniCharts.hbars(document.getElementById('chart-cost-mix'), {rows: c.costMix, color: '#eb6834', unit: 'tr'});
 
+        // Lich su hoi: cau tra loi chi ve khi mo ra
+        var history = document.getElementById('ask-history');
+        function lazy(item) {
+            item.addEventListener('toggle', function () {
+                var body = item.querySelector('.hist-body');
+                if (item.open && body && body.hasAttribute('data-text')) {
+                    AiAnswer.render(body, body.getAttribute('data-text'), false);
+                    body.removeAttribute('data-text');
+                }
+            });
+        }
+        if (history) history.querySelectorAll('.hist-item').forEach(lazy);
+
+        // Dua cau tra loi dang hien vao dau lich su (giu nguyen phan da ve)
+        function moveLatestToHistory(latest) {
+            var q = latest.querySelector('.q').textContent;
+            if (!q || latest.classList.contains('d-none') || latest.querySelector('.a').classList.contains('text-danger')) return;
+            var item = document.createElement('details');
+            item.className = 'hist-item border rounded px-2 py-1 mb-1';
+            var sum = document.createElement('summary');
+            sum.className = 'small d-flex justify-content-between gap-2';
+            sum.style.cursor = 'pointer';
+            var a = document.createElement('span'); a.className = 'fw-semibold'; a.textContent = q;
+            var b = document.createElement('span'); b.className = 'text-muted text-nowrap';
+            b.textContent = (latest.querySelector('.time').textContent || '').split(' · ')[0];
+            sum.appendChild(a); sum.appendChild(b);
+            var body = latest.querySelector('.a');
+            body.className = 'hist-body mt-2';
+            body.removeAttribute('data-text');
+            item.appendChild(sum);
+            item.appendChild(body);
+            history.querySelector('.list').prepend(item);
+            var cnt = history.querySelector('.cnt');
+            cnt.textContent = String(parseInt(cnt.textContent, 10) + 1);
+            history.classList.remove('d-none');
+            var fresh = document.createElement('div');
+            fresh.className = 'a mt-2';
+            latest.querySelector('.time').before(fresh);
+        }
+
         // Hoi AI: tra loi hien dan (stream). Trinh duyet cu khong co ReadableStream -> gui form binh thuong
         var form = document.getElementById('ask-form');
         if (!form || !window.fetch || !window.ReadableStream || !window.TextDecoder) return;
         form.addEventListener('submit', function (e) {
             e.preventDefault();
             var btn = form.querySelector('button'), input = form.querySelector('input[name=question]');
-            var live = document.getElementById('ask-live'), out = live.querySelector('.a');
+            var live = document.getElementById('ask-latest');
+            moveLatestToHistory(live);
+            var out = live.querySelector('.a');
             live.querySelector('.q').textContent = input.value;
+            live.querySelector('.time').textContent = new Date().toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'});
             out.textContent = 'Đang trả lời...';
             out.classList.remove('text-danger');
             live.classList.remove('d-none');

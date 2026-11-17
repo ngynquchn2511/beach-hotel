@@ -140,15 +140,22 @@ class AiAdvisorIT extends ItFixtures {
         assertThat(advisor.askSystemPrompt(m)).contains("```kpi").contains("```chart").contains("\"type\":\"bar\"");
         assertThat(saved.getQuestion()).isEqualTo("Lãi tháng này?");
         assertThat(advisor.questions(m)).hasSize(1);
+        advisor.ask(m, "Câu hỏi mới nhất?", "B");
 
+        // Cau moi nhat hien san; cau truoc nam trong "Lich su cau hoi" (dong, bam moi mo)
         User acc = persistUser(UserRole.ACCOUNTANT, null);
-        mockMvc.perform(get("/admin/accounting/insights").with(as(acc)).param("month", "2025-07"))
+        String html = mockMvc.perform(get("/admin/accounting/insights").with(as(acc)).param("month", "2025-07"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("chart-pnl")))
                 .andExpect(content().string(containsString("revenueMix")))
                 .andExpect(content().string(containsString("mini-charts.js")))
                 .andExpect(content().string(containsString("ai-answer.js")))
-                .andExpect(content().string(containsString("class=\"ai-answer mt-2\"")));
+                .andReturn().getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+        String latest = html.substring(html.indexOf("id=\"ask-latest\""), html.indexOf("id=\"ask-history\""));
+        String history = html.substring(html.indexOf("id=\"ask-history\""));
+        assertThat(latest).contains("Câu hỏi mới nhất?").doesNotContain("Lãi tháng này?");
+        assertThat(history).contains("Lịch sử câu hỏi (<span class=\"cnt\">1</span>)").contains("Lãi tháng này?")
+                .contains("class=\"hist-item");
 
         // Bean that khong co API key -> dong bao loi bat dau bang ky tu NUL
         var result = mockMvc.perform(post("/admin/accounting/insights/ask/stream").with(csrf()).with(as(acc))
