@@ -99,38 +99,46 @@
                 </div>
 
                 <th:block th:if="${analysis != null}">
-                    <p class="mb-3" th:text="${analysis.summary}"></p>
-                    <div class="row g-3">
+                    <!-- O chi so + bieu do AI (ve bang ai-answer.js); ban phan tich cu khong co -> chi hien phan chu -->
+                    <div id="ai-kpis"></div>
+                    <div id="ai-charts" class="row g-3 mb-2"></div>
+
+                    <div class="fw-semibold fs-6 mb-3 p-2 rounded" style="background: #eef5fc" th:text="${analysis.summary}"></div>
+
+                    <div class="row g-3 mb-3">
                         <div class="col-md-6">
-                            <h6 class="fw-bold text-success"><i class="bi bi-arrow-up-circle me-1"></i>Điểm sáng</h6>
-                            <div th:each="f : ${analysis.highlights}" class="small mb-2"><b th:text="${f.title}"></b> - <span th:text="${f.detail}"></span></div>
+                            <div class="small fw-bold text-success mb-1"><i class="bi bi-arrow-up-circle me-1"></i>Điểm sáng</div>
+                            <div th:each="f : ${analysis.highlights}" class="small mb-1" th:title="${f.detail}">
+                                <i class="bi bi-check2 text-success"></i> <b th:text="${f.title}"></b>
+                                <span class="text-muted" th:text="'· ' + ${f.detail}"></span></div>
                         </div>
                         <div class="col-md-6">
-                            <h6 class="fw-bold text-danger"><i class="bi bi-exclamation-triangle me-1"></i>Rủi ro</h6>
-                            <div th:each="f : ${analysis.risks}" class="small mb-2"><b th:text="${f.title}"></b> - <span th:text="${f.detail}"></span></div>
+                            <div class="small fw-bold text-danger mb-1"><i class="bi bi-exclamation-triangle me-1"></i>Rủi ro</div>
+                            <div th:each="f : ${analysis.risks}" class="small mb-1" th:title="${f.detail}">
+                                <i class="bi bi-dot text-danger"></i> <b th:text="${f.title}"></b>
+                                <span class="text-muted" th:text="'· ' + ${f.detail}"></span></div>
                         </div>
                     </div>
-                    <h6 class="fw-bold mt-3">Khuyến nghị</h6>
-                    <div class="table-responsive">
-                        <table class="table table-sm align-middle small">
-                            <thead><tr><th>Ưu tiên</th><th>Việc cần làm</th><th>Vì sao</th><th>Tác động dự kiến</th><th>Phụ trách</th></tr></thead>
-                            <tbody>
-                            <tr th:each="rc : ${analysis.recommendations}">
-                                <td><span class="badge rec-prio" th:classappend="${rc.priority == 'CAO'} ? 'bg-danger' : (${rc.priority == 'THAP'} ? 'bg-secondary' : 'bg-warning text-dark')"
-                                          th:text="${rc.priority == 'CAO'} ? 'Cao' : (${rc.priority == 'THAP'} ? 'Thấp' : 'Trung bình')"></span></td>
-                                <td class="fw-semibold" th:text="${rc.action}"></td>
-                                <td th:text="${rc.reason}"></td>
-                                <td th:text="${rc.expectedImpact}"></td>
-                                <td th:text="${rc.owner}"></td>
-                            </tr>
-                            </tbody>
-                        </table>
+
+                    <div class="small fw-bold mb-1"><i class="bi bi-list-check me-1"></i>Nên làm</div>
+                    <div th:each="rc : ${analysis.recommendations}" class="d-flex align-items-center gap-2 border-bottom py-1 small"
+                         th:title="${rc.reason}">
+                        <span class="badge rec-prio" th:classappend="${rc.priority == 'CAO'} ? 'bg-danger' : (${rc.priority == 'THAP'} ? 'bg-secondary' : 'bg-warning text-dark')"
+                              th:text="${rc.priority == 'CAO'} ? 'Cao' : (${rc.priority == 'THAP'} ? 'Thấp' : 'TB')"></span>
+                        <span class="fw-semibold flex-grow-1" th:text="${rc.action}"></span>
+                        <span th:if="${rc.expectedImpact != null}" class="badge bg-success-subtle text-success-emphasis" th:text="${rc.expectedImpact}"></span>
+                        <span class="text-muted text-nowrap" th:text="${rc.owner}"></span>
                     </div>
-                    <p class="small mb-1" th:if="${analysis.outlook != null}"><b>Tháng tới:</b> <span th:text="${analysis.outlook}"></span></p>
-                    <div class="small text-muted" th:text="'Phân tích lúc ' + ${#temporals.format(analysisReport.createdAt, 'dd/MM/yyyy HH:mm')}
+                    <div class="small mt-2" th:if="${analysis.outlook != null}"><i class="bi bi-binoculars me-1"></i><b>Tháng tới:</b> <span th:text="${analysis.outlook}"></span></div>
+                    <div class="text-muted mt-2" style="font-size: .75rem" th:text="'Phân tích lúc ' + ${#temporals.format(analysisReport.createdAt, 'dd/MM/yyyy HH:mm')}
                             + (${analysisReport.createdBy != null} ? ' bởi ' + ${analysisReport.createdBy} : '') + ' · ' + ${analysisReport.model}
-                            + ' · ' + ${analysisReport.inputTokens} + ' + ' + ${analysisReport.outputTokens} + ' token (~$' + ${analysisCost} + ')'"></div>
-                    <div class="small text-muted fst-italic mt-1">AI có thể sai - đối chiếu với số liệu ở trang Lãi lỗ trước khi quyết định.</div>
+                            + ' · ~$' + ${analysisCost} + ' · AI có thể sai, đối chiếu trang Lãi lỗ trước khi quyết định. Rê chuột vào từng dòng để xem lý do.'"></div>
+                    <script th:inline="javascript">
+                        document.addEventListener('DOMContentLoaded', function () {
+                            AiAnswer.kpi(document.getElementById('ai-kpis'), /*[[${analysis.kpis}]]*/ []);
+                            AiAnswer.charts(document.getElementById('ai-charts'), /*[[${analysis.charts}]]*/ []);
+                        });
+                    </script>
                 </th:block>
             </div>
 

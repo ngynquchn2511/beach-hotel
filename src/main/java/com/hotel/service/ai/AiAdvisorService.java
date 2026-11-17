@@ -46,7 +46,10 @@ public class AiAdvisorService {
 
     static final String ANALYST_PROMPT = """
             Bạn là chuyên gia phân tích tài chính và vận hành cho một resort nghỉ dưỡng nhỏ ở Hạ Long, Việt Nam.
-            Người đọc là chủ resort và quản lý - không phải dân tài chính. Viết tiếng Việt, rõ ràng, đi thẳng vào việc.
+            Người đọc là chủ resort và quản lý - không phải dân tài chính, thấy nhiều chữ là khó đọc.
+            Viết tiếng Việt, cực ngắn, chỉ nêu ý chính, ưu tiên con số và biểu đồ thay cho câu chữ.
+            Không dùng thuật ngữ tiếng Anh (ADR, RevPAR, pace...): nói "giá phòng trung bình", "doanh thu mỗi phòng",
+            "tốc độ đặt phòng". Tháng trên biểu đồ ghi dạng "T11/25".
 
             Dữ liệu là JSON số liệu một tháng: lãi lỗ (đơn vị VND), so sánh tháng trước và cùng kỳ năm trước,
             xu hướng 12 tháng, tỷ lệ hủy, và các nhận định tự động hệ thống đã phát hiện.
@@ -124,7 +127,7 @@ public class AiAdvisorService {
     public SavedAnalysis analyze(YearMonth month, String requestedBy) {
         String data = dataJson(month);
         AiGateway.Result<AiAnalysis> result = gateway.analyze(ANALYST_PROMPT,
-                "Số liệu tháng " + month + ":\n" + data + "\n\nHãy phân tích và đưa khuyến nghị.");
+                "Số liệu tháng " + month + ":\n" + data + "\n\nHãy phân tích và đưa khuyến nghị. Ưu tiên ô chỉ số và biểu đồ; chữ cực ngắn, chỉ ý chính, đúng giới hạn số từ.");
         AiReport saved = repository.save(AiReport.builder().reportMonth(month.atDay(1)).kind(AiReport.Kind.ANALYSIS)
                 .content(write(result.value())).model(gateway.model()).inputTokens(result.inputTokens())
                 .outputTokens(result.outputTokens()).createdBy(requestedBy).build());
@@ -335,7 +338,7 @@ public class AiAdvisorService {
         try {
             return mapper.readValue(json, AiAnalysis.class);
         } catch (JsonProcessingException ex) {
-            return new AiAnalysis("Không đọc được bản phân tích đã lưu", List.of(), List.of(), List.of(), null);
+            return new AiAnalysis(List.of(), List.of(), "Không đọc được bản phân tích đã lưu", List.of(), List.of(), List.of(), null);
         }
     }
 }

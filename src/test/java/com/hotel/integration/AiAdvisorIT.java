@@ -45,7 +45,11 @@ class AiAdvisorIT extends ItFixtures {
         public Result<AiAnalysis> analyze(String system, String user) {
             lastSystem = system;
             lastUser = user;
-            return new Result<>(new AiAnalysis("Tháng có lãi nhờ công suất tăng.",
+            return new Result<>(new AiAnalysis(
+                    List.of(new AiAnalysis.Kpi("Công suất", "60%", "+20 điểm", "good")),
+                    List.of(new AiAnalysis.Chart("hbar", "Chi phí theo nhóm (triệu đồng)", "tr", List.of("Lương", "Điện nước"),
+                            List.of(new AiAnalysis.Series("Chi phí", List.of(0.9, 0.2))))),
+                    "Tháng có lãi nhờ công suất tăng.",
                     List.of(new AiAnalysis.Finding("Công suất tăng", "Từ 40% lên 60%")),
                     List.of(new AiAnalysis.Finding("Chi phí lương cao", "Chiếm 45% doanh thu")),
                     List.of(new AiAnalysis.Recommendation("Mở giá không hoàn tiền 10%", "Giảm hủy", "+5 triệu", "CAO", "Kinh doanh")),
@@ -99,6 +103,10 @@ class AiAdvisorIT extends ItFixtures {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Nhận định tự động")))
                 .andExpect(content().string(containsString("Mở giá không hoàn tiền 10%")))
+                // O chi so + bieu do AI dua vao trang de ve
+                .andExpect(content().string(containsString("\"type\":\"hbar\"")))
+                .andExpect(content().string(containsString("\"tone\":\"good\"")))
+                .andExpect(content().string(containsString("ai-kpis")))
                 .andExpect(content().string(containsString("ANTHROPIC_API_KEY")));
     }
 

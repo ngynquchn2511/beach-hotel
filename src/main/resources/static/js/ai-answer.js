@@ -76,7 +76,12 @@
             MiniCharts.line(area, {labels: c.labels || [], values: vals.map(Number), name: c.name || (c.series && c.series[0] && c.series[0].name) || c.title || '',
                 color: COLORS[0], unit: unit});
         } else if (c.type === 'hbar') {
-            MiniCharts.hbars(area, {rows: (c.rows || []).map(function (r) { return [String(r[0]), Number(r[1])]; }), color: COLORS[0], unit: unit});
+            var rows = c.rows || (c.labels || []).map(function (l, i) {
+                return [l, c.series && c.series[0] && c.series[0].values ? c.series[0].values[i] : 0];
+            });
+            rows = rows.map(function (r) { return [String(r[0]), Number(r[1]) || 0]; })
+                .sort(function (a, b) { return b[1] - a[1]; });
+            MiniCharts.hbars(area, {rows: rows, color: COLORS[0], unit: unit});
         } else {
             var series = (c.series || []).slice(0, 5).map(function (s, i) {
                 return {name: s.name || '', color: COLORS[i % COLORS.length], negColor: NEG, values: (s.values || []).map(Number)};
@@ -127,7 +132,17 @@
         }
     }
 
-    window.AiAnswer = {render: render};
+    // Ve bieu do / o chi so tu du lieu co san (ban phan tich co cau truc). Bieu do loi thi bo qua
+    function charts(host, list) {
+        (list || []).forEach(function (c) {
+            var cell = document.createElement('div');
+            cell.className = 'col-md-6';
+            host.appendChild(cell);
+            try { chart(cell, c); } catch (e) { host.removeChild(cell); }
+        });
+    }
+
+    window.AiAnswer = {render: render, kpi: kpi, charts: charts};
 
     // Cau tra loi da luu: <div class="ai-answer" data-text="...">
     document.addEventListener('DOMContentLoaded', function () {
