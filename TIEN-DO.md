@@ -1,7 +1,7 @@
 # Tiến độ dự án Sóng Xanh Resort (beach-hotel)
 
 > File bàn giao giữa các phiên làm việc với Claude. Mở phiên mới, bảo Claude: **"đọc file TIEN-DO.md"**.
-> Cập nhật lần cuối: 17/11/2026, sau đợt 23 (phân ca, chấm công, lương, khách cọc theo ngày, gợi ý phòng, thời tiết, AI có biểu đồ).
+> Cập nhật lần cuối: 17/11/2026, sau đợt 23 (phân ca, chấm công, lương, khách cọc theo ngày, gợi ý phòng, thời tiết, AI trả lời bằng ô chỉ số + biểu đồ, lịch sử hỏi AI).
 
 ## 1. Dự án
 
@@ -31,6 +31,9 @@
    - Danh sách nào cũng phân trang bằng `Pager` + `fragments/pagination :: pager(${pager})`.
    - Test IT (`ItFixtures`) chạy trong 1 giao dịch không commit: service ném lỗi thì DB trong test **không** rollback; thông báo lễ tân (gửi sau commit) phải tự gọi `afterCommit` (xem `StaffNotificationIT`).
    - MockMvc đọc JSON không charset là ISO-8859-1: dùng `getContentAsString(StandardCharsets.UTF_8)`.
+   - Đã gặp lại ở đợt 23: script Python truyền qua heredoc của bash biến `\n` / `\u0000` trong chuỗi thành ký tự thật (xuống dòng, byte NUL) làm hỏng file Java / HTML. Chuỗi có dấu `\` thì sửa bằng Edit tool; sau khi sửa hàng loạt nên quét byte NUL trong `src/` (file bị dính sẽ bị git / grep coi là "binary").
+   - Thymeleaf đưa dữ liệu vào JavaScript (`/*[[${...}]]*/`) đổi chữ có dấu thành `\uXXXX`: test kiểm nội dung trong khối script phải dò chuỗi ASCII.
+   - Thử AI với khóa thật: đóng gói jar, chạy cổng 8084, dùng curl đăng nhập `quanly.vanthanh@example.com` / `Songxanh@2026` (lấy `_csrf` từ trang `/admin`), POST `/admin/accounting/insights/analyze?month=...` hoặc `/ask/stream`; lệnh mạng phải tắt sandbox.
 
 ## 3. Đã làm (theo thứ tự gần nhất trước)
 
@@ -44,6 +47,8 @@ Chủ dự án yêu cầu: «phân ca nhân viên, biết ai là người trực
 | (xem `git log`) | **Khách đặt cọc theo ngày** `/admin/deposits` (lễ tân, kế toán, quản trị): 3 tab - đã cọc trong ngày (VNPay / tại quầy-CK), khách đến ngày đó đã cọc chưa, đơn hết hạn cọc ngày đó; dải 14 ngày số khách cọc, bấm để xem. Test `DepositListIT` |
 | (xem `git log`) | **Khách khai sở thích → gợi ý phòng** `/rooms/suggest` (ai cũng xem, song ngữ, link ở header + trang Danh sách phòng + chatbot): số người, mục đích (cặp đôi / gia đình / nhóm bạn / công tác / một mình), ngân sách / đêm, cảnh (biển / vườn / hồ bơi), ưu tiên (bồn tắm, ban công, rộng, giường King, phòng khách, riêng tư, tiết kiệm), ngày ở (tùy chọn → chỉ loại còn phòng). `RoomSuggestionService` chấm điểm từng loại phòng theo sức chứa, giá, từ khóa trong tên / tiện nghi / mô tả → 3 loại hợp nhất + % phù hợp + lý do. Khách đã đăng nhập: lưu sở thích (bảng `guest_preferences`, migration `sql/2026-11-17_so-thich-khach.sql`), điền sẵn lần sau, lễ tân thấy «Sở thích khách tự khai» ở trang đơn. Test `RoomSuggestionIT` |
 | (xem `git log`) | **Dự báo thời tiết** (việc (c) đợt trước): `WeatherService` gọi Open-Meteo (miễn phí, không khóa, chỉ gửi tọa độ Bãi Cháy), lưu tạm 30 phút, lỗi mạng thì ẩn khung. Hiện 7 ngày ở trang chủ, ngày lưu trú ở trang chi tiết phòng (nếu trong 16 ngày tới), 3 ngày ở Hôm nay của lễ tân (cảnh báo gió mạnh / giông để nhắc khách đi tour biển); chatbot trả lời thời tiết bằng số liệu thật. `WEATHER_ENABLED=false` để tắt. Test `WeatherIT` |
+| (xem `git log`) | Theo góp ý «chữ nhiều, khó đọc, ưu tiên biểu đồ»: **Hỏi AI** - prompt `AiAdvisorService.ASK_FORMAT` bắt AI trả lời bằng khối ```` ```kpi ```` (2-4 ô chỉ số) + 1-2 khối ```` ```chart ```` JSON (bar / line / hbar) + tối đa 3 gạch đầu dòng ngắn; `static/js/ai-answer.js` vẽ ô chỉ số, biểu đồ (dùng `mini-charts.js`) và định dạng markdown (`**đậm**`, gạch đầu dòng) cả khi đang nhận dần. **Phân tích bằng AI** - `AiAnalysis` thêm `kpis` + `charts` (structured output), giới hạn số từ từng mục (tóm tắt 1 câu ≤ 25 từ, điểm sáng / rủi ro ≤ 3 × 15 từ, khuyến nghị 3-4 × 10 từ), cấm thuật ngữ tiếng Anh (ADR, RevPAR...), tháng ghi «T11/25»; trang hiện ô chỉ số + biểu đồ trước, điểm sáng / rủi ro / «Nên làm» mỗi ý 1 dòng (rê chuột xem lý do). Bản phân tích cũ (không có kpis / charts) vẫn hiện được. **Đã thử với khóa thật** (Haiku 5.5, tháng 11/2026): phân tích ~32 giây, hỏi đáp ~11 giây, đúng định dạng (bản phân tích đó chạy trước khi thêm luật cấm thuật ngữ nên còn chữ «ADR» - bấm «Phân tích lại» để ra bản mới). Test `AiAdvisorIT` |
+| (xem `git log`) | Theo yêu cầu «hỏi AI xong các lần hỏi trước cho vào lịch sử, ấn vào mới hiện»: chỉ hiện câu trả lời mới nhất (`#ask-latest`); các câu trước gom vào «Lịch sử câu hỏi (N)» đóng sẵn, mỗi câu 1 dòng (câu hỏi + giờ), bấm mới mở và vẽ biểu đồ; hỏi câu mới thì câu đang hiện tự chuyển lên đầu lịch sử. Vẫn giữ tối đa 20 câu / tháng. Chưa bấm thử trên trình duyệt (đã `node --check` cú pháp JS). Test `AiAdvisorIT` |
 
 ### Đợt 22 (30/10/2026) - Soát báo cáo Word, sửa chỗ lệch với code / sơ đồ mới
 | Commit | Chức năng |
@@ -229,6 +234,8 @@ Chủ dự án yêu cầu: «phân ca nhân viên, biết ai là người trực
 - Lịch sử dọn phòng chỉ có từ khi triển khai đợt 6 (lượt dọn trước đó không có số liệu).
 - Lãi lỗ chỉ đúng khi kế toán nhập đủ chi phí; công suất các tháng cũ tính theo số phòng hiện tại. Mỗi lần bấm phân tích / hỏi AI với Haiku 5.5 tốn khoảng 0,001-0,005 USD.
 - No-show không tự động: lễ tân bấm "Khách không đến" (hệ thống chỉ nhắc lúc 23h).
+- Ô chỉ số / biểu đồ trong câu trả lời AI do AI tự lấy số từ dữ liệu gửi đi: thường đúng nhưng có thể sai hoặc làm tròn khác; số chuẩn xem ở biểu đồ 12 tháng đầu trang (tính bằng code) và trang Lãi lỗ. AI viết khối JSON lỗi thì khối đó bị bỏ qua (không vẽ).
+- Khóa `ANTHROPIC_API_KEY` trên máy dev hết hạn 18/11/2026 - cần tạo khóa mới ở console.anthropic.com, sửa `secrets.properties`.
 - Gửi lại email thẻ quà tặng giới hạn 1 lần / 10 phút / thẻ, lưu trong bộ nhớ (khởi động lại app thì đếm lại).
 - Chấm công dựa trên thao tác trên cổng quản trị: nhân viên làm mà không mở máy (buồng phòng) thì ADMIN thêm công tay; giờ ra = lần thao tác cuối (bấm «Kết thúc ca» cho chính xác). Lương chưa tính hệ số ca đêm / ngày lễ, chưa có bảo hiểm / thuế TNCN.
 - Bảng lương ghi khoản chi «Lương & bảo hiểm» riêng từng người: nếu ở «Chi phí vận hành» còn khoản lương cố định hàng tháng (dữ liệu demo có) thì lãi lỗ tính trùng - dừng khoản cố định khi bắt đầu trả lương theo công.
