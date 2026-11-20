@@ -1,7 +1,7 @@
 # Tiến độ dự án Sóng Xanh Resort (beach-hotel)
 
 > File bàn giao giữa các phiên làm việc với Claude. Mở phiên mới, bảo Claude: **"đọc file TIEN-DO.md"**.
-> Cập nhật lần cuối: 17/11/2026, sau đợt 23 (phân ca, chấm công, lương, khách cọc theo ngày, gợi ý phòng, thời tiết, AI trả lời bằng ô chỉ số + biểu đồ, lịch sử hỏi AI).
+> Cập nhật lần cuối: 20/11/2026, sau đợt 24 (Bảng điều hành ở trang Tổng quan).
 
 ## 1. Dự án
 
@@ -36,6 +36,13 @@
    - Thử AI với khóa thật: đóng gói jar, chạy cổng 8084, dùng curl đăng nhập `quanly.vanthanh@example.com` / `Songxanh@2026` (lấy `_csrf` từ trang `/admin`), POST `/admin/accounting/insights/analyze?month=...` hoặc `/ask/stream`; lệnh mạng phải tắt sandbox.
 
 ## 3. Đã làm (theo thứ tự gần nhất trước)
+
+### Đợt 24 (20/11/2026) - Bảng điều hành ở trang Tổng quan
+Chủ dự án yêu cầu: «dashboard tôi cần chi tiết hơn, hãy làm 1 dashboard mà admin cần biết gì nhìn vào cũng có».
+
+| Commit | Chức năng |
+|---|---|
+| (xem `git log`) | **Bảng điều hành** đầu trang `/admin/dashboard` (`ExecutiveBoardService`, chỉ đọc, gom từ các service sẵn có): (1) **Cần xử lý** - danh sách việc tồn, đỏ (gấp) trước rồi vàng, xanh, mỗi dòng có số lượng và bấm tới trang xử lý: khách quá hạn trả phòng, quá ngày nhận chưa đến, khách sắp đến mà phòng bảo trì, khách đến hôm nay phòng chưa sẵn sàng, đơn chờ xác nhận, chờ hoàn cọc, hết hạn cọc hôm nay, đổi giờ, báo hỏng, đánh giá ≤ 3 sao chưa trả lời, gọi món, spa / nhà hàng, tour / xe, tin nhắn, liên hệ, gọi nhắc, nhân viên chưa nhận lương tháng trước; (2) **Hôm nay** - công suất đêm nay, khách đến / đi (đã xong / tổng), tiền thu, đơn mới / hủy; (3) **Sơ đồ phòng** - mỗi phòng 1 ô màu theo trạng thái (trống / có khách / chờ dọn / bảo trì / đỏ = quá hạn trả), nhãn «Đến» / «Đi» hôm nay, rê chuột xem khách + ngày; (4) **Công suất 14 ngày tới** (biểu đồ cột, đã xác nhận + chờ xác nhận, ngày vắng tô đỏ) + tiền phòng đã đặt; (5) **Đánh giá 30 ngày** (điểm TB, số lượt thấp, 3 đánh giá thấp gần nhất); (6) **Lãi lỗ tháng này** so với tháng trước + % đạt kế hoạch + biểu đồ 12 tháng doanh thu / chi phí / lãi; (7) ca trực 3 ngày tới chưa có người. Quyền: lễ tân thấy việc vận hành, không thấy lãi lỗ; kế toán thấy lãi lỗ, không thấy việc vận hành; quản trị thấy hết. Phần cũ (lọc theo khoảng ngày, so sánh cùng kỳ, báo cáo chi tiết) giữ nguyên ở dưới, có tiêu đề «Phân tích theo khoảng ngày». Đã chạy với DB dev và chụp màn hình kiểm tra. Test `ExecutiveBoardIT` |
 
 ### Đợt 23 (17/11/2026) - Nhân sự, khách cọc theo ngày, gợi ý phòng, thời tiết, AI nhanh hơn
 Chủ dự án yêu cầu: «phân ca nhân viên, biết ai là người trực. cho xem danh sách khách cọc hôm nào, cho phép khách hỏi sở thích, gợi ý phòng. tự động chấm công, trả lương nhân viên theo ngày làm,.. đọc tiendo md và làm» (toàn quyền, không cần hỏi).

@@ -58,11 +58,28 @@ public class AdminController {
         this.staffShiftService = staffShiftService;
     }
 
+    private com.hotel.service.ExecutiveBoardService executiveBoardService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setExecutiveBoardService(com.hotel.service.ExecutiveBoardService executiveBoardService) {
+        this.executiveBoardService = executiveBoardService;
+    }
+
     @GetMapping("/admin/dashboard")
     public String dashboard(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+            org.springframework.security.core.Authentication auth,
             Model model) {
+
+        // Bang dieu hanh: viec van hanh cho quan tri / le tan, lai lo + luong cho quan tri / ke toan
+        if (executiveBoardService != null) {
+            boolean admin = hasRole(auth, "ROLE_ADMIN");
+            boolean operations = admin || hasRole(auth, "ROLE_STAFF");
+            boolean finance = admin || hasRole(auth, "ROLE_ACCOUNTANT");
+            model.addAttribute("board", executiveBoardService.build(java.time.LocalDateTime.now(), operations, finance));
+            model.addAttribute("boardOperations", operations);
+        }
 
         LocalDate[] range = normalizeRange(fromDate, toDate);
         fromDate = range[0];
@@ -142,6 +159,10 @@ public class AdminController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment().filename(fileName).build().toString())
                 .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
                 .body(file);
+    }
+
+    private static boolean hasRole(org.springframework.security.core.Authentication auth, String role) {
+        return auth != null && auth.getAuthorities().stream().anyMatch(a -> role.equals(a.getAuthority()));
     }
 
     // Mac dinh 30 ngay gan nhat; neu chon nguoc (tu ngay > den ngay) thi dao lai

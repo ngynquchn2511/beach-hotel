@@ -20,48 +20,240 @@
         <div class="col-md-9">
             <h3 class="fw-bold mb-4">Tổng quan hệ thống</h3>
             <th:block th:if="${onDuty != null}"><div th:replace="~{fragments/on-duty :: box(${onDuty})}"></div></th:block>
-            <p class="text-muted" sec:authorize="hasRole('ADMIN')">Đăng nhập thành công với quyền Quản trị viên. Bạn có thể quản lý loại phòng, phòng, combo, mã giảm giá, tài khoản nhân viên và xem nhật ký thao tác ở menu bên trái.</p>
-            <p class="text-muted" sec:authorize="hasRole('STAFF') and not hasRole('ADMIN')">Đăng nhập thành công với quyền Nhân viên. Bạn có thể xử lý đơn đặt phòng, đặt phòng tại quầy, check-in/check-out, cập nhật trạng thái và thông tin phòng. Việc tạo/xóa danh mục, thay đổi giá, mã giảm giá và loại khách hàng do quản trị viên thực hiện.</p>
+            <p class="text-muted small" sec:authorize="hasRole('ADMIN')">Đăng nhập thành công với quyền Quản trị viên. Bạn có thể quản lý loại phòng, phòng, combo, mã giảm giá, tài khoản nhân viên và xem nhật ký thao tác ở menu bên trái.</p>
+            <p class="text-muted small" sec:authorize="hasRole('STAFF') and not hasRole('ADMIN')">Đăng nhập thành công với quyền Nhân viên. Bạn có thể xử lý đơn đặt phòng, đặt phòng tại quầy, check-in/check-out, cập nhật trạng thái và thông tin phòng. Việc tạo/xóa danh mục, thay đổi giá, mã giảm giá và loại khách hàng do quản trị viên thực hiện.</p>
 
-            <div class="row g-3 mt-2">
-                <div class="col-md-4">
-                    <div class="bg-white p-3 rounded shadow-sm text-center">
-                        <div class="text-muted small">Tổng số phòng</div>
-                        <div class="fs-3 fw-bold" th:text="${totalRooms}"></div>
+            <!-- ===== Bang dieu hanh: nhin 1 trang biet tinh hinh resort ===== -->
+            <style>
+                .xb-card { background: #fff; border-radius: .75rem; box-shadow: 0 1px 3px rgba(19,57,94,.12); padding: 1rem; height: 100%; }
+                .xb-title { font-weight: 700; font-size: .95rem; margin-bottom: .6rem; display: flex; justify-content: space-between; align-items: center; gap: .5rem; }
+                .xb-title a { font-weight: 500; font-size: .8rem; }
+                .xb-kpi .lbl { color: #6c7a89; font-size: .78rem; }
+                .xb-kpi .val { font-size: 1.45rem; font-weight: 800; line-height: 1.2; }
+                .xb-kpi .sub { color: #6c7a89; font-size: .75rem; }
+                .xb-alert { display: flex; align-items: center; gap: .6rem; padding: .45rem .7rem; border-radius: .5rem; text-decoration: none; color: inherit; border-left: 4px solid; margin-bottom: .35rem; }
+                .xb-alert:hover { filter: brightness(.97); }
+                .xb-alert .cnt { margin-left: auto; font-weight: 800; font-size: 1.05rem; }
+                .xb-alert.danger { background: #fdecee; border-color: #dc3545; }
+                .xb-alert.warning { background: #fff6e0; border-color: #f0ad00; }
+                .xb-alert.info { background: #eaf5fc; border-color: #3d9bd6; }
+                .xb-rooms { display: grid; grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); gap: .4rem; }
+                .xb-room { border-radius: .45rem; padding: .3rem .25rem; text-align: center; font-size: .72rem; line-height: 1.15; border: 1.5px solid transparent; position: relative; cursor: default; }
+                .xb-room .no { font-weight: 800; font-size: .9rem; }
+                .xb-room .tag { position: absolute; top: -6px; right: -4px; font-size: .62rem; padding: 0 .25rem; border-radius: .4rem; background: #13395e; color: #fff; }
+                .xb-room.free { background: #e3f6ea; border-color: #8fd3a8; }
+                .xb-room.booked { background: #eaf5fc; border-color: #89cff0; }
+                .xb-room.occupied { background: #13395e; color: #fff; }
+                .xb-room.dirty { background: #fff3cd; border-color: #ffcf73; }
+                .xb-room.maintenance { background: #f1f1f1; border-color: #adb5bd; color: #6c757d; text-decoration: line-through; }
+                .xb-room.overdue { background: #dc3545; color: #fff; }
+                .xb-tag { font-size: .62rem; padding: 0 .3rem; border-radius: .4rem; background: #13395e; color: #fff !important; }
+                .xb-legend > span { display: inline-flex; align-items: center; gap: .25rem; margin-right: .8rem; font-size: .75rem; }
+                .xb-legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+                .xb-delta.up { color: #198754; } .xb-delta.down { color: #dc3545; }
+            </style>
+
+            <div th:if="${board != null}" id="bang-dieu-hanh" class="mb-4">
+                <div class="d-flex justify-content-between align-items-end flex-wrap gap-2 mb-3">
+                    <div>
+                        <h5 class="fw-bold mb-0">Bảng điều hành</h5>
+                        <div class="small text-muted" th:text="'Số liệu lúc ' + ${#temporals.format(board.generatedAt, 'HH:mm dd/MM/yyyy')} + ' · tải lại trang để cập nhật'"></div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a class="btn btn-sm btn-outline-primary" th:href="@{/admin/today}" th:if="${boardOperations}"><i class="bi bi-calendar-day"></i> Hôm nay</a>
+                        <a class="btn btn-sm btn-outline-primary" th:href="@{/admin/reports/daily}"><i class="bi bi-journal-text"></i> Chốt ngày</a>
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <div class="bg-white p-3 rounded shadow-sm text-center">
-                        <div class="text-muted small">Phòng còn trống</div>
-                        <div class="fs-3 fw-bold text-success" th:text="${availableRooms}"></div>
+
+                <!-- 1. Can xu ly ngay -->
+                <div class="xb-card mb-3" id="can-xu-ly" th:if="${boardOperations or !#lists.isEmpty(board.alerts)}">
+                    <div class="xb-title">
+                        <span><i class="bi bi-exclamation-triangle-fill text-warning me-1"></i>Cần xử lý
+                            <span class="badge bg-danger ms-1" th:if="${board.urgentCount > 0}" th:text="${board.urgentCount} + ' gấp'"></span>
+                            <span class="badge bg-secondary ms-1" th:text="${board.alertTotal} + ' việc'"></span></span>
+                    </div>
+                    <div th:if="${#lists.isEmpty(board.alerts)}" class="text-success fw-semibold">
+                        <i class="bi bi-check-circle-fill"></i> Không có việc tồn. Mọi thứ đang ổn.
+                    </div>
+                    <div class="row g-2" th:unless="${#lists.isEmpty(board.alerts)}">
+                        <div class="col-md-6" th:each="a : ${board.alerts}">
+                            <a class="xb-alert" th:classappend="${a.level}" th:href="@{${a.link}}">
+                                <i class="bi" th:classappend="${a.icon}"></i>
+                                <span th:text="${a.label}"></span>
+                                <span class="cnt" th:text="${a.count}"></span>
+                                <i class="bi bi-chevron-right small text-muted"></i>
+                            </a>
+                        </div>
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <div class="bg-white p-3 rounded shadow-sm text-center">
-                        <div class="text-muted small">Phòng đang sử dụng</div>
-                        <div class="fs-3 fw-bold" th:text="${occupiedRooms}"></div>
+
+                <!-- 2. Hom nay -->
+                <div class="row g-3 mb-3" id="hom-nay">
+                    <div class="col-6 col-lg-3">
+                        <div class="xb-card xb-kpi" title="Số phòng có khách đêm nay / số phòng có thể bán">
+                            <div class="lbl">Công suất đêm nay</div>
+                            <div class="val" th:text="${#numbers.formatDecimal(board.today.occupancy, 1, 0)} + '%'"></div>
+                            <div class="progress my-1" style="height:6px"><div class="progress-bar bg-success" th:style="'width:' + ${board.today.occupancy > 100 ? 100 : board.today.occupancy} + '%'"></div></div>
+                            <div class="sub" th:text="${board.today.soldRooms} + ' / ' + ${board.today.sellableRooms} + ' phòng'"></div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-lg-3">
+                        <div class="xb-card xb-kpi">
+                            <div class="lbl">Khách đến hôm nay</div>
+                            <div class="val"><span th:text="${board.today.arrivalsDone}"></span><span class="fs-6 text-muted" th:text="' / ' + ${board.today.arrivals}"></span></div>
+                            <div class="progress my-1" style="height:6px"><div class="progress-bar" th:style="'width:' + ${board.today.arrivals == 0 ? 0 : board.today.arrivalsDone * 100 / board.today.arrivals} + '%'"></div></div>
+                            <div class="sub" th:text="${board.today.arrivals - board.today.arrivalsDone} + ' khách chưa nhận phòng'"></div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-lg-3">
+                        <div class="xb-card xb-kpi">
+                            <div class="lbl">Khách trả phòng hôm nay</div>
+                            <div class="val"><span th:text="${board.today.departuresDone}"></span><span class="fs-6 text-muted" th:text="' / ' + ${board.today.departures}"></span></div>
+                            <div class="progress my-1" style="height:6px"><div class="progress-bar bg-info" th:style="'width:' + ${board.today.departures == 0 ? 0 : board.today.departuresDone * 100 / board.today.departures} + '%'"></div></div>
+                            <div class="sub" th:text="${board.today.inHouse} + ' phòng đang có khách ở'"></div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-lg-3">
+                        <div class="xb-card xb-kpi" title="Tiền thu trong ngày (tiền phòng, cọc, dịch vụ), đã trừ hoàn tiền ở dòng dưới">
+                            <div class="lbl">Tiền thu hôm nay</div>
+                            <div class="val text-success" th:text="${#numbers.formatDecimal(board.today.collected, 1, 'POINT', 0, 'COMMA')}"></div>
+                            <div class="sub"><span th:text="${board.today.newBookings} + ' đơn mới · '"></span>
+                                <span th:text="${board.today.cancellations} + ' hủy'"></span>
+                                <span th:if="${board.today.refunded.signum() > 0}" th:text="' · hoàn ' + ${#numbers.formatDecimal(board.today.refunded, 1, 'POINT', 0, 'COMMA')}"></span></div>
+                        </div>
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <div class="bg-white p-3 rounded shadow-sm text-center">
-                        <div class="text-muted small">Chưa sẵn sàng (chờ dọn dẹp)</div>
-                        <div class="fs-3 fw-bold text-warning" th:text="${notReadyRooms}"></div>
+
+                <!-- 3. So do phong -->
+                <div class="xb-card mb-3" id="so-do-phong">
+                    <div class="xb-title">
+                        <span><i class="bi bi-grid-3x3-gap me-1"></i>Sơ đồ phòng
+                            <span class="text-muted fw-normal small" th:text="'· ' + ${#lists.size(board.rooms)} + ' phòng'"></span></span>
+                        <a th:href="@{/admin/room-calendar}" th:if="${boardOperations}">Lịch phòng <i class="bi bi-arrow-right"></i></a>
+                    </div>
+                    <div class="xb-legend mb-2">
+                        <span><i style="background:#e3f6ea;border:1px solid #8fd3a8"></i>Trống <b th:text="${board.roomCounts[T(com.hotel.entity.RoomStatus).AVAILABLE] + board.roomCounts[T(com.hotel.entity.RoomStatus).BOOKED]}"></b></span>
+                        <span><i style="background:#13395e"></i>Có khách <b th:text="${board.roomCounts[T(com.hotel.entity.RoomStatus).OCCUPIED]}"></b></span>
+                        <span><i style="background:#fff3cd;border:1px solid #ffcf73"></i>Chờ dọn <b th:text="${board.roomCounts[T(com.hotel.entity.RoomStatus).NOT_READY]}"></b></span>
+                        <span><i style="background:#f1f1f1;border:1px solid #adb5bd"></i>Bảo trì <b th:text="${board.roomCounts[T(com.hotel.entity.RoomStatus).MAINTENANCE]}"></b></span>
+                        <span><i style="background:#dc3545"></i>Quá hạn trả</span>
+                        <span><span class="xb-tag">Đến</span> / <span class="xb-tag">Đi</span> hôm nay</span>
+                    </div>
+                    <div class="xb-rooms">
+                        <div th:each="t : ${board.rooms}" class="xb-room" th:classappend="${t.css}"
+                             th:title="${t.room.roomNumber} + ' · ' + ${t.room.roomType.name} + ' · ' + ${t.status.vietnameseLabel}
+                                    + (${t.guest != null} ? ' · ' + ${t.guest.guestName != null ? t.guest.guestName : ''} + ' (' + ${#temporals.format(t.guest.checkInDate, 'dd/MM')} + ' - ' + ${#temporals.format(t.guest.checkOutDate, 'dd/MM')} + ')' : '')">
+                            <span class="tag" th:if="${t.arrivingToday}">Đến</span>
+                            <span class="tag" th:if="${t.leavingToday}">Đi</span>
+                            <div class="no" th:text="${t.room.roomNumber}"></div>
+                            <div class="text-truncate" th:if="${t.guest != null and !t.arrivingToday}" th:text="'trả ' + ${#temporals.format(t.guest.checkOutDate, 'dd/MM')}"></div>
+                            <div class="text-truncate" th:if="${t.arrivingToday}" th:text="${t.guest.guestName}"></div>
+                            <div class="text-truncate" th:if="${t.guest == null}" th:text="${t.status.name() == 'NOT_READY'} ? 'chờ dọn' : (${t.status.name() == 'MAINTENANCE'} ? 'bảo trì' : 'trống')"></div>
+                        </div>
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <div class="bg-white p-3 rounded shadow-sm text-center">
-                        <div class="text-muted small">Đang bảo trì</div>
-                        <div class="fs-3 fw-bold text-danger" th:text="${maintenanceRooms}"></div>
+
+                <div class="row g-3 mb-3">
+                    <!-- 4. 14 ngay toi -->
+                    <div class="col-lg-7">
+                        <div class="xb-card" id="14-ngay-toi">
+                            <div class="xb-title">
+                                <span><i class="bi bi-graph-up-arrow me-1"></i>Công suất 14 ngày tới</span>
+                                <a th:href="@{/admin/forecast}">Dự báo chi tiết <i class="bi bi-arrow-right"></i></a>
+                            </div>
+                            <div class="row text-center g-2 mb-2 xb-kpi">
+                                <div class="col-4"><div class="lbl">Trung bình</div>
+                                    <div class="fs-5 fw-bold" th:text="${board.forecast.averageOccupancy} + '%'"></div></div>
+                                <div class="col-4"><div class="lbl">Tiền phòng đã đặt</div>
+                                    <div class="fs-5 fw-bold text-primary" th:text="${#numbers.formatDecimal(board.forecast.revenue, 1, 'POINT', 0, 'COMMA')}"></div></div>
+                                <div class="col-4" th:title="'Ngày công suất dưới ' + ${T(com.hotel.service.ForecastService).LOW_OCCUPANCY_PERCENT} + '% - nên chạy khuyến mãi'">
+                                    <div class="lbl">Ngày vắng khách</div>
+                                    <div class="fs-5 fw-bold" th:classappend="${board.forecast.lowDays > 0} ? 'text-danger'" th:text="${board.forecast.lowDays}"></div></div>
+                            </div>
+                            <canvas id="xbForecastChart" height="150"></canvas>
+                        </div>
+                    </div>
+                    <!-- 5. Danh gia khach -->
+                    <div class="col-lg-5">
+                        <div class="xb-card" id="danh-gia">
+                            <div class="xb-title">
+                                <span><i class="bi bi-star-fill text-warning me-1"></i>Khách đánh giá (30 ngày)</span>
+                                <a th:href="@{/admin/reviews}" th:if="${boardOperations}">Xem tất cả <i class="bi bi-arrow-right"></i></a>
+                            </div>
+                            <div class="d-flex align-items-center gap-3 mb-2">
+                                <div class="display-6 fw-bold" th:text="${board.reviews.count > 0} ? ${#numbers.formatDecimal(board.reviews.average, 1, 1)} : '-'"></div>
+                                <div class="small">
+                                    <div><span class="text-warning" th:each="i : ${#numbers.sequence(1, 5)}"><i class="bi" th:classappend="${i <= board.reviews.average + 0.5} ? 'bi-star-fill' : 'bi-star'"></i></span></div>
+                                    <div class="text-muted" th:text="${board.reviews.count} + ' lượt · ' + ${board.reviews.low} + ' lượt ≤ 3 sao · ' + ${board.reviews.unreplied} + ' chưa trả lời'"></div>
+                                </div>
+                            </div>
+                            <div th:if="${#lists.isEmpty(board.reviews.latestLow)}" class="small text-success"><i class="bi bi-emoji-smile"></i> Không có đánh giá thấp trong 30 ngày.</div>
+                            <div th:each="r : ${board.reviews.latestLow}" class="border-start border-3 border-danger ps-2 mb-2 small">
+                                <div><b th:text="${r.rating} + '★'"></b> · <span th:text="${r.displayName}"></span>
+                                    <span class="text-muted" th:text="'· ' + ${#temporals.format(r.createdAt, 'dd/MM')}"></span>
+                                    <span class="badge bg-success-subtle text-success-emphasis" th:if="${r.replied}">đã trả lời</span></div>
+                                <div class="text-muted text-truncate" th:text="${r.comment}"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <div class="bg-white p-3 rounded shadow-sm text-center">
-                        <div class="text-muted small">Đơn chờ xác nhận</div>
-                        <div class="fs-3 fw-bold text-primary" th:text="${pendingBookings}"></div>
+
+                <!-- 6. Lai lo thang nay (quan tri / ke toan) -->
+                <div class="xb-card mb-3" id="lai-lo-thang" th:if="${board.finance != null}" th:with="p=${board.finance.pnl}, cur=${board.finance.pnl.current}">
+                    <div class="xb-title">
+                        <span><i class="bi bi-cash-stack me-1"></i>Lãi lỗ tháng <span th:text="${cur.month.monthValue} + '/' + ${cur.month.year}"></span>
+                            <span class="text-muted fw-normal small">· đến hôm nay, so với tháng trước</span></span>
+                        <a th:href="@{/admin/accounting/pnl}">Báo cáo lãi lỗ <i class="bi bi-arrow-right"></i></a>
                     </div>
+                    <div class="row g-3">
+                        <div class="col-lg-5">
+                            <div class="row g-2 xb-kpi">
+                                <div class="col-6"><div class="lbl">Doanh thu</div>
+                                    <div class="fs-5 fw-bold" th:text="${#numbers.formatDecimal(cur.totalRevenue(), 1, 'POINT', 0, 'COMMA')}"></div>
+                                    <div class="sub xb-delta" th:if="${p.vsPrevious.revenue != null}" th:classappend="${p.vsPrevious.revenue >= 0} ? 'up' : 'down'"
+                                         th:text="(${p.vsPrevious.revenue >= 0} ? '▲ +' : '▼ ') + ${#numbers.formatDecimal(p.vsPrevious.revenue, 1, 1)} + '%'"></div></div>
+                                <div class="col-6"><div class="lbl">Chi phí</div>
+                                    <div class="fs-5 fw-bold" th:text="${#numbers.formatDecimal(cur.totalCost(), 1, 'POINT', 0, 'COMMA')}"></div>
+                                    <div class="sub xb-delta" th:if="${p.vsPrevious.cost != null}" th:classappend="${p.vsPrevious.cost <= 0} ? 'up' : 'down'"
+                                         th:text="(${p.vsPrevious.cost >= 0} ? '▲ +' : '▼ ') + ${#numbers.formatDecimal(p.vsPrevious.cost, 1, 1)} + '%'"></div></div>
+                                <div class="col-6"><div class="lbl">Lãi</div>
+                                    <div class="fs-5 fw-bold" th:classappend="${cur.operatingProfit().signum() >= 0} ? 'text-success' : 'text-danger'"
+                                         th:text="${#numbers.formatDecimal(cur.operatingProfit(), 1, 'POINT', 0, 'COMMA')}"></div>
+                                    <div class="sub xb-delta" th:if="${p.vsPrevious.profit != null}" th:classappend="${p.vsPrevious.profit >= 0} ? 'up' : 'down'"
+                                         th:text="(${p.vsPrevious.profit >= 0} ? '▲ +' : '▼ ') + ${#numbers.formatDecimal(p.vsPrevious.profit, 1, 1)} + '%'"></div></div>
+                                <div class="col-6"><div class="lbl">Tỷ suất lãi</div>
+                                    <div class="fs-5 fw-bold" th:text="${#numbers.formatDecimal(cur.margin(), 1, 1)} + '%'"></div>
+                                    <div class="sub xb-delta" th:classappend="${p.vsPrevious.marginPoints >= 0} ? 'up' : 'down'"
+                                         th:text="(${p.vsPrevious.marginPoints >= 0} ? '▲ +' : '▼ ') + ${#numbers.formatDecimal(p.vsPrevious.marginPoints, 1, 1)} + ' điểm'"></div></div>
+                            </div>
+                            <div class="mt-3" th:if="${board.finance.budget != null and board.finance.budget.revenuePercent != null}">
+                                <div class="d-flex justify-content-between small"><span>Đạt kế hoạch doanh thu</span>
+                                    <b th:text="${#numbers.formatDecimal(board.finance.budget.revenuePercent, 1, 1)} + '%'"></b></div>
+                                <div class="progress" style="height:8px"><div class="progress-bar"
+                                     th:classappend="${board.finance.budget.revenuePercent >= 100} ? 'bg-success' : 'bg-warning'"
+                                     th:style="'width:' + ${board.finance.budget.revenuePercent > 100 ? 100 : board.finance.budget.revenuePercent} + '%'"></div></div>
+                                <div class="small text-muted" th:if="${board.finance.budget.revenueShortfall.signum() > 0}"
+                                     th:text="'Còn thiếu ' + ${#numbers.formatDecimal(board.finance.budget.revenueShortfall, 1, 'POINT', 0, 'COMMA')} + ' VND'"></div>
+                            </div>
+                            <div class="small text-muted mt-3" th:if="${board.finance.budget == null}">Chưa đặt kế hoạch tháng này
+                                (<a th:href="@{/admin/accounting/budget}">đặt kế hoạch</a>).</div>
+                        </div>
+                        <div class="col-lg-7">
+                            <canvas id="xbPnlChart" height="170"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 7. Ca truc trong 3 ngay toi chua co ai -->
+                <div class="alert alert-warning py-2 small" th:if="${!#lists.isEmpty(board.shiftGaps)}" id="ca-trong">
+                    <i class="bi bi-person-exclamation"></i> <b>Ca chưa xếp người trực (3 ngày tới):</b>
+                    <span th:text="${#strings.listJoin(board.shiftGaps, ', ')}"></span>
+                    <a class="ms-1" th:href="@{/admin/duty-roster}">Xếp ca</a>
                 </div>
             </div>
 
+            <h5 class="fw-bold mt-4 mb-1" id="phan-tich-ky">Phân tích theo khoảng ngày</h5>
+            <p class="text-muted small mb-2">Chọn khoảng ngày để xem tiền đã thu, công suất, so sánh cùng kỳ và báo cáo chi tiết.</p>
             <form method="get" th:action="@{/admin/dashboard}" class="d-flex flex-wrap align-items-end gap-2 bg-white p-3 rounded shadow-sm mt-4">
                 <div>
                     <label class="form-label small text-muted mb-1" for="fromDate">Từ ngày</label>
@@ -311,8 +503,9 @@
     Chart.defaults.color = INK;
     Chart.defaults.borderColor = '#d6ebf8';
     // Truc tien: rut gon 1.500.000 -> 1,5tr de nhan khong bi cat trong khung hep
-    const moneyTick = v => v >= 1e6 ? (v / 1e6).toLocaleString('vi-VN') + 'tr'
-        : v >= 1e3 ? (v / 1e3).toLocaleString('vi-VN') + 'k' : v;
+    const moneyTick = v => Math.abs(v) >= 1e9 ? (v / 1e9).toLocaleString('vi-VN') + ' tỷ'
+        : Math.abs(v) >= 1e6 ? (v / 1e6).toLocaleString('vi-VN') + 'tr'
+        : Math.abs(v) >= 1e3 ? (v / 1e3).toLocaleString('vi-VN') + 'k' : v;
     const moneyTooltip = { callbacks: { label: c => ' ' + Number(c.parsed.y).toLocaleString('vi-VN') + ' VND' } };
 
     new Chart(document.getElementById('statusPieChart'), {
@@ -372,6 +565,54 @@
             scales: { y: { beginAtZero: true, ticks: { callback: moneyTick } } }
         }
     });
+    // ===== Bang dieu hanh: cong suat 14 ngay toi + lai lo 12 thang =====
+    /*<![CDATA[*/
+    const xbDays = /*[[${board != null ? board.forecast.days.![#temporals.format(date, 'dd/MM')] : {}}]]*/ [];
+    const xbConfirmed = /*[[${board != null ? board.forecast.days.![sellable == 0 ? 0 : confirmed * 100 / sellable] : {}}]]*/ [];
+    const xbPending = /*[[${board != null ? board.forecast.days.![pendingPercent()] : {}}]]*/ [];
+    const xbLow = /*[[${board != null ? board.forecast.days.![low()] : {}}]]*/ [];
+    const xbMonths = /*[[${board != null and board.finance != null ? board.finance.pnl.trend.![month.monthValue + '/' + (month.year % 100)] : {}}]]*/ [];
+    const xbRevenue = /*[[${board != null and board.finance != null ? board.finance.pnl.trend.![totalRevenue()] : {}}]]*/ [];
+    const xbCost = /*[[${board != null and board.finance != null ? board.finance.pnl.trend.![totalCost()] : {}}]]*/ [];
+    const xbProfit = /*[[${board != null and board.finance != null ? board.finance.pnl.trend.![operatingProfit()] : {}}]]*/ [];
+    /*]]>*/
+    if (document.getElementById('xbForecastChart')) {
+        new Chart(document.getElementById('xbForecastChart'), {
+            type: 'bar',
+            data: {
+                labels: xbDays,
+                datasets: [
+                    { label: 'Đã xác nhận / đang ở', data: xbConfirmed, stack: 'o', borderRadius: 4,
+                      backgroundColor: xbLow.map(l => l ? '#f4a3ad' : BABY_DEEP) },
+                    { label: 'Chờ xác nhận', data: xbPending, stack: 'o', borderRadius: 4, backgroundColor: '#ffcf73' }
+                ]
+            },
+            options: {
+                plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+                           tooltip: { callbacks: { label: c => ' ' + c.dataset.label + ': ' + c.parsed.y + '%' } } },
+                scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } } }
+            }
+        });
+    }
+    if (document.getElementById('xbPnlChart')) {
+        new Chart(document.getElementById('xbPnlChart'), {
+            data: {
+                labels: xbMonths,
+                datasets: [
+                    { type: 'bar', label: 'Doanh thu', data: xbRevenue, backgroundColor: BABY, borderRadius: 4 },
+                    { type: 'bar', label: 'Chi phí', data: xbCost, backgroundColor: '#ffd4dc', borderRadius: 4 },
+                    { type: 'line', label: 'Lãi', data: xbProfit, borderColor: INK, backgroundColor: '#ffcf73',
+                      pointBackgroundColor: '#ffcf73', pointBorderColor: INK, tension: 0.3 }
+                ]
+            },
+            options: {
+                plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+                           tooltip: { callbacks: { label: c => ' ' + c.dataset.label + ': ' + Number(c.parsed.y).toLocaleString('vi-VN') + ' VND' } } },
+                layout: { padding: { left: 8 } },
+                scales: { y: { ticks: { callback: moneyTick } } }
+            }
+        });
+    }
 </script>
 
 </body>
