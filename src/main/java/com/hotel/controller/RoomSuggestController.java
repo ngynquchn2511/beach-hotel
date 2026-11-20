@@ -29,6 +29,14 @@ public class RoomSuggestController {
         this.service = service;
     }
 
+    private com.hotel.service.WeatherService weatherService;
+
+    // Du bao 3 ngay toi o dau trang (giong trang Hom nay cua le tan); loi mang thi an khung
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    void setWeatherService(com.hotel.service.WeatherService weatherService) {
+        this.weatherService = weatherService;
+    }
+
     @GetMapping("/rooms/suggest")
     public String suggest(@RequestParam(required = false) Integer guests,
                           @RequestParam(required = false) GuestPreference.Purpose purpose,
@@ -45,6 +53,9 @@ public class RoomSuggestController {
         model.addAttribute("allPriorities", GuestPreference.Priority.values());
         model.addAttribute("budgets", BUDGETS);
         model.addAttribute("loggedInCustomer", customer);
+        if (weatherService != null) {
+            model.addAttribute("weatherDays", weatherService.next(3));
+        }
 
         if (guests == null) {
             // Chua tra loi: dien san so thich da luu (neu co)

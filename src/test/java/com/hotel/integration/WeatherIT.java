@@ -83,6 +83,15 @@ class WeatherIT extends ItFixtures {
         mockMvc.perform(get("/admin/today").with(as(persistUser(UserRole.STAFF, null)))).andExpect(status().isOk())
                 .andExpect(content().string(containsString("Hôm nay gió mạnh")));
 
+        // Trang Goi y phong cua khach: 3 ngay toi + canh bao gio manh, ca truoc va sau khi tra loi
+        mockMvc.perform(get("/rooms/suggest").with(as(persistUser(UserRole.CUSTOMER, CustomerType.NEW))))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Thời tiết Hạ Long 3 ngày tới")))
+                .andExpect(content().string(containsString("weather-rough")));
+        mockMvc.perform(get("/rooms/suggest").param("guests", "2"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Thời tiết Hạ Long 3 ngày tới")));
+
         assertThat(chatbot.answer("thời tiết mấy hôm tới thế nào")).contains("Dự báo Hạ Long").contains("Giông");
         assertThat(chatbot.reply("nên chọn phòng nào cho gia đình").actions()).anyMatch(a -> a.url().equals("/rooms/suggest"));
 
