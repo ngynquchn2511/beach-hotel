@@ -26,8 +26,31 @@
 
             <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
 
+            <!-- Loc theo loai nhan vien -->
+            <ul class="nav nav-pills gap-1 mb-2" id="loc-loai-nhan-vien">
+                <li class="nav-item"><a class="nav-link py-1 px-3" th:classappend="${role == null} ? 'active'"
+                    th:href="@{/admin/staff-accounts(status=${status}, q=${q})}">Tất cả <span class="badge bg-light text-dark" th:text="${totalCount}"></span></a></li>
+                <li class="nav-item" th:each="r : ${roles}"><a class="nav-link py-1 px-3" th:classappend="${role == r} ? 'active'"
+                    th:href="@{/admin/staff-accounts(role=${r}, status=${status}, q=${q})}">
+                    <i class="bi" th:classappend="${r.name() == 'ADMIN'} ? 'bi-shield-lock' : (${r.name() == 'STAFF'} ? 'bi-person-badge' : (${r.name() == 'HOUSEKEEPER'} ? 'bi-bucket' : 'bi-calculator'))"></i>
+                    <span th:text="${r.name() == 'STAFF'} ? 'Lễ tân / nhân viên' : ${r.vietnameseLabel}"></span>
+                    <span class="badge bg-light text-dark" th:text="${roleCounts[r.name()]}"></span></a></li>
+            </ul>
+            <form method="get" th:action="@{/admin/staff-accounts}" class="d-flex flex-wrap gap-2 bg-white p-2 rounded shadow-sm mb-3">
+                <input type="hidden" name="role" th:value="${role}">
+                <input type="text" name="q" class="form-control form-control-sm" style="max-width:260px" th:value="${q}" placeholder="Tìm tên, email, số điện thoại">
+                <select name="status" class="form-select form-select-sm" style="width:auto">
+                    <option value="">Mọi trạng thái</option>
+                    <option value="active" th:selected="${status == 'active'}">Đang hoạt động</option>
+                    <option value="locked" th:selected="${status == 'locked'}">Đã khóa</option>
+                </select>
+                <button class="btn btn-primary btn-sm" type="submit"><i class="bi bi-search"></i> Lọc</button>
+                <a class="btn btn-outline-secondary btn-sm" th:href="@{/admin/staff-accounts}" th:if="${role != null or status != null or q != null}">Bỏ lọc</a>
+                <span class="ms-auto align-self-center small text-muted" th:text="${filteredCount} + ' tài khoản'"></span>
+            </form>
+
             <div th:if="${#lists.isEmpty(accounts)}" class="alert alert-info">
-                Chưa có tài khoản nhân viên nào.
+                Không có tài khoản nhân viên nào phù hợp.
             </div>
 
             <table class="table table-striped bg-white align-middle" style="--bs-table-striped-bg: #eaf6ff;" th:if="${not #lists.isEmpty(accounts)}">
@@ -51,7 +74,7 @@
                     <td th:text="${a.email}"></td>
                     <td th:text="${a.phoneNumber}"></td>
                     <td>
-                        <span class="badge" th:classappend="${a.role.name() == 'ADMIN'} ? 'bg-dark' : (${a.role.name() == 'STAFF'} ? 'bg-primary' : 'bg-secondary')"
+                        <span class="badge" th:classappend="${a.role.name() == 'ADMIN'} ? 'bg-dark' : (${a.role.name() == 'STAFF'} ? 'bg-primary' : (${a.role.name() == 'HOUSEKEEPER'} ? 'bg-success' : 'bg-warning text-dark'))"
                               th:text="${a.role.vietnameseLabel}"></span>
                     </td>
                     <td th:text="${#temporals.format(a.createdAt, 'dd/MM/yyyy')}"></td>
@@ -75,7 +98,7 @@
                 </tbody>
             </table>
 
-            <div th:replace="~{fragments/pagination :: pagination('/admin/staff-accounts', ${currentPage}, ${totalPages}, ${pageNumbers}, null, null)}"></div>
+            <div th:replace="~{fragments/pagination :: pager(${pager})}"></div>
         </div>
     </div>
 </main>
