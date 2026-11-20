@@ -135,6 +135,7 @@ public class SecurityConfig {
                         .requestMatchers("/admin/room-service/menu", "/admin/room-service/menu/**").hasRole("ADMIN")
                         .requestMatchers("/admin/spa-packages", "/admin/spa-packages/**").hasRole("ADMIN")
                         .requestMatchers("/admin/quick-replies", "/admin/quick-replies/**").hasRole("ADMIN")
+                        .requestMatchers("/admin/review-replies", "/admin/review-replies/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/admin/upgrades/settings").hasRole("ADMIN")
                         // Cac chuc nang con lai (don dat phong, check-in/out, trang thai phong, doanh thu...) - ca STAFF va ADMIN
                         // Buong phong: don phong, bao hong / bao tri, do that lac

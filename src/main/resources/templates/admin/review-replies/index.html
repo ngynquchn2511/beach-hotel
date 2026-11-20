@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Trả lời đánh giá tự động</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+</head>
+<body class="eaut eaut-admin">
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="container py-5">
+    <div class="row g-4">
+        <div class="col-md-3">
+            <div th:replace="~{fragments/admin-sidebar :: sidebar}"></div>
+        </div>
+
+        <div class="col-md-9">
+            <h3 class="fw-bold mb-1">Trả lời đánh giá tự động</h3>
+            <p class="text-muted small">Khi khách gửi đánh giá, hệ thống tìm quy tắc khớp <b>số sao</b> và có <b>từ khóa</b> trong nội dung
+                (không phân biệt hoa thường; khách gõ không dấu vẫn nhận ra từ khóa dài), rồi đăng câu trả lời công khai và email báo khách.
+                Quy tắc có từ khóa được xét trước theo thứ tự; nếu không khớp từ khóa nào thì dùng quy tắc <b>không có từ khóa</b> (dự phòng) đúng khoảng sao.
+                Nhân viên vẫn sửa được câu trả lời ở trang <a th:href="@{/admin/reviews}">Đánh giá</a>.
+                Biến dùng được: <code th:each="v, st : ${variables}" th:text="${v} + (${st.last} ? '' : ' ')"></code>.</p>
+
+            <div class="alert alert-secondary py-2 small" th:unless="${enabled}">
+                Tự động trả lời đang <b>tắt</b> (REVIEW_AUTO_REPLY=false). Quy tắc vẫn dùng được khi bấm «Áp dụng» bên dưới.
+            </div>
+            <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+            <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+
+            <div class="row g-3 mb-4">
+                <!-- Thu quy tac -->
+                <div class="col-lg-7">
+                    <div class="bg-white p-3 rounded shadow-sm h-100" id="thu-quy-tac">
+                        <h6 class="fw-bold mb-2"><i class="bi bi-play-circle me-1"></i>Thử với 1 đánh giá</h6>
+                        <form method="get" th:action="@{/admin/review-replies}" class="row g-2">
+                            <div class="col-3">
+                                <select name="testRating" class="form-select form-select-sm">
+                                    <option th:each="n : ${#numbers.sequence(5, 1, -1)}" th:value="${n}" th:text="${n} + ' sao'"
+                                            th:selected="${testRating == n}"></option>
+                                </select>
+                            </div>
+                            <div class="col-9"><input type="text" name="testComment" class="form-control form-control-sm" maxlength="1000"
+                                                      th:value="${testComment}" placeholder="VD: Phòng hơi ồn vì karaoke bên cạnh"></div>
+                            <div class="col-12"><button class="btn btn-sm btn-outline-primary" type="submit">Xem câu trả lời</button></div>
+                        </form>
+                        <div class="mt-2 small" th:if="${tested}">
+                            <div th:if="${testMatch == null}" class="text-muted">Không có quy tắc nào khớp - đánh giá này sẽ chờ nhân viên trả lời.</div>
+                            <div th:if="${testMatch != null}" class="border-start border-3 border-success ps-2">
+                                <div>Khớp quy tắc <b th:text="${testMatch.rule.name}"></b>
+                                    <span th:if="${testMatch.keyword != null}" th:text="'(từ khóa «' + ${testMatch.keyword} + '»)'"></span>
+                                    <span th:if="${testMatch.keyword == null}">(dự phòng theo số sao)</span></div>
+                                <div class="text-muted fst-italic" th:text="${testMatch.text}"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Ap dung cho danh gia cu -->
+                <div class="col-lg-5">
+                    <div class="bg-white p-3 rounded shadow-sm h-100">
+                        <h6 class="fw-bold mb-2"><i class="bi bi-reply-all me-1"></i>Đánh giá cũ chưa trả lời</h6>
+                        <div class="fs-3 fw-bold" th:text="${unreplied}"></div>
+                        <div class="small text-muted mb-2">đánh giá đang hiển thị chưa có câu trả lời</div>
+                        <form method="post" th:action="@{/admin/review-replies/apply}" th:if="${unreplied > 0}"
+                              onsubmit="return confirm('Tự động trả lời các đánh giá cũ khớp quy tắc? Khách sẽ nhận email báo đã có trả lời.')">
+                            <button type="submit" class="btn btn-sm btn-primary">Áp dụng quy tắc cho đánh giá cũ</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded shadow-sm mb-4">
+                <h5 class="fw-bold mb-3">Thêm quy tắc</h5>
+                <form th:action="@{/admin/review-replies}" method="post" class="row g-2">
+                    <div class="col-md-5"><label class="form-label small">Tên quy tắc</label>
+                        <input type="text" name="name" class="form-control form-control-sm" maxlength="80" required></div>
+                    <div class="col-md-2"><label class="form-label small">Từ sao</label>
+                        <input type="number" name="minRating" class="form-control form-control-sm" min="1" max="5" value="1"></div>
+                    <div class="col-md-2"><label class="form-label small">Đến sao</label>
+                        <input type="number" name="maxRating" class="form-control form-control-sm" min="1" max="5" value="5"></div>
+                    <div class="col-md-3"><label class="form-label small">Thứ tự</label>
+                        <input type="number" name="sortOrder" class="form-control form-control-sm" min="0" max="999"></div>
+                    <div class="col-12"><label class="form-label small">Từ khóa (cách nhau dấu phẩy; để trống = dự phòng cho khoảng sao)</label>
+                        <input type="text" name="keywords" class="form-control form-control-sm" maxlength="500" placeholder="VD: wifi, mạng yếu, không vào được mạng"></div>
+                    <div class="col-12"><label class="form-label small">Câu trả lời</label>
+                        <textarea name="body" class="form-control form-control-sm" rows="3" th:maxlength="${bodyMax}" required
+                                  placeholder="VD: Cảm ơn {ten_khach} đã góp ý về wifi, kỹ thuật đã nâng cấp mạng ở {loai_phong}."></textarea></div>
+                    <div class="col-12"><button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Thêm quy tắc</button></div>
+                </form>
+            </div>
+
+            <div class="bg-white p-4 rounded shadow-sm" id="danh-sach-quy-tac">
+                <h5 class="fw-bold mb-3">Danh sách quy tắc <span class="text-muted small fw-normal" th:text="'· ' + ${#lists.size(rules)}"></span></h5>
+                <div th:if="${#lists.isEmpty(rules)}" class="alert alert-info mb-0">Chưa có quy tắc nào.</div>
+                <div th:each="r : ${rules}" class="border rounded p-3 mb-2" th:classappend="${!r.open} ? 'bg-light text-muted'">
+                    <form th:action="@{/admin/review-replies/{id}(id=${r.id})}" method="post" class="row g-2">
+                        <div class="col-md-5"><input type="text" name="name" class="form-control form-control-sm fw-semibold" maxlength="80" required th:value="${r.name}"></div>
+                        <div class="col-md-2"><div class="input-group input-group-sm"><span class="input-group-text">từ</span>
+                            <input type="number" name="minRating" class="form-control" min="1" max="5" th:value="${r.minRating}"></div></div>
+                        <div class="col-md-2"><div class="input-group input-group-sm"><span class="input-group-text">đến</span>
+                            <input type="number" name="maxRating" class="form-control" min="1" max="5" th:value="${r.maxRating}"></div></div>
+                        <div class="col-md-1"><input type="number" name="sortOrder" class="form-control form-control-sm" min="0" max="999" th:value="${r.sortOrder}" title="Thứ tự"></div>
+                        <div class="col-md-2"><button type="submit" class="btn btn-sm btn-outline-primary w-100"><i class="bi bi-check-lg"></i> Lưu</button></div>
+                        <div class="col-12"><input type="text" name="keywords" class="form-control form-control-sm" maxlength="500" th:value="${r.keywords}"
+                                                   placeholder="(không có từ khóa - dự phòng cho khoảng sao này)"></div>
+                        <div class="col-12"><textarea name="body" class="form-control form-control-sm" rows="2" th:maxlength="${bodyMax}" required th:text="${r.body}"></textarea></div>
+                    </form>
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <span>
+                            <span class="badge" th:classappend="${r.open} ? 'bg-success' : 'bg-secondary'" th:text="${r.open} ? 'Đang dùng' : 'Tạm ngừng'"></span>
+                            <span class="badge bg-light text-dark border" th:if="${r.fallback}">Dự phòng</span>
+                            <span class="badge" th:classappend="${r.maxRating <= 3} ? 'bg-danger-subtle text-danger-emphasis' : 'bg-warning-subtle text-warning-emphasis'"
+                                  th:text="${r.minRating} + ' - ' + ${r.maxRating} + ' sao'"></span>
+                            <span class="small text-muted ms-1" th:text="'Đã dùng ' + ${r.usedCount} + ' lần'"></span>
+                        </span>
+                        <span class="d-flex gap-2">
+                            <form method="post" th:action="@{/admin/review-replies/{id}/toggle(id=${r.id})}">
+                                <button type="submit" class="btn btn-sm btn-outline-secondary" th:text="${r.open} ? 'Tạm ngừng' : 'Dùng lại'"></button>
+                            </form>
+                            <form method="post" th:action="@{/admin/review-replies/{id}/delete(id=${r.id})}" onsubmit="return confirm('Xóa quy tắc này?')">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Xóa</button>
+                            </form>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

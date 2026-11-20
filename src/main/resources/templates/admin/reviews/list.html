@@ -104,6 +104,8 @@
                             <details class="mt-2" th:open="${!r.replied}">
                                 <summary class="small fw-semibold text-primary">
                                     <span th:if="${r.replied}" th:text="|Đã trả lời ${#temporals.format(r.repliedAt, 'dd/MM/yyyy HH:mm')} — sửa|"></span>
+                                    <span th:if="${r.autoReplied}" class="badge bg-info-subtle text-info-emphasis ms-1"
+                                          th:text="'Tự động · ' + ${r.autoReplyRule}"></span>
                                     <span th:unless="${r.replied}">Trả lời khách</span>
                                 </summary>
                                 <form th:action="@{/admin/reviews/{id}/reply(id=${r.id})}" method="post" class="mt-1">
@@ -114,7 +116,9 @@
                                     <input type="hidden" name="page" th:value="${currentPage}">
                                     <textarea name="reply" rows="2" maxlength="1000" class="form-control form-control-sm"
                                               placeholder="Cảm ơn khách, giải đáp góp ý... (hiển thị công khai dưới đánh giá; để trống rồi lưu để gỡ)"
-                                              th:text="${r.reply}"></textarea>
+                                              th:text="${r.replied} ? ${r.reply} : (${suggestions != null and suggestions[r.id] != null} ? ${suggestions[r.id].text} : '')"></textarea>
+                                    <div class="small text-muted" th:if="${!r.replied and suggestions != null and suggestions[r.id] != null}">
+                                        <i class="bi bi-magic"></i> Gợi ý theo quy tắc <b th:text="${suggestions[r.id].rule.name}"></b> - sửa nếu cần rồi gửi.</div>
                                     <button type="submit" class="btn btn-sm btn-primary mt-1"
                                             th:text="${r.replied} ? 'Lưu câu trả lời' : 'Gửi trả lời'"></button>
                                     <span th:unless="${r.replied}" class="small text-muted ms-1">Khách sẽ nhận email báo đã có trả lời.</span>

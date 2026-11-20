@@ -47,6 +47,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
         AdminFacilityController.class,
         AdminSpaPackageController.class,
         AdminQuickReplyController.class,
+        AdminReviewReplyController.class,
         AdminAccountingController.class,
         AdminDailyReportController.class,
         AdminUpgradeController.class,

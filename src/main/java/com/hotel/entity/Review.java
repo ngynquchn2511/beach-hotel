@@ -53,6 +53,14 @@ public class Review {
     @Column(name = "replied_at")
     private LocalDateTime repliedAt;
 
+    // Ten quy tac da tu dong tra loi (null = nhan vien tra loi tay hoac chua tra loi)
+    @Column(name = "auto_reply_rule", length = 80)
+    private String autoReplyRule;
+
+    public boolean isAutoReplied() {
+        return autoReplyRule != null && reply != null;
+    }
+
     // Anh / video dinh kem (toi da 5), theo thu tu khach chon
     @OneToMany(mappedBy = "review", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("sortOrder ASC")

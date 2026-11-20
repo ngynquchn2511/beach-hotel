@@ -115,7 +115,19 @@ public class ReviewService {
             saved.forEach(fileStorageService::delete);
             throw ex;
         }
-        return reviewRepository.save(review);
+        Review created = reviewRepository.save(review);
+        // Tra loi tu dong theo tu khoa (neu co quy tac khop)
+        if (autoReplyService != null) {
+            autoReplyService.autoReply(created);
+        }
+        return created;
+    }
+
+    private ReviewAutoReplyService autoReplyService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setAutoReplyService(ReviewAutoReplyService autoReplyService) {
+        this.autoReplyService = autoReplyService;
     }
 
     // Danh gia hien thi o trang Gioi thieu (bo qua danh gia admin da an)
@@ -186,6 +198,8 @@ public class ReviewService {
             throw new BusinessException("Câu trả lời tối đa " + MAX_COMMENT_LENGTH + " ký tự");
         }
         boolean firstReply = !review.isReplied();
+        // Nhan vien sua / viet tay -> khong con la cau tra loi tu dong
+        review.setAutoReplyRule(null);
         if (trimmed.isEmpty()) {
             review.setReply(null);
             review.setRepliedAt(null);

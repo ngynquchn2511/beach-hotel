@@ -24,6 +24,13 @@ public class AdminReviewController {
         this.reviewService = reviewService;
     }
 
+    private com.hotel.service.ReviewAutoReplyService autoReplyService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setAutoReplyService(com.hotel.service.ReviewAutoReplyService autoReplyService) {
+        this.autoReplyService = autoReplyService;
+    }
+
     @GetMapping
     public String list(@RequestParam(required = false) Integer rating,
                        @RequestParam(required = false) Boolean hidden,
@@ -33,7 +40,15 @@ public class AdminReviewController {
         List<Review> all = reviewService.findAllForAdmin(rating, hidden, replied, q);
         model.addAttribute("replied", replied);
         int totalPages = PaginationUtil.totalPages(all.size(), PaginationUtil.DEFAULT_PAGE_SIZE);
-        model.addAttribute("reviews", PaginationUtil.slice(all, page, PaginationUtil.DEFAULT_PAGE_SIZE));
+        List<Review> pageItems = PaginationUtil.slice(all, page, PaginationUtil.DEFAULT_PAGE_SIZE);
+        model.addAttribute("reviews", pageItems);
+        // Goi y tra loi theo quy tac tu khoa cho danh gia chua tra loi - dien san vao o tra loi
+        if (autoReplyService != null) {
+            java.util.Map<Long, com.hotel.service.ReviewAutoReplyService.Match> suggestions = new java.util.HashMap<>();
+            pageItems.stream().filter(r -> !r.isReplied())
+                    .forEach(r -> autoReplyService.match(r).ifPresent(m -> suggestions.put(r.getId(), m)));
+            model.addAttribute("suggestions", suggestions);
+        }
         model.addAttribute("totalElements", all.size());
         model.addAttribute("averageRating", all.isEmpty() ? 0
                 : Math.round(all.stream().mapToInt(Review::getRating).average().orElse(0) * 10) / 10.0);
