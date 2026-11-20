@@ -1509,16 +1509,15 @@ public class BookingService {
         return checkedOutBooking;
     }
 
-    // Khach than thiet: sau moi lan tra phong, du so lan luu tru hoan tat thi tu len hang (khong bao gio tu ha hang)
+    // Hang khach tu dong: sau moi lan tra phong, hang = theo so lan luu tru hoan tat (lan dau / quen / VIP)
     private void upgradeLoyaltyTier(Booking booking) {
         User customer = booking.getCustomer();
+        if (customer == null || customer.getRole() != com.hotel.entity.UserRole.CUSTOMER) {
+            return;
+        }
         // Don vua luu thanh CHECKED_OUT - Hibernate flush truoc truy van dem nen da tinh ca don nay
         long stays = bookingRepository.countByCustomerIdAndStatus(customer.getId(), BookingStatus.CHECKED_OUT);
-        CustomerType earned = CustomerType.forCompletedStays(stays);
-        CustomerType current = customer.getCustomerType() != null ? customer.getCustomerType() : CustomerType.NEW;
-        if (earned.ordinal() > current.ordinal()) {
-            customer.setCustomerType(earned);
-        }
+        customer.setCustomerType(CustomerType.forCompletedStays(stays));
     }
 
     private com.hotel.repository.OtaBlockRepository otaBlockRepository;

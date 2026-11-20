@@ -19,46 +19,63 @@
         </div>
 
         <div class="col-md-9">
-            <h3 class="fw-bold mb-4">Danh sách khách hàng</h3>
+            <h3 class="fw-bold mb-2">Danh sách khách hàng</h3>
+            <p class="text-muted small mb-3">Hạng khách <b>tự cập nhật</b> theo số lần lưu trú đã hoàn tất (đã trả phòng):
+                <span class="badge bg-light text-dark border">Khách lần đầu</span> 0 - [[${T(com.hotel.entity.CustomerType).REGULAR_MIN_STAYS - 1}]] lần ·
+                <span class="badge bg-info text-dark">Khách quen</span> từ [[${T(com.hotel.entity.CustomerType).REGULAR_MIN_STAYS}]] lần ·
+                <span class="badge bg-warning text-dark">Khách VIP</span> từ [[${T(com.hotel.entity.CustomerType).VIP_MIN_STAYS}]] lần.
+                Bấm tên khách để xem toàn bộ lịch sử đặt phòng.</p>
 
-            <div th:if="${#lists.isEmpty(customers)}" class="alert alert-info">
-                Chưa có khách hàng nào đăng ký.
+            <form method="get" th:action="@{/admin/customers}" class="d-flex flex-wrap gap-2 bg-white p-2 rounded shadow-sm mb-3">
+                <input type="text" name="q" class="form-control form-control-sm" style="max-width:280px" th:value="${q}"
+                       placeholder="Tìm tên, email, số điện thoại">
+                <select name="type" class="form-select form-select-sm" style="width:auto">
+                    <option value="">Mọi hạng</option>
+                    <option th:each="ct : ${customerTypes}" th:value="${ct}" th:text="${ct.vietnameseLabel}" th:selected="${ct == type}"></option>
+                </select>
+                <button class="btn btn-primary btn-sm" type="submit"><i class="bi bi-search"></i> Tìm</button>
+                <a class="btn btn-outline-secondary btn-sm" th:href="@{/admin/customers}" th:if="${q != null or type != null}">Bỏ lọc</a>
+                <span class="ms-auto align-self-center small text-muted" th:text="${totalElements} + ' khách'"></span>
+            </form>
+
+            <div th:if="${#lists.isEmpty(pager.items)}" class="alert alert-info">
+                Không có khách hàng nào phù hợp.
             </div>
 
-            <table class="table table-striped bg-white align-middle" style="--bs-table-striped-bg: #eaf6ff;" th:if="${not #lists.isEmpty(customers)}">
+            <div class="table-responsive" th:if="${not #lists.isEmpty(pager.items)}">
+            <table class="table table-striped bg-white align-middle" style="--bs-table-striped-bg: #eaf6ff;">
                 <thead>
                 <tr>
                     <th>Họ tên</th>
-                    <th>Email</th>
-                    <th>Số điện thoại</th>
-                    <th>Loại khách hàng</th>
-                    <th>Ngày đăng ký</th>
+                    <th>Liên hệ</th>
+                    <th>Hạng khách</th>
+                    <th class="text-center" title="Tổng số đơn đã đặt (mọi trạng thái)">Số lần đặt</th>
+                    <th class="text-center" title="Số lần đã ở xong (đã trả phòng) - dùng để xếp hạng">Đã ở</th>
+                    <th>Lần ở gần nhất</th>
                     <th>Trạng thái</th>
                     <th></th>
                 </tr>
                 </thead>
                 <tbody>
-                <tr th:each="c : ${customers}">
-                    <td th:text="${c.fullName}"></td>
-                    <td th:text="${c.email}"></td>
-                    <td th:text="${c.phoneNumber}"></td>
-                    <td>
-                        <form sec:authorize="hasRole('ADMIN')" th:action="@{/admin/customers/{id}/update-type(id=${c.id})}" method="post" class="d-flex gap-1">
-                            <select name="customerType" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
-                                <option th:each="ct : ${customerTypes}" th:value="${ct}" th:text="${ct.vietnameseLabel}"
-                                        th:selected="${ct == c.customerType}"></option>
-                            </select>
-                        </form>
-                        <span sec:authorize="!hasRole('ADMIN')" th:text="${c.customerType?.vietnameseLabel}"></span>
-                    </td>
-                    <td th:text="${#temporals.format(c.createdAt, 'dd/MM/yyyy')}"></td>
+                <tr th:each="r : ${pager.items}" th:with="c=${r.customer}, s=${r.summary}">
+                    <td><a class="fw-semibold text-decoration-none" th:href="@{/admin/customers/{id}(id=${c.id})}" th:text="${c.fullName}"></a>
+                        <div class="small text-muted" th:text="'Đăng ký ' + ${#temporals.format(c.createdAt, 'dd/MM/yyyy')}"></div></td>
+                    <td class="small"><div th:text="${c.email}"></div><div class="text-muted" th:text="${c.phoneNumber}"></div></td>
+                    <td><span class="badge" th:classappend="${c.customerType?.name() == 'VIP'} ? 'bg-warning text-dark' : (${c.customerType?.name() == 'REGULAR'} ? 'bg-info text-dark' : 'bg-light text-dark border')"
+                              th:text="${c.customerType?.vietnameseLabel}"></span></td>
+                    <td class="text-center fw-semibold" th:text="${s.bookings}"></td>
+                    <td class="text-center"><span class="fw-semibold" th:text="${s.stays}"></span>
+                        <div class="small text-muted" th:if="${s.upcoming > 0}" th:text="'+' + ${s.upcoming} + ' sắp tới'"></div>
+                        <div class="small text-danger" th:if="${s.cancelled > 0}" th:text="${s.cancelled} + ' hủy'"></div></td>
+                    <td class="small" th:text="${s.lastStay != null} ? ${#temporals.format(s.lastStay, 'dd/MM/yyyy')} : '-'"></td>
                     <td>
                         <span class="badge" th:classappend="${c.isLocked()} ? 'bg-danger' : 'bg-success'"
                               th:text="${c.isLocked()} ? 'Đã khóa' : 'Hoạt động'"></span>
                         <span th:if="${!c.isLocked() and c.temporarilyLocked}" class="badge bg-warning text-dark d-block mt-1"
                               th:text="'Tạm khóa (sai mật khẩu) đến ' + ${#temporals.format(c.loginLockedUntil, 'HH:mm')}"></span>
                     </td>
-                    <td class="text-end">
+                    <td class="text-end text-nowrap">
+                        <a class="btn btn-sm btn-outline-primary" th:href="@{/admin/customers/{id}(id=${c.id})}">Chi tiết</a>
                         <form sec:authorize="hasRole('ADMIN')" th:action="@{/admin/customers/{id}/toggle-lock(id=${c.id})}" method="post" class="d-inline"
                               onsubmit="return confirm('Xác nhận thay đổi trạng thái khóa của tài khoản này?')">
                             <button type="submit" class="btn btn-sm"
@@ -69,8 +86,9 @@
                 </tr>
                 </tbody>
             </table>
+            </div>
 
-            <div th:replace="~{fragments/pagination :: pagination('/admin/customers', ${currentPage}, ${totalPages}, ${pageNumbers}, null, null)}"></div>
+            <div th:replace="~{fragments/pagination :: pager(${pager})}"></div>
         </div>
     </div>
 </main>

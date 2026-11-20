@@ -410,7 +410,7 @@ class BookingServiceTest {
         assertEquals(RoomStatus.NOT_READY, room.getStatus());
     }
 
-    // ---------- Khach than thiet: >= 2 lan luu tru -> khach quen, >= 5 -> VIP, khong tu ha hang ----------
+    // ---------- Hang khach tu dong: >= 2 lan luu tru -> khach quen, >= 5 -> VIP ----------
 
     private Booking checkOutWithCompletedStays(long completedStays) {
         Booking b = bookingWithCheckIn(LocalDateTime.now().minusHours(1), BookingStatus.CHECKED_IN);
@@ -435,10 +435,11 @@ class BookingServiceTest {
     }
 
     @Test
-    void checkOut_neverDowngrades_adminSetVipKept() {
+    void checkOut_tierFollowsCompletedStays_manualVipCorrected() {
+        // Hang tu dong theo so lan luu tru: VIP chinh tay truoc day ma moi o 1 lan -> ve Khach lan dau
         customer.setCustomerType(CustomerType.VIP);
         checkOutWithCompletedStays(1);
-        assertEquals(CustomerType.VIP, customer.getCustomerType());
+        assertEquals(CustomerType.NEW, customer.getCustomerType());
     }
 
     @Test

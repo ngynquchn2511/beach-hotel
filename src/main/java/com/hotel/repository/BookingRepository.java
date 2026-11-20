@@ -47,6 +47,15 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     // So lan luu tru hoan tat cua khach (khach than thiet)
     long countByCustomerIdAndStatus(Long customerId, BookingStatus status);
 
+    // [ma khach, trang thai, so don] - thong ke danh sach khach hang va hang khach tu dong
+    @Query("select b.customer.id, b.status, count(b) from Booking b where b.customer is not null group by b.customer.id, b.status")
+    List<Object[]> countByCustomerAndStatus();
+
+    // [ma khach, ngay tra phong gan nhat] cua cac lan luu tru da hoan tat
+    @Query("select b.customer.id, max(b.checkOutDate) from Booking b where b.customer is not null "
+            + "and b.status = com.hotel.entity.BookingStatus.CHECKED_OUT group by b.customer.id")
+    List<Object[]> lastStayByCustomer();
+
     // Don da huy, duoc hoan coc (> 0) nhung nhan vien chua chuyen tra
     @Query("SELECT COUNT(b) FROM Booking b WHERE b.status = :status AND b.refundAmount > 0 AND b.refundedAt IS NULL")
     long countPendingRefunds(@Param("status") BookingStatus status);

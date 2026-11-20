@@ -41,7 +41,8 @@
                 <p class="mb-1">Họ tên: <span th:text="${booking.guestName != null} ? ${booking.guestName} : ${booking.customer.fullName}"></span></p>
                 <p class="mb-1" th:with="tel=${booking.guestPhone != null} ? ${booking.guestPhone} : ${booking.customer.phoneNumber}">Số điện thoại:
                     <a th:if="${tel != null}" th:href="'tel:' + ${tel}" th:text="${tel}"></a></p>
-                <p class="mb-1">Loại khách hàng: <span th:text="${booking.customer.customerType.vietnameseLabel}"></span></p>
+                <p class="mb-1">Loại khách hàng: <span th:text="${booking.customer.customerType?.vietnameseLabel}"></span>
+                    <a class="small ms-1" th:if="${booking.customer.role.name() == 'CUSTOMER'}" th:href="@{/admin/customers/{id}(id=${booking.customer.id})}">Lịch sử đặt phòng của khách <i class="bi bi-arrow-right"></i></a></p>
 
                 <h6 class="fw-bold mt-3">Thông tin phòng</h6>
                 <p class="mb-1" th:text="'Phòng ' + ${booking.room.roomNumber} + ' - ' + ${booking.room.roomType.name}"></p>
