@@ -37,19 +37,6 @@
                 .xb-alert.danger { background: #fdecee; border-color: #dc3545; }
                 .xb-alert.warning { background: #fff6e0; border-color: #f0ad00; }
                 .xb-alert.info { background: #eaf5fc; border-color: #3d9bd6; }
-                .xb-rooms { display: grid; grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); gap: .4rem; }
-                .xb-room { border-radius: .45rem; padding: .3rem .25rem; text-align: center; font-size: .72rem; line-height: 1.15; border: 1.5px solid transparent; position: relative; cursor: default; }
-                .xb-room .no { font-weight: 800; font-size: .9rem; }
-                .xb-room .tag { position: absolute; top: -6px; right: -4px; font-size: .62rem; padding: 0 .25rem; border-radius: .4rem; background: #13395e; color: #fff; }
-                .xb-room.free { background: #e3f6ea; border-color: #8fd3a8; }
-                .xb-room.booked { background: #eaf5fc; border-color: #89cff0; }
-                .xb-room.occupied { background: #13395e; color: #fff; }
-                .xb-room.dirty { background: #fff3cd; border-color: #ffcf73; }
-                .xb-room.maintenance { background: #f1f1f1; border-color: #adb5bd; color: #6c757d; text-decoration: line-through; }
-                .xb-room.overdue { background: #dc3545; color: #fff; }
-                .xb-tag { font-size: .62rem; padding: 0 .3rem; border-radius: .4rem; background: #13395e; color: #fff !important; }
-                .xb-legend > span { display: inline-flex; align-items: center; gap: .25rem; margin-right: .8rem; font-size: .75rem; }
-                .xb-legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
                 .xb-delta.up { color: #198754; } .xb-delta.down { color: #dc3545; }
             </style>
 
@@ -124,33 +111,129 @@
                     </div>
                 </div>
 
-                <!-- 3. So do phong -->
-                <div class="xb-card mb-3" id="so-do-phong">
+                <!-- 3. So do phong: chia theo tang, moi o 1 trang thai ro rang (bieu tuong + chu), thanh ti le + loc theo chu thich -->
+                <div class="xb-card mb-3" id="so-do-phong"
+                     th:with="BS=${T(com.hotel.service.ExecutiveBoardService)}, cnt=${BS.stateCounts(board.rooms)}, total=${#lists.size(board.rooms)},
+                              leaving=${#lists.size(board.rooms.?[leavingToday])}">
+                    <style>
+                        .rm-bar { display: flex; height: 14px; border-radius: 7px; overflow: hidden; background: #eef2f6; margin-bottom: .6rem; }
+                        .rm-bar > div { height: 100%; }
+                        .rm-chips { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .5rem; }
+                        .rm-chip { display: inline-flex; align-items: center; gap: .35rem; border: 1.5px solid #dfe6ee; background: #fff; border-radius: 999px;
+                            padding: .2rem .65rem; font-size: .8rem; cursor: pointer; color: #1f3b57; }
+                        .rm-chip b { font-size: .95rem; }
+                        .rm-chip .dot { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+                        .rm-chip.on { border-color: #13395e; box-shadow: 0 0 0 2px rgba(19,57,94,.15); }
+                        .rm-help { font-size: .75rem; color: #6c7a89; margin-bottom: .6rem; }
+                        .rm-floor { display: flex; gap: .6rem; align-items: stretch; padding: .45rem 0; border-top: 1px dashed #e3e9ef; }
+                        .rm-floor:first-of-type { border-top: 0; }
+                        .rm-floor-lbl { flex: 0 0 58px; display: flex; flex-direction: column; justify-content: center; align-items: center;
+                            background: #f4f7fa; border-radius: .5rem; font-weight: 800; color: #13395e; font-size: .9rem; line-height: 1.1; }
+                        .rm-floor-lbl small { font-weight: 500; font-size: .65rem; color: #6c7a89; }
+                        .rm-grid { flex: 1; display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: .4rem; }
+                        .rm { position: relative; display: block; border-radius: .55rem; padding: .35rem .45rem; border: 1.5px solid transparent;
+                            font-size: .72rem; line-height: 1.25; text-decoration: none; color: inherit; transition: opacity .15s, transform .1s; min-height: 58px; }
+                        a.rm:hover { transform: translateY(-2px); box-shadow: 0 3px 8px rgba(19,57,94,.18); }
+                        #so-do-phong .rm { text-decoration: none; }
+                        #so-do-phong .rm * { color: inherit; }
+                        .rm .top { display: flex; justify-content: space-between; align-items: center; }
+                        .rm .no { font-weight: 800; font-size: .95rem; }
+                        .rm .top i { font-size: .95rem; }
+                        .rm .st { font-weight: 700; }
+                        .rm .who { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: .9; }
+                        .rm .leave { position: absolute; top: -7px; right: 4px; font-size: .6rem; font-weight: 700; padding: 0 .35rem; border-radius: .4rem;
+                            background: #f08c00; color: #fff; }
+                        #so-do-phong .rm.free { background: #eaf8ef; border-color: #a6dcb8; color: #17663a; }
+                        #so-do-phong .rm.arriving { background: #e7f3fd; border: 1.5px dashed #3d9bd6; color: #0b5c94; }
+                        #so-do-phong .rm.occupied { background: #13395e; color: #fff; }
+                        #so-do-phong .rm.overdue { background: #dc3545; color: #fff; }
+                        #so-do-phong .rm.dirty { background: #fff4cf; border-color: #f2c24d; color: #7a5600; }
+                        #so-do-phong .rm.maintenance { background: repeating-linear-gradient(135deg, #f3f4f6, #f3f4f6 6px, #e6e8eb 6px, #e6e8eb 12px);
+                            border-color: #b8bec5; color: #5f6b76; }
+                        #so-do-phong.filtering .rm:not(.hit) { opacity: .18; }
+                    </style>
                     <div class="xb-title">
                         <span><i class="bi bi-grid-3x3-gap me-1"></i>Sơ đồ phòng
-                            <span class="text-muted fw-normal small" th:text="'· ' + ${#lists.size(board.rooms)} + ' phòng'"></span></span>
+                            <span class="text-muted fw-normal small" th:text="'· ' + ${total} + ' phòng'"></span></span>
                         <a th:href="@{/admin/room-calendar}" th:if="${boardOperations}">Lịch phòng <i class="bi bi-arrow-right"></i></a>
                     </div>
-                    <div class="xb-legend mb-2">
-                        <span><i style="background:#e3f6ea;border:1px solid #8fd3a8"></i>Trống <b th:text="${board.roomCounts[T(com.hotel.entity.RoomStatus).AVAILABLE] + board.roomCounts[T(com.hotel.entity.RoomStatus).BOOKED]}"></b></span>
-                        <span><i style="background:#13395e"></i>Có khách <b th:text="${board.roomCounts[T(com.hotel.entity.RoomStatus).OCCUPIED]}"></b></span>
-                        <span><i style="background:#fff3cd;border:1px solid #ffcf73"></i>Chờ dọn <b th:text="${board.roomCounts[T(com.hotel.entity.RoomStatus).NOT_READY]}"></b></span>
-                        <span><i style="background:#f1f1f1;border:1px solid #adb5bd"></i>Bảo trì <b th:text="${board.roomCounts[T(com.hotel.entity.RoomStatus).MAINTENANCE]}"></b></span>
-                        <span><i style="background:#dc3545"></i>Quá hạn trả</span>
-                        <span><span class="xb-tag">Đến</span> / <span class="xb-tag">Đi</span> hôm nay</span>
+
+                    <!-- Thanh ti le trang thai -->
+                    <div class="rm-bar" th:if="${total > 0}">
+                        <div th:each="e : ${cnt}" th:if="${e.value > 0}" th:style="'width:' + ${e.value * 100.0 / total} + '%;background:' + ${BS.stateColor(e.key)}"
+                             th:title="${BS.stateLabel(e.key)} + ': ' + ${e.value} + ' phòng'"></div>
                     </div>
-                    <div class="xb-rooms">
-                        <div th:each="t : ${board.rooms}" class="xb-room" th:classappend="${t.css}"
-                             th:title="${t.room.roomNumber} + ' · ' + ${t.room.roomType.name} + ' · ' + ${t.status.vietnameseLabel}
-                                    + (${t.guest != null} ? ' · ' + ${t.guest.guestName != null ? t.guest.guestName : ''} + ' (' + ${#temporals.format(t.guest.checkInDate, 'dd/MM')} + ' - ' + ${#temporals.format(t.guest.checkOutDate, 'dd/MM')} + ')' : '')">
-                            <span class="tag" th:if="${t.arrivingToday}">Đến</span>
-                            <span class="tag" th:if="${t.leavingToday}">Đi</span>
-                            <div class="no" th:text="${t.room.roomNumber}"></div>
-                            <div class="text-truncate" th:if="${t.guest != null and !t.arrivingToday}" th:text="'trả ' + ${#temporals.format(t.guest.checkOutDate, 'dd/MM')}"></div>
-                            <div class="text-truncate" th:if="${t.arrivingToday}" th:text="${t.guest.guestName}"></div>
-                            <div class="text-truncate" th:if="${t.guest == null}" th:text="${t.status.name() == 'NOT_READY'} ? 'chờ dọn' : (${t.status.name() == 'MAINTENANCE'} ? 'bảo trì' : 'trống')"></div>
+
+                    <!-- Chu thich = nut loc -->
+                    <div class="rm-chips">
+                        <button type="button" class="rm-chip on" data-rm-filter="">Tất cả <b th:text="${total}"></b></button>
+                        <button type="button" th:each="e : ${cnt}" class="rm-chip" th:attr="data-rm-filter=${e.key}" th:disabled="${e.value == 0}">
+                            <span class="dot" th:style="'background:' + ${BS.stateColor(e.key)}"></span>
+                            <span th:text="${BS.stateLabel(e.key)}"></span> <b th:text="${e.value}"></b>
+                        </button>
+                        <button type="button" class="rm-chip" data-rm-filter="leave" th:disabled="${leaving == 0}">
+                            <span class="dot" style="background:#f08c00"></span>Trả phòng hôm nay <b th:text="${leaving}"></b>
+                        </button>
+                    </div>
+                    <div class="rm-help"><i class="bi bi-info-circle me-1"></i>Bấm vào một ô chú thích để chỉ hiện các phòng đó<span th:if="${boardOperations}">; bấm vào phòng có khách để mở đơn đặt phòng</span>.</div>
+
+                    <!-- Tung tang -->
+                    <div th:each="f : ${BS.byFloor(board.rooms)}" class="rm-floor">
+                        <div class="rm-floor-lbl">
+                            <span th:text="${f.key.matches('\d+')} ? 'Tầng ' + ${f.key} : 'Khu ' + ${f.key}"></span>
+                            <small th:text="${#lists.size(f.value)} + ' phòng'"></small>
+                        </div>
+                        <div class="rm-grid">
+                            <th:block th:each="t : ${f.value}" th:with="st=${t.state}, link=${boardOperations and t.guest != null}">
+                                <a class="rm" th:classappend="${st} + (${t.leavingToday} ? ' leave-today' : '')"
+                                   th:attr="data-state=${st}, data-leave=${t.leavingToday}"
+                                   th:href="${link} ? @{/admin/bookings/{id}(id=${t.guest.id})} : null"
+                                   th:title="'Phòng ' + ${t.room.roomNumber} + ' · ' + ${t.room.roomType.name} + ' · ' + ${BS.stateLabel(st)}
+                                        + (${t.guest != null} ? ' · Khách: ' + ${t.guest.guestName != null ? t.guest.guestName : ''} + ' (' + ${#temporals.format(t.guest.checkInDate, 'dd/MM')} + ' → ' + ${#temporals.format(t.guest.checkOutDate, 'dd/MM')} + ')' : '')">
+                                    <span class="leave" th:if="${t.leavingToday}">Trả hôm nay</span>
+                                    <div class="top">
+                                        <span class="no" th:text="${t.room.roomNumber}"></span>
+                                        <i class="bi" th:classappend="${BS.stateIcon(st)}"></i>
+                                    </div>
+                                    <th:block th:switch="${st}">
+                                        <th:block th:case="'overdue'">
+                                            <div class="st" th:text="'Quá hạn ' + ${t.overdueDays} + ' ngày'"></div>
+                                            <div class="who" th:text="${t.shortGuest} ?: ('trả ' + ${#temporals.format(t.guest.checkOutDate, 'dd/MM')})"></div>
+                                        </th:block>
+                                        <th:block th:case="'occupied'">
+                                            <div class="st" th:text="${t.guest != null} ? 'Ở đến ' + ${#temporals.format(t.guest.checkOutDate, 'dd/MM')} : 'Có khách'"></div>
+                                            <div class="who" th:if="${t.shortGuest != null}" th:text="${t.shortGuest}"></div>
+                                        </th:block>
+                                        <th:block th:case="'arriving'">
+                                            <div class="st">Đến hôm nay</div>
+                                            <div class="who" th:if="${t.shortGuest != null}" th:text="${t.shortGuest}"></div>
+                                        </th:block>
+                                        <div th:case="'dirty'" class="st">Chờ dọn</div>
+                                        <div th:case="'maintenance'" class="st">Bảo trì</div>
+                                        <div th:case="*" class="st">Trống</div>
+                                    </th:block>
+                                </a>
+                            </th:block>
                         </div>
                     </div>
+                    <script>
+                        (function () {
+                            var box = document.getElementById('so-do-phong');
+                            var chips = box.querySelectorAll('[data-rm-filter]');
+                            chips.forEach(function (c) {
+                                c.addEventListener('click', function () {
+                                    var f = c.getAttribute('data-rm-filter');
+                                    if (c.classList.contains('on') && f) { f = ''; }
+                                    chips.forEach(function (x) { x.classList.toggle('on', x.getAttribute('data-rm-filter') === f); });
+                                    box.classList.toggle('filtering', f !== '');
+                                    box.querySelectorAll('.rm').forEach(function (r) {
+                                        var hit = f === 'leave' ? r.getAttribute('data-leave') === 'true' : r.getAttribute('data-state') === f;
+                                        r.classList.toggle('hit', hit);
+                                    });
+                                });
+                            });
+                        })();
+                    </script>
                 </div>
 
                 <div class="row g-3 mb-3">

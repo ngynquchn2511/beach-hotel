@@ -52,6 +52,102 @@ public class ExecutiveBoardService {
                 default -> "free";
             };
         }
+
+        // Trang thai hien thi (moi phong dung 1 nhom): quá hạn > có khách > khách đến hôm nay > chờ dọn > bảo trì > trống
+        public String getState() {
+            if (overdue) {
+                return "overdue";
+            }
+            if (status == RoomStatus.MAINTENANCE) {
+                return "maintenance";
+            }
+            if (guest != null && !arrivingToday) {
+                return "occupied";
+            }
+            if (status == RoomStatus.OCCUPIED) {
+                return "occupied";
+            }
+            if (arrivingToday) {
+                return "arriving";
+            }
+            if (status == RoomStatus.NOT_READY) {
+                return "dirty";
+            }
+            return "free";
+        }
+
+        // So ngay qua han tra phong (0 neu khong qua han)
+        public long getOverdueDays() {
+            return overdue ? java.time.temporal.ChronoUnit.DAYS.between(guest.getCheckOutDate(), LocalDate.now()) : 0;
+        }
+
+        // Ten ngan cua khach: "Nguyễn Văn An" -> "Văn An" (vua o)
+        public String getShortGuest() {
+            if (guest == null || guest.getGuestName() == null || guest.getGuestName().isBlank()) {
+                return null;
+            }
+            String[] p = guest.getGuestName().trim().split("\\s+");
+            return p.length <= 2 ? String.join(" ", p) : p[p.length - 2] + " " + p[p.length - 1];
+        }
+
+        // Tang: "305" -> "3", "1201" -> "12", "B01" -> "B"
+        public String getFloor() {
+            String n = room.getRoomNumber() == null ? "" : room.getRoomNumber().trim();
+            if (n.matches("\\d{3,}")) {
+                return n.substring(0, n.length() - 2);
+            }
+            return n.isEmpty() ? "?" : n.substring(0, 1).toUpperCase();
+        }
+    }
+
+    // Nhom o phong theo tang (giu thu tu)
+    public static Map<String, List<RoomTile>> byFloor(List<RoomTile> rooms) {
+        Map<String, List<RoomTile>> out = new java.util.LinkedHashMap<>();
+        rooms.forEach(t -> out.computeIfAbsent(t.getFloor(), k -> new java.util.ArrayList<>()).add(t));
+        return out;
+    }
+
+    public static String stateLabel(String state) {
+        return switch (state) {
+            case "free" -> "Trống";
+            case "arriving" -> "Khách đến hôm nay";
+            case "occupied" -> "Có khách";
+            case "overdue" -> "Quá hạn trả";
+            case "dirty" -> "Chờ dọn";
+            case "maintenance" -> "Bảo trì";
+            default -> state;
+        };
+    }
+
+    public static String stateColor(String state) {
+        return switch (state) {
+            case "free" -> "#5cc283";
+            case "arriving" -> "#3d9bd6";
+            case "occupied" -> "#13395e";
+            case "overdue" -> "#dc3545";
+            case "dirty" -> "#f2c24d";
+            default -> "#adb5bd";
+        };
+    }
+
+    public static String stateIcon(String state) {
+        return switch (state) {
+            case "free" -> "bi-check-circle";
+            case "arriving" -> "bi-box-arrow-in-right";
+            case "occupied" -> "bi-person-fill";
+            case "overdue" -> "bi-exclamation-triangle-fill";
+            case "dirty" -> "bi-bucket";
+            default -> "bi-tools";
+        };
+    }
+
+    // Dem so phong theo trang thai hien thi (dung cho chu thich + thanh ti le)
+    public static Map<String, Long> stateCounts(List<RoomTile> rooms) {
+        Map<String, Long> out = new java.util.LinkedHashMap<>();
+        for (String s : List.of("free", "arriving", "occupied", "overdue", "dirty", "maintenance")) {
+            out.put(s, rooms.stream().filter(t -> t.getState().equals(s)).count());
+        }
+        return out;
     }
 
     public record Today(double occupancy, long soldRooms, long sellableRooms, int arrivals, long arrivalsDone,

@@ -55,6 +55,8 @@ class ExecutiveBoardIT extends ItFixtures {
         assertThat(board.rooms()).anySatisfy(t -> {
             assertThat(t.room().getId()).isEqualTo(overdueRoom.getId());
             assertThat(t.getCss()).isEqualTo("overdue");
+            assertThat(t.getState()).isEqualTo("overdue");
+            assertThat(t.getOverdueDays()).isPositive();
             assertThat(t.guest().getId()).isEqualTo(overdue.getId());
         });
         assertThat(board.forecast().days()).hasSize(ExecutiveBoardService.FORECAST_DAYS);
@@ -72,6 +74,9 @@ class ExecutiveBoardIT extends ItFixtures {
                 .andExpect(content().string(containsString("Bảng điều hành")))
                 .andExpect(content().string(containsString("Khách quá hạn trả phòng chưa check-out")))
                 .andExpect(content().string(containsString("so-do-phong")))
+                .andExpect(content().string(containsString("Quá hạn trả")))
+                .andExpect(content().string(containsString("Trả phòng hôm nay")))
+                .andExpect(content().string(containsString("data-rm-filter=\"overdue\"")))
                 .andExpect(content().string(containsString("Công suất 14 ngày tới")))
                 .andExpect(content().string(containsString("Phòng ồn quá IT")))
                 .andExpect(content().string(containsString("lai-lo-thang")))
