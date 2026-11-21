@@ -36,7 +36,7 @@
     </div>
 
     <th:block th:if="${weatherDays != null and !#lists.isEmpty(weatherDays)}">
-        <div th:replace="~{fragments/weather :: strip(${weatherDays}, #{weather.title3})}"></div>
+        <div th:replace="~{fragments/weather :: strip(${weatherDays}, #{weather.title})}"></div>
         <div th:if="${weatherDays[0].rough}" class="alert alert-warning small" id="weather-rough"><i class="bi bi-wind me-1"></i>
             <span th:text="#{weather.roughToday}">Hôm nay gió mạnh / có giông</span></div>
     </th:block>

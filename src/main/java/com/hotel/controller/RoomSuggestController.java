@@ -54,7 +54,7 @@ public class RoomSuggestController {
         model.addAttribute("budgets", BUDGETS);
         model.addAttribute("loggedInCustomer", customer);
         if (weatherService != null) {
-            model.addAttribute("weatherDays", weatherService.next(3));
+            model.addAttribute("weatherDays", weatherService.next(7));
         }
 
         if (guests == null) {

@@ -14,8 +14,12 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -29,7 +33,8 @@ public class WeatherService {
     static final Duration STALE_OK = Duration.ofHours(6);
     static final Duration RETRY_AFTER_ERROR = Duration.ofMinutes(5);
     static final String URL = "https://api.open-meteo.com/v1/forecast?latitude=%s&longitude=%s"
-            + "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max"
+            + "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max,uv_index_max,sunrise,sunset"
+            + "&hourly=temperature_2m,weather_code,precipitation_probability,wind_speed_10m"
             + "&timezone=Asia%%2FBangkok&forecast_days=16";
 
     private volatile boolean enabled;
@@ -128,16 +133,23 @@ public class WeatherService {
 
     List<Day> parse(String json) {
         try {
-            JsonNode daily = mapper.readTree(json).path("daily");
+            JsonNode root = mapper.readTree(json);
+            JsonNode daily = root.path("daily");
             JsonNode time = daily.path("time");
+            Map<LocalDate, List<Hour>> hoursByDay = parseHours(root.path("hourly"));
             List<Day> out = new ArrayList<>();
             for (int i = 0; i < time.size(); i++) {
-                out.add(new Day(LocalDate.parse(time.get(i).asText()), daily.path("weather_code").path(i).asInt(-1),
+                LocalDate date = LocalDate.parse(time.get(i).asText());
+                JsonNode uv = daily.path("uv_index_max").path(i);
+                out.add(new Day(date, daily.path("weather_code").path(i).asInt(-1),
                         (int) Math.round(daily.path("temperature_2m_max").path(i).asDouble()),
                         (int) Math.round(daily.path("temperature_2m_min").path(i).asDouble()),
                         daily.path("precipitation_probability_max").path(i).isNull() ? null
                                 : daily.path("precipitation_probability_max").path(i).asInt(),
-                        (int) Math.round(daily.path("wind_speed_10m_max").path(i).asDouble())));
+                        (int) Math.round(daily.path("wind_speed_10m_max").path(i).asDouble()),
+                        uv.isMissingNode() || uv.isNull() ? null : (int) Math.round(uv.asDouble()),
+                        timeOf(daily.path("sunrise").path(i)), timeOf(daily.path("sunset").path(i)),
+                        hoursByDay.getOrDefault(date, List.of())));
             }
             if (out.isEmpty()) {
                 throw new IllegalStateException("Du lieu thoi tiet rong");
@@ -146,6 +158,28 @@ public class WeatherService {
         } catch (com.fasterxml.jackson.core.JsonProcessingException ex) {
             throw new IllegalStateException(ex);
         }
+    }
+
+    private static LocalTime timeOf(JsonNode n) {
+        if (n.isMissingNode() || n.isNull() || n.asText().length() < 16) {
+            return null;
+        }
+        return LocalDateTime.parse(n.asText()).toLocalTime();
+    }
+
+    private static Map<LocalDate, List<Hour>> parseHours(JsonNode hourly) {
+        Map<LocalDate, List<Hour>> out = new HashMap<>();
+        JsonNode time = hourly.path("time");
+        for (int i = 0; i < time.size(); i++) {
+            LocalDateTime t = LocalDateTime.parse(time.get(i).asText());
+            JsonNode rain = hourly.path("precipitation_probability").path(i);
+            out.computeIfAbsent(t.toLocalDate(), k -> new ArrayList<>()).add(new Hour(t.getHour(),
+                    hourly.path("weather_code").path(i).asInt(-1),
+                    (int) Math.round(hourly.path("temperature_2m").path(i).asDouble()),
+                    rain.isMissingNode() || rain.isNull() ? null : rain.asInt(),
+                    (int) Math.round(hourly.path("wind_speed_10m").path(i).asDouble())));
+        }
+        return out;
     }
 
     // Ma thoi tiet WMO -> nhom (dung cho chu song ngu weather.kind.* va bieu tuong)
@@ -175,9 +209,122 @@ public class WeatherService {
         }
     }
 
-    public record Day(LocalDate date, int code, int maxTemp, int minTemp, Integer rainChance, int windKmh) {
+    // Mot gio trong ngay (du bao theo gio)
+    public record Hour(int hour, int code, int temp, Integer rainChance, int windKmh) {
         public Kind getKind() {
             return Kind.of(code);
+        }
+
+        public String getLabel() {
+            return String.format("%02d:00", hour);
+        }
+
+        // Diem "dep troi" de chon gio dep nhat: nang > may > mua, it mua, 24-29 do, gio nhe
+        int score() {
+            int s = switch (getKind()) {
+                case CLEAR -> 30;
+                case PARTLY -> 28;
+                case CLOUDY -> 18;
+                case FOG -> 8;
+                case DRIZZLE -> 5;
+                case RAIN -> 0;
+                case STORM -> -20;
+                case UNKNOWN -> 10;
+            };
+            s -= (rainChance == null ? 0 : rainChance) * 3 / 10;
+            s -= Math.max(0, Math.max(24 - temp, temp - 29)) * 3 / 2;
+            s -= Math.max(0, windKmh - 25);
+            return s;
+        }
+    }
+
+    // Goi y nen lam gi: chu song ngu weather.tip.<key>, arg = tham so (vd gio hoang hon)
+    public record Tip(String key, String icon, String arg) {
+    }
+
+    public record Day(LocalDate date, int code, int maxTemp, int minTemp, Integer rainChance, int windKmh,
+                      Integer uvMax, LocalTime sunrise, LocalTime sunset, List<Hour> hours) {
+
+        public Day(LocalDate date, int code, int maxTemp, int minTemp, Integer rainChance, int windKmh) {
+            this(date, code, maxTemp, minTemp, rainChance, windKmh, null, null, null, List.of());
+        }
+
+        public Kind getKind() {
+            return Kind.of(code);
+        }
+
+        public boolean isToday() {
+            return date.equals(LocalDate.now());
+        }
+
+        // Cac gio ban ngay (6h - 21h); hom nay chi tinh tu gio hien tai tro di
+        public List<Hour> getDayHours() {
+            int from = Math.max(6, isToday() ? LocalTime.now().getHour() : 0);
+            return hours.stream().filter(x -> x.hour() >= from && x.hour() <= 21).toList();
+        }
+
+        // Moc 3 tieng mot (6, 9, 12, 15, 18, 21) cho bang theo gio
+        public List<Hour> getHourSteps() {
+            return getDayHours().stream().filter(x -> x.hour() % 3 == 0).toList();
+        }
+
+        // Gio dep troi nhat luc con sang (sau binh minh, truoc hoang hon; mac dinh 7h - 17h); null neu khong co du lieu / da toi
+        public Hour getBestHour() {
+            int first = sunrise == null ? 7 : sunrise.getHour() + 1;
+            int last = sunset == null ? 17 : sunset.getHour() - 1;
+            Hour best = null;
+            for (Hour h : getDayHours()) {
+                if (h.hour() >= first && h.hour() <= last && (best == null || h.score() > best.score())) {
+                    best = h;
+                }
+            }
+            return best;
+        }
+
+        public String getSunsetLabel() {
+            return sunset == null ? null : String.format("%02d:%02d", sunset.getHour(), sunset.getMinute());
+        }
+
+        public String getSunriseLabel() {
+            return sunrise == null ? null : String.format("%02d:%02d", sunrise.getHour(), sunrise.getMinute());
+        }
+
+        // Goi y nen lam gi hop thoi tiet ngay nay (toi da 4)
+        public List<Tip> getTips() {
+            List<Tip> tips = new ArrayList<>();
+            Kind k = getKind();
+            boolean sunny = k == Kind.CLEAR || k == Kind.PARTLY;
+            boolean wet = k == Kind.RAIN || k == Kind.DRIZZLE || (rainChance != null && rainChance >= 60);
+            if (isRough()) {
+                tips.add(new Tip("noSea", "bi-exclamation-triangle", null));
+                tips.add(new Tip("stayIn", "bi-flower1", null));
+            } else if (wet) {
+                tips.add(new Tip("rain", "bi-umbrella", null));
+            } else if (isBeachDay()) {
+                tips.add(new Tip("beach", "bi-water", null));
+                tips.add(new Tip("cruise", "bi-tsunami", null));
+            } else if (maxTemp >= 18) {
+                tips.add(new Tip("walk", "bi-signpost-split", null));
+                tips.add(new Tip("cruise", "bi-tsunami", null));
+            }
+            if (k == Kind.FOG) {
+                tips.add(new Tip("fog", "bi-cloud-fog2", null));
+            }
+            if (maxTemp >= 33) {
+                tips.add(new Tip("hot", "bi-thermometer-sun", null));
+            } else if (uvMax != null && uvMax >= 8 && sunny) {
+                tips.add(new Tip("uv", "bi-brightness-high", null));
+            }
+            if (minTemp <= 17) {
+                tips.add(new Tip("cold", "bi-snow", null));
+            }
+            if (sunny && !isRough() && sunset != null) {
+                tips.add(new Tip("sunset", "bi-sunset", getSunsetLabel()));
+            }
+            if (tips.isEmpty()) {
+                tips.add(new Tip("general", "bi-compass", null));
+            }
+            return tips.stream().limit(4).toList();
         }
 
         // Gio manh (>= 40 km/h) hoac giong bao -> nhac khach / le tan (tour bien, du thuyen co the hoan)

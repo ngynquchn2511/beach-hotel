@@ -1,28 +1,107 @@
-<!-- Du bao thoi tiet Ha Long (Open-Meteo): dai ngay ngang. days = List<WeatherService.Day>, title = tieu de -->
+<!-- Du bao thoi tiet Ha Long (Open-Meteo): dai ngay ngang, bam vao 1 ngay -> chi tiet: gio dep troi nhat, theo gio, nen lam gi.
+     days = List<WeatherService.Day>, title = tieu de -->
 <div th:fragment="strip(days, title)" th:if="${days != null and !#lists.isEmpty(days)}" class="weather-strip bg-white p-3 rounded shadow-sm mb-4"
      xmlns:th="http://www.thymeleaf.org">
     <style>
-        .weather-strip .wx { display: flex; gap: 8px; overflow-x: auto; }
-        .weather-strip .wx-day { flex: 1 0 84px; text-align: center; border-radius: 10px; padding: 8px 4px; background: #f4f8fb; }
+        .weather-strip .wx { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+        .weather-strip .wx-day { flex: 1 0 92px; text-align: center; border-radius: 10px; padding: 8px 4px; background: #f4f8fb;
+            border: 2px solid transparent; cursor: pointer; font: inherit; color: inherit; transition: transform .1s, border-color .1s; }
+        .weather-strip .wx-day:hover { transform: translateY(-2px); border-color: #b9d4ee; }
+        .weather-strip .wx-day.active { border-color: #2a78d6; background: #e8f1fb; }
         .weather-strip .wx-day.rough { background: #fff1e6; }
+        .weather-strip .wx-day.rough.active { border-color: #c2410c; }
         .weather-strip .wx-day i { font-size: 1.5rem; display: block; color: #2a78d6; }
         .weather-strip .wx-day.rough i { color: #c2410c; }
         .weather-strip .wx-t { font-weight: 800; }
         .weather-strip .wx-s { font-size: .75rem; color: #5b6b7b; }
+        .weather-strip .wx-dow { font-size: .8rem; font-weight: 700; color: #1f3b57; }
+        .weather-strip .wx-detail { margin-top: 12px; border-top: 1px dashed #d5e1ec; padding-top: 12px; }
+        .weather-strip .wx-best { background: linear-gradient(90deg, #fff7d6, #e8f6ff); border-radius: 10px; padding: 10px 12px; }
+        .weather-strip .wx-best i.big { font-size: 1.8rem; color: #e8a400; }
+        .weather-strip .wx-hours { display: flex; gap: 6px; overflow-x: auto; }
+        .weather-strip .wx-hour { flex: 1 0 62px; text-align: center; background: #f7f9fb; border-radius: 8px; padding: 6px 2px; font-size: .8rem; }
+        .weather-strip .wx-hour.best { background: #fff3c4; font-weight: 700; }
+        .weather-strip .wx-hour i { font-size: 1.1rem; color: #2a78d6; display: block; }
+        .weather-strip .wx-tips li { margin-bottom: 4px; }
+        .weather-strip .wx-tips i { color: #2a78d6; margin-right: 6px; }
     </style>
     <div class="d-flex justify-content-between align-items-center mb-2">
         <div class="fw-bold"><i class="bi bi-cloud-sun me-1"></i><span th:text="${title}"></span></div>
         <div class="small text-muted" th:text="#{weather.source}">Open-Meteo</div>
     </div>
+    <div class="small text-muted mb-2" th:text="#{weather.clickHint}">Bấm vào một ngày để xem chi tiết</div>
     <div class="wx">
-        <div th:each="d : ${days}" class="wx-day" th:classappend="${d.rough} ? 'rough'"
-             th:title="#{'weather.kind.' + ${d.kind}} + (${d.rough} ? ' - ' + #{weather.rough(${d.windKmh})} : '')">
+        <button type="button" th:each="d, st : ${days}" class="wx-day" th:classappend="${d.rough} ? 'rough'" th:attr="data-wx=${st.index}"
+                th:title="#{'weather.kind.' + ${d.kind}} + (${d.rough} ? ' - ' + #{weather.rough(${d.windKmh})} : '')">
+            <div class="wx-dow" th:text="${d.today} ? #{weather.today} : #{'weather.dow.' + ${d.date.dayOfWeek}}">Thứ 2</div>
             <div class="wx-s fw-semibold" th:text="${#temporals.format(d.date, 'dd/MM')}"></div>
             <i class="bi" th:classappend="${d.kind.icon}"></i>
             <div class="wx-t" th:text="${d.maxTemp} + '° / ' + ${d.minTemp} + '°'"></div>
             <div class="wx-s" th:text="#{'weather.kind.' + ${d.kind}}"></div>
             <div class="wx-s" th:if="${d.rainChance != null}"><i class="bi bi-droplet" style="font-size:.75rem;display:inline;color:inherit"></i>
                 <span th:text="${d.rainChance} + '%'"></span></div>
-        </div>
+        </button>
     </div>
+
+    <div th:each="d, st : ${days}" class="wx-detail" th:attr="data-wx-detail=${st.index}" hidden>
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+            <div class="fw-bold">
+                <span th:text="(${d.today} ? #{weather.today} : #{'weather.dow.' + ${d.date.dayOfWeek}}) + ', ' + ${#temporals.format(d.date, 'dd/MM')}
+                    + ' — ' + #{'weather.kind.' + ${d.kind}} + ', ' + ${d.minTemp} + '° – ' + ${d.maxTemp} + '°C'"></span>
+            </div>
+            <div class="small text-muted">
+                <span th:if="${d.rainChance != null}"><i class="bi bi-droplet"></i> <span th:text="#{weather.rainChance(${d.rainChance})}"></span> · </span>
+                <span><i class="bi bi-wind"></i> <span th:text="${d.windKmh} + ' km/h'"></span></span>
+                <span th:if="${d.sunriseLabel != null}"> · <i class="bi bi-sunrise"></i> <span th:text="${d.sunriseLabel}"></span></span>
+                <span th:if="${d.sunsetLabel != null}"> · <i class="bi bi-sunset"></i> <span th:text="${d.sunsetLabel}"></span></span>
+            </div>
+        </div>
+
+        <div th:with="b=${d.bestHour}">
+            <div th:if="${b != null}" class="wx-best d-flex align-items-center gap-3 mb-3">
+                <i class="bi big" th:classappend="${b.kind.icon}"></i>
+                <div>
+                    <div class="fw-bold" th:text="#{weather.bestHour(${b.label})}">Đẹp trời nhất lúc 09:00</div>
+                    <div class="small">
+                        <span th:text="#{'weather.kind.' + ${b.kind}} + ', ' + ${b.temp} + '°C'"></span>
+                        <span th:if="${b.rainChance != null}" th:text="' · ' + #{weather.rainChance(${b.rainChance})}"></span>
+                        <span th:text="' · ' + #{weather.wind(${b.windKmh})}"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div th:if="${!#lists.isEmpty(d.hourSteps)}" class="wx-hours mb-3">
+                <div th:each="h : ${d.hourSteps}" class="wx-hour" th:classappend="${b != null and h.hour == b.hour} ? 'best'"
+                     th:title="#{'weather.kind.' + ${h.kind}}">
+                    <div th:text="${h.label}"></div>
+                    <i class="bi" th:classappend="${h.kind.icon}"></i>
+                    <div th:text="${h.temp} + '°'"></div>
+                    <div class="text-muted" th:if="${h.rainChance != null}" th:text="${h.rainChance} + '%'"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="fw-semibold mb-1"><i class="bi bi-lightbulb me-1"></i><span th:text="#{weather.whatToDo}">Thời tiết này nên làm gì?</span></div>
+        <ul class="list-unstyled wx-tips mb-0 small">
+            <li th:each="t : ${d.tips}"><i class="bi" th:classappend="${t.icon}"></i><span th:text="#{'weather.tip.' + ${t.key}(${t.arg})}"></span></li>
+        </ul>
+    </div>
+
+    <script>
+        (function () {
+            var box = document.currentScript.closest('.weather-strip');
+            box.querySelectorAll('[data-wx]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var i = btn.getAttribute('data-wx');
+                    var open = btn.classList.contains('active');
+                    box.querySelectorAll('[data-wx]').forEach(function (b) { b.classList.remove('active'); });
+                    box.querySelectorAll('[data-wx-detail]').forEach(function (p) { p.hidden = true; });
+                    if (!open) {
+                        btn.classList.add('active');
+                        box.querySelector('[data-wx-detail="' + i + '"]').hidden = false;
+                    }
+                });
+            });
+        })();
+    </script>
 </div>
