@@ -64,7 +64,7 @@
         <form th:action="@{/customer/rooms}" method="get" class="row g-3 align-items-end">
             <div class="col-md-3">
                 <label class="form-label" th:text="#{search.checkIn}">Ngày nhận phòng</label>
-                <input type="date" name="checkIn" class="form-control" th:value="${checkIn}" th:min="${today}" required>
+                <input type="date" name="checkIn" class="form-control" th:value="${checkIn}" th:min="${today}" th:max="${bookingMaxDate}" required>
             </div>
             <div class="col-md-3">
                 <label class="form-label" th:text="#{search.checkOut}">Ngày trả phòng</label>

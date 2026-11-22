@@ -141,7 +141,7 @@ public class AdminPricingController {
         try {
             stayRuleService.updateMaxAdvanceDays(maxAdvanceDays);
             redirectAttributes.addFlashAttribute("successMessage", maxAdvanceDays == null || maxAdvanceDays == 0
-                    ? "Đã bỏ giới hạn đặt trước" : "Khách chỉ đặt được trước tối đa " + maxAdvanceDays + " ngày");
+                    ? "Đã về mặc định: nhận đặt trước tối đa 6 tháng" : "Khách chỉ đặt được trước tối đa " + maxAdvanceDays + " ngày");
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }

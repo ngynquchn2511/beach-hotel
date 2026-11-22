@@ -21,7 +21,10 @@ import java.util.Optional;
 public class StayRuleService {
 
     public static final int MAX_MIN_NIGHTS = 30;
-    public static final int MAX_ADVANCE_DAYS = 730;
+    // Tran cung: chi nhan dat truoc toi da 6 thang (moi kenh: khach tu dat, dat doan, doi ngay, dat tai quay).
+    // Admin co the dat ngan hon (so ngay) o trang Gia; khong dat dai hon duoc
+    public static final int MAX_ADVANCE_MONTHS = 6;
+    public static final int MAX_ADVANCE_DAYS = 184;
     private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private final StayRuleRepository repository;
@@ -42,9 +45,9 @@ public class StayRuleService {
         if (checkIn == null || checkOut == null || !checkOut.isAfter(checkIn)) {
             return Optional.empty();
         }
-        int advance = maxAdvanceDays();
-        if (advance > 0 && checkIn.isAfter(today.plusDays(advance))) {
-            return Optional.of(BusinessException.of("err.rule.advance", advance, today.plusDays(advance).format(DAY)));
+        Optional<BusinessException> tooFar = advanceViolation(checkIn, today);
+        if (tooFar.isPresent()) {
+            return tooFar;
         }
         LocalDate lastNight = checkOut.minusDays(1);
         List<StayRule> rules = repository.findOverlapping(checkIn, lastNight).stream().filter(r -> r.appliesTo(type)).toList();
@@ -64,6 +67,36 @@ public class StayRuleService {
             return Optional.of(BusinessException.rendered(t -> t.t("err.rule.minNights", r.getLocalizedName(), r.getMinNights())));
         }
         return Optional.empty();
+    }
+
+    // Ngay nhan phong muon nhat con nhan dat: min(hom nay + 6 thang, hom nay + so ngay admin dat)
+    public LocalDate latestCheckIn(LocalDate today) {
+        LocalDate cap = today.plusMonths(MAX_ADVANCE_MONTHS);
+        int advance = maxAdvanceDays();
+        return advance > 0 && today.plusDays(advance).isBefore(cap) ? today.plusDays(advance) : cap;
+    }
+
+    public LocalDate latestCheckIn() {
+        return latestCheckIn(LocalDate.now());
+    }
+
+    private Optional<BusinessException> advanceViolation(LocalDate checkIn, LocalDate today) {
+        LocalDate latest = latestCheckIn(today);
+        if (checkIn == null || !checkIn.isAfter(latest)) {
+            return Optional.empty();
+        }
+        if (latest.equals(today.plusMonths(MAX_ADVANCE_MONTHS))) {
+            return Optional.of(BusinessException.of("err.rule.advanceMonths", MAX_ADVANCE_MONTHS, latest.format(DAY)));
+        }
+        return Optional.of(BusinessException.of("err.rule.advance", maxAdvanceDays(), latest.format(DAY)));
+    }
+
+    // Chi kiem gioi han dat truoc (dat tai quay khong ap so dem toi thieu / dong ban)
+    public void checkAdvance(LocalDate checkIn) {
+        Optional<BusinessException> v = advanceViolation(checkIn, LocalDate.now());
+        if (v.isPresent()) {
+            throw v.get();
+        }
     }
 
     public void check(RoomType type, LocalDate checkIn, LocalDate checkOut) {
@@ -119,7 +152,8 @@ public class StayRuleService {
     @Transactional
     public void updateMaxAdvanceDays(Integer days) {
         if (days != null && (days < 0 || days > MAX_ADVANCE_DAYS)) {
-            throw new BusinessException("Số ngày đặt trước từ 0 (không giới hạn) đến " + MAX_ADVANCE_DAYS);
+            throw new BusinessException("Số ngày đặt trước từ 0 (theo mặc định 6 tháng) đến " + MAX_ADVANCE_DAYS
+                    + " (resort chỉ nhận đặt trước tối đa " + MAX_ADVANCE_MONTHS + " tháng)");
         }
         PricingSettings s = pricingService.getSettings();
         s.setMaxAdvanceDays(days == null || days == 0 ? null : days);

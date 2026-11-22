@@ -243,8 +243,8 @@
                 <form th:action="@{/admin/pricing/max-advance}" method="post" class="row g-2 align-items-end mb-4">
                     <div class="col-md-4">
                         <label class="form-label small">Nhận đặt trước tối đa (ngày)</label>
-                        <input type="number" name="maxAdvanceDays" class="form-control" min="0" max="730" th:value="${maxAdvanceDays}">
-                        <div class="form-text">0 = không giới hạn</div>
+                        <input type="number" name="maxAdvanceDays" class="form-control" min="0" max="184" th:value="${maxAdvanceDays}">
+                        <div class="form-text">0 = mặc định 6 tháng (trần của resort, không đặt dài hơn được). Nhập số ngày để giới hạn ngắn hơn.</div>
                     </div>
                     <div class="col-md-2"><button type="submit" class="btn btn-outline-primary">Lưu</button></div>
                 </form>

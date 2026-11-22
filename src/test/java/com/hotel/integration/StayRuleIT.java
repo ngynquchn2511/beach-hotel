@@ -12,6 +12,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -104,7 +105,7 @@ class StayRuleIT extends ItFixtures {
                 .andExpect(model().attribute("errorMessage", containsString("tối đa 30 ngày")));
         book(standardRoom, LocalDate.now().plusDays(30), LocalDate.now().plusDays(31)).andExpect(status().is3xxRedirection());
         mockMvc.perform(post("/admin/pricing/max-advance").with(csrf()).with(as(admin)).param("maxAdvanceDays", "0"))
-                .andExpect(flash().attribute("successMessage", containsString("bỏ giới hạn")));
+                .andExpect(flash().attribute("successMessage", containsString("tối đa 6 tháng")));
         book(standardRoom, LocalDate.now().plusDays(90), LocalDate.now().plusDays(91)).andExpect(status().is3xxRedirection());
 
         mockMvc.perform(post("/admin/pricing/stay-rules").with(csrf()).with(as(admin))
@@ -115,5 +116,29 @@ class StayRuleIT extends ItFixtures {
                 .andExpect(status().isForbidden());
         assertThat(ruleRepository.count()).isZero();
         mockMvc.perform(get("/admin/pricing").with(as(admin))).andExpect(content().string(containsString("Luật bán phòng")));
+    }
+
+    @Test
+    void sixMonthCap_onlineWalkInAndChangeDates() throws Exception {
+        LocalDate today = LocalDate.now();
+        LocalDate last = today.plusMonths(6);
+        // Dung ngay cuoi cung trong 6 thang: dat duoc; qua 1 ngay: bi chan, ke ca khi admin chua dat gioi han
+        book(standardRoom, last, last.plusDays(1)).andExpect(status().is3xxRedirection());
+        book(villaRoom, last.plusDays(1), last.plusDays(2)).andExpect(status().isOk())
+                .andExpect(model().attribute("errorMessage", containsString("tối đa 6 tháng")));
+
+        // Admin khong dat dai hon 6 thang duoc (184 ngay la tran)
+        mockMvc.perform(post("/admin/pricing/max-advance").with(csrf()).with(as(admin)).param("maxAdvanceDays", "365"))
+                .andExpect(flash().attribute("errorMessage", containsString("6 tháng")));
+
+        // Dat tai quay cung chi toi 6 thang
+        User walkIn = persistUser(UserRole.CUSTOMER, CustomerType.NEW);
+        assertThatThrownBy(() -> bookingService.createWalkInBooking(walkIn, villaRoom.getId(), last.plusDays(5), last.plusDays(6),
+                LocalTime.of(14, 0), LocalTime.of(12, 0), 2, null, "Khách quầy", "0909009999", "quay6@mail.vn"))
+                .hasMessageContaining("6 tháng");
+
+        // O chon ngay o trang tim phong co gioi han max
+        mockMvc.perform(get("/customer/rooms").with(asNewCustomer()))
+                .andExpect(content().string(containsString("max=\"" + last + "\"")));
     }
 }

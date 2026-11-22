@@ -477,7 +477,7 @@
                 <div class="col-md-4">
                     <label class="form-label" for="newCheckIn" th:text="#{changeDates.checkIn}">Ngày nhận phòng mới</label>
                     <input type="date" id="newCheckIn" name="checkIn" class="form-control" required
-                           th:value="${booking.checkInDate}" th:min="${#temporals.format(#temporals.createToday(), 'yyyy-MM-dd')}">
+                           th:value="${booking.checkInDate}" th:min="${#temporals.format(#temporals.createToday(), 'yyyy-MM-dd')}" th:max="${bookingMaxDate}">
                 </div>
                 <div class="col-md-4">
                     <label class="form-label" for="newCheckOut" th:text="#{changeDates.checkOut}">Ngày trả phòng mới</label>

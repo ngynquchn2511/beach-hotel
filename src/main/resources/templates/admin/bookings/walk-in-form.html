@@ -42,7 +42,8 @@
                     <input type="hidden" name="src" th:if="${fromCalendar}" value="calendar">
                     <div class="col-md-4">
                         <label class="form-label">Ngày nhận phòng</label>
-                        <input type="date" name="checkIn" class="form-control" th:value="${checkIn}" required>
+                        <input type="date" name="checkIn" class="form-control" th:value="${checkIn}" th:max="${bookingMaxDate}" required>
+                        <div class="form-text">Nhận đặt trước đến <span th:text="${#temporals.format(bookingMaxDate, 'dd/MM/yyyy')}"></span> (tối đa 6 tháng)</div>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Ngày trả phòng</label>

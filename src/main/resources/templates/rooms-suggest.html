@@ -94,7 +94,7 @@
 
                 <div class="row g-2 mb-3">
                     <div class="col-12 q-title mb-0" th:text="#{suggest.q.dates}">Ngày ở (không bắt buộc)</div>
-                    <div class="col-6"><input type="date" name="checkIn" class="form-control" th:value="${form.checkIn}" th:attr="aria-label=#{suggest.q.checkIn}"></div>
+                    <div class="col-6"><input type="date" name="checkIn" class="form-control" th:value="${form.checkIn}" th:max="${bookingMaxDate}" th:attr="aria-label=#{suggest.q.checkIn}"></div>
                     <div class="col-6"><input type="date" name="checkOut" class="form-control" th:value="${form.checkOut}" th:attr="aria-label=#{suggest.q.checkOut}"></div>
                 </div>
 

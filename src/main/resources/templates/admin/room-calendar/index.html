@@ -61,6 +61,28 @@
         .rc-bar.awaiting { background-image: repeating-linear-gradient(-45deg, rgba(255, 255, 255, .55) 0 6px, transparent 6px 12px); }
         .rc-bar .dot { flex: 0 0 8px; height: 8px; border-radius: 50%; background: #e74c3c; }
 
+        /* Tong quan 6 thang: moi thang 1 lich nho, moi ngay to mau theo % phong da co khach dat */
+        .ov-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
+        .ov-month { background: var(--paper); border: var(--line); border-radius: 10px; padding: 10px; }
+        .ov-month.active { box-shadow: 0 0 0 3px var(--baby-deep); }
+        .ov-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+        .ov-head a { font-weight: 700; color: var(--ink); }
+        .ov-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+        .ov-wd { font-size: .65rem; text-align: center; color: var(--ink-soft); }
+        .ov-day { display: block; text-align: center; border-radius: 5px; padding: 2px 0; font-size: .72rem; line-height: 1.1;
+            text-decoration: none; color: var(--ink); border: 1px solid transparent; }
+        .ov-day small { display: block; font-size: .6rem; opacity: .8; }
+        a.ov-day:hover { border-color: var(--ink); }
+        .ov-day.l0 { background: #eaf7ee; }
+        .ov-day.l1 { background: #d6eefb; }
+        .ov-day.l2 { background: #a9d8f5; }
+        .ov-day.l3 { background: #ffd28a; }
+        .ov-day.l4 { background: #f19a8f; font-weight: 700; }
+        .ov-day.past { background: #f1f3f5; color: #adb5bd; }
+        .ov-day.closed { background: repeating-linear-gradient(45deg, #f8f9fa 0 4px, #e9ecef 4px 8px); color: #adb5bd; }
+        .ov-day.today { outline: 2px solid #f0b400; }
+        .ov-sw { display: inline-block; width: 14px; height: 12px; border-radius: 3px; vertical-align: -1px; }
+
         .rc-legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: .85rem; }
         .rc-legend span { display: inline-flex; align-items: center; gap: 6px; }
         .rc-legend i.sw { width: 26px; height: 14px; border-radius: 7px; border: 1.5px solid var(--ink); display: inline-block; }
@@ -84,22 +106,79 @@
                          th:text="|${#temporals.format(cal.from, 'dd/MM/yyyy')} – ${#temporals.format(cal.to.minusDays(1), 'dd/MM/yyyy')}|"></div>
                 </div>
                 <form th:action="@{/admin/room-calendar}" method="get" class="d-flex gap-2 align-items-center flex-wrap">
-                    <div class="btn-group">
+                    <div class="btn-group" th:unless="${monthMode}">
                         <a class="btn btn-sm btn-outline-primary" title="Khoảng trước"
                            th:href="@{/admin/room-calendar(from=${cal.prevFrom()}, days=${cal.days}, page=${roomPager.currentPage})}"><i class="bi bi-chevron-left"></i></a>
                         <a class="btn btn-sm btn-outline-primary"
                            th:href="@{/admin/room-calendar(days=${cal.days}, page=${roomPager.currentPage})}">Hôm nay</a>
-                        <a class="btn btn-sm btn-outline-primary" title="Khoảng sau"
+                        <a class="btn btn-sm btn-outline-primary" title="Khoảng sau" th:classappend="${canNext} ? '' : 'disabled'"
                            th:href="@{/admin/room-calendar(from=${cal.nextFrom()}, days=${cal.days}, page=${roomPager.currentPage})}"><i class="bi bi-chevron-right"></i></a>
+                    </div>
+                    <div class="btn-group" th:if="${monthMode}">
+                        <a class="btn btn-sm btn-outline-primary" title="Tháng trước" th:classappend="${prevMonth == null} ? 'disabled'"
+                           th:href="@{/admin/room-calendar(month=${prevMonth}, page=${roomPager.currentPage})}"><i class="bi bi-chevron-left"></i></a>
+                        <a class="btn btn-sm btn-outline-primary" th:href="@{/admin/room-calendar(page=${roomPager.currentPage})}">Hôm nay</a>
+                        <a class="btn btn-sm btn-outline-primary" title="Tháng sau" th:classappend="${nextMonth == null} ? 'disabled'"
+                           th:href="@{/admin/room-calendar(month=${nextMonth}, page=${roomPager.currentPage})}"><i class="bi bi-chevron-right"></i></a>
                     </div>
                     <input type="hidden" name="page" th:value="${roomPager.currentPage}">
                     <input type="date" name="from" class="form-control form-control-sm" style="width: auto;"
-                           th:value="${cal.from}" onchange="this.form.submit()">
+                           th:value="${cal.from}" th:max="${horizon}" onchange="this.form.submit()">
                     <select name="days" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
-                        <option th:each="d : ${allowedDays}" th:value="${d}" th:text="|${d} ngày|" th:selected="${d == cal.days}"></option>
+                        <option th:each="d : ${allowedDays}" th:value="${d}" th:text="|${d} ngày|" th:selected="${!monthMode and d == cal.days}"></option>
                     </select>
                 </form>
             </div>
+
+            <!-- Chon nhanh 1 thang trong 6 thang toi -->
+            <div class="d-flex flex-wrap align-items-center gap-1 mb-3">
+                <span class="small text-muted me-1"><i class="bi bi-calendar3 me-1"></i>Xem cả tháng:</span>
+                <a th:each="m : ${months}" class="btn btn-sm"
+                   th:classappend="${monthMode and m == month} ? 'btn-primary' : 'btn-outline-secondary'"
+                   th:href="@{/admin/room-calendar(month=${m}, page=${roomPager.currentPage})}"
+                   th:text="|Th ${m.monthValue}/${m.year}|"></a>
+                <span class="small text-muted ms-2">Nhận đặt trước đến <b th:text="${#temporals.format(lastBookable, 'dd/MM/yyyy')}"></b> (tối đa 6 tháng)</span>
+            </div>
+
+            <!-- Tong quan 6 thang: bam 1 ngay de mo lich chi tiet quanh ngay do -->
+            <details class="mb-4" id="tong-quan-6-thang" open>
+                <summary class="fw-bold mb-2">Tổng quan đặt phòng 6 tháng tới</summary>
+                <div class="small text-muted mb-2">
+                    Mỗi ô là 1 đêm, màu theo tỉ lệ phòng đã có khách đặt; số nhỏ = phòng còn trống. Bấm 1 ngày để xem chi tiết từng phòng.
+                    <span class="ms-2"><i class="ov-sw" style="background:#eaf7ee"></i> chưa ai đặt</span>
+                    <span class="ms-2"><i class="ov-sw" style="background:#d6eefb"></i> &lt; 30%</span>
+                    <span class="ms-2"><i class="ov-sw" style="background:#a9d8f5"></i> 30–59%</span>
+                    <span class="ms-2"><i class="ov-sw" style="background:#ffd28a"></i> 60–89%</span>
+                    <span class="ms-2"><i class="ov-sw" style="background:#f19a8f"></i> ≥ 90% / hết phòng</span>
+                    <span class="ms-2"><i class="ov-sw" style="background:repeating-linear-gradient(45deg,#f8f9fa 0 3px,#e9ecef 3px 6px)"></i> chưa mở bán</span>
+                </div>
+                <div class="ov-grid">
+                    <div th:each="mo : ${overview}" class="ov-month" th:classappend="${monthMode and mo.month == month} ? 'active'">
+                        <div class="ov-head">
+                            <a th:href="@{/admin/room-calendar(month=${mo.month})}" th:text="|Tháng ${mo.month.monthValue}/${mo.month.year}|"></a>
+                            <span class="small" th:title="|${mo.bookedNights()} / ${mo.sellableNights()} phòng-đêm đã đặt|">
+                                <b th:text="${mo.percent()} + '%'"></b>
+                                <span th:if="${mo.fullDays() > 0}" class="text-danger" th:text="|· ${mo.fullDays()} ngày hết phòng|"></span>
+                            </span>
+                        </div>
+                        <div class="small text-muted mb-1" th:text="|${mo.arrivals()} lượt khách đến|"></div>
+                        <div class="ov-days">
+                            <div th:each="w : ${ {'T2','T3','T4','T5','T6','T7','CN'} }" class="ov-wd" th:text="${w}"></div>
+                            <span th:each="i : ${#numbers.sequence(0, 6)}" th:if="${i < mo.leadingBlanks}"></span>
+                            <th:block th:each="d : ${mo.days}">
+                                <a th:if="${!d.past}" class="ov-day"
+                                   th:classappend="|${d.bookable ? 'l' + d.level() : 'closed'} ${d.date == today ? 'today' : ''}|"
+                                   th:href="@{/admin/room-calendar(from=${d.date.minusDays(1)}, days=14)}"
+                                   th:title="|${#temporals.format(d.date, 'dd/MM/yyyy')}: ${d.booked}/${d.sellable} phòng đã đặt, còn ${d.free()} trống${d.arrivals > 0 ? ', ' + d.arrivals + ' khách đến' : ''}${d.bookable ? '' : ' · chưa mở bán (quá 6 tháng)'}|">
+                                    <span th:text="${d.date.dayOfMonth}"></span>
+                                    <small th:text="${d.free()}"></small>
+                                </a>
+                                <span th:if="${d.past}" class="ov-day past"><span th:text="${d.date.dayOfMonth}"></span><small>&nbsp;</small></span>
+                            </th:block>
+                        </div>
+                    </div>
+                </div>
+            </details>
 
             <div class="rc-legend mb-3">
                 <span><i class="sw st-PENDING"></i>Chờ xác nhận</span>
@@ -115,7 +194,7 @@
             <div th:if="${#lists.isEmpty(cal.rows)}" class="alert alert-info">Chưa có phòng nào. Hãy thêm phòng trước.</div>
 
             <div class="rc-wrap" th:unless="${#lists.isEmpty(cal.rows)}"
-                 th:style="|--halves: ${cal.halfColumns()}; --half: ${cal.days == 30 ? '22px' : (cal.days == 14 ? '36px' : '64px')};|">
+                 th:style="|--halves: ${cal.halfColumns()}; --half: ${cal.days >= 28 ? '22px' : (cal.days == 14 ? '36px' : '64px')};|">
                 <div class="rc">
                     <!-- Hang tieu de: ngay -->
                     <div class="rc-row rc-head">

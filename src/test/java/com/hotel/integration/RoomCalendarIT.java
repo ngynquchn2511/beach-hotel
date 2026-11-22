@@ -30,6 +30,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class RoomCalendarIT {
 
     private static final LocalDate FROM = LocalDate.of(2030, 3, 1);
+    // Trang lich chi xem duoc trong 6 thang toi -> test qua trang dung ngay gan
+    private static final LocalDate NEAR = LocalDate.now().plusDays(10);
 
     @Autowired private MockMvc mockMvc;
     @Autowired private RoomCalendarService roomCalendarService;
@@ -124,16 +126,59 @@ class RoomCalendarIT {
 
     @Test
     void calendarPage_rendersBookingsForStaff() throws Exception {
-        Booking b = seedBooking(FROM.plusDays(1), FROM.plusDays(3), BookingStatus.CONFIRMED, "Nguyen Van Lich");
-        seedBooking(FROM.plusDays(4), FROM.plusDays(5), BookingStatus.CANCELLED, "Khach Da Huy");
+        Booking b = seedBooking(NEAR.plusDays(1), NEAR.plusDays(3), BookingStatus.CONFIRMED, "Nguyen Van Lich");
+        seedBooking(NEAR.plusDays(4), NEAR.plusDays(5), BookingStatus.CANCELLED, "Khach Da Huy");
 
-        mockMvc.perform(get("/admin/room-calendar").param("from", FROM.toString()).param("days", "14")
+        mockMvc.perform(get("/admin/room-calendar").param("from", NEAR.toString()).param("days", "14")
                         .with(user(new CustomUserDetails(staff))))
                 .andExpect(status().isOk())
                 .andExpect(view().name("admin/room-calendar/index"))
                 .andExpect(content().string(containsString("Nguyen Van Lich")))
                 .andExpect(content().string(containsString("/admin/bookings/" + b.getId())))
                 .andExpect(content().string(not(containsString("Khach Da Huy"))));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void sixMonthView_monthMode_overview_andClampedNavigation() throws Exception {
+        LocalDate today = LocalDate.now();
+        LocalDate horizon = today.plusMonths(6);
+        java.time.YearMonth last = java.time.YearMonth.from(horizon);
+        // Don xa (5 thang toi) phai thay duoc o che do xem ca thang va o tong quan
+        LocalDate far = today.plusMonths(5).withDayOfMonth(10);
+        seedBooking(far, far.plusDays(2), BookingStatus.CONFIRMED, "Khach Dat Xa");
+
+        mockMvc.perform(get("/admin/room-calendar").param("month", java.time.YearMonth.from(far).toString())
+                        .with(user(new CustomUserDetails(staff))))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Khach Dat Xa")))
+                .andExpect(content().string(containsString("Tổng quan đặt phòng 6 tháng tới")))
+                .andExpect(content().string(containsString("Xem cả tháng")))
+                .andExpect(result -> {
+                    var cal = (RoomCalendarService.Calendar) result.getModelAndView().getModel().get("cal");
+                    assertEquals(far.withDayOfMonth(1), cal.from());
+                    assertEquals(far.lengthOfMonth(), cal.days());
+                    var overview = (java.util.List<RoomCalendarService.MonthLoad>) result.getModelAndView().getModel().get("overview");
+                    assertEquals(7, overview.size());
+                    var day = overview.stream().flatMap(m -> m.days().stream()).filter(d -> d.date().equals(far)).findFirst().orElseThrow();
+                    assertTrue(day.booked() >= 1);
+                    assertTrue(day.bookable());
+                    var closed = overview.get(6).days().stream().filter(d -> d.date().isAfter(horizon)).findFirst();
+                    closed.ifPresent(d -> assertFalse(d.bookable()));
+                });
+
+        // Thang qua 6 thang -> ve thang cuoi cung xem duoc
+        mockMvc.perform(get("/admin/room-calendar").param("month", last.plusMonths(3).toString())
+                        .with(user(new CustomUserDetails(staff))))
+                .andExpect(result -> assertEquals(last, result.getModelAndView().getModel().get("month")));
+        // Khung ngay qua 6 thang -> keo lui de ket thuc dung ngay gioi han, nut "khoang sau" tat
+        mockMvc.perform(get("/admin/room-calendar").param("from", today.plusYears(2).toString()).param("days", "30")
+                        .with(user(new CustomUserDetails(staff))))
+                .andExpect(result -> {
+                    var cal = (RoomCalendarService.Calendar) result.getModelAndView().getModel().get("cal");
+                    assertEquals(horizon.plusDays(1), cal.to());
+                    assertEquals(false, result.getModelAndView().getModel().get("canNext"));
+                });
     }
 
     @Test
@@ -154,21 +199,21 @@ class RoomCalendarIT {
     @Test
     void bookedNight_hasNoWalkInLink_freeNightsKeepIt() throws Exception {
         // Khach nhan 03/03 -> nua dau o 03/03 van lo ra nhung KHONG duoc tro toi dem da co khach
-        seedBooking(FROM.plusDays(2), FROM.plusDays(4), BookingStatus.CONFIRMED, "Khach Dem");
+        seedBooking(NEAR.plusDays(2), NEAR.plusDays(4), BookingStatus.CONFIRMED, "Khach Dem");
         String base = "/admin/bookings/walk-in/new?roomId=" + room.getId() + "&amp;checkIn=";
 
-        mockMvc.perform(get("/admin/room-calendar").param("from", FROM.toString()).param("days", "7")
+        mockMvc.perform(get("/admin/room-calendar").param("from", NEAR.toString()).param("days", "7")
                         .with(user(new CustomUserDetails(staff))))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString(base + FROM.plusDays(1))))
-                .andExpect(content().string(not(containsString(base + FROM.plusDays(2) + "&amp;"))))
-                .andExpect(content().string(not(containsString(base + FROM.plusDays(3) + "&amp;"))))
+                .andExpect(content().string(containsString(base + NEAR.plusDays(1))))
+                .andExpect(content().string(not(containsString(base + NEAR.plusDays(2) + "&amp;"))))
+                .andExpect(content().string(not(containsString(base + NEAR.plusDays(3) + "&amp;"))))
                 // Ngay tra phong 05/03: dem 05/03 con trong -> dat tiep duoc
-                .andExpect(content().string(containsString(base + FROM.plusDays(4) + "&amp;")));
+                .andExpect(content().string(containsString(base + NEAR.plusDays(4) + "&amp;")));
 
-        RoomCalendarService.RoomRow row = rowOf(roomCalendarService.build(FROM, 7, FROM));
-        assertFalse(row.isFree(FROM.plusDays(2)));
-        assertTrue(row.isFree(FROM.plusDays(4)));
+        RoomCalendarService.RoomRow row = rowOf(roomCalendarService.build(NEAR, 7, NEAR));
+        assertFalse(row.isFree(NEAR.plusDays(2)));
+        assertTrue(row.isFree(NEAR.plusDays(4)));
     }
 
     @Test

@@ -1578,7 +1578,9 @@ public class BookingService {
     public Booking createWalkInBooking(User customer, Long roomId, LocalDate checkInDate, LocalDate checkOutDate,
                                         LocalTime checkInTime, LocalTime checkOutTime, Integer guests,
                                         Long comboId, String guestName, String guestPhone, String guestEmail) {
-
+        if (stayRuleService != null) {
+            stayRuleService.checkAdvance(checkInDate);
+        }
         Booking booking = buildBooking(customer, roomId, checkInDate, checkOutDate, checkInTime, checkOutTime,
                 guests, comboId, null, guestName, guestPhone, guestEmail);
         // Khach o ngay tai quay -> khong can dat coc, xac nhan luon

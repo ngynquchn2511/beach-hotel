@@ -35,13 +35,20 @@ public class RoomCalendarService {
 
     @Transactional(readOnly = true)
     public Calendar build(LocalDate from, int days, LocalDate today) {
+        return build(from, days, today, null);
+    }
+
+    // lastBookable: ngay nhan phong muon nhat con nhan dat (6 thang) - o sau ngay nay khong cho bam dat
+    @Transactional(readOnly = true)
+    public Calendar build(LocalDate from, int days, LocalDate today, LocalDate lastBookable) {
         LocalDate to = from.plusDays(days);
 
         List<Day> dayList = new ArrayList<>();
         for (int i = 0; i < days; i++) {
             LocalDate d = from.plusDays(i);
             boolean weekend = d.getDayOfWeek() == DayOfWeek.SATURDAY || d.getDayOfWeek() == DayOfWeek.SUNDAY;
-            dayList.add(new Day(d, i, weekend, d.equals(today), !d.isBefore(today)));
+            dayList.add(new Day(d, i, weekend, d.equals(today),
+                    !d.isBefore(today) && (lastBookable == null || !d.isAfter(lastBookable))));
         }
 
         List<Room> rooms = roomRepository.findAll().stream()
@@ -72,6 +79,94 @@ public class RoomCalendarService {
                 .toList();
 
         return new Calendar(from, to, days, dayList, rows, freeRooms);
+    }
+
+    // ===== Tong quan 6 thang: moi dem 1 o, so phong da co khach dat / tong so phong ban duoc =====
+
+    public record DayLoad(LocalDate date, long booked, long arrivals, long sellable, boolean past, boolean bookable) {
+        public long free() {
+            return Math.max(0, sellable - booked);
+        }
+
+        public int percent() {
+            return sellable == 0 ? 0 : (int) Math.round(100.0 * booked / sellable);
+        }
+
+        // Muc mau: 0 trong het, 1 < 30%, 2 < 60%, 3 < 90%, 4 gan / het phong
+        public int level() {
+            if (booked == 0) {
+                return 0;
+            }
+            int p = percent();
+            return p < 30 ? 1 : (p < 60 ? 2 : (p < 90 ? 3 : 4));
+        }
+    }
+
+    public record MonthLoad(java.time.YearMonth month, List<DayLoad> days, int leadingBlanks) {
+        public long bookedNights() {
+            return days.stream().filter(d -> !d.past()).mapToLong(DayLoad::booked).sum();
+        }
+
+        public long sellableNights() {
+            return days.stream().filter(d -> !d.past()).mapToLong(DayLoad::sellable).sum();
+        }
+
+        public int percent() {
+            return sellableNights() == 0 ? 0 : (int) Math.round(100.0 * bookedNights() / sellableNights());
+        }
+
+        public long arrivals() {
+            return days.stream().filter(d -> !d.past()).mapToLong(DayLoad::arrivals).sum();
+        }
+
+        public long fullDays() {
+            return days.stream().filter(d -> !d.past() && d.sellable() > 0 && d.free() == 0).count();
+        }
+    }
+
+    // Tu thang hien tai den thang cua ngay "until" (ngay da qua dau thang van ve cho tron thang, to mo)
+    @Transactional(readOnly = true)
+    public List<MonthLoad> overview(LocalDate today, LocalDate until, LocalDate lastBookable) {
+        LocalDate start = today.withDayOfMonth(1);
+        LocalDate end = until.withDayOfMonth(until.lengthOfMonth()).plusDays(1);
+        List<Room> rooms = roomRepository.findAll();
+        java.util.Set<Long> sellableIds = rooms.stream().filter(r -> r.getStatus() != RoomStatus.MAINTENANCE)
+                .map(Room::getId).collect(Collectors.toSet());
+        long sellable = sellableIds.size();
+        Map<LocalDate, java.util.Set<Long>> occupied = new java.util.HashMap<>();
+        Map<LocalDate, Long> arrivals = new java.util.HashMap<>();
+        for (Booking b : bookingRepository.findForCalendar(start, end)) {
+            if (!sellableIds.contains(b.getRoom().getId())) {
+                continue;
+            }
+            arrivals.merge(b.getCheckInDate(), 1L, Long::sum);
+            for (LocalDate n = b.getCheckInDate().isBefore(start) ? start : b.getCheckInDate();
+                 n.isBefore(b.getCheckOutDate()) && n.isBefore(end); n = n.plusDays(1)) {
+                occupied.computeIfAbsent(n, k -> new java.util.HashSet<>()).add(b.getRoom().getId());
+            }
+        }
+        if (otaBlockRepository != null) {
+            for (com.hotel.entity.OtaBlock o : otaBlockRepository.findBlockingBetween(start, end)) {
+                if (!sellableIds.contains(o.getRoom().getId())) {
+                    continue;
+                }
+                for (LocalDate n = o.getStartDate().isBefore(start) ? start : o.getStartDate();
+                     n.isBefore(o.getEndDate()) && n.isBefore(end); n = n.plusDays(1)) {
+                    occupied.computeIfAbsent(n, k -> new java.util.HashSet<>()).add(o.getRoom().getId());
+                }
+            }
+        }
+        List<MonthLoad> months = new ArrayList<>();
+        for (java.time.YearMonth m = java.time.YearMonth.from(start); !m.isAfter(java.time.YearMonth.from(until)); m = m.plusMonths(1)) {
+            List<DayLoad> days = new ArrayList<>();
+            for (int d = 1; d <= m.lengthOfMonth(); d++) {
+                LocalDate date = m.atDay(d);
+                days.add(new DayLoad(date, occupied.getOrDefault(date, java.util.Set.of()).size(), arrivals.getOrDefault(date, 0L),
+                        sellable, date.isBefore(today), !date.isBefore(today) && !date.isAfter(lastBookable)));
+            }
+            months.add(new MonthLoad(m, days, m.atDay(1).getDayOfWeek().getValue() - 1));
+        }
+        return months;
     }
 
     static Bar toBar(Booking b, LocalDate from, LocalDate to, int days) {

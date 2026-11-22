@@ -363,6 +363,8 @@
         const maintenance = /*[[${room.status.name() == 'MAINTENANCE'}]]*/ false;
         // Gia tung dem: { "2026-10-17": {p: 1210000, s: 10, n: null}, ... } (s = % phu thu, n = ten dip le)
         const nightPrices = /*[[${calendarPrices}]]*/ {};
+        // Ngay nhan phong muon nhat con nhan dat (resort nhan dat truoc toi da 6 thang)
+        const maxCheckIn = /*[[${bookingMaxDate != null ? bookingMaxDate.toString() : null}]]*/ '';
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         let selectedCheckIn = calendar.dataset.checkIn || null;
@@ -383,6 +385,7 @@
             maintenanceDay: /*[[#{detail.cal.maintenanceDay}]]*/ '',
             checkoutOnly: /*[[#{detail.cal.checkoutOnly}]]*/ '',
             past: /*[[#{detail.cal.past}]]*/ '',
+            tooFar: /*[[#{detail.cal.tooFar}]]*/ '',
             pending: /*[[#{detail.cal.pending}]]*/ '',
             taken: /*[[#{detail.cal.taken}]]*/ '',
             maintenance: /*[[#{detail.cal.maintenance}]]*/ '',
@@ -515,7 +518,10 @@
                 button.className = 'calendar-day';
                 button.textContent = day;
 
-                const isPast = date < today;
+                // Qua 6 thang: khong chon lam ngay nhan; van chon lam ngay tra duoc neu da chon ngay nhan hop le
+                const isTooFar = !!maxCheckIn && dateValue > maxCheckIn
+                    && !(selectedCheckIn && !selectedCheckOut && dateValue > selectedCheckIn);
+                const isPast = date < today || isTooFar;
                 const isUnavailable = unavailableDates.has(dateValue);
                 const isPending = pendingDates.has(dateValue);
                 // Dem nay co khach nhung van tra phong duoc vao ngay nay (dem truoc do con trong)
@@ -534,7 +540,7 @@
                     button.classList.add(isPast ? 'past' : 'unavailable');
                     if (isPending && !isPast) button.classList.add('pending');
                     button.disabled = true;
-                    button.title = isPast ? T.past : (isPending ? T.pending : T.taken);
+                    button.title = isTooFar ? T.tooFar : (isPast ? T.past : (isPending ? T.pending : T.taken));
                 } else {
                     button.classList.add('available');
                     button.addEventListener('click', () => selectDate(dateValue));
@@ -566,7 +572,10 @@
             renderCalendar();
         });
         document.getElementById('nextMonth').addEventListener('click', () => {
-            visibleMonth = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + 1, 1);
+            const next = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + 1, 1);
+            // Chi lui toi thang sau thang cua ngay nhan muon nhat (de con chon ngay tra)
+            const limit = maxCheckIn ? parseDate(maxCheckIn) : null;
+            if (!limit || next <= new Date(limit.getFullYear(), limit.getMonth() + 1, 1)) visibleMonth = next;
             renderCalendar();
         });
 
