@@ -61,27 +61,37 @@
         .rc-bar.awaiting { background-image: repeating-linear-gradient(-45deg, rgba(255, 255, 255, .55) 0 6px, transparent 6px 12px); }
         .rc-bar .dot { flex: 0 0 8px; height: 8px; border-radius: 50%; background: #e74c3c; }
 
-        /* Tong quan 6 thang: moi thang 1 lich nho, moi ngay to mau theo % phong da co khach dat */
-        .ov-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
-        .ov-month { background: var(--paper); border: var(--line); border-radius: 10px; padding: 10px; }
+        /* Tong quan 6 thang: moi thang 1 lich nho; moi o = 1 dem, so nho = so phong DA DAT, mau dam dan theo muc dong khach */
+        .ov-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; }
+        .ov-month { background: var(--paper); border: var(--line); border-radius: 10px; padding: 12px; }
         .ov-month.active { box-shadow: 0 0 0 3px var(--baby-deep); }
-        .ov-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
-        .ov-head a { font-weight: 700; color: var(--ink); }
+        .ov-title { font-weight: 700; color: var(--ink); font-size: 1.05rem; white-space: nowrap; }
+        .ov-link { white-space: nowrap; font-size: .78rem; }
+        .ov-bar { height: 8px; background: #edf1f5; border-radius: 4px; overflow: hidden; margin: 6px 0 4px; }
+        .ov-bar > span { display: block; height: 100%; background: #4a9fe0; }
+        .ov-stats { font-size: .78rem; color: var(--ink-soft); margin-bottom: 8px; }
+        .ov-stats b { color: var(--ink); }
         .ov-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
-        .ov-wd { font-size: .65rem; text-align: center; color: var(--ink-soft); }
-        .ov-day { display: block; text-align: center; border-radius: 5px; padding: 2px 0; font-size: .72rem; line-height: 1.1;
-            text-decoration: none; color: var(--ink); border: 1px solid transparent; }
-        .ov-day small { display: block; font-size: .6rem; opacity: .8; }
-        a.ov-day:hover { border-color: var(--ink); }
-        .ov-day.l0 { background: #eaf7ee; }
-        .ov-day.l1 { background: #d6eefb; }
-        .ov-day.l2 { background: #a9d8f5; }
-        .ov-day.l3 { background: #ffd28a; }
-        .ov-day.l4 { background: #f19a8f; font-weight: 700; }
-        .ov-day.past { background: #f1f3f5; color: #adb5bd; }
+        .ov-wd { font-size: .68rem; text-align: center; color: var(--ink-soft); font-weight: 600; }
+        .ov-wd.we { color: #c0392b; }
+        .ov-day { display: block; width: 100%; text-align: center; border-radius: 6px; padding: 3px 0; font-size: .78rem; line-height: 1.15;
+            color: var(--ink); border: 1px solid #e3e8ee; background: #fff; cursor: pointer; }
+        .ov-day .n { display: block; font-size: .62rem; min-height: .75rem; font-weight: 700; }
+        .ov-day:hover, .ov-day.sel { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink); }
+        .ov-day.l0 { background: #fff; }
+        .ov-day.l0 .n { color: #b8c2cc; font-weight: 400; }
+        .ov-day.l1 { background: #dcefff; }
+        .ov-day.l2 { background: #8cc4f0; }
+        .ov-day.l3 { background: #f6b04a; }
+        .ov-day.l4 { background: #e0503f; color: #fff; }
         .ov-day.closed { background: repeating-linear-gradient(45deg, #f8f9fa 0 4px, #e9ecef 4px 8px); color: #adb5bd; }
-        .ov-day.today { outline: 2px solid #f0b400; }
-        .ov-sw { display: inline-block; width: 14px; height: 12px; border-radius: 3px; vertical-align: -1px; }
+        .ov-day.closed .n { color: #adb5bd; font-weight: 400; }
+        .ov-day.today { outline: 2px solid #f0b400; outline-offset: 1px; }
+        .ov-blank { display: block; }
+        .ov-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: .82rem; }
+        .ov-legend span { display: inline-flex; align-items: center; gap: 6px; }
+        .ov-sw { display: inline-block; width: 18px; height: 14px; border-radius: 4px; border: 1px solid #ccd5de; }
+        #ov-info { position: sticky; top: 76px; z-index: 5; }
 
         .rc-legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: .85rem; }
         .rc-legend span { display: inline-flex; align-items: center; gap: 6px; }
@@ -140,40 +150,59 @@
                 <span class="small text-muted ms-2">Nhận đặt trước đến <b th:text="${#temporals.format(lastBookable, 'dd/MM/yyyy')}"></b> (tối đa 6 tháng)</span>
             </div>
 
-            <!-- Tong quan 6 thang: bam 1 ngay de mo lich chi tiet quanh ngay do -->
-            <details class="mb-4" id="tong-quan-6-thang" open>
-                <summary class="fw-bold mb-2">Tổng quan đặt phòng 6 tháng tới</summary>
-                <div class="small text-muted mb-2">
-                    Mỗi ô là 1 đêm, màu theo tỉ lệ phòng đã có khách đặt; số nhỏ = phòng còn trống. Bấm 1 ngày để xem chi tiết từng phòng.
-                    <span class="ms-2"><i class="ov-sw" style="background:#eaf7ee"></i> chưa ai đặt</span>
-                    <span class="ms-2"><i class="ov-sw" style="background:#d6eefb"></i> &lt; 30%</span>
-                    <span class="ms-2"><i class="ov-sw" style="background:#a9d8f5"></i> 30–59%</span>
-                    <span class="ms-2"><i class="ov-sw" style="background:#ffd28a"></i> 60–89%</span>
-                    <span class="ms-2"><i class="ov-sw" style="background:#f19a8f"></i> ≥ 90% / hết phòng</span>
-                    <span class="ms-2"><i class="ov-sw" style="background:repeating-linear-gradient(45deg,#f8f9fa 0 3px,#e9ecef 3px 6px)"></i> chưa mở bán</span>
+            <!-- Tong quan 6 thang: bam 1 ngay -> khung thong tin (da dat / con trong / khach den) + nut xem tung phong -->
+            <details class="mb-4" id="tong-quan-6-thang" open
+                     th:with="totalRooms=${#lists.isEmpty(overview) ? 0 : overview[0].days[0].sellable}">
+                <summary class="fw-bold fs-5 mb-2">Tổng quan đặt phòng 6 tháng tới</summary>
+                <div class="border rounded p-3 mb-3 bg-white">
+                    <div class="mb-2">
+                        <b>Cách đọc:</b> mỗi ô là <b>1 đêm</b>. Số to = ngày, <b>số nhỏ = số phòng đã có khách đặt</b> đêm đó
+                        (resort có <b th:text="${totalRooms}"></b> phòng đang bán). Màu càng đậm càng đông khách.
+                    </div>
+                    <div class="ov-legend">
+                        <span><i class="ov-sw" style="background:#fff"></i>Chưa ai đặt</span>
+                        <span><i class="ov-sw" style="background:#dcefff"></i>Vắng (dưới 30% phòng)</span>
+                        <span><i class="ov-sw" style="background:#8cc4f0"></i>Vừa (30–59%)</span>
+                        <span><i class="ov-sw" style="background:#f6b04a"></i>Đông (60–89%)</span>
+                        <span><i class="ov-sw" style="background:#e0503f"></i>Sắp hết / hết phòng (từ 90%)</span>
+                        <span><i class="ov-sw" style="background:repeating-linear-gradient(45deg,#f8f9fa 0 3px,#e9ecef 3px 6px)"></i>Chưa mở bán (quá 6 tháng)</span>
+                        <span><i class="ov-sw" style="outline:2px solid #f0b400"></i>Hôm nay</span>
+                    </div>
                 </div>
+
+                <div id="ov-info" class="alert alert-light border mb-3">
+                    <i class="bi bi-hand-index me-1"></i>Bấm vào 1 ngày để xem: bao nhiêu phòng đã đặt, còn bao nhiêu phòng trống, bao nhiêu khách đến.
+                </div>
+
                 <div class="ov-grid">
                     <div th:each="mo : ${overview}" class="ov-month" th:classappend="${monthMode and mo.month == month} ? 'active'">
-                        <div class="ov-head">
-                            <a th:href="@{/admin/room-calendar(month=${mo.month})}" th:text="|Tháng ${mo.month.monthValue}/${mo.month.year}|"></a>
-                            <span class="small" th:title="|${mo.bookedNights()} / ${mo.sellableNights()} phòng-đêm đã đặt|">
-                                <b th:text="${mo.percent()} + '%'"></b>
-                                <span th:if="${mo.fullDays() > 0}" class="text-danger" th:text="|· ${mo.fullDays()} ngày hết phòng|"></span>
-                            </span>
+                        <div class="d-flex flex-wrap justify-content-between align-items-baseline column-gap-3">
+                            <span class="ov-title" th:text="|Tháng ${mo.month.monthValue}/${mo.month.year}|"></span>
+                            <a class="ov-link" th:href="@{/admin/room-calendar(month=${mo.month})}">Xem từng phòng →</a>
                         </div>
-                        <div class="small text-muted mb-1" th:text="|${mo.arrivals()} lượt khách đến|"></div>
+                        <div class="ov-bar" th:title="|${mo.bookedNights()} / ${mo.sellableNights()} phòng-đêm đã đặt|">
+                            <span th:style="|width: ${mo.percent()}%|"></span></div>
+                        <div class="ov-stats">
+                            Đã đặt <b th:text="${mo.percent()} + '%'"></b> số phòng
+                            · <b th:text="${mo.arrivals()}"></b> lượt khách đến
+                            <th:block th:if="${mo.fullDays() > 0}">· <b class="text-danger" th:text="|${mo.fullDays()} ngày hết phòng|"></b></th:block>
+                        </div>
                         <div class="ov-days">
-                            <div th:each="w : ${ {'T2','T3','T4','T5','T6','T7','CN'} }" class="ov-wd" th:text="${w}"></div>
-                            <span th:each="i : ${#numbers.sequence(0, 6)}" th:if="${i < mo.leadingBlanks}"></span>
+                            <div th:each="w, st : ${ {'T2','T3','T4','T5','T6','T7','CN'} }" class="ov-wd" th:classappend="${st.index >= 5} ? 'we'" th:text="${w}"></div>
+                            <span th:each="i : ${#numbers.sequence(0, 6)}" th:if="${i < mo.leadingBlanks}" class="ov-blank"></span>
                             <th:block th:each="d : ${mo.days}">
-                                <a th:if="${!d.past}" class="ov-day"
-                                   th:classappend="|${d.bookable ? 'l' + d.level() : 'closed'} ${d.date == today ? 'today' : ''}|"
-                                   th:href="@{/admin/room-calendar(from=${d.date.minusDays(1)}, days=14)}"
-                                   th:title="|${#temporals.format(d.date, 'dd/MM/yyyy')}: ${d.booked}/${d.sellable} phòng đã đặt, còn ${d.free()} trống${d.arrivals > 0 ? ', ' + d.arrivals + ' khách đến' : ''}${d.bookable ? '' : ' · chưa mở bán (quá 6 tháng)'}|">
+                                <!-- Ngay da qua: o trong (khong can xem) -->
+                                <span th:if="${d.past}" class="ov-blank"></span>
+                                <button th:unless="${d.past}" type="button" class="ov-day"
+                                        th:classappend="|${d.bookable ? 'l' + d.level() : 'closed'} ${d.date == today ? 'today' : ''}|"
+                                        th:attr="data-label=|${ {'Thứ Hai','Thứ Ba','Thứ Tư','Thứ Năm','Thứ Sáu','Thứ Bảy','Chủ Nhật'}[d.date.dayOfWeek.value - 1] }, ${#temporals.format(d.date, 'dd/MM/yyyy')}|,
+                                                 data-booked=${d.booked}, data-total=${d.sellable}, data-free=${d.free()},
+                                                 data-pct=${d.percent()}, data-arrivals=${d.arrivals}, data-open=${d.bookable},
+                                                 data-url=@{/admin/room-calendar(from=${d.date.minusDays(1)}, days=14)}"
+                                        th:title="|${#temporals.format(d.date, 'dd/MM')}: ${d.booked} phòng đã đặt, còn ${d.free()} phòng trống|">
                                     <span th:text="${d.date.dayOfMonth}"></span>
-                                    <small th:text="${d.free()}"></small>
-                                </a>
-                                <span th:if="${d.past}" class="ov-day past"><span th:text="${d.date.dayOfMonth}"></span><small>&nbsp;</small></span>
+                                    <span class="n" th:text="${d.booked > 0 ? d.booked : '·'}"></span>
+                                </button>
                             </th:block>
                         </div>
                     </div>
@@ -269,5 +298,33 @@ ${#temporals.format(b.checkInDate, 'dd/MM')} ${b.checkInTime} → ${#temporals.f
     </div>
 </main>
 
+<script>
+    (function () {
+        const info = document.getElementById('ov-info');
+        if (!info) return;
+        const level = p => p === 0 ? 'chưa ai đặt' : (p < 30 ? 'vắng' : (p < 60 ? 'vừa' : (p < 90 ? 'đông' : 'sắp hết / hết phòng')));
+        document.querySelectorAll('.ov-day').forEach(btn => btn.addEventListener('click', () => {
+            document.querySelectorAll('.ov-day.sel').forEach(b => b.classList.remove('sel'));
+            btn.classList.add('sel');
+            const d = btn.dataset;
+            const booked = Number(d.booked), free = Number(d.free), pct = Number(d.pct), arrivals = Number(d.arrivals);
+            let html = '<div class="fw-bold mb-1"><i class="bi bi-calendar-event me-1"></i>' + d.label + '</div>';
+            if (d.open !== 'true') {
+                html += '<div>Chưa mở bán: resort chỉ nhận đặt trước tối đa 6 tháng.</div>';
+                info.className = 'alert alert-secondary mb-3';
+            } else {
+                html += '<div class="d-flex flex-wrap gap-3 align-items-center">'
+                    + '<span><b class="fs-5">' + booked + '</b> / ' + d.total + ' phòng đã có khách đặt (' + pct + '% · ' + level(pct) + ')</span>'
+                    + '<span class="' + (free === 0 ? 'text-danger fw-bold' : 'text-success fw-semibold') + '">'
+                    + (free === 0 ? 'Hết phòng' : 'Còn ' + free + ' phòng trống') + '</span>'
+                    + '<span>' + (arrivals > 0 ? arrivals + ' lượt khách nhận phòng' : 'Không có khách nhận phòng') + '</span>'
+                    + '<a class="btn btn-sm btn-primary ms-auto" href="' + d.url + '">Xem từng phòng ngày này <i class="bi bi-arrow-right"></i></a>'
+                    + '</div>';
+                info.className = 'alert ' + (free === 0 ? 'alert-danger' : (pct >= 60 ? 'alert-warning' : 'alert-info')) + ' mb-3';
+            }
+            info.innerHTML = html;
+        }));
+    })();
+</script>
 </body>
 </html>
