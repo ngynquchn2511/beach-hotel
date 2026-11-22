@@ -37,6 +37,36 @@ public class RoomSuggestController {
         this.weatherService = weatherService;
     }
 
+    private com.hotel.service.TripPlanService tripPlanService;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    void setTripPlanService(com.hotel.service.TripPlanService tripPlanService) {
+        this.tripPlanService = tripPlanService;
+    }
+
+    // Du bao 7 ngay + ke hoach tung ngay (diem du lich hop thoi tiet, phong trong dem do cho so khach dang chon).
+    // Khach da chon ngay nhan phong nam trong 7 ngay -> mo san chi tiet ngay do
+    private void addWeather(Model model, Integer guests, LocalDate checkIn) {
+        if (weatherService == null) {
+            return;
+        }
+        List<com.hotel.service.WeatherService.Day> days = weatherService.next(7);
+        model.addAttribute("weatherDays", days);
+        if (days.isEmpty()) {
+            return;
+        }
+        int g = guests == null || guests < 1 ? 2 : guests;
+        model.addAttribute("wxGuests", g);
+        if (tripPlanService != null) {
+            model.addAttribute("wxPlans", tripPlanService.plan(days, g));
+        }
+        for (int i = 0; i < days.size(); i++) {
+            if (days.get(i).date().equals(checkIn)) {
+                model.addAttribute("wxOpen", i);
+            }
+        }
+    }
+
     @GetMapping("/rooms/suggest")
     public String suggest(@RequestParam(required = false) Integer guests,
                           @RequestParam(required = false) GuestPreference.Purpose purpose,
@@ -53,9 +83,6 @@ public class RoomSuggestController {
         model.addAttribute("allPriorities", GuestPreference.Priority.values());
         model.addAttribute("budgets", BUDGETS);
         model.addAttribute("loggedInCustomer", customer);
-        if (weatherService != null) {
-            model.addAttribute("weatherDays", weatherService.next(7));
-        }
 
         if (guests == null) {
             // Chua tra loi: dien san so thich da luu (neu co)
@@ -65,6 +92,7 @@ public class RoomSuggestController {
                     saved.getPrioritySet().stream().map(Enum::name).toList(), null, null, saved.getNote())
                     : new Form(2, null, null, GuestPreference.View.ANY, List.of(), null, null, null));
             model.addAttribute("savedPreference", saved != null);
+            addWeather(model, saved != null ? saved.getGuests() : null, null);
             return "rooms-suggest";
         }
 
@@ -73,6 +101,7 @@ public class RoomSuggestController {
         model.addAttribute("form", new Form(answers.guests(), purpose, answers.maxBudget(), answers.view(),
                 pr.stream().map(Enum::name).toList(), checkIn, checkOut, note));
         model.addAttribute("result", service.suggest(answers));
+        addWeather(model, answers.guests(), checkIn);
         model.addAttribute("datesIgnored", (checkIn != null || checkOut != null) && !answers.hasDates());
         if (customer) {
             service.save(user.getUser(), answers, note);

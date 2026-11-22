@@ -1,7 +1,7 @@
 # Tiến độ dự án Sóng Xanh Resort (beach-hotel)
 
 > File bàn giao giữa các phiên làm việc với Claude. Mở phiên mới, bảo Claude: **"đọc file TIEN-DO.md"**.
-> Cập nhật lần cuối: 20/11/2026, đợt 24 (Bảng điều hành, hồ sơ khách + hạng tự động, tự trả lời đánh giá theo từ khóa).
+> Cập nhật lần cuối: 22/11/2026, đợt 25 (kế hoạch từng ngày theo thời tiết ở trang Gợi ý phòng).
 
 ## 1. Dự án
 
@@ -36,6 +36,13 @@
    - Thử AI với khóa thật: đóng gói jar, chạy cổng 8084, dùng curl đăng nhập `quanly.vanthanh@example.com` / `Songxanh@2026` (lấy `_csrf` từ trang `/admin`), POST `/admin/accounting/insights/analyze?month=...` hoặc `/ask/stream`; lệnh mạng phải tắt sandbox.
 
 ## 3. Đã làm (theo thứ tự gần nhất trước)
+
+### Đợt 25 (22/11/2026) - Kế hoạch từng ngày theo thời tiết (trang Gợi ý phòng)
+Chủ dự án yêu cầu: «phần gợi ý thời tiết: ấn vào ngày hiện thời tiết chi tiết 24h và khuyên nên làm gì, đồng thời hiện các khu du lịch, phòng nên đặt; ấn vào lấy dữ liệu ngày đó».
+
+| Commit | Chức năng |
+|---|---|
+| (xem `git log`) | Khung chi tiết ngày (`fragments/weather :: strip`) làm lại: **4 buổi** (đêm / sáng / chiều / tối: trời chủ yếu, nhiệt độ, % mưa, gió - `Day.getPeriods()`), **đủ 24 giờ** kéo ngang (`Day.getAllHours()`: nhiệt độ, cột % mưa, gió; giờ đã qua tô mờ, giờ đêm nền xám, giờ đẹp nhất tô vàng) thay bảng 3 tiếng; áp cho mọi trang có khung thời tiết. Riêng trang `/rooms/suggest` (model `wxPlans`, `TripPlanService`): **«Nên đi đâu ngày dd/MM?»** - 10 điểm Hạ Long (`HaLongSpot`: Bãi Cháy, du thuyền vịnh / hang Sửng Sốt, Ti Tốp, lặn san hô & kayak, núi Bài Thơ, Sun World, Bảo tàng Quảng Ninh, chợ Hạ Long 1, chợ đêm Bãi Cháy, spa & nhà hàng resort) chấm điểm theo thời tiết ngày đó (giông / gió mạnh: bỏ biển, vịnh, cáp treo; mưa: bảo tàng, spa, chợ; nắng ≥ 26°: tắm biển, vịnh), lấy 4 điểm hợp nhất; mỗi điểm có ảnh, mô tả, cách đi từ resort, **giờ nên đi** (giờ đẹp trời nhất trong khung giờ của điểm, `Day.bestHourBetween`), nút **Chỉ đường** (Google Maps), **Đặt tour ngày này** nếu tên tour của resort khớp từ khóa của điểm (`/customer/services/tours/{id}?date=` → chọn đơn có ngày đó → form tour điền sẵn ngày, `tourDate` / `preselectTourDate`). **«Phòng còn trống đêm dd/MM (N khách)»**: tối đa 3 loại phòng trống đêm đó (giá theo bảng giá đêm đó, số phòng còn), nút «Đặt đêm dd/MM» mở trang phòng với ngày nhận / trả điền sẵn; nút «Gợi ý phòng theo sở thích cho đêm này» điền ngày vào form gợi ý rồi gửi. Khách đã chọn ngày nhận phòng trong 7 ngày tới thì mở sẵn ngày đó (`wxOpen`). Song ngữ `weather.period.*`, `weather.spots.*`, `weather.rooms.*`, `spot.*`. Test `TripPlanIT` |
 
 ### Đợt 24 (20/11/2026) - Bảng điều hành ở trang Tổng quan
 Chủ dự án yêu cầu: «dashboard tôi cần chi tiết hơn, hãy làm 1 dashboard mà admin cần biết gì nhìn vào cũng có».

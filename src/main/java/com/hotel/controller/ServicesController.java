@@ -78,7 +78,9 @@ public class ServicesController {
     // nhieu don -> chon don; chua co don nao -> goi y dat phong
     @GetMapping("/customer/services/tours/{tourId}")
     public String bookTour(@PathVariable Long tourId, @AuthenticationPrincipal CustomUserDetails userDetails,
-                           @RequestParam(defaultValue = "1") int page, Model model) {
+                           @RequestParam(defaultValue = "1") int page,
+                           @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate date,
+                           Model model) {
         DivingTour tour = divingTourService.findActive().stream()
                 .filter(t -> t.getId().equals(tourId))
                 .findFirst().orElse(null);
@@ -91,9 +93,19 @@ public class ServicesController {
                 .filter(b -> !b.getCheckOutDate().isBefore(today))
                 .sorted(java.util.Comparator.comparing(Booking::getCheckInDate))
                 .toList();
-        if (bookings.size() == 1) {
-            return "redirect:/customer/bookings/" + bookings.get(0).getId() + "?tourId=" + tourId + "#dich-vu";
+        // Den tu ke hoach ngay o trang Goi y phong (?date=): uu tien don co ngay do trong thoi gian o, dien san ngay di tour
+        if (date != null) {
+            List<Booking> covering = bookings.stream()
+                    .filter(b -> !date.isBefore(b.getCheckInDate()) && !date.isAfter(b.getCheckOutDate())).toList();
+            if (!covering.isEmpty()) {
+                bookings = covering;
+            }
         }
+        String dateParam = date != null ? "&tourDate=" + date : "";
+        if (bookings.size() == 1) {
+            return "redirect:/customer/bookings/" + bookings.get(0).getId() + "?tourId=" + tourId + dateParam + "#dich-vu";
+        }
+        model.addAttribute("tourDate", date);
         model.addAttribute("tour", tour);
         Pager<Booking> pager = Pager.of(bookings, page, PaginationUtil.DEFAULT_PAGE_SIZE);
         model.addAttribute("pager", pager);

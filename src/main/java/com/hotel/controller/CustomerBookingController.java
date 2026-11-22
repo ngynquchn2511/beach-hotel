@@ -283,6 +283,7 @@ public class CustomerBookingController {
     @GetMapping("/{id}")
     public String viewBooking(@PathVariable Long id, @RequestParam(required = false) String token,
                               @RequestParam(required = false) Long tourId,
+                              @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate tourDate,
                               @AuthenticationPrincipal CustomUserDetails userDetails, Model model) {
         Booking booking = bookingService.findForViewing(id, token,
                 userDetails != null ? userDetails.getUser().getId() : null);
@@ -347,6 +348,10 @@ public class CustomerBookingController {
         model.addAttribute("activeTours", divingTourService.findActive());
         // Den tu nut "Dat tour nay" o trang /services: chon san tour do trong form
         model.addAttribute("preselectTourId", tourId);
+        // Ngay di tour chon tu ke hoach ngay (chi nhan neu nam trong thoi gian o)
+        if (tourDate != null && !tourDate.isBefore(booking.getCheckInDate()) && !tourDate.isAfter(booking.getCheckOutDate())) {
+            model.addAttribute("preselectTourDate", tourDate);
+        }
         model.addAttribute("transferRates", transferRateService.priceTable());
         model.addAttribute("airports", com.hotel.entity.Airport.values());
         model.addAttribute("vehicles", com.hotel.entity.VehicleType.values());

@@ -81,7 +81,7 @@
                     <div class="col-7">
                         <label class="form-label small" th:text="#{svc.form.date}">Ngày đi</label>
                         <input type="date" name="tourDate" class="form-control" required
-                               th:min="${booking.checkInDate}" th:max="${booking.checkOutDate}" th:value="${booking.checkInDate}">
+                               th:min="${booking.checkInDate}" th:max="${booking.checkOutDate}" th:value="${preselectTourDate != null ? preselectTourDate : booking.checkInDate}">
                     </div>
                     <div class="col-5">
                         <label class="form-label small" th:text="#{svc.form.participants}">Số người</label>

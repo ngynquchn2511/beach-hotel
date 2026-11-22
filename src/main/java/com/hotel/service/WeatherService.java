@@ -238,6 +238,10 @@ public class WeatherService {
         }
     }
 
+    // Mot buoi trong ngay (weather.period.<key>)
+    public record Period(String key, Kind kind, int minTemp, int maxTemp, Integer rainChance, int windKmh) {
+    }
+
     // Goi y nen lam gi: chu song ngu weather.tip.<key>, arg = tham so (vd gio hoang hon)
     public record Tip(String key, String icon, String arg) {
     }
@@ -261,6 +265,54 @@ public class WeatherService {
         public List<Hour> getDayHours() {
             int from = Math.max(6, isToday() ? LocalTime.now().getHour() : 0);
             return hours.stream().filter(x -> x.hour() >= from && x.hour() <= 21).toList();
+        }
+
+        // Du 24 gio cua ngay (0h - 23h, sap theo gio) cho bang chi tiet; gio da qua cua hom nay van giu (to mo)
+        public List<Hour> getAllHours() {
+            return hours.stream().sorted(java.util.Comparator.comparingInt(Hour::hour)).toList();
+        }
+
+        public boolean isPast(Hour h) {
+            return isToday() && h.hour() < LocalTime.now().getHour();
+        }
+
+        // Tom tat 4 buoi: dem (0-5), sang (6-11), chieu (12-17), toi (18-23): troi chu yeu, nhiet do thap - cao, % mua cao nhat
+        public List<Period> getPeriods() {
+            List<Period> out = new ArrayList<>();
+            String[] keys = {"night", "morning", "afternoon", "evening"};
+            for (int p = 0; p < 4; p++) {
+                int from = p * 6;
+                List<Hour> part = hours.stream().filter(x -> x.hour() >= from && x.hour() < from + 6).toList();
+                if (part.isEmpty()) {
+                    continue;
+                }
+                // Troi "xau" nhat trong buoi neu co mua / giong, khong thi troi gap nhieu nhat
+                Map<Kind, Integer> count = new HashMap<>();
+                part.forEach(x -> count.merge(x.getKind(), 1, Integer::sum));
+                Kind main = count.entrySet().stream().max(Map.Entry.comparingByValue()).orElseThrow().getKey();
+                for (Kind bad : List.of(Kind.STORM, Kind.RAIN)) {
+                    if (count.containsKey(bad) && main != bad && count.get(bad) >= 2) {
+                        main = bad;
+                        break;
+                    }
+                }
+                Integer rain = part.stream().map(Hour::rainChance).filter(java.util.Objects::nonNull).max(Integer::compare).orElse(null);
+                out.add(new Period(keys[p], main, part.stream().mapToInt(Hour::temp).min().orElse(0),
+                        part.stream().mapToInt(Hour::temp).max().orElse(0), rain,
+                        part.stream().mapToInt(Hour::windKmh).max().orElse(0)));
+            }
+            return out;
+        }
+
+        // Gio dep troi nhat trong khung [from, to] (hom nay bo gio da qua); null neu khong co
+        public Hour bestHourBetween(int from, int to) {
+            Hour best = null;
+            for (Hour h : hours) {
+                if (h.hour() >= from && h.hour() <= to && !isPast(h) && (best == null || h.score() > best.score())) {
+                    best = h;
+                }
+            }
+            return best;
         }
 
         // Moc 3 tieng mot (6, 9, 12, 15, 18, 21) cho bang theo gio

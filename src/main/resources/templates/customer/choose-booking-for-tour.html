@@ -48,7 +48,7 @@
                 <td th:text="${#temporals.format(b.checkInDate, 'dd/MM/yyyy')} + ' – ' + ${#temporals.format(b.checkOutDate, 'dd/MM/yyyy')}"></td>
                 <td><span th:class="'badge ' + ${b.status.badgeClass}" th:text="#{'enum.BookingStatus.' + ${b.status}}"></span></td>
                 <td class="text-end">
-                    <a th:href="@{/customer/bookings/{id}(id=${b.id},tourId=${tour.id})} + '#dich-vu'" class="btn btn-sm btn-primary"
+                    <a th:href="@{/customer/bookings/{id}(id=${b.id},tourId=${tour.id},tourDate=${tourDate})} + '#dich-vu'" class="btn btn-sm btn-primary"
                        th:text="#{svc.choose.select}">Chọn đơn này</a>
                 </td>
             </tr>

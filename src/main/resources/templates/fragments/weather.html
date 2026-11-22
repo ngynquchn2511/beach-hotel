@@ -1,6 +1,6 @@
 <!-- Du bao thoi tiet Ha Long (Open-Meteo): dai ngay ngang, bam vao 1 ngay -> chi tiet: gio dep troi nhat, theo gio, nen lam gi.
      days = List<WeatherService.Day>, title = tieu de -->
-<div th:fragment="strip(days, title)" th:if="${days != null and !#lists.isEmpty(days)}" class="weather-strip bg-white p-3 rounded shadow-sm mb-4"
+<div th:fragment="strip(days, title)" th:if="${days != null and !#lists.isEmpty(days)}" class="weather-strip bg-white p-3 rounded shadow-sm mb-4" th:attr="data-wx-open=${wxOpen}"
      xmlns:th="http://www.thymeleaf.org">
     <style>
         .weather-strip .wx { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
@@ -22,6 +22,22 @@
         .weather-strip .wx-hour { flex: 1 0 62px; text-align: center; background: #f7f9fb; border-radius: 8px; padding: 6px 2px; font-size: .8rem; }
         .weather-strip .wx-hour.best { background: #fff3c4; font-weight: 700; }
         .weather-strip .wx-hour i { font-size: 1.1rem; color: #2a78d6; display: block; }
+        .weather-strip .wx-24 .wx-hour { flex: 0 0 66px; }
+        .weather-strip .wx-hour.past { opacity: .45; }
+        .weather-strip .wx-hour.night { background: #eef1f7; }
+        .weather-strip .wx-hour.best { background: #fff3c4; }
+        .weather-strip .wx-rain { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 38px; color: #2a78d6; font-size: .72rem; }
+        .weather-strip .wx-rain .bar { width: 10px; background: #8ec1f0; border-radius: 3px 3px 0 0; }
+        .weather-strip .wx-period { background: #f4f8fb; border-radius: 10px; padding: 8px 10px; height: 100%; }
+        .weather-strip .wx-period i { font-size: 1.4rem; color: #2a78d6; }
+        .weather-strip .wx-spot { border: 1px solid #e1e8ef; border-radius: 12px; overflow: hidden; background: #fff; }
+        .weather-strip .wx-spot .ph { height: 96px; background: linear-gradient(135deg, #2a78d6, #6fc3df) center/cover; position: relative;
+            display: flex; align-items: center; justify-content: center; }
+        .weather-strip .wx-spot .ph > i { font-size: 2.2rem; color: #fff; }
+        .weather-strip .wx-spot .ph .tag { position: absolute; left: 8px; top: 8px; background: rgba(0,0,0,.55); color: #fff;
+            font-size: .7rem; border-radius: 99px; padding: 1px 8px; }
+        .weather-strip .wx-rooms { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; }
+        .weather-strip .wx-room { display: flex; justify-content: space-between; gap: 8px; border: 1px solid #e1e8ef; border-radius: 10px; padding: 8px 10px; }
         .weather-strip .wx-tips li { margin-bottom: 4px; }
         .weather-strip .wx-tips i { color: #2a78d6; margin-right: 6px; }
     </style>
@@ -29,7 +45,7 @@
         <div class="fw-bold"><i class="bi bi-cloud-sun me-1"></i><span th:text="${title}"></span></div>
         <div class="small text-muted" th:text="#{weather.source}">Open-Meteo</div>
     </div>
-    <div class="small text-muted mb-2" th:text="#{weather.clickHint}">Bấm vào một ngày để xem chi tiết</div>
+    <div class="small text-muted mb-2" th:text="${wxPlans != null} ? #{weather.clickHintPlan} : #{weather.clickHint}">Bấm vào một ngày để xem chi tiết</div>
     <div class="wx">
         <button type="button" th:each="d, st : ${days}" class="wx-day" th:classappend="${d.rough} ? 'rough'" th:attr="data-wx=${st.index}"
                 th:title="#{'weather.kind.' + ${d.kind}} + (${d.rough} ? ' - ' + #{weather.rough(${d.windKmh})} : '')">
@@ -70,14 +86,41 @@
                 </div>
             </div>
 
-            <div th:if="${!#lists.isEmpty(d.hourSteps)}" class="wx-hours mb-3">
-                <div th:each="h : ${d.hourSteps}" class="wx-hour" th:classappend="${b != null and h.hour == b.hour} ? 'best'"
-                     th:title="#{'weather.kind.' + ${h.kind}}">
-                    <div th:text="${h.label}"></div>
-                    <i class="bi" th:classappend="${h.kind.icon}"></i>
-                    <div th:text="${h.temp} + '°'"></div>
-                    <div class="text-muted" th:if="${h.rainChance != null}" th:text="${h.rainChance} + '%'"></div>
+            <!-- 4 buoi trong ngay -->
+            <div th:if="${!#lists.isEmpty(d.periods)}" class="row g-2 mb-3">
+                <div th:each="p : ${d.periods}" class="col-6 col-md-3">
+                    <div class="wx-period">
+                        <div class="small fw-bold" th:text="#{'weather.period.' + ${p.key}}">Sáng</div>
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi" th:classappend="${p.kind.icon}"></i>
+                            <div>
+                                <div class="fw-semibold" th:text="${p.minTemp} + '° – ' + ${p.maxTemp} + '°'"></div>
+                                <div class="wx-s" th:text="#{'weather.kind.' + ${p.kind}}"></div>
+                            </div>
+                        </div>
+                        <div class="wx-s" th:text="(${p.rainChance != null} ? #{weather.rainChance(${p.rainChance})} + ' · ' : '') + #{weather.wind(${p.windKmh})}"></div>
+                    </div>
                 </div>
+            </div>
+
+            <!-- Du 24 gio: keo ngang; gio da qua to mo, gio dep nhat to vang -->
+            <div th:if="${!#lists.isEmpty(d.allHours)}" class="mb-3">
+                <div class="small fw-semibold mb-1"><i class="bi bi-clock me-1"></i><span th:text="#{weather.hours24}">Thời tiết từng giờ (24h)</span></div>
+                <div class="wx-hours wx-24">
+                    <div th:each="h : ${d.allHours}" class="wx-hour"
+                         th:classappend="${(b != null and h.hour == b.hour ? 'best ' : '') + (d.isPast(h) ? 'past ' : '') + (h.hour < 6 or h.hour > 18 ? 'night' : '')}"
+                         th:title="#{'weather.kind.' + ${h.kind}}">
+                        <div class="fw-semibold" th:text="${h.label}"></div>
+                        <i class="bi" th:classappend="${h.kind.icon}"></i>
+                        <div class="fw-bold" th:text="${h.temp} + '°'"></div>
+                        <div class="wx-rain" th:if="${h.rainChance != null}">
+                            <span class="bar" th:style="'height:' + ${h.rainChance * 22 / 100 + 1} + 'px'"></span>
+                            <span th:text="${h.rainChance} + '%'"></span>
+                        </div>
+                        <div class="wx-s" th:text="${h.windKmh} + ' km/h'"></div>
+                    </div>
+                </div>
+                <div class="wx-s mt-1" th:text="#{weather.hoursLegend}">Cột xanh = khả năng mưa · ô vàng = giờ đẹp trời nhất</div>
             </div>
         </div>
 
@@ -85,6 +128,63 @@
         <ul class="list-unstyled wx-tips mb-0 small">
             <li th:each="t : ${d.tips}"><i class="bi" th:classappend="${t.icon}"></i><span th:text="#{'weather.tip.' + ${t.key}(${t.arg})}"></span></li>
         </ul>
+
+        <!-- Ke hoach ngay (chi trang Goi y phong): diem du lich hop thoi tiet + phong trong dem do -->
+        <th:block th:if="${wxPlans != null and wxPlans.get(d.date) != null}" th:with="plan=${wxPlans.get(d.date)}">
+            <div class="fw-semibold mt-3 mb-2"><i class="bi bi-geo-alt me-1"></i>
+                <span th:text="#{weather.spots.title(${#temporals.format(d.date, 'dd/MM')})}">Nên đi đâu ngày này?</span></div>
+            <div th:if="${#lists.isEmpty(plan.spots)}" class="small text-muted" th:text="#{weather.spots.none}"></div>
+            <div class="row g-2 wx-spots">
+                <div th:each="sp : ${plan.spots}" class="col-sm-6 col-lg-3">
+                    <div class="wx-spot h-100" th:attr="data-spot=${sp.spot}">
+                        <div class="ph" th:style="${sp.spot.image != null} ? 'background-image:url(' + ${sp.spot.image} + ')' : ''">
+                            <i class="bi" th:if="${sp.spot.image == null}" th:classappend="${sp.spot.icon}"></i>
+                            <span class="tag" th:text="#{'spot.kind.' + ${sp.spot.kind}}">Biển</span>
+                        </div>
+                        <div class="p-2">
+                            <div class="fw-bold"><i class="bi me-1" th:classappend="${sp.spot.icon}"></i><span th:text="#{'spot.' + ${sp.spot} + '.name'}"></span></div>
+                            <div class="wx-s mb-1" th:text="#{'spot.' + ${sp.spot} + '.desc'}"></div>
+                            <div class="small" th:if="${sp.bestHour != null}"><i class="bi bi-alarm text-warning"></i>
+                                <span th:text="#{weather.spots.goAt(${sp.bestHour.label}, #{'weather.kind.' + ${sp.bestHour.kind}}, ${sp.bestHour.temp})}">Nên đi lúc 09:00</span></div>
+                            <div class="small" th:if="${sp.bestHour == null}"><i class="bi bi-clock"></i>
+                                <span th:text="#{weather.spots.open(${sp.spot.window})}">Giờ hợp: 08:00 – 17:00</span></div>
+                            <div class="wx-s mb-2"><i class="bi bi-signpost"></i> <span th:text="#{'spot.' + ${sp.spot} + '.how'}"></span></div>
+                            <div class="d-flex flex-wrap gap-1">
+                                <a th:if="${sp.tour != null}" class="btn btn-primary btn-sm"
+                                   th:href="@{/customer/services/tours/{id}(id=${sp.tour.id}, date=${d.date})}"
+                                   th:title="${sp.tour.localizedName}"><i class="bi bi-ticket-perforated me-1"></i><span th:text="#{weather.spots.bookTour}">Đặt tour ngày này</span></a>
+                                <a th:if="${sp.tour == null and sp.spot.kind.name() == 'SEA'}" class="btn btn-outline-primary btn-sm"
+                                   th:href="@{/services} + '#tour-lan'" th:text="#{weather.spots.seeTours}">Xem tour</a>
+                                <a th:if="${sp.spot.name() == 'RESORT_SPA'}" class="btn btn-outline-primary btn-sm"
+                                   th:href="@{/services} + '#spa-nha-hang'" th:text="#{weather.spots.spa}">Spa</a>
+                                <a th:if="${sp.spot.mapsQuery != null}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener"
+                                   th:href="'https://www.google.com/maps/dir/?api=1&destination=' + ${#uris.escapeQueryParam(sp.spot.mapsQuery)}"><i class="bi bi-map me-1"></i><span th:text="#{weather.spots.directions}">Chỉ đường</span></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="fw-semibold mt-3 mb-2"><i class="bi bi-door-open me-1"></i>
+                <span th:text="#{weather.rooms.title(${#temporals.format(d.date, 'dd/MM')}, ${wxGuests})}">Phòng còn trống đêm này</span></div>
+            <div th:if="${#lists.isEmpty(plan.rooms)}" class="small text-muted mb-2" th:text="#{weather.rooms.none}">Đêm này đã hết phòng.</div>
+            <div class="wx-rooms">
+                <div th:each="r : ${plan.rooms}" class="wx-room">
+                    <div>
+                        <div class="fw-bold" th:text="${r.type.localizedName}"></div>
+                        <div class="wx-s" th:text="#{weather.rooms.left(${r.available})} + ' · ' + #{suggest.maxGuests(${r.type.maxGuests})}"></div>
+                    </div>
+                    <div class="text-end">
+                        <div class="fw-bold text-primary" th:text="${#numbers.formatDecimal(r.price, 1, 'POINT', 0, 'COMMA')} + ' đ'"></div>
+                        <a class="btn btn-primary btn-sm mt-1"
+                           th:href="@{/customer/rooms/{id}(id=${r.room.id}, checkIn=${d.date}, checkOut=${d.date.plusDays(1)}, guests=${wxGuests})}"
+                           th:text="#{weather.rooms.book(${#temporals.format(d.date, 'dd/MM')})}">Đặt đêm này</a>
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn btn-outline-primary btn-sm mt-2 js-wx-suggest"
+                    th:attr="data-in=${d.date},data-out=${d.date.plusDays(1)}"><i class="bi bi-magic me-1"></i><span th:text="#{weather.rooms.suggest}">Gợi ý phòng theo sở thích cho đêm này</span></button>
+        </th:block>
     </div>
 
     <script>
@@ -100,6 +200,22 @@
                         btn.classList.add('active');
                         box.querySelector('[data-wx-detail="' + i + '"]').hidden = false;
                     }
+                });
+            });
+            // Mo san ngay khach da chon (ngay nhan phong nam trong 7 ngay)
+            var preset = box.getAttribute('data-wx-open');
+            if (preset) {
+                var b0 = box.querySelector('[data-wx="' + preset + '"]');
+                if (b0) b0.click();
+            }
+            // "Goi y phong theo so thich cho dem nay": dien ngay vao form goi y roi gui
+            box.querySelectorAll('.js-wx-suggest').forEach(function (btn) {
+                var form = document.getElementById('suggest-form');
+                if (!form) { btn.hidden = true; return; }
+                btn.addEventListener('click', function () {
+                    form.querySelector('[name=checkIn]').value = btn.getAttribute('data-in');
+                    form.querySelector('[name=checkOut]').value = btn.getAttribute('data-out');
+                    if (form.requestSubmit) { form.requestSubmit(); } else { form.submit(); }
                 });
             });
         })();
