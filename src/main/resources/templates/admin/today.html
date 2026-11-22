@@ -163,11 +163,12 @@
                     </div>
                     <div>
                         <div class="fd-guest"><a th:href="@{/admin/bookings/{id}(id=${b.id})}" th:text="${b.guestName}"></a></div>
-                        <div class="fd-chips"><span class="chip t-red"><i class="bi bi-alarm"></i>Khách quá hạn trả phòng</span></div>
+                        <div class="fd-chips"><span class="chip t-red"><i class="bi bi-alarm"></i>Khách quá hạn trả phòng <th:block th:text="${T(java.time.temporal.ChronoUnit).DAYS.between(b.checkOutDate, day.date)}"></th:block> đêm, chưa tính tiền</span></div>
                         <div class="fd-meta mt-2"><span><i class="bi bi-telephone"></i> <a th:href="'tel:' + ${b.guestPhone}" th:text="${b.guestPhone}"></a></span></div>
                     </div>
                     <div class="fd-actions no-print">
                         <a class="btn btn-warning" th:href="@{/admin/bookings/{id}/check-out(id=${b.id})}"><i class="bi bi-box-arrow-right me-1"></i>Check-out</a>
+                        <a class="btn btn-outline-warning" th:href="@{/admin/bookings/{id}/extend(id=${b.id})}"><i class="bi bi-calendar-plus me-1"></i>Gia hạn</a>
                         <a class="btn btn-outline-primary" th:href="'tel:' + ${b.guestPhone}"><i class="bi bi-telephone me-1"></i>Gọi khách</a>
                     </div>
                 </div>

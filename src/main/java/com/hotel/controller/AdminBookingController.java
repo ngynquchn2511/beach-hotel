@@ -37,6 +37,12 @@ public class AdminBookingController {
     private com.hotel.service.CompanyInvoiceService companyInvoiceService;
 
     private com.hotel.service.HousekeepingService housekeepingService;
+    private com.hotel.service.StayExtensionService stayExtensionService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setStayExtensionService(com.hotel.service.StayExtensionService stayExtensionService) {
+        this.stayExtensionService = stayExtensionService;
+    }
 
     @org.springframework.beans.factory.annotation.Autowired
     void setHousekeepingService(com.hotel.service.HousekeepingService housekeepingService) {
@@ -114,6 +120,7 @@ public class AdminBookingController {
         // Tien hoan coc du kien neu huy ngay bay gio (null = chua coc / khong huy duoc)
         model.addAttribute("refundQuote", bookingService.refundQuoteIfCancelledNow(booking));
         model.addAttribute("canMarkNoShow", bookingService.canMarkNoShow(booking));
+        model.addAttribute("overdueNights", stayExtensionService.overdueNights(booking));
         model.addAttribute("upgradeOffers", upgradeService.offersOf(id));
         model.addAttribute("requestTagOptions", com.hotel.entity.GuestRequestTag.values());
         model.addAttribute("messages", messageService.thread(id));
@@ -228,7 +235,85 @@ public class AdminBookingController {
         model.addAttribute("depositPaid", booking.getDepositPaidAmount());
         model.addAttribute("amountDue", paymentService.amountDue(booking));
         model.addAttribute("chargeTypes", ChargeType.manualTypes());
+        // Khach o qua ngay tra: hien bao gia cac dem o them ngay dau trang, bat buoc tinh (hoac mien) truoc khi thu tien
+        long overdue = stayExtensionService.overdueNights(booking);
+        model.addAttribute("overdueNights", overdue);
+        if (overdue > 0 && !paymentService.isPaid(id)) {
+            model.addAttribute("overstay", stayExtensionService.quote(id, LocalDate.now()));
+        }
+        // Tra hom nay ma da qua gio tra chuan (12:00) va chua co phu phi tra muon -> goi y muc phu phi theo chinh sach
+        java.time.LocalTime now = java.time.LocalTime.now();
+        int latePercent = com.hotel.service.StayTimePolicy.latePercent(now);
+        boolean hasLateFee = paymentService.findCharges(id).stream().anyMatch(c -> c.getType() == ChargeType.LATE_CHECKOUT);
+        if (overdue == 0 && booking.getCheckOutDate().equals(LocalDate.now()) && latePercent > 0 && !hasLateFee) {
+            model.addAttribute("lateNow", now.withSecond(0).withNano(0));
+            model.addAttribute("latePercent", latePercent);
+            model.addAttribute("lateFee", booking.getRoom().getPrice().multiply(BigDecimal.valueOf(latePercent))
+                    .divide(BigDecimal.valueOf(100_000), 0, java.math.RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(1000)));
+        }
         return "admin/bookings/checkout";
+    }
+
+    // Gia han / o them: chon ngay tra moi -> xem gia tung dem + kiem phong con trong -> xac nhan
+    @GetMapping("/{id}/extend")
+    public String extendForm(@PathVariable Long id,
+                             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+                             Model model, RedirectAttributes redirectAttributes) {
+        Booking booking = bookingService.findById(id);
+        if (booking.getStatus() != BookingStatus.CHECKED_IN) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Chỉ gia hạn được đơn khách đang ở (đã check-in)");
+            return "redirect:/admin/bookings/" + id;
+        }
+        model.addAttribute("booking", booking);
+        model.addAttribute("paid", paymentService.isPaid(id));
+        model.addAttribute("overdueNights", stayExtensionService.overdueNights(booking));
+        model.addAttribute("minDate", stayExtensionService.minNewCheckOut(booking));
+        model.addAttribute("maxDate", stayExtensionService.maxNewCheckOut(booking));
+        model.addAttribute("extensions", paymentService.findCharges(id).stream()
+                .filter(c -> c.getType() == ChargeType.EXTENDED_STAY).toList());
+        model.addAttribute("undoable", stayExtensionService.undoableExtension(booking).orElse(null));
+        LocalDate target = to != null ? to : stayExtensionService.minNewCheckOut(booking);
+        model.addAttribute("to", target);
+        if (!paymentService.isPaid(id)) {
+            try {
+                model.addAttribute("quote", stayExtensionService.quote(id, target));
+            } catch (BusinessException ex) {
+                model.addAttribute("quoteError", ex.getMessage());
+            }
+        }
+        return "admin/bookings/extend";
+    }
+
+    // back=checkout: bam tu man hinh check-out (tinh tien dem qua han) -> quay lai thu tien luon
+    @PostMapping("/{id}/extend")
+    public String extend(@PathVariable Long id,
+                         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+                         @RequestParam(defaultValue = "false") boolean waive,
+                         @RequestParam(required = false) String reason,
+                         @RequestParam(required = false) String back,
+                         @org.springframework.security.core.annotation.AuthenticationPrincipal com.hotel.security.CustomUserDetails user,
+                         RedirectAttributes redirectAttributes) {
+        try {
+            var charge = stayExtensionService.extend(id, to, waive, reason, user != null ? user.getUser().getFullName() : null);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã gia hạn đến " + to.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+                    + (waive ? " (miễn tiền ở thêm)" : ", cộng " + String.format("%,.0f", charge.getAmount()).replace(',', '.') + " VND tiền ở thêm vào đơn"));
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+            return "redirect:/admin/bookings/" + id + "/extend" + (to != null ? "?to=" + to : "");
+        }
+        return "checkout".equals(back) ? "redirect:/admin/bookings/" + id + "/check-out" : "redirect:/admin/bookings/" + id;
+    }
+
+    @PostMapping("/{id}/extend/undo")
+    public String undoExtend(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            Booking booking = stayExtensionService.undoLastExtension(id);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã hoàn tác, ngày trả phòng trở lại "
+                    + booking.getCheckOutDate().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "redirect:/admin/bookings/" + id + "/extend";
     }
 
     // Yeu cau nhan vien buong phong kiem phong (do mat / hu hong) truoc khi tinh tien tra phong

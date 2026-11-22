@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Gia hạn / ở thêm</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        .steps li { margin-bottom: .25rem; }
+        tr.past td { background: #fdecec; }
+    </style>
+</head>
+<body class="eaut eaut-admin">
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="container py-5" style="max-width: 960px;">
+    <div class="row g-4">
+        <div class="col-md-3 d-none d-md-block">
+            <div th:replace="~{fragments/admin-sidebar :: sidebar}"></div>
+        </div>
+
+        <div class="col-md-9">
+            <a th:href="@{/admin/bookings/{id}(id=${booking.id})}" class="d-inline-block mb-3">&laquo; Quay lại chi tiết đơn</a>
+
+            <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+            <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+
+            <div class="bg-white p-4 rounded shadow-sm mb-4">
+                <h4 class="fw-bold mb-2"><i class="bi bi-calendar-plus me-1"></i>Gia hạn / ở thêm - đơn #<span th:text="${booking.code}"></span></h4>
+                <p class="mb-1">Khách: <b th:text="${booking.guestName}"></b> · Phòng <b th:text="${booking.room.roomNumber}"></b>
+                    (<span th:text="${booking.room.roomType.name}"></span>)</p>
+                <p class="mb-0">Đang ở từ <b th:text="${#temporals.format(booking.checkInDate, 'dd/MM/yyyy')}"></b>,
+                    ngày trả theo đơn <b th:text="${#temporals.format(booking.checkOutDate, 'dd/MM/yyyy')}"></b>
+                    lúc <span th:text="${booking.checkOutTime}"></span></p>
+                <div th:if="${overdueNights > 0}" class="alert alert-danger mt-3 mb-0">
+                    <i class="bi bi-alarm-fill me-1"></i>Khách đã ở <b th:text="${overdueNights} + ' đêm'"></b> quá ngày trả.
+                    Các đêm này tính tiền bắt buộc (đã ở rồi); chọn ngày trả mới từ hôm nay trở đi.
+                </div>
+                <div th:if="${paid}" class="alert alert-warning mt-3 mb-0">
+                    <i class="bi bi-lock me-1"></i>Đơn đã thu tiền nên không gia hạn trên đơn này được.
+                    Check-out đơn này rồi tạo đơn mới (đặt tại quầy) cho các đêm ở thêm.
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded shadow-sm mb-4">
+                <h6 class="fw-bold">Quy trình</h6>
+                <ol class="steps small mb-0">
+                    <li>Hỏi khách muốn trả phòng ngày nào, chọn ngày bên dưới rồi bấm <b>Xem giá</b>.</li>
+                    <li>Hệ thống tính <b>giá niêm yết từng đêm</b> của phòng (ngày thường / cuối tuần / dịp lễ - không áp lại mã giảm giá của đơn)
+                        và kiểm tra phòng còn trống các đêm tới. Đêm đã qua (quá hạn) luôn tính tiền, không cần kiểm phòng.</li>
+                    <li>Phòng bị khách khác đặt: đổi phòng cho đơn kia, hoặc chuyển khách này sang phòng khác (nút <b>Đổi phòng</b>) rồi gia hạn.</li>
+                    <li>Xác nhận → ngày trả của đơn đổi sang ngày mới, tiền ở thêm cộng vào đơn thành dòng «Ở thêm (gia hạn)»,
+                        <b>thu một lần khi check-out</b> (trừ tiền cọc như bình thường).</li>
+                    <li>Ngày trả mới vẫn quá 12:00 thì tính thêm phụ phí trả muộn ở màn hình check-out (30% / 50% / 100% giá 1 đêm).</li>
+                </ol>
+            </div>
+
+            <div th:unless="${paid}" class="bg-white p-4 rounded shadow-sm mb-4">
+                <form method="get" th:action="@{/admin/bookings/{id}/extend(id=${booking.id})}" class="row g-2 align-items-end mb-3">
+                    <div class="col-sm-5">
+                        <label class="form-label small mb-1" for="to">Ngày trả phòng mới</label>
+                        <input id="to" type="date" name="to" class="form-control" th:value="${to}" th:min="${minDate}" th:max="${maxDate}" required>
+                    </div>
+                    <div class="col-sm-3">
+                        <button type="submit" class="btn btn-outline-primary w-100"><i class="bi bi-search me-1"></i>Xem giá</button>
+                    </div>
+                </form>
+
+                <div th:if="${quoteError}" class="alert alert-danger" th:text="${quoteError}"></div>
+
+                <th:block th:if="${quote != null}">
+                    <table class="table table-sm align-middle">
+                        <thead><tr><th>Đêm</th><th>Loại ngày</th><th></th><th class="text-end">Giá</th></tr></thead>
+                        <tbody>
+                        <tr th:each="n : ${quote.nights}" th:classappend="${n.past} ? 'past'">
+                            <td th:text="${#temporals.format(n.date, 'EEE dd/MM')}"></td>
+                            <td class="text-muted" th:text="${n.label}"></td>
+                            <td><span th:if="${n.past}" class="badge text-bg-danger">Đã ở (quá hạn)</span></td>
+                            <td class="text-end" th:text="${#numbers.formatDecimal(n.price, 1, 'POINT', 0, 'COMMA')} + ' VND'"></td>
+                        </tr>
+                        <tr class="fw-bold">
+                            <td colspan="3" th:text="'Tổng ' + ${quote.nightCount} + ' đêm ở thêm'"></td>
+                            <td class="text-end text-danger" th:text="${#numbers.formatDecimal(quote.amount, 1, 'POINT', 0, 'COMMA')} + ' VND'"></td>
+                        </tr>
+                        </tbody>
+                    </table>
+
+                    <div th:unless="${#lists.isEmpty(quote.conflicts)}" class="alert alert-warning">
+                        <b><i class="bi bi-x-octagon me-1"></i>Phòng không còn trống:</b>
+                        <ul class="mb-1">
+                            <li th:each="c : ${quote.conflicts}">
+                                <a th:href="@{/admin/bookings/{id}(id=${c.id})}" th:text="'#' + ${c.code}"></a>
+                                <span th:text="${c.guestName}"></span>
+                                <span th:text="${#temporals.format(c.checkInDate, 'dd/MM')} + ' → ' + ${#temporals.format(c.checkOutDate, 'dd/MM')}"></span>
+                                (<span th:text="${c.status.name()}"></span>)
+                            </li>
+                        </ul>
+                        Đổi phòng cho đơn trên, hoặc
+                        <a th:href="@{/admin/bookings/{id}/move(id=${booking.id})}">chuyển khách này sang phòng khác</a> rồi gia hạn;
+                        hoặc chọn ngày trả sớm hơn.
+                    </div>
+                    <div th:unless="${#lists.isEmpty(quote.otaBlocks)}" class="alert alert-warning">
+                        <i class="bi bi-x-octagon me-1"></i>Các đêm này phòng đã bán trên Booking.com / Airbnb.
+                    </div>
+                    <div th:if="${quote.turnoverMessage != null}" class="alert alert-warning" th:text="${quote.turnoverMessage}"></div>
+
+                    <th:block th:if="${quote.possible}">
+                        <form method="post" th:action="@{/admin/bookings/{id}/extend(id=${booking.id})}" class="mb-2">
+                            <input type="hidden" name="to" th:value="${quote.newCheckOut}">
+                            <button type="submit" class="btn btn-warning">
+                                <i class="bi bi-check2-circle me-1"></i>Gia hạn đến
+                                <span th:text="${#temporals.format(quote.newCheckOut, 'dd/MM/yyyy')}"></span>
+                                · cộng <span th:text="${#numbers.formatDecimal(quote.amount, 1, 'POINT', 0, 'COMMA')} + ' VND'"></span>
+                            </button>
+                        </form>
+                        <details>
+                            <summary class="small text-muted">Miễn tiền các đêm này (có lý do)…</summary>
+                            <form method="post" th:action="@{/admin/bookings/{id}/extend(id=${booking.id})}" class="row g-2 mt-1"
+                                  onsubmit="return confirm('Gia hạn và miễn toàn bộ tiền ở thêm?')">
+                                <input type="hidden" name="to" th:value="${quote.newCheckOut}">
+                                <input type="hidden" name="waive" value="true">
+                                <div class="col-sm-9"><input type="text" name="reason" class="form-control form-control-sm" maxlength="120" required minlength="5"
+                                                             placeholder="VD: đền bù sự cố mất nước, quản lý đồng ý"></div>
+                                <div class="col-sm-3"><button type="submit" class="btn btn-sm btn-outline-secondary w-100">Gia hạn miễn phí</button></div>
+                            </form>
+                        </details>
+                    </th:block>
+                </th:block>
+            </div>
+
+            <div th:unless="${#lists.isEmpty(extensions)}" class="bg-white p-4 rounded shadow-sm">
+                <h6 class="fw-bold mb-2">Các lần gia hạn của đơn</h6>
+                <table class="table table-sm mb-2">
+                    <thead><tr><th>Lúc</th><th>Nội dung</th><th class="text-end">Tiền</th></tr></thead>
+                    <tbody>
+                    <tr th:each="c : ${extensions}">
+                        <td th:text="${#temporals.format(c.createdAt, 'dd/MM HH:mm')}"></td>
+                        <td th:text="${c.description}"></td>
+                        <td class="text-end" th:text="${#numbers.formatDecimal(c.amount, 1, 'POINT', 0, 'COMMA')} + ' VND'"></td>
+                    </tr>
+                    </tbody>
+                </table>
+                <form th:if="${undoable != null}" method="post" th:action="@{/admin/bookings/{id}/extend/undo(id=${booking.id})}" class="m-0"
+                      onsubmit="return confirm('Hoàn tác lần gia hạn gần nhất?')">
+                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-arrow-counterclockwise me-1"></i>Hoàn tác gia hạn gần nhất
+                        (trả lại ngày <span th:text="${#temporals.format(undoable.stayFrom, 'dd/MM')}"></span>)</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

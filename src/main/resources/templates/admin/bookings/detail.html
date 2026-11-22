@@ -172,8 +172,18 @@
                             th:title="${#lists.isEmpty(guests)} ? 'Cần khai báo lưu trú ít nhất 1 khách trước khi check-in' : null">Check-in</button>
                 </form>
 
+                <div th:if="${overdueNights != null and overdueNights > 0}" class="alert alert-danger d-flex flex-wrap align-items-center gap-2 mb-2">
+                    <i class="bi bi-alarm-fill"></i>
+                    <span>Khách ở <b th:text="${overdueNights} + ' đêm'"></b> quá ngày trả
+                        (<span th:text="${#temporals.format(booking.checkOutDate, 'dd/MM/yyyy')}"></span>) mà chưa tính tiền.
+                        Hỏi khách: <b>trả phòng hôm nay</b> → Check-out (hệ thống tự tính các đêm quá hạn),
+                        hay <b>ở tiếp</b> → Gia hạn đến ngày khách muốn trả.</span>
+                </div>
                 <a th:if="${booking.status.name() == 'CHECKED_IN'}" th:href="@{/admin/bookings/{id}/check-out(id=${booking.id})}"
                    class="btn btn-warning">Check-out &amp; thanh toán</a>
+
+                <a th:if="${booking.status.name() == 'CHECKED_IN'}" th:href="@{/admin/bookings/{id}/extend(id=${booking.id})}"
+                   class="btn btn-outline-warning"><i class="bi bi-calendar-plus me-1"></i>Gia hạn / ở thêm</a>
 
                 <a th:if="${booking.status.name() == 'PENDING' or booking.status.name() == 'CONFIRMED' or booking.status.name() == 'CHECKED_IN'}"
                    th:href="@{/admin/bookings/{id}/move(id=${booking.id})}" class="btn btn-outline-secondary">

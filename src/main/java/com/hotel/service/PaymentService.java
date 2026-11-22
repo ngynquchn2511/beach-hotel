@@ -156,6 +156,9 @@ public class PaymentService {
         if (type.isServiceCharge()) {
             throw new BusinessException("Tiền tour lặn / đưa đón sân bay được tính tự động khi xác nhận dịch vụ, không thêm tay");
         }
+        if (type == ChargeType.EXTENDED_STAY) {
+            throw new BusinessException("Tiền ở thêm được tính ở màn hình Gia hạn (theo giá từng đêm), không thêm tay");
+        }
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new BusinessException("Số tiền phụ phí phải lớn hơn 0");
         }
@@ -183,6 +186,9 @@ public class PaymentService {
         if (charge.getType().isServiceCharge()) {
             throw new BusinessException("Muốn bỏ tiền dịch vụ này, hãy hủy dịch vụ ở mục Dịch vụ thêm của đơn");
         }
+        if (charge.getType() == ChargeType.EXTENDED_STAY) {
+            throw new BusinessException("Muốn bỏ tiền ở thêm, dùng nút «Hoàn tác gia hạn» ở màn hình Gia hạn");
+        }
         chargeRepository.delete(charge);
     }
 
@@ -198,6 +204,18 @@ public class PaymentService {
         return booking;
     }
 
+    // Khach o qua ngay tra phong: cac dem da o them phai duoc tinh tien (hoac mien co ly do) o man hinh Gia han
+    // truoc khi thu tien - tranh thu thieu tien phong
+    private void ensureOverstayBilled(Booking booking) {
+        LocalDate today = LocalDate.now();
+        if (booking.getCheckOutDate().isBefore(today)) {
+            long nights = ChronoUnit.DAYS.between(booking.getCheckOutDate(), today);
+            throw new BusinessException("Khách ở quá ngày trả phòng " + nights + " đêm (phải trả "
+                    + booking.getCheckOutDate().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+                    + ") nhưng chưa tính tiền các đêm này. Bấm «Tính tiền ở thêm» trước rồi mới thu tiền / check-out");
+        }
+    }
+
     // Nhan vien kiem tra app ngan hang thay tien da vao -> ghi nhan da thanh toan chuyen khoan
     @Transactional
     public Payment confirmBankTransfer(Long bookingId) {
@@ -205,6 +223,7 @@ public class PaymentService {
         if (booking.getStatus() != BookingStatus.CHECKED_IN) {
             throw new BusinessException("Chỉ ghi nhận thanh toán cho đơn đang ở trạng thái Đã nhận phòng");
         }
+        ensureOverstayBilled(booking);
         return markPaid(booking, PaymentMethod.BANK_TRANSFER);
     }
 
@@ -223,6 +242,7 @@ public class PaymentService {
         }
         // Da nhan chuyen khoan truoc do thi khong thu them lan nua
         if (!isPaid(bookingId)) {
+            ensureOverstayBilled(booking);
             switch (method) {
                 case CASH -> markPaid(booking, PaymentMethod.CASH);
                 case BANK_TRANSFER -> throw new BusinessException(

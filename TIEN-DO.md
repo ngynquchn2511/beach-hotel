@@ -1,7 +1,7 @@
 # Tiến độ dự án Sóng Xanh Resort (beach-hotel)
 
 > File bàn giao giữa các phiên làm việc với Claude. Mở phiên mới, bảo Claude: **"đọc file TIEN-DO.md"**.
-> Cập nhật lần cuối: 22/11/2026, đợt 25 (kế hoạch từng ngày theo thời tiết ở trang Gợi ý phòng).
+> Cập nhật lần cuối: 22/11/2026, đợt 26 (khách quá hạn trả phòng: tính tiền đêm ở thêm, gia hạn).
 
 ## 1. Dự án
 
@@ -36,6 +36,13 @@
    - Thử AI với khóa thật: đóng gói jar, chạy cổng 8084, dùng curl đăng nhập `quanly.vanthanh@example.com` / `Songxanh@2026` (lấy `_csrf` từ trang `/admin`), POST `/admin/accounting/insights/analyze?month=...` hoặc `/ask/stream`; lệnh mạng phải tắt sandbox.
 
 ## 3. Đã làm (theo thứ tự gần nhất trước)
+
+### Đợt 26 (22/11/2026) - Khách quá hạn trả phòng: thu tiền thế nào, gia hạn thế nào
+Chủ dự án hỏi: «khách quá hạn check out sau vài ngày thì thu tiền thế nào, gia hạn thế nào. hãy làm rõ bước này». Trước đây màn hình check-out chỉ tính số đêm đã đặt (khách ở quá 3 ngày vẫn thu tiền 2 đêm), chưa có chức năng gia hạn.
+
+| Commit | Chức năng |
+|---|---|
+| (xem `git log`) | **Gia hạn / ở thêm** (`StayExtensionService`, trang `/admin/bookings/{id}/extend`, nút ở chi tiết đơn và trang Hôm nay): chọn ngày trả mới → bảng **giá niêm yết từng đêm** (ngày thường / cuối tuần / dịp lễ qua `PricingService.nightlyPrices`, không áp lại mã giảm giá của đơn), kiểm phòng còn trống các đêm từ hôm nay (trùng đơn khác → hiện đơn đó + gợi ý Đổi phòng; trùng đợt OTA; giờ nhận của khách sau), xác nhận → ngày trả của đơn đổi, tiền ghi thành phụ phí loại mới **`EXTENDED_STAY` «Ở thêm (gia hạn)»** (cột `stay_from` / `stay_to`), thu 1 lần khi check-out. Tối đa 30 đêm / lần; **miễn tiền** phải ghi lý do (≥ 5 ký tự, lưu vào ghi chú kèm tên nhân viên); **hoàn tác** lần gia hạn gần nhất nếu chưa thu tiền và chưa đêm nào trong đó đã qua. Đơn đã thu tiền thì không gia hạn (check-out rồi tạo đơn mới). **Khách quá hạn**: chi tiết đơn có cảnh báo đỏ «ở N đêm quá ngày trả»; màn hình check-out có khung đỏ liệt kê các đêm quá hạn + tiền, nút «Tính tiền ở thêm & trả phòng hôm nay» / «Khách ở tiếp → Gia hạn» / «Miễn tiền (có lý do)»; **chặn thu tiền / xác nhận chuyển khoản / check-out** (`PaymentService.ensureOverstayBilled`) đến khi xử lý xong. Trả hôm nay sau 12:00 mà chưa có phụ phí trả muộn → gợi ý mức 30 / 50 / 100% theo giờ hiện tại, bấm 1 nút để cộng. Tiền ở thêm vào **doanh thu phòng** ở báo cáo lãi lỗ (không vào dịch vụ). Không thêm / xóa tay được phụ phí loại này. Migration `sql/2026-11-22_gia-han-o-them.sql` (đã chạy trên DB dev). Test `StayExtensionIT` |
 
 ### Đợt 25 (22/11/2026) - Kế hoạch từng ngày theo thời tiết (trang Gợi ý phòng)
 Chủ dự án yêu cầu: «phần gợi ý thời tiết: ấn vào ngày hiện thời tiết chi tiết 24h và khuyên nên làm gì, đồng thời hiện các khu du lịch, phòng nên đặt; ấn vào lấy dữ liệu ngày đó».
@@ -235,6 +242,7 @@ Chủ dự án yêu cầu: «phân ca nhân viên, biết ai là người trực
   - `2026-10-18_goi-spa.sql` vừa tạo bảng vừa **chuyển dữ liệu** lịch spa cũ (cột `treatment`) sang `spa_package_id`; cột `treatment` cũ được giữ lại, app không đọc nữa.
   - `2026-10-18_thoi-luong-spa-theo-lich.sql` phải chạy **sau** `2026-10-18_goi-spa.sql` (thứ tự tên file đã đúng) vì điền thời lượng từ bảng gói.
 - Đợt 23 thêm 2 file: `2026-11-17_phan-ca-cham-cong-luong.sql`, `2026-11-17_so-thich-khach.sql`.
+- Đợt 26 thêm `2026-11-22_gia-han-o-them.sql` (thêm giá trị `EXTENDED_STAY` vào `booking_charges.charge_type`, cột `stay_from` / `stay_to`).
 - Biến môi trường:
   - Thời tiết: `WEATHER_ENABLED=false` để tắt (máy chủ phải ra được Internet tới `api.open-meteo.com`).
   - VNPay: `VNPAY_TMN_CODE`, `VNPAY_HASH_SECRET`. Chưa thử với sandbox thật (xem mục 7).
@@ -261,6 +269,7 @@ Chủ dự án yêu cầu: «phân ca nhân viên, biết ai là người trực
 - Bảng lương ghi khoản chi «Lương & bảo hiểm» riêng từng người: nếu ở «Chi phí vận hành» còn khoản lương cố định hàng tháng (dữ liệu demo có) thì lãi lỗ tính trùng - dừng khoản cố định khi bắt đầu trả lương theo công.
 - Gợi ý phòng dựa trên từ khóa trong tên / tiện nghi / mô tả loại phòng (VD «hướng biển», «bồn tắm»): admin nhập tiện nghi rõ ràng thì gợi ý chuẩn hơn.
 - Mã đơn `MMdd####` không có năm nên lặp lại sau 1 năm (cùng ngày năm trước); tìm theo mã có thể ra 2 đơn, trang đồ thất lạc lấy đơn mới nhất. Muốn duy nhất tuyệt đối thì thêm 2 số năm (`yyMMdd####`).
+- Gia hạn: tiền đêm ở thêm tính theo giá niêm yết, không áp khuyến mãi / giảm giá hạng thành viên của đơn; điểm thưởng tích theo tiền đơn gốc (chưa cộng tiền ở thêm). Khách chưa tự xin gia hạn trên trang khách được (lễ tân làm tại quầy). Phụ phí trả muộn gợi ý theo giá niêm yết phòng.
 
 ## 6. Gợi ý việc làm tiếp (chưa làm)
 

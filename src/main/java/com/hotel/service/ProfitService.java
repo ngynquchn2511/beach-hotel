@@ -185,6 +185,11 @@ public class ProfitService {
         for (BookingCharge c : charges) {
             if (c.getCreatedAt() != null && YearMonth.from(c.getCreatedAt()).equals(month)
                     && c.getBooking().getStatus() != BookingStatus.CANCELLED) {
+                if (c.getType() == ChargeType.EXTENDED_STAY) {
+                    // Tien dem o them la doanh thu phong, khong phai dich vu
+                    roomRevenue = roomRevenue.add(c.getAmount());
+                    continue;
+                }
                 serviceRevenue.merge(c.getType(), c.getAmount(), BigDecimal::add);
             }
         }

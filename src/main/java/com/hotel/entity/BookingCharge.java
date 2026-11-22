@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 // Phu phi phat sinh cua 1 don (minibar, giat ui, hu hong, tra phong muon...) - cong vao tien thanh toan khi check-out
@@ -37,6 +38,13 @@ public class BookingCharge {
 
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal amount;
+
+    // Chi dung cho loai EXTENDED_STAY: khoang dem o them [stayFrom, stayTo) - de hoan tac dung lan gia han gan nhat
+    @Column(name = "stay_from")
+    private LocalDate stayFrom;
+
+    @Column(name = "stay_to")
+    private LocalDate stayTo;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

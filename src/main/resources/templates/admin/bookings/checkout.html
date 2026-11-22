@@ -31,6 +31,72 @@
             <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
             <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
 
+            <!-- Khach o qua ngay tra phong: phai tinh (hoac mien co ly do) cac dem o them truoc khi thu tien -->
+            <div th:if="${overstay != null}" class="border border-danger rounded p-4 mb-4 bg-danger-subtle section-anchor" id="qua-han">
+                <h5 class="fw-bold text-danger mb-2"><i class="bi bi-alarm-fill me-1"></i>Khách ở quá hạn
+                    <span th:text="${overdueNights}"></span> đêm</h5>
+                <p class="mb-2 small">
+                    Theo đơn phải trả phòng <b th:text="${#temporals.format(booking.checkOutDate, 'dd/MM/yyyy')}"></b>,
+                    hôm nay là <b th:text="${#temporals.format(overstay.newCheckOut, 'dd/MM/yyyy')}"></b>.
+                    Các đêm khách đã ở thêm được tính theo <b>giá niêm yết từng đêm</b> của phòng (ngày thường / cuối tuần / dịp lễ),
+                    cộng vào hóa đơn thành dòng «Ở thêm (gia hạn)». Phải xử lý xong bước này mới thu tiền / check-out được.
+                </p>
+                <table class="table table-sm bg-white mb-2">
+                    <thead><tr><th>Đêm</th><th>Loại ngày</th><th class="text-end">Giá</th></tr></thead>
+                    <tbody>
+                    <tr th:each="n : ${overstay.nights}">
+                        <td th:text="${#temporals.format(n.date, 'EEE dd/MM')}"></td>
+                        <td class="text-muted" th:text="${n.label}"></td>
+                        <td class="text-end" th:text="${#numbers.formatDecimal(n.price, 1, 'POINT', 0, 'COMMA')} + ' VND'"></td>
+                    </tr>
+                    <tr class="fw-bold"><td colspan="2">Tiền ở thêm</td>
+                        <td class="text-end text-danger" th:text="${#numbers.formatDecimal(overstay.amount, 1, 'POINT', 0, 'COMMA')} + ' VND'"></td></tr>
+                    </tbody>
+                </table>
+                <div th:unless="${overstay.possible}" class="alert alert-warning small mb-2">
+                    <i class="bi bi-exclamation-triangle me-1"></i>Phòng này đêm nay đã có khách khác đặt - nên trả phòng hôm nay.
+                </div>
+                <div class="d-flex flex-wrap gap-2 align-items-start">
+                    <form method="post" th:action="@{/admin/bookings/{id}/extend(id=${booking.id})}" class="m-0">
+                        <input type="hidden" name="to" th:value="${overstay.newCheckOut}">
+                        <input type="hidden" name="back" value="checkout">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-calculator me-1"></i>Tính tiền ở thêm
+                            <span th:text="${#numbers.formatDecimal(overstay.amount, 1, 'POINT', 0, 'COMMA')} + ' VND'"></span>
+                            &amp; trả phòng hôm nay
+                        </button>
+                    </form>
+                    <a class="btn btn-outline-danger" th:href="@{/admin/bookings/{id}/extend(id=${booking.id})}">
+                        <i class="bi bi-calendar-plus me-1"></i>Khách ở tiếp → Gia hạn</a>
+                    <details class="w-100 mt-1">
+                        <summary class="small text-muted">Miễn tiền ở thêm (có lý do)…</summary>
+                        <form method="post" th:action="@{/admin/bookings/{id}/extend(id=${booking.id})}" class="row g-2 mt-1"
+                              onsubmit="return confirm('Miễn toàn bộ tiền các đêm ở quá hạn?')">
+                            <input type="hidden" name="to" th:value="${overstay.newCheckOut}">
+                            <input type="hidden" name="back" value="checkout">
+                            <input type="hidden" name="waive" value="true">
+                            <div class="col-sm-9"><input type="text" name="reason" class="form-control form-control-sm" maxlength="120" required minlength="5"
+                                                         placeholder="VD: chuyến bay hủy, quản lý đồng ý miễn"></div>
+                            <div class="col-sm-3"><button type="submit" class="btn btn-sm btn-outline-secondary w-100">Miễn tiền</button></div>
+                        </form>
+                    </details>
+                </div>
+            </div>
+
+            <!-- Tra hom nay sau 12:00: goi y phu phi tra muon theo chinh sach -->
+            <div th:if="${lateFee != null}" class="alert alert-warning d-flex flex-wrap align-items-center gap-2">
+                <i class="bi bi-clock-history"></i>
+                <span>Bây giờ <b th:text="${lateNow}"></b>, đã quá giờ trả chuẩn 12:00 → phụ phí trả muộn
+                    <b th:text="${latePercent} + '%'"></b> giá 1 đêm = <b th:text="${#numbers.formatDecimal(lateFee, 1, 'POINT', 0, 'COMMA')} + ' VND'"></b>
+                    (đến 15h: 30%, đến 18h: 50%, sau 18h: 100%).</span>
+                <form method="post" th:action="@{/admin/bookings/{id}/charges(id=${booking.id})}" class="m-0 ms-auto">
+                    <input type="hidden" name="type" value="LATE_CHECKOUT">
+                    <input type="hidden" name="amount" th:value="${lateFee}">
+                    <input type="hidden" name="description" th:value="'Trả phòng lúc ' + ${lateNow} + ' (' + ${latePercent} + '% giá 1 đêm)'">
+                    <button type="submit" class="btn btn-sm btn-warning"><i class="bi bi-plus-lg me-1"></i>Cộng phụ phí này</button>
+                </form>
+            </div>
+
             <div class="bg-white p-4 rounded shadow-sm mb-4">
                 <h4 class="fw-bold mb-3" th:text="'Check-out đơn #' + ${booking.code}"></h4>
                 <p class="mb-1">Khách: <span class="fw-semibold" th:text="${booking.guestName != null} ? ${booking.guestName} : ${booking.customer.fullName}"></span></p>
@@ -200,6 +266,9 @@
                     </div>
                 </div>
 
+                <div th:if="${overstay != null}" class="alert alert-danger small">
+                    <i class="bi bi-lock me-1"></i>Tính tiền (hoặc miễn) các đêm ở quá hạn ở khung đỏ phía trên trước, rồi mới thu tiền.
+                </div>
                 <div class="d-flex gap-2 flex-wrap">
                     <button type="submit" id="submitBtn" class="btn btn-warning" disabled>
                         <i class="bi bi-box-arrow-right me-1"></i>Hoàn tất check-out
@@ -225,6 +294,8 @@
 <script th:inline="javascript">
     (function () {
         const paid = /*[[${paid}]]*/ false;
+        // Con dem qua han chua tinh tien -> khong cho thu tien / check-out
+        const overstay = /*[[${overstay != null}]]*/ false;
         const radios = document.querySelectorAll('input[name="paymentMethod"]');
         const panels = document.querySelectorAll('.method-panel');
         const submitBtn = document.getElementById('submitBtn');
@@ -238,8 +309,8 @@
         function refresh() {
             const method = selected();
             panels.forEach(p => p.classList.toggle('d-none', p.dataset.method !== method));
-            submitBtn.disabled = !(method === 'CASH' || (method === 'BANK_TRANSFER' && paid));
-            confirmForm.classList.toggle('d-none', !(method === 'BANK_TRANSFER' && !paid));
+            submitBtn.disabled = overstay || !(method === 'CASH' || (method === 'BANK_TRANSFER' && paid));
+            confirmForm.classList.toggle('d-none', overstay || !(method === 'BANK_TRANSFER' && !paid));
         }
 
         radios.forEach(r => r.addEventListener('change', refresh));

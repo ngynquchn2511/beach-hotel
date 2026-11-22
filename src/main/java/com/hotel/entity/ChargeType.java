@@ -14,6 +14,8 @@ public enum ChargeType {
     AIRPORT_TRANSFER,
     // Tao tu dong khi le tan xac nhan lich spa
     SPA,
+    // Tien cac dem o them (gia han / khach o qua ngay tra) - tao tu dong o man hinh Gia han, khong chon tay
+    EXTENDED_STAY,
     OTHER;
 
     public String getVietnameseLabel() {
@@ -27,6 +29,7 @@ public enum ChargeType {
             case DIVING_TOUR -> "Tour lặn biển";
             case AIRPORT_TRANSFER -> "Đưa đón sân bay";
             case SPA -> "Spa";
+            case EXTENDED_STAY -> "Ở thêm (gia hạn)";
             case OTHER -> "Khác";
         };
     }
@@ -37,6 +40,6 @@ public enum ChargeType {
 
     // Cac loai le tan duoc chon tay khi them phu phi o man hinh check-out
     public static java.util.List<ChargeType> manualTypes() {
-        return java.util.Arrays.stream(values()).filter(t -> !t.isServiceCharge()).toList();
+        return java.util.Arrays.stream(values()).filter(t -> !t.isServiceCharge() && t != EXTENDED_STAY).toList();
     }
 }
