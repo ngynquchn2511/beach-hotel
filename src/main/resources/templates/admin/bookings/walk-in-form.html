@@ -43,7 +43,6 @@
                     <div class="col-md-4">
                         <label class="form-label">Ngày nhận phòng</label>
                         <input type="date" name="checkIn" class="form-control" th:value="${checkIn}" th:max="${bookingMaxDate}" required>
-                        <div class="form-text">Nhận đặt trước đến <span th:text="${#temporals.format(bookingMaxDate, 'dd/MM/yyyy')}"></span> (tối đa 6 tháng)</div>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Ngày trả phòng</label>
@@ -55,6 +54,10 @@
                     </div>
                     <div class="col-md-2">
                         <button type="submit" class="btn btn-outline-primary w-100">Tìm phòng</button>
+                    </div>
+                    <!-- Ghi chu rieng 1 dong duoi hang, khong lam lech chieu cao cac o -->
+                    <div class="col-12 form-text mt-1">
+                        <i class="bi bi-info-circle me-1"></i>Nhận đặt trước đến <b th:text="${#temporals.format(bookingMaxDate, 'dd/MM/yyyy')}"></b> (tối đa 6 tháng)
                     </div>
                 </form>
             </div>
