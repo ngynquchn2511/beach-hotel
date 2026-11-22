@@ -10,6 +10,24 @@
     <style>
         .steps li { margin-bottom: .25rem; }
         tr.past td { background: #fdecec; }
+        .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+        .cal-day { border: 1px solid #dee2e6; border-radius: 8px; padding: 6px 4px; text-align: center; cursor: pointer;
+                   background: #fff; font-size: .8rem; line-height: 1.25; min-height: 74px; overflow: hidden; }
+        .cal-day:hover, .cal-day.active { outline: 2px solid var(--bs-primary); }
+        .cal-day .d { font-weight: 700; font-size: .95rem; }
+        .cal-day .s { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .cal-day.free { background: #e9f7ef; border-color: #9fd8b5; }
+        .cal-day.free .s { color: #198754; }
+        .cal-day.past { background: #fdecec; border-color: #f1a7ae; }
+        .cal-day.past .s { color: #dc3545; }
+        .cal-day.booked { background: #fff1e0; border-color: #f0ad4e; }
+        .cal-day.booked .s { color: #b35c00; }
+        .cal-day.ota { background: #efe7fb; border-color: #b69ce4; }
+        .cal-day.ota .s { color: #6f42c1; }
+        .cal-day.blocked { background: repeating-linear-gradient(45deg, #f8f9fa, #f8f9fa 6px, #eceff1 6px, #eceff1 12px); color: #6c757d; }
+        .cal-day.selected { box-shadow: inset 0 0 0 2px var(--bs-primary); }
+        .cal-legend span { display: inline-flex; align-items: center; gap: 4px; margin-right: 12px; }
+        .cal-legend i.sq { width: 12px; height: 12px; border-radius: 3px; display: inline-block; border: 1px solid #ccc; }
     </style>
 </head>
 <body class="eaut eaut-admin">
@@ -62,13 +80,57 @@
                 <form method="get" th:action="@{/admin/bookings/{id}/extend(id=${booking.id})}" class="row g-2 align-items-end mb-3">
                     <div class="col-sm-5">
                         <label class="form-label small mb-1" for="to">Ngày trả phòng mới</label>
-                        <input id="to" type="date" name="to" class="form-control" th:value="${to}" th:min="${minDate}" th:max="${maxDate}" required>
+                        <input id="to" type="date" name="to" class="form-control" th:value="${to}" th:min="${minDate}" th:max="${maxDate}" required
+                               onchange="this.form.submit()">
                     </div>
                     <div class="col-sm-3">
                         <button type="submit" class="btn btn-outline-primary w-100"><i class="bi bi-search me-1"></i>Xem giá</button>
                     </div>
                 </form>
 
+                <!-- Lich phong: bam 1 dem de biet dem do da co khach dat chua -->
+                <div th:if="${calendar != null and !#lists.isEmpty(calendar)}" class="mb-4" id="lich-phong">
+                    <h6 class="fw-bold mb-1">Lịch phòng <span th:text="${booking.room.roomNumber}"></span> các đêm tới</h6>
+                    <p class="small text-muted mb-2">Bấm vào 1 đêm để xem đêm đó đã có khách đặt chưa. Đêm còn trống thì chọn luôn làm đêm ở cuối cùng.</p>
+                    <div class="cal-legend small mb-2">
+                        <span><i class="sq" style="background:#e9f7ef"></i>Trống</span>
+                        <span><i class="sq" style="background:#fff1e0"></i>Đã có khách đặt</span>
+                        <span><i class="sq" style="background:#efe7fb"></i>Đã bán OTA</span>
+                        <span><i class="sq" style="background:#fdecec"></i>Đã ở quá hạn</span>
+                        <span><i class="sq" style="background:#eceff1"></i>Trống nhưng không ở liền được</span>
+                    </div>
+                    <div class="cal">
+                        <div th:each="n : ${calendar}" class="cal-day" role="button" tabindex="0"
+                             th:classappend="|${n.state} ${n.checkOut == to ? 'selected' : ''}|"
+                             th:attr="data-date=${#temporals.format(n.date, 'EEEE dd/MM/yyyy')},
+                                      data-state=${n.state},
+                                      data-checkout=${n.checkOut},
+                                      data-checkout-label=${#temporals.format(n.checkOut, 'dd/MM/yyyy')},
+                                      data-price=${#numbers.formatDecimal(n.price, 1, 'POINT', 0, 'COMMA')},
+                                      data-label=${n.label},
+                                      data-total=${#numbers.formatDecimal(n.total, 1, 'POINT', 0, 'COMMA')},
+                                      data-by-code=${n.by != null ? n.by.code : ''},
+                                      data-by-id=${n.by != null ? n.by.id : ''},
+                                      data-by-name=${n.by != null ? n.by.guestName : ''},
+                                      data-by-phone=${n.by != null ? n.by.guestPhone : ''},
+                                      data-by-dates=${n.by != null ? #temporals.format(n.by.checkInDate, 'dd/MM') + ' → ' + #temporals.format(n.by.checkOutDate, 'dd/MM') : ''},
+                                      data-by-status=${n.by != null ? n.by.status.name() : ''},
+                                      data-ota=${n.otaSummary != null ? n.otaSummary : ''}">
+                            <div class="d" th:text="${#temporals.format(n.date, 'dd/MM')}"></div>
+                            <div class="text-muted" th:text="${#temporals.format(n.date, 'EEE')}"></div>
+                            <div class="s" th:switch="${n.state}">
+                                <span th:case="'free'">Trống</span>
+                                <span th:case="'past'">Đã ở</span>
+                                <span th:case="'booked'" th:text="${n.by.guestName}">Có khách</span>
+                                <span th:case="'ota'">OTA</span>
+                                <span th:case="*">Không liền</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="cal-info" class="alert alert-light border mt-3 mb-0 d-none"></div>
+                </div>
+
+                <div id="bao-gia"></div>
                 <div th:if="${quoteError}" class="alert alert-danger" th:text="${quoteError}"></div>
 
                 <th:block th:if="${quote != null}">
@@ -154,5 +216,55 @@
 </main>
 
 <div th:replace="~{fragments/footer :: footer}"></div>
+<script th:inline="javascript">
+    (function () {
+        const info = document.getElementById('cal-info');
+        if (!info) return;
+        const base = /*[[@{/admin/bookings/{id}/extend(id=${booking.id})}]]*/ '';
+        const detailBase = /*[[@{/admin/bookings/}]]*/ '/admin/bookings/';
+        const moveUrl = /*[[@{/admin/bookings/{id}/move(id=${booking.id})}]]*/ '';
+        const esc = s => String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+        const statusText = {PENDING: 'chờ xác nhận', CONFIRMED: 'đã xác nhận', CHECKED_IN: 'đang ở'};
+
+        function show(cell) {
+            document.querySelectorAll('.cal-day.active').forEach(c => c.classList.remove('active'));
+            cell.classList.add('active');
+            const d = cell.dataset;
+            const pick = '<a class="btn btn-sm btn-warning ms-2" href="' + base + '?to=' + d.checkout + '#bao-gia">'
+                + 'Ở đến hết đêm này (trả ' + esc(d.checkoutLabel) + ') · tổng ' + esc(d.total) + ' VND</a>';
+            let html = '<div class="fw-semibold mb-1">Đêm ' + esc(d.date) + ' · ' + esc(d.label) + ' · ' + esc(d.price) + ' VND</div>';
+            if (d.state === 'free') {
+                html += '<i class="bi bi-check-circle-fill text-success me-1"></i><b>Chưa có khách nào đặt</b> phòng này đêm đó.' + pick;
+                info.className = 'alert alert-success mt-3 mb-0';
+            } else if (d.state === 'past') {
+                html += '<i class="bi bi-alarm-fill text-danger me-1"></i>Đêm đã qua, khách <b>đã ở quá hạn</b> - bắt buộc tính tiền.' + pick;
+                info.className = 'alert alert-danger mt-3 mb-0';
+            } else if (d.state === 'booked') {
+                html += '<i class="bi bi-person-fill-lock me-1"></i><b>Đã có khách đặt trước:</b> '
+                    + '<a href="' + detailBase + d.byId + '">#' + esc(d.byCode) + '</a> ' + esc(d.byName)
+                    + (d.byPhone ? ' · ' + esc(d.byPhone) : '') + ' · ' + esc(d.byDates)
+                    + ' (' + esc(statusText[d.byStatus] || d.byStatus) + ').'
+                    + '<div class="small mt-1">Không gia hạn qua đêm này ở phòng hiện tại được. Đổi phòng cho đơn kia, hoặc '
+                    + '<a href="' + moveUrl + '">chuyển khách này sang phòng khác</a>.</div>';
+                info.className = 'alert alert-warning mt-3 mb-0';
+            } else if (d.state === 'ota') {
+                html += '<i class="bi bi-globe me-1"></i><b>Đã bán trên Booking.com / Airbnb</b>' + (d.ota ? ': ' + esc(d.ota) : '') + '.';
+                info.className = 'alert alert-warning mt-3 mb-0';
+            } else {
+                html += '<i class="bi bi-slash-circle me-1"></i>Đêm này <b>chưa có ai đặt</b>, nhưng trước đó có đêm đã có khách '
+                    + 'nên khách không ở liền đến đêm này được ở phòng hiện tại.';
+                info.className = 'alert alert-secondary mt-3 mb-0';
+            }
+            info.innerHTML = html;
+        }
+
+        document.querySelectorAll('.cal-day').forEach(cell => {
+            cell.addEventListener('click', () => show(cell));
+            cell.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); show(cell); } });
+        });
+        const selected = document.querySelector('.cal-day.selected');
+        if (selected) show(selected);
+    })();
+</script>
 </body>
 </html>

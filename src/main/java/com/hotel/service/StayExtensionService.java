@@ -104,6 +104,63 @@ public class StayExtensionService {
         return booking.getCheckOutDate().plusDays(MAX_EXTRA_NIGHTS);
     }
 
+    // 1 o tren lich gia han (dem `date` cua phong nay):
+    // state: past = dem da qua (khach o qua han, luon tinh tien) / free = trong / booked = da co don khac /
+    //        ota = da ban tren Booking.com, Airbnb / blocked = trong nhung bi chan boi dem da co khach truoc do
+    // checkOut = ngay tra neu chon o den het dem nay (date + 1); total = tong tien o them neu chon den dem nay
+    public record CalendarNight(LocalDate date, BigDecimal price, String label, String state, Booking by,
+                                String otaSummary, LocalDate checkOut, BigDecimal total) {
+
+        public boolean isSelectable() {
+            return "past".equals(state) || "free".equals(state);
+        }
+    }
+
+    // Lich cac dem tu ngay tra hien tai den gioi han gia han - le tan bam vao 1 ngay biet ngay ay da co khach dat chua
+    @Transactional(readOnly = true)
+    public List<CalendarNight> calendar(Booking booking) {
+        LocalDate oldOut = booking.getCheckOutDate();
+        LocalDate end = maxNewCheckOut(booking);
+        LocalDate today = today();
+        LocalDate from = oldOut.isBefore(today) ? today : oldOut;
+        List<Booking> others = List.of();
+        List<OtaBlock> ota = List.of();
+        if (from.isBefore(end)) {
+            BookingService.Availability availability = bookingService.checkAvailability(booking.getRoom(), from, end, booking.getId());
+            others = availability.conflicts();
+            ota = availability.otaBlocks();
+        }
+        List<CalendarNight> result = new java.util.ArrayList<>();
+        BigDecimal running = BigDecimal.ZERO;
+        boolean reachable = true;
+        for (PricingService.NightPrice n : pricingService.nightlyPrices(booking.getRoom().getPrice(), oldOut, end)) {
+            LocalDate night = n.night();
+            running = running.add(n.price());
+            Booking by = others.stream()
+                    .filter(b -> !b.getCheckInDate().isAfter(night) && b.getCheckOutDate().isAfter(night))
+                    .findFirst().orElse(null);
+            OtaBlock block = ota.stream()
+                    .filter(o -> !o.getStartDate().isAfter(night) && o.getEndDate().isAfter(night))
+                    .findFirst().orElse(null);
+            String state;
+            if (night.isBefore(today)) {
+                state = "past";
+            } else if (by != null) {
+                state = "booked";
+            } else if (block != null) {
+                state = "ota";
+            } else {
+                state = reachable ? "free" : "blocked";
+            }
+            if ("booked".equals(state) || "ota".equals(state)) {
+                reachable = false;
+            }
+            result.add(new CalendarNight(night, n.price(), n.label(), state, by,
+                    block != null ? block.getSummary() : null, night.plusDays(1), running));
+        }
+        return result;
+    }
+
     @Transactional(readOnly = true)
     public Quote quote(Long bookingId, LocalDate newCheckOut) {
         return quote(requireExtendable(bookingId), newCheckOut);

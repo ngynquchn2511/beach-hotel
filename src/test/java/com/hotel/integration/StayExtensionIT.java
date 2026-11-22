@@ -174,6 +174,37 @@ class StayExtensionIT {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void calendar_showsWhichNightsAlreadyBooked() throws Exception {
+        Room r = room();
+        Booking b = booking(r, TODAY.minusDays(3), TODAY.minusDays(1), BookingStatus.CHECKED_IN, "Khach Xem Lich");
+        Booking next = booking(r, TODAY.plusDays(2), TODAY.plusDays(4), BookingStatus.CONFIRMED, "Khach Da Dat Truoc");
+
+        var result = mockMvc.perform(get("/admin/bookings/{id}/extend", b.getId()).with(user(staff)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Lịch phòng")))
+                .andExpect(content().string(containsString("Khach Da Dat Truoc")))
+                .andExpect(content().string(containsString("data-by-code=\"" + next.getCode() + "\"")))
+                .andReturn();
+        var cal = (List<com.hotel.service.StayExtensionService.CalendarNight>) result.getModelAndView().getModel().get("calendar");
+        java.util.Map<LocalDate, String> states = new java.util.HashMap<>();
+        cal.forEach(n -> states.put(n.date(), n.state()));
+        assertThat(states.get(TODAY.minusDays(1))).isEqualTo("past");      // dem qua han
+        assertThat(states.get(TODAY)).isEqualTo("free");
+        assertThat(states.get(TODAY.plusDays(1))).isEqualTo("free");
+        assertThat(states.get(TODAY.plusDays(2))).isEqualTo("booked");     // khach khac da dat
+        assertThat(states.get(TODAY.plusDays(3))).isEqualTo("booked");
+        assertThat(states.get(TODAY.plusDays(4))).isEqualTo("blocked");    // trong nhung khong o lien duoc
+        var bookedNight = cal.stream().filter(n -> n.date().equals(TODAY.plusDays(2))).findFirst().orElseThrow();
+        assertThat(bookedNight.by().getId()).isEqualTo(next.getId());
+        assertThat(bookedNight.isSelectable()).isFalse();
+        // Tong tien neu o den het dem mai = dem qua han + dem nay + dem mai
+        var tomorrow = cal.stream().filter(n -> n.date().equals(TODAY.plusDays(1))).findFirst().orElseThrow();
+        assertThat(tomorrow.total()).isEqualByComparingTo(pricingService.roomAmount(PRICE, TODAY.minusDays(1), TODAY.plusDays(2)));
+        assertThat(tomorrow.checkOut()).isEqualTo(TODAY.plusDays(2));
+    }
+
+    @Test
     void rejectsInvalidDates_andNotCheckedIn() throws Exception {
         Room r = room();
         Booking b = booking(r, TODAY.minusDays(1), TODAY.plusDays(1), BookingStatus.CHECKED_IN, "Khach Ngay Sai");

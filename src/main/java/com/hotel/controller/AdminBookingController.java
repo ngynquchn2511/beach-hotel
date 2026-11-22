@@ -275,6 +275,7 @@ public class AdminBookingController {
         LocalDate target = to != null ? to : stayExtensionService.minNewCheckOut(booking);
         model.addAttribute("to", target);
         if (!paymentService.isPaid(id)) {
+            model.addAttribute("calendar", stayExtensionService.calendar(booking));
             try {
                 model.addAttribute("quote", stayExtensionService.quote(id, target));
             } catch (BusinessException ex) {
