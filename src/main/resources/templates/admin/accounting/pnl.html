@@ -7,13 +7,22 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+    <th:block th:replace="~{fragments/viz :: styles}"></th:block>
     <style>
-        .kpi { background: #fff; border-radius: 8px; padding: 14px; height: 100%; box-shadow: 0 1px 3px rgba(0, 0, 0, .08); }
-        .kpi .v { font-size: 1.3rem; font-weight: 800; }
-        .kpi .d { font-size: .8rem; color: #52514e; }
-        .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
-        .pnl td, .pnl th { white-space: nowrap; }
-        .pnl .sum td { font-weight: 700; border-top: 2px solid #c3c2b7; }
+        .mini { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: var(--vz-line); border-radius: 14px; overflow: hidden;
+                box-shadow: 0 0 0 1px var(--vz-line); margin-bottom: 1.25rem; }
+        .mini > div { background: #fff; padding: 11px 14px; }
+        .mini .lbl { color: var(--vz-mut); font-size: .74rem; }
+        .mini .val { font-weight: 800; font-size: 1.05rem; font-variant-numeric: tabular-nums; color: var(--vz-ink); }
+        .mini .sub { color: var(--vz-mut); font-size: .7rem; }
+        /* Thanh dat ke hoach: vach o 100% */
+        .goal { margin-bottom: 12px; }
+        .goal .top { display: flex; justify-content: space-between; font-size: .84rem; margin-bottom: 4px; }
+        .goal .track { position: relative; height: 10px; background: #eef3f7; border-radius: 5px; }
+        .goal .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 5px; }
+        .goal .mark { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--vz-ink); }
+        .vz-kpi .d { font-size: .76rem; margin-top: 2px; }
+        .vz-kpi.hero .text-danger { color: #ffc2cf !important; } .vz-kpi.hero .text-success { color: #b8f0d4 !important; } .vz-kpi.hero .text-muted { color: rgba(255,255,255,.6) !important; }
     </style>
 </head>
 <body class="eaut eaut-admin">
@@ -34,12 +43,15 @@
                     <p class="text-muted small mb-0">Doanh thu ghi nhận theo đêm ở / ngày phát sinh dịch vụ (không tính tiền bán thẻ quà tặng - đó là tiền khách trả trước).
                         Chi phí = giá vốn dịch vụ + chi phí mỗi phòng-đêm + phí cổng thanh toán + chi phí vận hành.</p>
                 </div>
-                <form method="get" class="d-flex gap-2">
-                    <input type="month" name="month" class="form-control form-control-sm" th:value="${month}">
-                    <button class="btn btn-sm btn-outline-primary">Xem</button>
+                <div class="d-flex gap-2 align-items-center flex-wrap">
+                    <form method="get" class="vz-period" aria-label="Chọn tháng">
+                        <a th:href="@{/admin/accounting/pnl(month=${month.minusMonths(1)})}" title="Tháng trước"><i class="bi bi-chevron-left"></i></a>
+                        <input type="month" name="month" th:value="${month}" onchange="this.form.submit()" aria-label="Tháng">
+                        <a th:href="@{/admin/accounting/pnl(month=${month.plusMonths(1)})}" title="Tháng sau"><i class="bi bi-chevron-right"></i></a>
+                    </form>
                     <a class="btn btn-sm btn-success text-nowrap" th:href="@{/admin/accounting/pnl/export(month=${month})}"><i class="bi bi-file-earmark-excel me-1"></i>Excel</a>
                     <a class="btn btn-sm btn-primary text-nowrap" th:href="@{/admin/accounting/insights(month=${month})}"><i class="bi bi-stars me-1"></i>Phân tích</a>
-                </form>
+                </div>
             </div>
 
             <div class="alert alert-warning small" th:unless="${hasCosts}">
@@ -47,173 +59,301 @@
                 <a th:href="@{/admin/accounting/expenses(month=${month})}">Nhập chi phí vận hành và giá vốn</a> để có số lãi thật.
             </div>
 
-            <!-- Thuc te / ke hoach -->
-            <div class="bg-white rounded shadow-sm p-3 mb-3" th:if="${variance != null}" th:with="v=${variance}">
-                <div class="d-flex justify-content-between flex-wrap gap-2">
-                    <h6 class="fw-bold m-0"><i class="bi bi-bullseye me-1"></i>So với kế hoạch
-                        <span class="small text-muted fw-normal" th:if="${v.inProgress}">(tháng chưa kết thúc - doanh thu gồm đơn đã xác nhận trên sổ)</span></h6>
+            <!-- So lieu chinh -->
+            <div class="row g-3 mb-3">
+                <div class="col-lg-4">
+                    <div class="vz-kpi hero">
+                        <div class="lbl">Lãi vận hành (GOP)</div>
+                        <div class="val" th:text="${#numbers.formatDecimal(c.operatingProfit, 1, 'POINT', 0, 'COMMA')} + ' đ'"></div>
+                        <div class="sub" th:text="'Biên lợi nhuận ' + ${c.margin} + '% · ' + (${r.vsPrevious.marginPoints >= 0} ? '+' : '') + ${r.vsPrevious.marginPoints} + ' điểm so với tháng trước'"></div>
+                        <div class="d"><span th:replace="~{fragments/delta :: delta(${r.vsPrevious.profit}, 'tháng trước', false)}"></span>
+                            · <span th:replace="~{fragments/delta :: delta(${r.vsLastYear.profit}, 'cùng kỳ', false)}"></span></div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-4">
+                    <div class="vz-kpi"><div class="lbl"><i class="bi bi-arrow-down-left me-1" style="color:var(--vz-green)"></i>Doanh thu</div>
+                        <div class="val" th:text="${#numbers.formatDecimal(c.totalRevenue, 1, 'POINT', 0, 'COMMA')}"></div>
+                        <div class="d"><span th:replace="~{fragments/delta :: delta(${r.vsPrevious.revenue}, 'tháng trước', false)}"></span></div>
+                        <div class="d"><span th:replace="~{fragments/delta :: delta(${r.vsLastYear.revenue}, 'cùng kỳ', false)}"></span></div></div>
+                </div>
+                <div class="col-6 col-lg-4">
+                    <div class="vz-kpi"><div class="lbl"><i class="bi bi-arrow-up-right me-1" style="color:var(--vz-red)"></i>Chi phí</div>
+                        <div class="val" th:text="${#numbers.formatDecimal(c.totalCost, 1, 'POINT', 0, 'COMMA')}"></div>
+                        <div class="d"><span th:replace="~{fragments/delta :: delta(${r.vsPrevious.cost}, 'tháng trước', true)}"></span></div>
+                        <div class="d"><span th:replace="~{fragments/delta :: delta(${r.vsLastYear.cost}, 'cùng kỳ', true)}"></span></div></div>
+                </div>
+            </div>
+            <div class="mini">
+                <div><div class="lbl">Công suất</div><div class="val" th:text="${c.occupancy} + '%'"></div>
+                    <div class="sub" th:text="${c.soldRoomNights} + '/' + ${c.availableRoomNights} + ' phòng-đêm'"></div></div>
+                <div><div class="lbl">ADR</div><div class="val" th:text="${#numbers.formatDecimal(c.adr, 1, 'POINT', 0, 'COMMA')}"></div>
+                    <div class="sub">giá bán TB / đêm</div></div>
+                <div><div class="lbl">RevPAR</div><div class="val" th:text="${#numbers.formatDecimal(c.revPar, 1, 'POINT', 0, 'COMMA')}"></div>
+                    <div class="sub">DT phòng / phòng-đêm sẵn có</div></div>
+                <div><div class="lbl">GOPPAR</div><div class="val" th:classappend="${c.goppar.signum() < 0} ? 'vz-neg'" th:text="${#numbers.formatDecimal(c.goppar, 1, 'POINT', 0, 'COMMA')}"></div>
+                    <div class="sub">lãi / phòng-đêm sẵn có</div></div>
+                <div><div class="lbl">CPOR</div><div class="val" th:text="${#numbers.formatDecimal(c.cpor, 1, 'POINT', 0, 'COMMA')}"></div>
+                    <div class="sub">chi phí / phòng-đêm có khách</div></div>
+            </div>
+
+            <!-- Dat ke hoach -->
+            <div class="vz-card" th:if="${variance != null}" th:with="v=${variance}">
+                <div class="vz-head">
+                    <div><h5><i class="bi bi-bullseye me-1"></i>So với kế hoạch</h5>
+                        <div class="sub" th:if="${v.inProgress}">Tháng chưa kết thúc - doanh thu gồm đơn đã xác nhận trên sổ. Vạch đậm = 100% kế hoạch.</div>
+                        <div class="sub" th:unless="${v.inProgress}">Vạch đậm = 100% kế hoạch.</div></div>
                     <a class="small" th:href="@{/admin/accounting/budget(year=${month.year})}">Sửa kế hoạch</a>
                 </div>
-                <div class="row g-2 mt-1 small">
-                    <div class="col-sm-3" th:if="${v.revenuePercent != null}">Doanh thu: <b th:classappend="${v.revenuePercent < 100} ? 'text-danger' : 'text-success'"
-                            th:text="${v.revenuePercent} + '%'"></b> kế hoạch
-                        <div class="text-muted" th:if="${v.revenueShortfall.signum() > 0}"
-                             th:text="'Còn thiếu ' + ${#numbers.formatDecimal(v.revenueShortfall, 1, 'POINT', 0, 'COMMA')}"></div></div>
-                    <div class="col-sm-3" th:if="${v.costPercent != null}">Chi phí: <b th:classappend="${v.costPercent > 100} ? 'text-danger' : 'text-success'"
-                            th:text="${v.costPercent} + '%'"></b> ngân sách</div>
-                    <div class="col-sm-3" th:if="${v.occupancyPoints != null}">Công suất: <b th:classappend="${v.occupancyPoints < 0} ? 'text-danger' : 'text-success'"
-                            th:text="(${v.occupancyPoints >= 0} ? '+' : '') + ${v.occupancyPoints} + ' điểm'"></b> so với chỉ tiêu</div>
-                    <div class="col-sm-3" th:if="${v.adrPercent != null}">ADR: <b th:classappend="${v.adrPercent < 100} ? 'text-danger' : 'text-success'"
-                            th:text="${v.adrPercent} + '%'"></b> kế hoạch</div>
+                <div class="row g-4">
+                    <div class="col-md-6" th:if="${v.revenuePercent != null}">
+                        <div class="goal"><div class="top"><span>Doanh thu</span>
+                            <b th:classappend="${v.revenuePercent < 100} ? 'vz-neg' : 'vz-up'" th:text="${v.revenuePercent} + '%'"></b></div>
+                            <div class="track"><div class="fill" th:style="'width:' + ${v.revenuePercent > 120 ? 100 : v.revenuePercent / 1.2} + '%;background:' + (${v.revenuePercent < 100} ? 'var(--vz-amber)' : 'var(--vz-green)')"></div>
+                                <div class="mark" style="left:83.33%"></div></div>
+                            <div class="small text-muted mt-1" th:if="${v.revenueShortfall.signum() > 0}"
+                                 th:text="'Còn thiếu ' + ${#numbers.formatDecimal(v.revenueShortfall, 1, 'POINT', 0, 'COMMA')}"></div></div>
+                    </div>
+                    <div class="col-md-6" th:if="${v.costPercent != null}">
+                        <div class="goal"><div class="top"><span>Chi phí so với ngân sách</span>
+                            <b th:classappend="${v.costPercent > 100} ? 'vz-neg' : 'vz-up'" th:text="${v.costPercent} + '%'"></b></div>
+                            <div class="track"><div class="fill" th:style="'width:' + ${v.costPercent > 120 ? 100 : v.costPercent / 1.2} + '%;background:' + (${v.costPercent > 100} ? 'var(--vz-red)' : 'var(--vz-green)')"></div>
+                                <div class="mark" style="left:83.33%"></div></div></div>
+                    </div>
+                    <div class="col-md-6" th:if="${v.occupancyPoints != null}">
+                        <div class="d-flex justify-content-between small"><span>Công suất so với chỉ tiêu</span>
+                            <b th:classappend="${v.occupancyPoints < 0} ? 'vz-neg' : 'vz-up'" th:text="(${v.occupancyPoints >= 0} ? '+' : '') + ${v.occupancyPoints} + ' điểm'"></b></div>
+                    </div>
+                    <div class="col-md-6" th:if="${v.adrPercent != null}">
+                        <div class="d-flex justify-content-between small"><span>ADR so với kế hoạch</span>
+                            <b th:classappend="${v.adrPercent < 100} ? 'vz-neg' : 'vz-up'" th:text="${v.adrPercent} + '%'"></b></div>
+                    </div>
                 </div>
             </div>
             <div class="small text-muted mb-3" th:if="${variance == null}">
                 Chưa có kế hoạch tháng này - <a th:href="@{/admin/accounting/budget(year=${month.year})}">nhập kế hoạch năm</a> để theo dõi % đạt chỉ tiêu.</div>
 
-            <!-- KPI: so voi thang truoc / cung ky nam truoc -->
-            <div class="row g-3 mb-4">
-                <div class="col-6 col-lg-3"><div class="kpi"><div class="small text-muted">Doanh thu</div>
-                    <div class="v" th:text="${#numbers.formatDecimal(c.totalRevenue, 1, 'POINT', 0, 'COMMA')}"></div>
-                    <div class="d"><span th:replace="~{fragments/delta :: delta(${r.vsPrevious.revenue}, 'tháng trước', false)}"></span></div>
-                    <div class="d"><span th:replace="~{fragments/delta :: delta(${r.vsLastYear.revenue}, 'cùng kỳ', false)}"></span></div></div></div>
-                <div class="col-6 col-lg-3"><div class="kpi"><div class="small text-muted">Chi phí</div>
-                    <div class="v" th:text="${#numbers.formatDecimal(c.totalCost, 1, 'POINT', 0, 'COMMA')}"></div>
-                    <div class="d"><span th:replace="~{fragments/delta :: delta(${r.vsPrevious.cost}, 'tháng trước', true)}"></span></div>
-                    <div class="d"><span th:replace="~{fragments/delta :: delta(${r.vsLastYear.cost}, 'cùng kỳ', true)}"></span></div></div></div>
-                <div class="col-6 col-lg-3"><div class="kpi"><div class="small text-muted">Lãi vận hành (GOP)</div>
-                    <div class="v" th:classappend="${c.operatingProfit.signum() < 0} ? 'text-danger'"
-                         th:text="${#numbers.formatDecimal(c.operatingProfit, 1, 'POINT', 0, 'COMMA')}"></div>
-                    <div class="d"><span th:replace="~{fragments/delta :: delta(${r.vsPrevious.profit}, 'tháng trước', false)}"></span></div>
-                    <div class="d"><span th:replace="~{fragments/delta :: delta(${r.vsLastYear.profit}, 'cùng kỳ', false)}"></span></div></div></div>
-                <div class="col-6 col-lg-3"><div class="kpi"><div class="small text-muted">Biên lợi nhuận</div>
-                    <div class="v" th:text="${c.margin} + '%'"></div>
-                    <div class="d" th:text="(${r.vsPrevious.marginPoints >= 0} ? '+' : '') + ${r.vsPrevious.marginPoints} + ' điểm so với tháng trước'"></div></div></div>
-                <div class="col-6 col-lg-3"><div class="kpi"><div class="small text-muted">Công suất · ADR</div>
-                    <div class="v" th:text="${c.occupancy} + '%'"></div>
-                    <div class="d" th:text="'ADR ' + ${#numbers.formatDecimal(c.adr, 1, 'POINT', 0, 'COMMA')} + ' · ' + ${c.soldRoomNights} + '/' + ${c.availableRoomNights} + ' phòng-đêm'"></div></div></div>
-                <div class="col-6 col-lg-3"><div class="kpi"><div class="small text-muted">RevPAR</div>
-                    <div class="v" th:text="${#numbers.formatDecimal(c.revPar, 1, 'POINT', 0, 'COMMA')}"></div>
-                    <div class="d">Doanh thu phòng / phòng-đêm sẵn có</div></div></div>
-                <div class="col-6 col-lg-3"><div class="kpi"><div class="small text-muted">GOPPAR</div>
-                    <div class="v" th:classappend="${c.goppar.signum() < 0} ? 'text-danger'" th:text="${#numbers.formatDecimal(c.goppar, 1, 'POINT', 0, 'COMMA')}"></div>
-                    <div class="d">Lãi vận hành / phòng-đêm sẵn có</div></div></div>
-                <div class="col-6 col-lg-3"><div class="kpi"><div class="small text-muted">Chi phí / phòng-đêm có khách</div>
-                    <div class="v" th:text="${#numbers.formatDecimal(c.cpor, 1, 'POINT', 0, 'COMMA')}"></div>
-                    <div class="d">CPOR</div></div></div>
+            <!-- Thac nuoc: tu doanh thu den lai -->
+            <div class="vz-card">
+                <div class="vz-head">
+                    <div><h5>Từ doanh thu đến lãi</h5>
+                        <div class="sub">Mỗi khoản thu cộng lên, mỗi khoản chi trừ xuống; cột cuối là lãi vận hành tháng này</div></div>
+                    <div class="vz-key"><span><i style="background:var(--vz-blue)"></i>Thu</span><span><i style="background:var(--vz-red)"></i>Chi</span>
+                        <span><i style="background:var(--vz-ink)"></i>Tổng / lãi</span></div>
+                </div>
+                <div class="vz-chart" style="height:320px"><canvas id="pnlWaterfall" role="img" aria-label="Từ doanh thu đến lãi"></canvas></div>
             </div>
 
-            <div class="bg-white rounded shadow-sm p-3 mb-3">
-                <div class="d-flex justify-content-between flex-wrap gap-2 mb-1">
-                    <h6 class="fw-bold m-0">Doanh thu và chi phí 12 tháng (VND)</h6>
-                    <div class="small text-muted">
-                        <span><span class="swatch" th:style="'background:' + ${blue}"></span>Doanh thu</span>
-                        <span class="ms-3"><span class="swatch" th:style="'background:' + ${orange}"></span>Chi phí</span>
-                    </div>
+            <!-- 12 thang -->
+            <div class="vz-card">
+                <div class="vz-head">
+                    <div><h5>12 tháng gần nhất</h5><div class="sub" id="pnlTrendSub">Cột: doanh thu và chi phí · đường: lãi vận hành</div></div>
+                    <div class="vz-key"><span><i style="background:var(--vz-blue)"></i>Doanh thu</span><span><i style="background:#f3b3c0"></i>Chi phí</span>
+                        <span><i class="line" style="border-color:var(--vz-green)"></i>Lãi vận hành</span></div>
                 </div>
-                <div th:utext="${revenueCostSvg}"></div>
-            </div>
-            <div class="bg-white rounded shadow-sm p-3 mb-4">
-                <div class="d-flex justify-content-between flex-wrap gap-2 mb-1">
-                    <h6 class="fw-bold m-0">Lãi vận hành 12 tháng (VND)</h6>
-                    <div class="small text-muted">
-                        <span><span class="swatch" th:style="'background:' + ${blue}"></span>Lãi</span>
-                        <span class="ms-3"><span class="swatch" th:style="'background:' + ${red}"></span>Lỗ</span>
-                    </div>
-                </div>
-                <div th:utext="${profitSvg}"></div>
+                <div class="vz-chart" style="height:300px"><canvas id="pnlTrend" role="img" aria-label="Doanh thu, chi phí và lãi 12 tháng"></canvas></div>
             </div>
 
             <!-- Bang lai lo -->
-            <div class="bg-white rounded shadow-sm p-3 mb-4 table-responsive">
-                <table class="table table-sm align-middle mb-0 pnl text-end">
-                    <thead><tr><th class="text-start">Khoản mục</th>
-                        <th th:text="${c.month.monthValue} + '/' + ${c.month.year}"></th>
-                        <th th:text="${p.month.monthValue} + '/' + ${p.month.year}"></th>
-                        <th th:text="${y.month.monthValue} + '/' + ${y.month.year}"></th></tr></thead>
+            <div class="vz-card">
+                <div class="vz-head"><div><h5>Báo cáo lãi lỗ</h5><div class="sub">So với tháng trước và cùng kỳ năm trước</div></div></div>
+                <div class="table-responsive">
+                <table class="vz-table" id="pnlTable">
+                    <thead><tr><th>Khoản mục</th>
+                        <th class="r" th:text="${c.month.monthValue} + '/' + ${c.month.year}"></th>
+                        <th class="r" th:text="${p.month.monthValue} + '/' + ${p.month.year}"></th>
+                        <th class="r" th:text="${y.month.monthValue} + '/' + ${y.month.year}"></th></tr></thead>
                     <tbody>
-                    <tr><td class="text-start">Doanh thu phòng</td>
-                        <td th:text="${#numbers.formatDecimal(c.roomRevenue, 1, 'POINT', 0, 'COMMA')}"></td>
-                        <td th:text="${#numbers.formatDecimal(p.roomRevenue, 1, 'POINT', 0, 'COMMA')}"></td>
-                        <td th:text="${#numbers.formatDecimal(y.roomRevenue, 1, 'POINT', 0, 'COMMA')}"></td></tr>
-                    <tr th:each="t : ${chargeTypes}" th:if="${c.serviceRevenue.containsKey(t) or p.serviceRevenue.containsKey(t) or y.serviceRevenue.containsKey(t)}">
-                        <td class="text-start ps-3" th:text="${t.vietnameseLabel}"></td>
-                        <td th:text="${#numbers.formatDecimal(H.of(c.serviceRevenue, t), 1, 'POINT', 0, 'COMMA')}"></td>
-                        <td th:text="${#numbers.formatDecimal(H.of(p.serviceRevenue, t), 1, 'POINT', 0, 'COMMA')}"></td>
-                        <td th:text="${#numbers.formatDecimal(H.of(y.serviceRevenue, t), 1, 'POINT', 0, 'COMMA')}"></td></tr>
-                    <tr><td class="text-start">Cọc giữ lại (hủy / không đến)</td>
-                        <td th:text="${#numbers.formatDecimal(c.forfeitedDeposits, 1, 'POINT', 0, 'COMMA')}"></td>
-                        <td th:text="${#numbers.formatDecimal(p.forfeitedDeposits, 1, 'POINT', 0, 'COMMA')}"></td>
-                        <td th:text="${#numbers.formatDecimal(y.forfeitedDeposits, 1, 'POINT', 0, 'COMMA')}"></td></tr>
-                    <tr class="sum"><td class="text-start">Tổng doanh thu</td>
-                        <td th:text="${#numbers.formatDecimal(c.totalRevenue, 1, 'POINT', 0, 'COMMA')}"></td>
-                        <td th:text="${#numbers.formatDecimal(p.totalRevenue, 1, 'POINT', 0, 'COMMA')}"></td>
-                        <td th:text="${#numbers.formatDecimal(y.totalRevenue, 1, 'POINT', 0, 'COMMA')}"></td></tr>
-                    <tr><td class="text-start">Giá vốn dịch vụ + chi phí phòng-đêm + phí thanh toán</td>
-                        <td th:text="'-' + ${#numbers.formatDecimal(c.directCost, 1, 'POINT', 0, 'COMMA')}"></td>
-                        <td th:text="'-' + ${#numbers.formatDecimal(p.directCost, 1, 'POINT', 0, 'COMMA')}"></td>
-                        <td th:text="'-' + ${#numbers.formatDecimal(y.directCost, 1, 'POINT', 0, 'COMMA')}"></td></tr>
-                    <tr class="sum"><td class="text-start">Lãi gộp</td>
-                        <td th:text="${#numbers.formatDecimal(c.grossProfit, 1, 'POINT', 0, 'COMMA')}"></td>
-                        <td th:text="${#numbers.formatDecimal(p.grossProfit, 1, 'POINT', 0, 'COMMA')}"></td>
-                        <td th:text="${#numbers.formatDecimal(y.grossProfit, 1, 'POINT', 0, 'COMMA')}"></td></tr>
-                    <tr th:each="cat : ${expenseCategories}" th:if="${c.expenses.containsKey(cat) or p.expenses.containsKey(cat) or y.expenses.containsKey(cat)}">
-                        <td class="text-start ps-3" th:text="${cat.label}"></td>
-                        <td th:text="'-' + ${#numbers.formatDecimal(H.of(c.expenses, cat), 1, 'POINT', 0, 'COMMA')}"></td>
-                        <td th:text="'-' + ${#numbers.formatDecimal(H.of(p.expenses, cat), 1, 'POINT', 0, 'COMMA')}"></td>
-                        <td th:text="'-' + ${#numbers.formatDecimal(H.of(y.expenses, cat), 1, 'POINT', 0, 'COMMA')}"></td></tr>
-                    <tr class="sum"><td class="text-start">Lãi vận hành (GOP)</td>
-                        <td th:classappend="${c.operatingProfit.signum() < 0} ? 'text-danger'" th:text="${#numbers.formatDecimal(c.operatingProfit, 1, 'POINT', 0, 'COMMA')}"></td>
-                        <td th:classappend="${p.operatingProfit.signum() < 0} ? 'text-danger'" th:text="${#numbers.formatDecimal(p.operatingProfit, 1, 'POINT', 0, 'COMMA')}"></td>
-                        <td th:classappend="${y.operatingProfit.signum() < 0} ? 'text-danger'" th:text="${#numbers.formatDecimal(y.operatingProfit, 1, 'POINT', 0, 'COMMA')}"></td></tr>
+                    <tr data-wf="in" th:attr="data-v=${c.roomRevenue}"><td>Doanh thu phòng</td>
+                        <td class="r" th:text="${#numbers.formatDecimal(c.roomRevenue, 1, 'POINT', 0, 'COMMA')}"></td>
+                        <td class="r" th:text="${#numbers.formatDecimal(p.roomRevenue, 1, 'POINT', 0, 'COMMA')}"></td>
+                        <td class="r" th:text="${#numbers.formatDecimal(y.roomRevenue, 1, 'POINT', 0, 'COMMA')}"></td></tr>
+                    <tr class="sub" data-wf="in" data-group="Dịch vụ" th:each="t : ${chargeTypes}" th:if="${c.serviceRevenue.containsKey(t) or p.serviceRevenue.containsKey(t) or y.serviceRevenue.containsKey(t)}"
+                        th:attr="data-v=${H.of(c.serviceRevenue, t)}">
+                        <td th:text="${t.vietnameseLabel}"></td>
+                        <td class="r" th:text="${#numbers.formatDecimal(H.of(c.serviceRevenue, t), 1, 'POINT', 0, 'COMMA')}"></td>
+                        <td class="r" th:text="${#numbers.formatDecimal(H.of(p.serviceRevenue, t), 1, 'POINT', 0, 'COMMA')}"></td>
+                        <td class="r" th:text="${#numbers.formatDecimal(H.of(y.serviceRevenue, t), 1, 'POINT', 0, 'COMMA')}"></td></tr>
+                    <tr data-wf="in" th:attr="data-v=${c.forfeitedDeposits}"><td>Cọc giữ lại (hủy / không đến)</td>
+                        <td class="r" th:text="${#numbers.formatDecimal(c.forfeitedDeposits, 1, 'POINT', 0, 'COMMA')}"></td>
+                        <td class="r" th:text="${#numbers.formatDecimal(p.forfeitedDeposits, 1, 'POINT', 0, 'COMMA')}"></td>
+                        <td class="r" th:text="${#numbers.formatDecimal(y.forfeitedDeposits, 1, 'POINT', 0, 'COMMA')}"></td></tr>
+                    <tr class="sum" data-wf="total" th:attr="data-v=${c.totalRevenue}"><td>Tổng doanh thu</td>
+                        <td class="r" th:text="${#numbers.formatDecimal(c.totalRevenue, 1, 'POINT', 0, 'COMMA')}"></td>
+                        <td class="r" th:text="${#numbers.formatDecimal(p.totalRevenue, 1, 'POINT', 0, 'COMMA')}"></td>
+                        <td class="r" th:text="${#numbers.formatDecimal(y.totalRevenue, 1, 'POINT', 0, 'COMMA')}"></td></tr>
+                    <tr data-wf="out" data-name="Giá vốn & chi phí trực tiếp" th:attr="data-v=${c.directCost}"><td>Giá vốn dịch vụ + chi phí phòng-đêm + phí thanh toán</td>
+                        <td class="r vz-neg" th:text="'−' + ${#numbers.formatDecimal(c.directCost, 1, 'POINT', 0, 'COMMA')}"></td>
+                        <td class="r vz-neg" th:text="'−' + ${#numbers.formatDecimal(p.directCost, 1, 'POINT', 0, 'COMMA')}"></td>
+                        <td class="r vz-neg" th:text="'−' + ${#numbers.formatDecimal(y.directCost, 1, 'POINT', 0, 'COMMA')}"></td></tr>
+                    <tr class="sum" data-wf="total" th:attr="data-v=${c.grossProfit}"><td>Lãi gộp</td>
+                        <td class="r" th:text="${#numbers.formatDecimal(c.grossProfit, 1, 'POINT', 0, 'COMMA')}"></td>
+                        <td class="r" th:text="${#numbers.formatDecimal(p.grossProfit, 1, 'POINT', 0, 'COMMA')}"></td>
+                        <td class="r" th:text="${#numbers.formatDecimal(y.grossProfit, 1, 'POINT', 0, 'COMMA')}"></td></tr>
+                    <tr class="sub" data-wf="out" data-group="exp" th:each="cat : ${expenseCategories}" th:if="${c.expenses.containsKey(cat) or p.expenses.containsKey(cat) or y.expenses.containsKey(cat)}"
+                        th:attr="data-v=${H.of(c.expenses, cat)}">
+                        <td th:text="${cat.label}"></td>
+                        <td class="r vz-neg" th:text="'−' + ${#numbers.formatDecimal(H.of(c.expenses, cat), 1, 'POINT', 0, 'COMMA')}"></td>
+                        <td class="r vz-neg" th:text="'−' + ${#numbers.formatDecimal(H.of(p.expenses, cat), 1, 'POINT', 0, 'COMMA')}"></td>
+                        <td class="r vz-neg" th:text="'−' + ${#numbers.formatDecimal(H.of(y.expenses, cat), 1, 'POINT', 0, 'COMMA')}"></td></tr>
+                    <tr class="sum" data-wf="total" data-name="Lãi vận hành" th:attr="data-v=${c.operatingProfit}"><td>Lãi vận hành (GOP)</td>
+                        <td class="r" th:classappend="${c.operatingProfit.signum() < 0} ? 'vz-neg'" th:text="${#numbers.formatDecimal(c.operatingProfit, 1, 'POINT', 0, 'COMMA')}"></td>
+                        <td class="r" th:classappend="${p.operatingProfit.signum() < 0} ? 'vz-neg'" th:text="${#numbers.formatDecimal(p.operatingProfit, 1, 'POINT', 0, 'COMMA')}"></td>
+                        <td class="r" th:classappend="${y.operatingProfit.signum() < 0} ? 'vz-neg'" th:text="${#numbers.formatDecimal(y.operatingProfit, 1, 'POINT', 0, 'COMMA')}"></td></tr>
                     </tbody>
                 </table>
+                </div>
             </div>
 
             <!-- Hieu qua theo loai phong -->
-            <div class="bg-white rounded shadow-sm p-3 mb-4 table-responsive" th:unless="${#lists.isEmpty(roomTypes)}">
-                <h6 class="fw-bold">Hiệu quả theo loại phòng</h6>
-                <p class="small text-muted mb-2">Đóng góp = tiền phòng + dịch vụ kèm đơn - giá vốn dịch vụ - chi phí mỗi phòng-đêm (chưa trừ chi phí cố định).
-                    Xếp theo đóng góp trên mỗi phòng-đêm sẵn có.</p>
-                <table class="table table-sm align-middle mb-0 text-end">
-                    <thead><tr><th class="text-start">Loại phòng</th><th>Số phòng</th><th>Công suất</th><th>ADR</th><th>RevPAR</th>
-                        <th>Dịch vụ kèm</th><th>Đóng góp</th><th>Đóng góp / phòng-đêm</th></tr></thead>
+            <div class="vz-card" th:unless="${#lists.isEmpty(roomTypes)}">
+                <div class="vz-head"><div><h5>Hiệu quả theo loại phòng</h5>
+                    <div class="sub">Đóng góp = tiền phòng + dịch vụ kèm đơn − giá vốn dịch vụ − chi phí mỗi phòng-đêm (chưa trừ chi phí cố định).
+                        Xếp theo đóng góp trên mỗi phòng-đêm sẵn có.</div></div></div>
+                <div class="table-responsive">
+                <table class="vz-table">
+                    <thead><tr><th>Loại phòng</th><th class="r">Phòng</th><th>Công suất</th><th class="r">ADR</th><th class="r">RevPAR</th>
+                        <th class="r">Dịch vụ kèm</th><th class="r">Đóng góp</th><th style="min-width:190px">Đóng góp / phòng-đêm</th></tr></thead>
                     <tbody>
-                    <tr th:each="t : ${roomTypes}">
-                        <td class="text-start fw-semibold" th:text="${t.type.name}"></td>
-                        <td th:text="${t.rooms}"></td>
-                        <td th:text="${t.occupancy} + '%'"></td>
-                        <td th:text="${#numbers.formatDecimal(t.adr, 1, 'POINT', 0, 'COMMA')}"></td>
-                        <td th:text="${#numbers.formatDecimal(t.revPar, 1, 'POINT', 0, 'COMMA')}"></td>
-                        <td th:text="${#numbers.formatDecimal(t.serviceRevenue, 1, 'POINT', 0, 'COMMA')}"></td>
-                        <td th:text="${#numbers.formatDecimal(t.contribution, 1, 'POINT', 0, 'COMMA')}"></td>
-                        <td class="fw-semibold" th:text="${#numbers.formatDecimal(t.contributionPerAvailableNight, 1, 'POINT', 0, 'COMMA')}"></td>
+                    <tr th:each="t : ${roomTypes}" class="rt-row" th:attr="data-v=${t.contributionPerAvailableNight}">
+                        <td class="fw-semibold" th:text="${t.type.name}"></td>
+                        <td class="r" th:text="${t.rooms}"></td>
+                        <td><div class="d-flex align-items-center gap-2"><div class="vz-bar flex-grow-1" style="min-width:60px"><span th:style="'width:' + ${t.occupancy > 100 ? 100 : t.occupancy} + '%'"></span></div>
+                            <span class="small" th:text="${t.occupancy} + '%'"></span></div></td>
+                        <td class="r" th:text="${#numbers.formatDecimal(t.adr, 1, 'POINT', 0, 'COMMA')}"></td>
+                        <td class="r" th:text="${#numbers.formatDecimal(t.revPar, 1, 'POINT', 0, 'COMMA')}"></td>
+                        <td class="r" th:text="${#numbers.formatDecimal(t.serviceRevenue, 1, 'POINT', 0, 'COMMA')}"></td>
+                        <td class="r" th:text="${#numbers.formatDecimal(t.contribution, 1, 'POINT', 0, 'COMMA')}"></td>
+                        <td><div class="d-flex align-items-center gap-2"><div class="vz-bar flex-grow-1 rt-bar"><span></span></div>
+                            <b class="small text-nowrap" th:text="${#numbers.formatDecimal(t.contributionPerAvailableNight, 1, 'POINT', 0, 'COMMA')}"></b></div></td>
                     </tr>
                     </tbody>
                 </table>
+                </div>
             </div>
 
             <!-- Bang so lieu cua bieu do (doc duoc khong can nhin mau) -->
-            <details class="bg-white rounded shadow-sm p-3">
+            <details class="vz-card">
                 <summary class="fw-semibold small">Bảng số liệu 12 tháng</summary>
-                <table class="table table-sm mt-2 mb-0 text-end">
-                    <thead><tr><th class="text-start">Tháng</th><th>Doanh thu</th><th>Chi phí</th><th>Lãi vận hành</th><th>Biên</th><th>Công suất</th></tr></thead>
+                <div class="table-responsive mt-2">
+                <table class="vz-table">
+                    <thead><tr><th>Tháng</th><th class="r">Doanh thu</th><th class="r">Chi phí</th><th class="r">Lãi vận hành</th><th class="r">Biên</th><th class="r">Công suất</th></tr></thead>
                     <tbody>
                     <tr th:each="m : ${r.trend}">
-                        <td class="text-start" th:text="${m.month.monthValue} + '/' + ${m.month.year}"></td>
-                        <td th:text="${#numbers.formatDecimal(m.totalRevenue, 1, 'POINT', 0, 'COMMA')}"></td>
-                        <td th:text="${#numbers.formatDecimal(m.totalCost, 1, 'POINT', 0, 'COMMA')}"></td>
-                        <td th:text="${#numbers.formatDecimal(m.operatingProfit, 1, 'POINT', 0, 'COMMA')}"></td>
-                        <td th:text="${m.margin} + '%'"></td>
-                        <td th:text="${m.occupancy} + '%'"></td>
+                        <td th:text="${m.month.monthValue} + '/' + ${m.month.year}"></td>
+                        <td class="r" th:text="${#numbers.formatDecimal(m.totalRevenue, 1, 'POINT', 0, 'COMMA')}"></td>
+                        <td class="r" th:text="${#numbers.formatDecimal(m.totalCost, 1, 'POINT', 0, 'COMMA')}"></td>
+                        <td class="r" th:classappend="${m.operatingProfit.signum() < 0} ? 'vz-neg'" th:text="${#numbers.formatDecimal(m.operatingProfit, 1, 'POINT', 0, 'COMMA')}"></td>
+                        <td class="r" th:text="${m.margin} + '%'"></td>
+                        <td class="r" th:text="${m.occupancy} + '%'"></td>
                     </tr>
                     </tbody>
                 </table>
+                </div>
             </details>
         </div>
     </div>
 </main>
 
-
 <div th:replace="~{fragments/footer :: footer}"></div>
+<th:block th:replace="~{fragments/viz :: scripts}"></th:block>
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    const PNL = {
+        months: /*[[${report.trend.![month.monthValue + '/' + (month.year % 100)]}]]*/ [],
+        revenue: /*[[${report.trend.![totalRevenue]}]]*/ [],
+        cost: /*[[${report.trend.![totalCost]}]]*/ [],
+        profit: /*[[${report.trend.![operatingProfit]}]]*/ [],
+        margin: /*[[${report.trend.![margin]}]]*/ []
+    };
+    /*]]>*/
+    (function () {
+        const { C, num, vnd, short, axisX, axisY } = VZ;
+
+        // --- Thac nuoc: doc tu bang lai lo (data-wf: in / out / total) ---
+        // Gop cho de doc: cac dich vu -> 1 buoc «Dich vu»; chi phi van hanh giu 4 nhom lon nhat, con lai -> «Chi phi khac»
+        const items = [];
+        document.querySelectorAll('#pnlTable tr[data-wf]').forEach(tr => {
+            items.push({ kind: tr.dataset.wf, v: num(tr.dataset.v), group: tr.dataset.group, name: tr.dataset.name || tr.cells[0].textContent.trim() });
+        });
+        const merged = [];
+        items.forEach(it => {
+            if (it.group && it.group !== 'exp') {
+                const g = merged.find(m => m.name === it.group);
+                if (g) g.v += it.v; else merged.push({ kind: it.kind, v: it.v, name: it.group });
+            } else merged.push(it);
+        });
+        const exp = merged.filter(m => m.group === 'exp' && m.v).sort((a, b) => b.v - a.v);
+        const rest = exp.slice(4).reduce((s, m) => s + m.v, 0);
+        const ordered = [];
+        merged.forEach(m => {
+            if (m.group === 'exp') return;
+            if (m.kind === 'total' && m.name === 'Lãi vận hành') {
+                exp.slice(0, 4).forEach(e => { if (!ordered.includes(e)) ordered.push(e); });
+                if (rest) ordered.push({ kind: 'out', v: rest, name: 'Chi phí khác' });
+            }
+            ordered.push(m);
+        });
+        const steps = [];
+        let run = 0;
+        ordered.forEach(it => {
+            if (it.kind === 'in') { if (it.v) { steps.push({ name: it.name, a: run, b: run + it.v, kind: 'in', v: it.v }); run += it.v; } }
+            else if (it.kind === 'out') { if (it.v) { steps.push({ name: it.name, a: run, b: run - it.v, kind: 'out', v: -it.v }); run -= it.v; } }
+            else { steps.push({ name: it.name, a: 0, b: it.v, kind: 'total', v: it.v }); run = it.v; }
+        });
+        const wrap = s => { const w = s.split(' '), out = []; let line = '';
+            w.forEach(x => { if ((line + ' ' + x).trim().length > 14 && line) { out.push(line); line = x; } else line = (line + ' ' + x).trim(); });
+            if (line) out.push(line); return out.slice(0, 3); };
+        new Chart(document.getElementById('pnlWaterfall'), {
+            type: 'bar',
+            data: { labels: steps.map(s => wrap(s.name)), datasets: [{
+                data: steps.map(s => [s.a, s.b]),
+                backgroundColor: steps.map(s => s.kind === 'in' ? C.blue : s.kind === 'out' ? C.red : (s.v < 0 ? '#c23d58' : C.ink)),
+                borderRadius: 3, borderSkipped: false, categoryPercentage: .8, barPercentage: .85, maxBarThickness: 46 }] },
+            options: {
+                plugins: { tooltip: { displayColors: false, callbacks: {
+                    title: it => steps[it[0].dataIndex].name,
+                    label: it => { const s = steps[it.dataIndex]; return (s.kind === 'total' ? '' : (s.v > 0 ? '+' : '−')) + vnd(Math.abs(s.v)) + ' đ'; } } } },
+                scales: { x: axisX({ ticks: { color: C.mut, maxRotation: 0, autoSkip: false, font: { size: 10.5 } } }),
+                          y: axisY({ ticks: { color: C.mut, maxTicksLimit: 6, callback: v => short(v) } }) }
+            },
+            plugins: [{ id: 'wfLabels', afterDatasetsDraw(c) {
+                const ctx = c.ctx, meta = c.getDatasetMeta(0);
+                ctx.save(); ctx.font = '600 11px "Be Vietnam Pro", system-ui'; ctx.textAlign = 'center'; ctx.fillStyle = C.ink;
+                meta.data.forEach((bar, k) => { const s = steps[k], top = Math.min(bar.y, bar.base);
+                    ctx.fillText((s.kind === 'out' ? '−' : '') + short(Math.abs(s.v)), bar.x, top - 5); });
+                ctx.restore();
+            } }]
+        });
+
+        // --- 12 thang: cot doanh thu / chi phi + duong lai ---
+        const rev = PNL.revenue.map(num), cost = PNL.cost.map(num), prof = PNL.profit.map(num);
+        const n = prof.length;
+        if (n) {
+            const best = prof.indexOf(Math.max(...prof)), loss = prof.filter(v => v < 0).length;
+            document.getElementById('pnlTrendSub').textContent = 'Lãi cao nhất: ' + PNL.months[best] + ' (' + short(prof[best]) + ')'
+                + (loss ? ' · ' + loss + ' tháng lỗ' : ' · không tháng nào lỗ');
+        }
+        new Chart(document.getElementById('pnlTrend'), {
+            data: { labels: PNL.months, datasets: [
+                { type: 'line', label: 'Lãi vận hành', data: prof, borderColor: C.green, backgroundColor: C.green, borderWidth: 2.5,
+                  pointRadius: 3, pointHoverRadius: 5, pointBackgroundColor: prof.map(v => v < 0 ? C.red : C.green), pointBorderColor: '#fff', pointBorderWidth: 1.5,
+                  segment: { borderColor: s => s.p1.parsed.y < 0 || s.p0.parsed.y < 0 ? C.red : C.green }, tension: .3, order: 0 },
+                { type: 'bar', label: 'Doanh thu', data: rev, backgroundColor: C.blue, borderRadius: 3, categoryPercentage: .7, barPercentage: .9, order: 1 },
+                { type: 'bar', label: 'Chi phí', data: cost, backgroundColor: '#f3b3c0', borderRadius: 3, categoryPercentage: .7, barPercentage: .9, order: 1 }
+            ] },
+            options: { interaction: { mode: 'index', intersect: false },
+                plugins: { tooltip: { callbacks: {
+                    label: c => ' ' + c.dataset.label + ': ' + vnd(c.parsed.y) + ' đ',
+                    footer: it => 'Biên lợi nhuận: ' + PNL.margin[it[0].dataIndex] + '%' } } },
+                scales: { x: axisX(), y: axisY({ grid: { color: c => c.tick.value === 0 ? '#9fb3c6' : C.grid }, ticks: { color: C.mut, maxTicksLimit: 6, callback: v => short(v) } }) } }
+        });
+
+        // --- Thanh dong gop / phong-dem trong bang loai phong ---
+        const rows = [...document.querySelectorAll('.rt-row')];
+        const mx = Math.max(1, ...rows.map(r => Math.abs(num(r.dataset.v))));
+        rows.forEach(r => { const v = num(r.dataset.v), s = r.querySelector('.rt-bar span');
+            s.style.width = Math.abs(v) * 100 / mx + '%'; s.style.background = v < 0 ? C.red : C.green; });
+    })();
+</script>
 </body>
 </html>

@@ -3,7 +3,6 @@ package com.hotel.controller;
 import com.hotel.entity.ChargeType;
 import com.hotel.entity.Expense;
 import com.hotel.service.ProfitService;
-import com.hotel.util.TrendChartSvg;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -42,19 +41,10 @@ public class AdminProfitController {
         YearMonth m = month != null ? month : YearMonth.now();
         ProfitService.Report report = profitService.report(m);
         List<ProfitService.MonthPnl> trend = report.trend();
-        List<String> labels = trend.stream().map(p -> p.month().getMonthValue() + "/" + (p.month().getYear() % 100)).toList();
         model.addAttribute("month", m);
         model.addAttribute("report", report);
         model.addAttribute("chargeTypes", ChargeType.values());
         model.addAttribute("expenseCategories", Expense.Category.values());
-        model.addAttribute("revenueCostSvg", TrendChartSvg.groupedBars(labels,
-                trend.stream().map(ProfitService.MonthPnl::totalRevenue).toList(), "Doanh thu",
-                trend.stream().map(ProfitService.MonthPnl::totalCost).toList(), "Chi phí", "Doanh thu và chi phí 12 tháng"));
-        model.addAttribute("profitSvg", TrendChartSvg.signedBars(labels,
-                trend.stream().map(ProfitService.MonthPnl::operatingProfit).toList(), "Lãi vận hành", "Lãi vận hành 12 tháng"));
-        model.addAttribute("blue", TrendChartSvg.BLUE);
-        model.addAttribute("orange", TrendChartSvg.ORANGE);
-        model.addAttribute("red", TrendChartSvg.RED);
         model.addAttribute("hasCosts", trend.stream().anyMatch(p -> p.totalCost().signum() > 0));
         budgetService.variance(report.current()).ifPresent(v -> model.addAttribute("variance", v));
         model.addAttribute("roomTypes", roomTypePerformance.month(m));

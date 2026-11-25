@@ -1,0 +1,101 @@
+<!-- Bo giao dien bao cao dung chung (the, o so lieu, bang, bieu do Chart.js) - cung 1 phong cach cho moi trang phan tich.
+     Dung: <th:block th:replace="~{fragments/viz :: styles}"></th:block> trong <head>,
+           <th:block th:replace="~{fragments/viz :: scripts}"></th:block> truoc script rieng cua trang. -->
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="styles">
+    <style>
+        :root {
+            --vz-ink: #13395e; --vz-mut: #6c7f92; --vz-line: #e3edf5; --vz-soft: #f7fafc;
+            /* Mau theo vai tro: xanh = chinh, xanh la = tot / dat, vang = can chu y, do = xau / chi, tim + teal = nhom phu */
+            --vz-blue: #3d9bd6; --vz-green: #2a9d6a; --vz-amber: #f2b134; --vz-red: #e0607a; --vz-purple: #7b61c9; --vz-teal: #2bb3b1; --vz-gray: #a7b6c4;
+        }
+        .vz-card { background: #fff; border-radius: 14px; box-shadow: 0 1px 3px rgba(19,57,94,.10), 0 0 0 1px var(--vz-line); padding: 18px 20px; margin-bottom: 1.25rem; }
+        .vz-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; margin-bottom: .9rem; }
+        .vz-head h5 { font-weight: 700; font-size: 1.02rem; margin: 0; color: var(--vz-ink); }
+        .vz-head .sub { color: var(--vz-mut); font-size: .8rem; margin-top: 2px; }
+        .vz-chart { position: relative; height: 280px; }
+
+        .vz-kpi { background: #fff; border-radius: 14px; box-shadow: 0 1px 3px rgba(19,57,94,.10), 0 0 0 1px var(--vz-line); padding: 14px 16px; height: 100%; }
+        .vz-kpi .lbl { color: var(--vz-mut); font-size: .8rem; }
+        .vz-kpi .val { font-size: 1.45rem; font-weight: 800; line-height: 1.2; color: var(--vz-ink); font-variant-numeric: tabular-nums; }
+        .vz-kpi .sub { color: var(--vz-mut); font-size: .76rem; }
+        .vz-kpi.hero { background: linear-gradient(135deg, #13395e, #1f5a8c); box-shadow: none; }
+        .vz-kpi.hero .lbl, .vz-kpi.hero .sub { color: rgba(255,255,255,.75); }
+        .vz-kpi.hero .val { color: #fff; font-size: 1.8rem; }
+        .vz-kpi .val.bad { color: #c23d58; } .vz-kpi .val.good { color: #1d7a4c; }
+        .vz-up { color: #1d7a4c; font-weight: 600; } .vz-down { color: #c23d58; font-weight: 600; }
+        .vz-kpi.hero .vz-up { color: #b8f0d4; } .vz-kpi.hero .vz-down { color: #ffd0da; }
+
+        .vz-key { display: flex; gap: 14px; flex-wrap: wrap; font-size: .78rem; color: #4a5b6c; align-items: center; }
+        .vz-key span { display: inline-flex; align-items: center; gap: 6px; }
+        .vz-key i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+        .vz-key i.line { width: 16px; height: 0; border-radius: 0; border-top: 2px solid; }
+        .vz-key i.dash { width: 16px; height: 0; border-radius: 0; border-top: 2px dashed; }
+
+        .vz-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: .88rem; }
+        .vz-table th { font-size: .7rem; font-weight: 700; color: var(--vz-mut); text-transform: uppercase; letter-spacing: .06em; padding: 9px 12px;
+                       background: var(--vz-soft); border-bottom: 1px solid var(--vz-line); white-space: nowrap; }
+        .vz-table td { padding: 9px 12px; border-bottom: 1px solid #eef3f7; color: var(--vz-ink); vertical-align: middle; }
+        .vz-table tbody tr:hover td { background: #f6fafd; }
+        .vz-table tbody tr:last-child td { border-bottom: 0; }
+        .vz-table tr.sum td { font-weight: 800; background: #fbfdfe; border-top: 1px solid var(--vz-line); }
+        .vz-table tr.sub td:first-child { padding-left: 28px; color: #4a5b6c; }
+        .vz-table .r { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+        .vz-table .c { text-align: center; font-variant-numeric: tabular-nums; }
+        .vz-table .zero { color: #c3d0db; }
+        .vz-neg { color: #c23d58; }
+
+        /* Thanh ngang trong o bang */
+        .vz-bar { position: relative; height: 8px; background: #eef3f7; border-radius: 4px; min-width: 80px; }
+        .vz-bar > span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; background: var(--vz-blue); }
+        .vz-stack { display: flex; height: 10px; border-radius: 5px; overflow: hidden; background: #eef3f7; gap: 1px; min-width: 120px; }
+        .vz-stack > span { display: block; height: 100%; }
+
+        .vz-pill { display: inline-flex; align-items: center; gap: 6px; font-size: .74rem; font-weight: 600; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
+        .vz-pill.dot::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+        .vz-pill.ok { background: #e2f5ea; color: #1d7a4c; } .vz-pill.warn { background: #fff4dc; color: #8a5a00; }
+        .vz-pill.bad { background: #fde8ec; color: #b8384f; } .vz-pill.info { background: #e3f1fb; color: #1f6fb0; } .vz-pill.muted { background: #eef1f4; color: #4d6b88; }
+
+        .vz-empty { text-align: center; color: var(--vz-mut); padding: 36px 10px; }
+        .vz-empty i { display: block; font-size: 2rem; color: #b6c8d8; margin-bottom: 6px; }
+
+        /* Chon thang / khoang thoi gian */
+        .vz-period { display: inline-flex; align-items: center; border: 1px solid #d5e3ee; border-radius: 999px; background: #fff; overflow: hidden; }
+        .vz-period a { padding: 5px 11px; color: var(--vz-ink); text-decoration: none; }
+        .vz-period a:hover { background: #f1f7fc; }
+        .vz-period input { border: 0; border-left: 1px solid var(--vz-line); border-right: 1px solid var(--vz-line); padding: 4px 8px; font-weight: 600; color: var(--vz-ink); background: transparent; }
+        .vz-period input:focus { outline: none; background: #f7fbfe; }
+        .vz-period button { border: 0; background: transparent; padding: 4px 12px; font-weight: 600; color: var(--vz-ink); }
+        .vz-period button:hover { background: #f1f7fc; }
+    </style>
+</th:block>
+
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="scripts">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <script>
+        // Ham dung chung: dinh dang tien / %, mau theo bien CSS, mac dinh Chart.js nhe nhang
+        window.VZ = (function () {
+            const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+            const C = { ink: '#13395e', mut: '#6c7f92', grid: '#edf3f8', blue: css('--vz-blue'), green: css('--vz-green'), amber: css('--vz-amber'),
+                        red: css('--vz-red'), purple: css('--vz-purple'), teal: css('--vz-teal'), gray: css('--vz-gray') };
+            const num = v => Number(v) || 0;
+            const vnd = v => num(v).toLocaleString('vi-VN');
+            const short = v => { v = num(v); const a = Math.abs(v), s = v < 0 ? '−' : '';
+                return a >= 1e9 ? s + (a / 1e9).toLocaleString('vi-VN', { maximumFractionDigits: 2 }) + ' tỷ'
+                     : a >= 1e6 ? s + (a / 1e6).toLocaleString('vi-VN', { maximumFractionDigits: 1 }) + 'tr'
+                     : a >= 1e3 ? s + Math.round(a / 1e3) + 'k' : s + a; };
+            const pct = (v, d = 1) => num(v).toLocaleString('vi-VN', { maximumFractionDigits: d }) + '%';
+            if (window.Chart) {
+                Chart.defaults.font.family = "'Be Vietnam Pro', system-ui, sans-serif";
+                Chart.defaults.color = C.ink;
+                Chart.defaults.maintainAspectRatio = false;
+                Chart.defaults.plugins.legend.display = false;
+                Object.assign(Chart.defaults.plugins.tooltip, { backgroundColor: C.ink, padding: 10, cornerRadius: 6, boxPadding: 4, usePointStyle: true });
+                if (document.fonts) document.fonts.ready.then(() => Object.values(Chart.instances).forEach(c => c.update()));
+            }
+            // Truc mac dinh: luoi ngang nhat, khong vien
+            const axisX = (extra) => Object.assign({ grid: { display: false }, border: { color: '#d6e2ec' }, ticks: { color: C.mut, maxRotation: 0 } }, extra || {});
+            const axisY = (extra) => Object.assign({ grid: { color: C.grid }, border: { display: false }, ticks: { color: C.mut, maxTicksLimit: 6 } }, extra || {});
+            return { C, num, vnd, short, pct, axisX, axisY };
+        })();
+    </script>
+</th:block>

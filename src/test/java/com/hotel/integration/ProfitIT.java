@@ -95,8 +95,9 @@ class ProfitIT extends ItFixtures {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("5.300.000")))
                 .andExpect(content().string(containsString("56.6%")))
-                .andExpect(content().string(containsString("<svg")))
-                .andExpect(content().string(containsString("Lãi vận hành: 3.000.000 VND")));
+                // Bieu do thac nuoc + 12 thang ve bang Chart.js tu bang so lieu; lai van hanh 3.000.000 nam trong bang
+                .andExpect(content().string(containsString("id=\"pnlWaterfall\"")))
+                .andExpect(content().string(containsString("data-name=\"Lãi vận hành\" data-v=\"3000000")));
         byte[] xlsx = mockMvc.perform(get("/admin/accounting/pnl/export").with(as(accountant)).param("month", "2025-03"))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsByteArray();
         try (var wb = new XSSFWorkbook(new ByteArrayInputStream(xlsx))) {
