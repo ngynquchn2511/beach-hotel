@@ -246,17 +246,23 @@
     <input type="hidden" id="chatbotCsrfHeader" th:value="${_csrf != null ? _csrf.headerName : ''}">
 
     <div id="mayChat">
-        <!-- Avatar dam may "May" - dung lai bang <use> -->
+        <!-- Avatar con song "Song" (song cuon co mat cuoi) - dung lai bang <use> -->
         <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-            <symbol id="mayCloud" viewBox="0 0 64 64">
+            <defs><clipPath id="maySongClip"><circle cx="32" cy="32" r="30"/></clipPath></defs>
+            <symbol id="maySong" viewBox="0 0 64 64">
                 <circle cx="32" cy="32" r="31" fill="#e8f5fd" stroke="#13395e" stroke-width="2"/>
-                <path d="M18 41c-4.4 0-8-3.3-8-7.4 0-3.8 3-6.9 6.9-7.3C18 20.9 22.6 17 28 17c4.6 0 8.6 2.8 10.2 6.9.8-.2 1.6-.3 2.5-.3 5.5 0 9.9 4.3 9.9 9.7 0 4.3-3.6 7.7-8 7.7H18z"
-                      fill="#fff" stroke="#13395e" stroke-width="2.2" stroke-linejoin="round"/>
-                <circle cx="25.5" cy="32" r="2.1" fill="#13395e"/>
-                <circle cx="36.5" cy="32" r="2.1" fill="#13395e"/>
-                <path d="M28 36.5c1.6 1.6 4.4 1.6 6 0" fill="none" stroke="#13395e" stroke-width="2" stroke-linecap="round"/>
-                <circle cx="21.5" cy="35.5" r="2" fill="#ffb3c1" opacity=".8"/>
-                <circle cx="40.5" cy="35.5" r="2" fill="#ffb3c1" opacity=".8"/>
+                <g clip-path="url(#maySongClip)">
+                    <path d="M-2 38 C7 36 13 33 18 27 C23 19 31 13 41 13 C51 13 57 20 56 28 C55 33 51 36 47 34 C44 33 44 29 46 27 C43 24 37 25 35 30 C33 36 37 42 44 44 C51 46 58 43 66 39 L66 66 L-2 66 Z"
+                          fill="#3d9bd6" stroke="#13395e" stroke-width="2.2" stroke-linejoin="round"/>
+                    <path d="M-2 49 C9 45 18 52 30 49 C42 46 52 53 66 48 L66 66 L-2 66 Z" fill="#89cff0" stroke="#13395e" stroke-width="1.8" stroke-linejoin="round"/>
+                </g>
+                <circle cx="43" cy="17" r="1.6" fill="#fff"/>
+                <circle cx="49" cy="19" r="1.2" fill="#fff"/>
+                <circle cx="18" cy="37" r="2.1" fill="#13395e"/>
+                <circle cx="27" cy="36" r="2.1" fill="#13395e"/>
+                <path d="M19.5 41 c1.6 1.6 4.4 1.6 6 0" fill="none" stroke="#13395e" stroke-width="2" stroke-linecap="round"/>
+                <circle cx="14" cy="41" r="2" fill="#ffb3c1" opacity=".85"/>
+                <circle cx="31" cy="40" r="2" fill="#ffb3c1" opacity=".85"/>
             </symbol>
         </svg>
 
@@ -266,14 +272,14 @@
         </div>
 
         <button type="button" id="chatbotBubble" th:aria-label="#{chat.w.open}">
-            <svg class="may-avatar" aria-hidden="true"><use href="#mayCloud"/></svg>
+            <svg class="may-avatar" aria-hidden="true"><use href="#maySong"/></svg>
             <span class="may-online"></span>
             <span class="may-bubble-label" th:text="#{chat.w.ask}">Hỏi Sóng</span>
         </button>
 
         <div id="chatbotPanel" role="dialog" th:aria-label="#{chat.w.panel}">
             <div class="may-header">
-                <svg class="may-avatar" aria-hidden="true"><use href="#mayCloud"/></svg>
+                <svg class="may-avatar" aria-hidden="true"><use href="#maySong"/></svg>
                 <div>
                     <div class="may-title">Sóng 🌊</div>
                     <div class="may-status" th:text="#{chat.w.status}">Đang online · trả lời ngay</div>
@@ -396,7 +402,7 @@
                 svg.setAttribute('class', 'may-avatar');
                 svg.setAttribute('aria-hidden', 'true');
                 var use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
-                use.setAttribute('href', '#mayCloud');
+                use.setAttribute('href', '#maySong');
                 svg.appendChild(use);
                 return svg;
             }
