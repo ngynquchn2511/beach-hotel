@@ -8,12 +8,55 @@
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
     <style>
-        .occ { display: flex; height: 14px; background: #f1f3f5; border-radius: 4px; overflow: hidden; min-width: 120px; }
-        .occ .c { background: #2f9e44; }
-        .occ .p { background: repeating-linear-gradient(45deg, #ffe066 0 4px, #fcc419 4px 8px); }
-        tr.low td { background: #fff5f5; }
-        .stat { background: var(--paper); border: var(--line); border-radius: 10px; padding: 12px 16px; height: 100%; }
-        .stat .num { font-size: 1.6rem; font-weight: 800; }
+        /* The so lieu */
+        .fc-kpi { background: var(--paper, #fff); border: var(--line, 1px solid #e3edf5); border-radius: 12px; padding: 14px 16px; height: 100%; }
+        .fc-kpi .lbl { color: #6c7a89; font-size: .8rem; }
+        .fc-kpi .num { font-size: 1.65rem; font-weight: 800; line-height: 1.15; font-variant-numeric: tabular-nums; }
+        .fc-kpi .sub { color: #6c7a89; font-size: .75rem; }
+        .fc-meter { position: relative; height: 6px; background: #e8eff5; border-radius: 3px; margin-top: 8px; }
+        .fc-meter > span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; background: #3d9bd6; }
+        .fc-meter > i { position: absolute; top: -3px; bottom: -3px; width: 2px; background: #e0607a; }
+        .fc-card { background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(19,57,94,.12); padding: 18px 20px; margin-bottom: 1.25rem; }
+        .fc-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; margin-bottom: .9rem; }
+        .fc-head h5 { font-weight: 700; margin: 0; font-size: 1.02rem; }
+        .fc-head .sub { color: #6c7a89; font-size: .8rem; }
+        .fc-key { display: flex; gap: 1rem; flex-wrap: wrap; font-size: .78rem; color: #4a5b6c; align-items: center; }
+        .fc-key span { display: inline-flex; align-items: center; gap: .35rem; }
+        .fc-key i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+        .sw-ok { background: #3d9bd6; } .sw-low { background: #e0607a; }
+        .sw-pend { background: repeating-linear-gradient(45deg, #f2b134 0 3px, #fbe0a6 3px 6px); }
+        .sw-wk { background: #f1f6fa; border: 1px solid #dde8f0; }
+        .sw-line { width: 16px !important; height: 0 !important; border-top: 2px dashed #e0607a; border-radius: 0 !important; }
+
+        /* Lich nhiet */
+        .fc-cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+        .fc-cal .dow { font-size: .72rem; font-weight: 700; color: #6c7a89; text-align: center; padding-bottom: 2px; }
+        .fc-cal .dow.wk { color: #13395e; }
+        .fc-cell { border-radius: 8px; padding: 6px 8px; min-height: 58px; position: relative; color: #13395e; border: 1px solid transparent; cursor: default; }
+        .fc-cell .d { font-size: .72rem; opacity: .8; }
+        .fc-cell .v { font-size: 1.05rem; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
+        .fc-cell .pd { font-size: .68rem; opacity: .85; }
+        .fc-cell.today { outline: 2px solid #13395e; outline-offset: 1px; }
+        .fc-cell:hover { border-color: #13395e; }
+        .h0 { background: #f3f8fc; } .h1 { background: #d3e9f7; } .h2 { background: #a2d0ee; }
+        .h3 { background: #5aa9dd; color: #fff; } .h4 { background: #2777b8; color: #fff; } .h5 { background: #13395e; color: #fff; }
+        .fc-scale { display: flex; align-items: center; gap: 4px; font-size: .72rem; color: #6c7a89; }
+        .fc-scale b { width: 22px; height: 10px; border-radius: 2px; display: inline-block; }
+
+        /* Hang phong */
+        .fc-type { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) 44px; gap: 10px; align-items: center; padding: 6px 0; border-bottom: 1px solid #f0f4f8; }
+        .fc-type:last-child { border-bottom: 0; }
+        .fc-type .nm { font-weight: 600; font-size: .88rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .fc-type .nm small { display: block; font-weight: 400; color: #6c7a89; font-size: .74rem; }
+        .fc-bar { position: relative; height: 14px; background: #eef3f7; border-radius: 4px; }
+        .fc-bar > span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; background: #3d9bd6; }
+                .fc-bar > i { position: absolute; top: -4px; bottom: -4px; width: 0; border-left: 2px dashed #e0607a; }
+        .fc-type .pc { text-align: right; font-variant-numeric: tabular-nums; font-size: .85rem; }
+        .fc-type .pc b { font-size: 1rem; }
+
+        .min-w-0 { min-width: 0; }
+        details.fc-table summary { cursor: pointer; font-weight: 600; color: #13395e; }
+        tr.low td { background: #fff5f6; }
     </style>
 </head>
 <body class="eaut eaut-admin">
@@ -29,7 +72,7 @@
             <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
                 <div>
                     <h3 class="fw-bold m-0">Dự báo công suất</h3>
-                    <div class="text-muted small">Từ hôm nay. Công suất tính trên phòng đã xác nhận / đang ở; vàng sọc = đơn chờ xác nhận.</div>
+                    <div class="text-muted small">Tính từ hôm nay trên phòng có thể bán (trừ phòng bảo trì). Công suất = phòng đã xác nhận / đang ở; đơn chờ xác nhận tính riêng.</div>
                 </div>
                 <div class="btn-group">
                     <a th:each="d : ${allowedDays}" class="btn btn-sm" th:classappend="${d == days} ? 'btn-primary' : 'btn-outline-primary'"
@@ -37,59 +80,217 @@
                 </div>
             </div>
 
+            <!-- So lieu chinh -->
             <div class="row g-3 mb-4">
-                <div class="col-6 col-lg-4"><div class="stat"><div class="small text-muted">Công suất trung bình</div>
-                    <div class="num" th:classappend="${forecast.averageOccupancy < lowPercent} ? 'text-danger' : 'text-success'" th:text="${forecast.averageOccupancy} + '%'"></div></div></div>
-                <div class="col-6 col-lg-4"><div class="stat"><div class="small text-muted">Doanh thu phòng dự kiến</div>
-                    <div class="num" th:text="${#numbers.formatDecimal(forecast.revenue, 1, 'POINT', 0, 'COMMA')}"></div></div></div>
-                <div class="col-12 col-lg-4"><div class="stat"><div class="small text-muted" th:text="'Ngày vắng (dưới ' + ${lowPercent} + '%)'"></div>
-                    <div class="num text-danger" th:text="${forecast.lowDays}"></div>
-                    <a sec:authorize="hasRole('ADMIN')" th:if="${forecast.lowDays > 0}" th:href="@{/admin/pricing} + '#khuyen-mai'" class="small">Bật khuyến mãi giờ chót &rarr;</a></div></div>
+                <div class="col-6 col-lg-3"><div class="fc-kpi"><div class="lbl">Công suất trung bình</div>
+                    <div class="num" th:classappend="${forecast.averageOccupancy < lowPercent} ? 'text-danger' : ''" th:text="${forecast.averageOccupancy} + '%'"></div>
+                    <div class="fc-meter" th:title="'Vạch đỏ: ngưỡng vắng ' + ${lowPercent} + '%'">
+                        <span th:style="'width:' + ${forecast.averageOccupancy} + '%'"></span><i th:style="'left:' + ${lowPercent} + '%'"></i></div></div></div>
+                <div class="col-6 col-lg-3"><div class="fc-kpi"><div class="lbl">Doanh thu phòng dự kiến</div>
+                    <div class="num" id="fcRevenue" th:text="${#numbers.formatDecimal(forecast.revenue, 1, 'POINT', 0, 'COMMA')}"></div>
+                    <div class="sub" th:text="'Đơn đã xác nhận, ' + ${days} + ' ngày tới'"></div></div></div>
+                <div class="col-6 col-lg-3"><div class="fc-kpi"><div class="lbl" th:text="'Ngày vắng (dưới ' + ${lowPercent} + '%)'"></div>
+                    <div class="num" th:classappend="${forecast.lowDays > 0} ? 'text-danger' : 'text-success'" th:text="${forecast.lowDays}"></div>
+                    <div class="sub"><span th:text="'trên ' + ${#lists.size(forecast.days)} + ' ngày'"></span>
+                        <a sec:authorize="hasRole('ADMIN')" th:if="${forecast.lowDays > 0}" th:href="@{/admin/pricing} + '#khuyen-mai'"> · Bật khuyến mãi &rarr;</a></div></div></div>
+                <div class="col-6 col-lg-3"><div class="fc-kpi"><div class="lbl">Ngày đông nhất</div>
+                    <div class="num" id="fcPeak">-</div>
+                    <div class="sub" id="fcPeakSub"></div></div></div>
             </div>
 
-            <div class="bg-white p-4 rounded shadow-sm mb-4">
-                <h5 class="fw-bold mb-3">Theo hạng phòng</h5>
-                <table class="table table-sm align-middle mb-0">
-                    <thead><tr><th>Hạng phòng</th><th>Số phòng</th><th>Đêm đã bán</th><th>Công suất</th></tr></thead>
-                    <tbody>
-                    <tr th:each="t : ${forecast.types}">
-                        <td class="fw-semibold" th:text="${t.name}"></td>
-                        <td th:text="${t.rooms}"></td>
-                        <td th:text="${t.bookedNights}"></td>
-                        <td><span class="badge" th:classappend="${t.occupancy < lowPercent} ? 'bg-danger' : 'bg-success'" th:text="${t.occupancy} + '%'"></span></td>
-                    </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="bg-white p-4 rounded shadow-sm">
-                <h5 class="fw-bold mb-3">Theo ngày</h5>
-                <div class="table-responsive">
-                    <table class="table table-sm align-middle mb-0">
-                        <thead><tr><th>Ngày</th><th>Đã chắc</th><th>Chờ XN</th><th>Còn trống</th><th>Công suất</th><th class="text-end">Doanh thu</th></tr></thead>
-                        <tbody>
-                        <tr th:each="d : ${forecast.days}" th:classappend="${d.low} ? 'low'">
-                            <td class="text-nowrap" th:classappend="${d.weekend} ? 'fw-bold'"
-                                th:text="${ {'T2','T3','T4','T5','T6','T7','CN'}[d.date.dayOfWeek.value - 1] } + ' ' + ${#temporals.format(d.date, 'dd/MM')}"></td>
-                            <td th:text="${d.confirmed}"></td>
-                            <td th:text="${d.pending}"></td>
-                            <td th:text="${d.free}"></td>
-                            <td>
-                                <div class="d-flex align-items-center gap-2">
-                                    <div class="occ"><div class="c" th:style="'width:' + ${d.occupancy} + '%'"></div><div class="p" th:style="'width:' + ${d.pendingPercent} + '%'"></div></div>
-                                    <span class="small" th:text="${d.occupancy} + '%'"></span>
-                                </div>
-                            </td>
-                            <td class="text-end small" th:text="${#numbers.formatDecimal(d.revenue, 1, 'POINT', 0, 'COMMA')}"></td>
-                        </tr>
-                        </tbody>
-                    </table>
+            <!-- Bieu do cot tung ngay -->
+            <div class="fc-card">
+                <div class="fc-head">
+                    <div><h5>Công suất từng ngày</h5>
+                        <div class="sub">Mỗi cột 1 đêm. Rê chuột để xem số phòng, phòng trống và doanh thu.</div></div>
+                    <div class="fc-key">
+                        <span><i class="sw-ok"></i>Đã xác nhận / đang ở</span>
+                        <span><i class="sw-pend"></i>Chờ xác nhận</span>
+                        <span><i class="sw-line"></i><span th:text="'Dưới ' + ${lowPercent} + '% = ngày vắng'"></span></span>
+                        <span><i class="sw-wk"></i>Cuối tuần</span>
+                    </div>
                 </div>
+                <div style="position:relative;height:300px"><canvas id="fcDaily" role="img" aria-label="Công suất từng ngày"></canvas></div>
+            </div>
+
+            <div class="row g-3">
+                <!-- Lich nhiet -->
+                <div class="col-xl-6">
+                    <div class="fc-card h-100 mb-0">
+                        <div class="fc-head">
+                            <div><h5>Lịch công suất</h5>
+                                <div class="sub">Màu càng đậm càng đông · ô viền đậm = hôm nay</div></div>
+                            <div class="fc-scale">0%<b class="h0"></b><b class="h1"></b><b class="h2"></b><b class="h3"></b><b class="h4"></b><b class="h5"></b>100%</div>
+                        </div>
+                        <div class="fc-cal" th:with="first=${forecast.days[0].date}, offset=${forecast.days[0].date.dayOfWeek.value - 1}">
+                            <div class="dow">T2</div><div class="dow">T3</div><div class="dow">T4</div><div class="dow">T5</div>
+                            <div class="dow wk">T6</div><div class="dow wk">T7</div><div class="dow">CN</div>
+                            <th:block th:if="${offset > 0}"><div th:each="k : ${#numbers.sequence(1, offset)}"></div></th:block>
+                            <div th:each="d, st : ${forecast.days}" class="fc-cell"
+                                 th:classappend="${(d.occupancy >= 85 ? 'h5' : d.occupancy >= 65 ? 'h4' : d.occupancy >= 45 ? 'h3' : d.occupancy >= 25 ? 'h2' : d.occupancy >= 10 ? 'h1' : 'h0')
+                                                  + (st.first ? ' today' : '')}"
+                                 th:title="${#temporals.format(d.date, 'dd/MM/yyyy')} + ': ' + ${d.confirmed} + '/' + ${d.sellable} + ' phòng đã chắc, ' + ${d.pending} + ' chờ xác nhận, ' + ${d.free} + ' trống'">
+                                <div class="d" th:text="${st.first} ? 'Nay' : (${d.date.dayOfMonth == 1 or st.index == 0} ? ${#temporals.format(d.date, 'dd/MM')} : ${d.date.dayOfMonth})"></div>
+                                <div class="v" th:text="${d.occupancy} + '%'"></div>
+                                <div class="pd" th:if="${d.pending > 0}" th:text="'+' + ${d.pending} + ' chờ'"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Theo hang phong -->
+                <div class="col-xl-6">
+                    <div class="fc-card h-100 mb-0">
+                        <div class="fc-head">
+                            <div><h5>Theo hạng phòng</h5>
+                                <div class="sub" th:text="'Đêm đã bán / tổng đêm có thể bán trong ' + ${days} + ' ngày'"></div></div>
+                        </div>
+                        <div th:each="t : ${forecast.types}" class="fc-type">
+                            <div class="nm" th:title="${t.name}"><span th:text="${t.name}"></span>
+                                <small th:text="${t.rooms} + ' phòng · ' + ${t.bookedNights} + '/' + ${t.rooms * days} + ' đêm'"></small></div>
+                            <div class="fc-bar" th:title="'Vạch đỏ: ngưỡng vắng ' + ${lowPercent} + '%'"><span th:style="'width:' + ${t.occupancy > 100 ? 100 : t.occupancy} + '%'"></span>
+                                <i th:style="'left:' + ${lowPercent} + '%'"></i></div>
+                            <div class="pc"><b th:classappend="${t.occupancy < lowPercent} ? 'text-danger'" th:text="${t.occupancy} + '%'"></b></div>
+                        </div>
+                        <div class="small text-muted mt-2"><span style="display:inline-block;width:0;height:11px;border-left:2px dashed #e0607a;vertical-align:middle;margin-right:4px"></span><span th:text="'Ngưỡng vắng ' + ${lowPercent} + '% · số đỏ = dưới ngưỡng'"></span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bang chi tiet: van giu de tra so / in -->
+            <div class="fc-card mt-3">
+                <details class="fc-table">
+                    <summary>Bảng chi tiết theo ngày</summary>
+                    <div class="table-responsive mt-3">
+                        <table class="table table-sm align-middle mb-0">
+                            <thead><tr><th>Ngày</th><th class="text-end">Đã chắc</th><th class="text-end">Chờ XN</th><th class="text-end">Còn trống</th><th class="text-end">Công suất</th><th class="text-end">Doanh thu</th></tr></thead>
+                            <tbody>
+                            <tr th:each="d : ${forecast.days}" th:classappend="${d.low} ? 'low'">
+                                <td class="text-nowrap" th:classappend="${d.weekend} ? 'fw-bold'"
+                                    th:text="${ {'T2','T3','T4','T5','T6','T7','CN'}[d.date.dayOfWeek.value - 1] } + ' ' + ${#temporals.format(d.date, 'dd/MM')}"></td>
+                                <td class="text-end" th:text="${d.confirmed}"></td>
+                                <td class="text-end" th:text="${d.pending}"></td>
+                                <td class="text-end" th:text="${d.free}"></td>
+                                <td class="text-end fw-semibold" th:classappend="${d.low} ? 'text-danger'" th:text="${d.occupancy} + '%'"></td>
+                                <td class="text-end small" th:text="${#numbers.formatDecimal(d.revenue, 1, 'POINT', 0, 'COMMA')}"></td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </details>
             </div>
         </div>
     </div>
 </main>
 
 <div th:replace="~{fragments/footer :: footer}"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    const FC = {
+        dates: /*[[${forecast.days.![date.toString()]}]]*/ [],
+        sellable: /*[[${forecast.days.![sellable]}]]*/ [],
+        confirmed: /*[[${forecast.days.![confirmed]}]]*/ [],
+        pending: /*[[${forecast.days.![pending]}]]*/ [],
+        occ: /*[[${forecast.days.![occupancy()]}]]*/ [],
+        pendPct: /*[[${forecast.days.![pendingPercent()]}]]*/ [],
+        revenue: /*[[${forecast.days.![revenue]}]]*/ [],
+        low: /*[[${lowPercent}]]*/ 30,
+        totalRevenue: /*[[${forecast.revenue}]]*/ 0
+    };
+    /*]]>*/
+    (function () {
+        const INK = '#13395e', BLUE = '#3d9bd6', RED = '#e0607a', AMBER = '#f2b134', MUTED = '#6c7a89', GRID = '#edf3f8';
+        const DOW = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+        const vnd = v => Number(v).toLocaleString('vi-VN');
+        const short = v => v >= 1e9 ? (v / 1e9).toLocaleString('vi-VN', { maximumFractionDigits: 2 }) + ' tỷ'
+            : v >= 1e6 ? (v / 1e6).toLocaleString('vi-VN', { maximumFractionDigits: 1 }) + ' tr' : vnd(v);
+        const days = FC.dates.map(s => new Date(s + 'T00:00:00'));
+        const n = days.length;
+        if (!n) return;
+
+        // The so lieu: doanh thu rut gon, ngay dong nhat
+        const rv = Number(FC.totalRevenue) || 0;
+        const revEl = document.getElementById('fcRevenue');
+        revEl.title = vnd(rv) + ' VND'; revEl.textContent = short(rv);
+        let peak = 0; FC.occ.forEach((v, k) => { if (v > FC.occ[peak]) peak = k; });
+        document.getElementById('fcPeak').textContent = FC.occ[peak] + '%';
+        document.getElementById('fcPeakSub').textContent = DOW[days[peak].getDay()] + ' ' + days[peak].getDate() + '/' + (days[peak].getMonth() + 1)
+            + ' · ' + FC.confirmed[peak] + '/' + FC.sellable[peak] + ' phòng';
+
+        Chart.defaults.font.family = "'Be Vietnam Pro', system-ui, sans-serif";
+        Chart.defaults.color = INK;
+        const canvas = document.getElementById('fcDaily');
+        // Hoa van soc cho phan cho xac nhan (khong chi dua vao mau)
+        const pc = document.createElement('canvas'); pc.width = pc.height = 8;
+        const px = pc.getContext('2d');
+        px.fillStyle = '#fbe0a6'; px.fillRect(0, 0, 8, 8);
+        px.strokeStyle = AMBER; px.lineWidth = 3; px.beginPath(); px.moveTo(-2, 10); px.lineTo(10, -2); px.moveTo(6, 10); px.lineTo(10, 6); px.moveTo(-2, 2); px.lineTo(2, -2); px.stroke();
+        const hatch = canvas.getContext('2d').createPattern(pc, 'repeat');
+
+        const isWk = d => d.getDay() === 5 || d.getDay() === 6;
+        // Nen cuoi tuan + duong nguong vang + nhan nguong
+        const backdrop = { id: 'backdrop', beforeDatasetsDraw(c) {
+            const { ctx, chartArea: a, scales: { x, y } } = c;
+            const w = x.getPixelForValue(1) - x.getPixelForValue(0);
+            ctx.save(); ctx.fillStyle = '#f1f6fa';
+            days.forEach((d, k) => { if (isWk(d)) ctx.fillRect(x.getPixelForValue(k) - w / 2, a.top, w, a.bottom - a.top); });
+            const yl = y.getPixelForValue(FC.low);
+            ctx.fillStyle = 'rgba(224,96,122,.07)'; ctx.fillRect(a.left, yl, a.right - a.left, a.bottom - yl);
+            ctx.restore();
+        }, afterDatasetsDraw(c) {
+            const { ctx, chartArea: a, scales: { y } } = c;
+            const yy = y.getPixelForValue(FC.low);
+            ctx.save(); ctx.strokeStyle = RED; ctx.lineWidth = 1.5; ctx.setLineDash([5, 4]);
+            ctx.beginPath(); ctx.moveTo(a.left, yy); ctx.lineTo(a.right, yy); ctx.stroke();
+            ctx.setLineDash([]); ctx.font = '600 11px "Be Vietnam Pro", system-ui'; ctx.fillStyle = RED; ctx.textAlign = 'right';
+            ctx.fillText('Ngưỡng vắng ' + FC.low + '%', a.right - 4, yy - 5);
+            ctx.restore();
+        } };
+
+        const step = n > 40 ? 7 : n > 20 ? 2 : 1;
+        new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels: days.map(d => [DOW[d.getDay()], d.getDate() + '/' + (d.getMonth() + 1)]),
+                datasets: [
+                    { label: 'Đã xác nhận / đang ở', data: FC.occ, stack: 's',
+                      backgroundColor: BLUE, hoverBackgroundColor: INK,
+                      borderRadius: { topLeft: 0, topRight: 0, bottomLeft: 3, bottomRight: 3 }, borderSkipped: false },
+                    { label: 'Chờ xác nhận', data: FC.pendPct, stack: 's', backgroundColor: hatch,
+                      borderRadius: { topLeft: 3, topRight: 3 }, borderSkipped: false }
+                ]
+            },
+            options: {
+                maintainAspectRatio: false,
+                datasets: { bar: { categoryPercentage: .78, barPercentage: .9, maxBarThickness: 26 } },
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { backgroundColor: INK, padding: 10, cornerRadius: 6, displayColors: false,
+                        callbacks: {
+                            title: it => { const d = days[it[0].dataIndex]; return DOW[d.getDay()] + ', ' + d.getDate() + '/' + (d.getMonth() + 1) + '/' + d.getFullYear(); },
+                            label: () => '',
+                            afterBody: it => { const k = it[0].dataIndex, free = Math.max(0, FC.sellable[k] - FC.confirmed[k] - FC.pending[k]);
+                                return ['Công suất: ' + FC.occ[k] + '%' + (FC.occ[k] < FC.low ? '  · dưới ngưỡng vắng' : ''),
+                                        'Đã chắc: ' + FC.confirmed[k] + ' / ' + FC.sellable[k] + ' phòng',
+                                        'Chờ xác nhận: ' + FC.pending[k] + ' phòng',
+                                        'Còn trống: ' + free + ' phòng',
+                                        'Doanh thu: ' + vnd(FC.revenue[k]) + ' VND']; } } }
+                },
+                scales: {
+                    x: { stacked: true, grid: { display: false }, border: { color: '#d6e2ec' },
+                         ticks: { color: MUTED, maxRotation: 0, autoSkip: false, font: { size: 11 },
+                                  callback: (v, k) => k % step === 0 ? [DOW[days[k].getDay()], days[k].getDate() + '/' + (days[k].getMonth() + 1)] : '' } },
+                    y: { stacked: true, beginAtZero: true, max: 100, grid: { color: GRID }, border: { display: false },
+                         ticks: { color: MUTED, stepSize: 25, callback: v => v + '%' } }
+                }
+            },
+            plugins: [backdrop]
+        });
+        if (document.fonts) document.fonts.ready.then(() => Object.values(Chart.instances).forEach(c => c.update()));
+    })();
+</script>
 </body>
 </html>
