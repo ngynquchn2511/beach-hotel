@@ -67,12 +67,22 @@ public class ChatbotService {
     }
 
     // Cau tra loi day du: noi dung + nut hanh dong + goi y cau hoi tiep theo
+    // The phong Song goi y: bam vao mo trang phong voi ngay / so khach dien san
+    public record RoomCard(Long roomId, String title, String subtitle, String image, String price, String detail,
+                           List<String> badges, String url) {
+    }
+
     // topics: ma chu de Song nhan ra (rong = khong hieu), roomTypes: ten loai phong khach nhac toi - dung de thong ke
+    // cards: phong phu hop khi khach tim phong theo nhu cau (view, ngay, so nguoi, ngan sach)
     public record Reply(String text, List<Action> actions, List<String> suggestions, List<String> topics,
-                        List<String> roomTypes) {
+                        List<String> roomTypes, List<RoomCard> cards) {
 
         public Reply(String text, List<Action> actions, List<String> suggestions) {
-            this(text, actions, suggestions, List.of(), List.of());
+            this(text, actions, suggestions, List.of(), List.of(), List.of());
+        }
+
+        public Reply(String text, List<Action> actions, List<String> suggestions, List<String> topics, List<String> roomTypes) {
+            this(text, actions, suggestions, topics, roomTypes, List.of());
         }
 
         public boolean understood() {
@@ -243,18 +253,32 @@ public class ChatbotService {
             boolean askCancel = containsAny(q, "huy phong", "huy don", "huy dat", "doi ngay", "hoan coc", "hoan tien",
                     "cancel", "refund", "reschedule", "change date");
 
+            // Tim phong theo nhu cau: co dac diem / ngay / ngan sach, hoac muon dat phong cho N nguoi
+            ChatRoomQuery rq = ChatRoomQuery.parse(rawMessage, LocalDate.now());
+            boolean find = rq.hasCriteria() || rq.guests() != null && (rq.bookingIntent() || askAvailability || askSuggestRoom);
+            List<RoomCard> cards = List.of();
+            List<String> shownTypes = List.of();
+            if (find) {
+                Finder f = findRooms(rq, matchedTypes);
+                sections.add(f.text());
+                cards = f.cards();
+                shownTypes = f.typeNames();
+                actions.addAll(f.actions());
+                suggestions.addAll(f.suggestions());
+            }
+
             if (greet) {
                 sections.add(t("chat.greet", HOTEL_NAME));
                 suggestions.add(t("chat.sg.price"));
                 suggestions.add(t("chat.sg.available"));
             }
-            if (askPrice) {
+            if (askPrice && !find) {
                 sections.add(buildPriceAnswer(matchedTypes));
                 actions.add(rooms);
                 suggestions.add(t("chat.sg.available"));
                 suggestions.add(t("chat.sg.deposit"));
             }
-            if (askAvailability) {
+            if (askAvailability && !find) {
                 sections.add(buildAvailabilityAnswer(matchedTypes));
                 actions.add(rooms);
                 suggestions.add(t("chat.sg.howToBook"));
@@ -301,7 +325,10 @@ public class ChatbotService {
                 sections.add(t("chat.checkTime.times", CHECK_IN_TIME, CHECK_OUT_TIME) + "\n" + t("chat.checkTime.note"));
                 suggestions.add(t("chat.sg.howToBook"));
             }
-            if (askSuggestRoom) {
+            if (askSuggestRoom && find) {
+                actions.add(action("chat.btn.suggestRoom", "/rooms/suggest"));
+            }
+            if (askSuggestRoom && !find) {
                 sections.add(t("chat.suggestRoom"));
                 actions.add(action("chat.btn.suggestRoom", "/rooms/suggest"));
             }
@@ -366,10 +393,13 @@ public class ChatbotService {
                     topics.add((String) f[1]);
                 }
             }
+            if (find) {
+                topics.add(0, "FIND_ROOM");
+            }
             if (topics.isEmpty() && !matchedTypes.isEmpty()) {
                 topics.add("ROOM_TYPE");
             }
-            List<String> typeNames = matchedTypes.stream().map(RoomType::getName).toList();
+            List<String> typeNames = find && !shownTypes.isEmpty() ? shownTypes : matchedTypes.stream().map(RoomType::getName).toList();
 
             if (sections.isEmpty()) {
                 if (!matchedTypes.isEmpty()) {
@@ -388,7 +418,240 @@ public class ChatbotService {
             }
 
             return new Reply(String.join("\n\n", sections), List.copyOf(actions),
-                    suggestions.stream().limit(3).toList(), List.copyOf(topics), typeNames);
+                    suggestions.stream().limit(3).toList(), List.copyOf(topics), typeNames, cards);
+        }
+
+        // ===== Tim phong theo nhu cau =====
+
+        private record Candidate(RoomType type, Room room, int score, BigDecimal total, int free) {
+        }
+
+        private String featureLabel(ChatRoomQuery.Feature f) {
+            return t("chat.feat." + f.name());
+        }
+
+        private String roomText(RoomType rt) {
+            // Chi ten + tien nghi (mo ta hay nhac "cach bien 5 phut" lam khop nham view bien)
+            return " " + ChatRoomQuery.normalize(String.join(" ", nz(rt.getName()), nz(rt.getNameEn()), nz(rt.getAmenities()),
+                    nz(rt.getAmenitiesEn()))) + " ";
+        }
+
+        private String dm(LocalDate d) {
+            return d.format(DATE_FMT);
+        }
+
+        private String criteriaText(ChatRoomQuery rq, Integer guests) {
+            List<String> parts = new ArrayList<>();
+            if (rq.hasDates()) {
+                parts.add(t("chat.find.dates", dm(rq.checkIn()), dm(rq.checkOut()), rq.nights()));
+            }
+            if (guests != null) {
+                parts.add(t("chat.find.guests", guests));
+            }
+            rq.features().forEach(f -> parts.add(featureLabel(f)));
+            if (rq.maxPrice() != null) {
+                parts.add(t("chat.find.budget", money(rq.maxPrice())));
+            }
+            if (rq.cheapest() && rq.maxPrice() == null) {
+                parts.add(t("chat.find.cheap"));
+            }
+            return parts.isEmpty() ? "" : String.join(" · ", parts);
+        }
+
+        // Phong re nhat cua loai (co ngay: chi phong con trong ca ky o)
+        private Candidate candidate(RoomType rt, ChatRoomQuery rq, LocalDate in, LocalDate out, Integer guests, int score) {
+            List<Room> rooms = in != null
+                    ? roomRepository.findAvailableRooms(in, out, rt.getId(), guests)
+                    : roomRepository.findByRoomTypeId(rt.getId()).stream()
+                    .filter(r -> r.getStatus() != com.hotel.entity.RoomStatus.MAINTENANCE).toList();
+            Room best = rooms.stream().filter(r -> r.getPrice() != null)
+                    .min(java.util.Comparator.comparing(Room::getPrice)).orElse(null);
+            if (best == null) {
+                return null;
+            }
+            BigDecimal total = null;
+            if (in != null) {
+                total = pricingService.nightlyPrices(best.getPrice(), in, out).stream()
+                        .map(PricingService.NightPrice::price).reduce(BigDecimal.ZERO, BigDecimal::add);
+            }
+            return new Candidate(rt, best, score, total, rooms.size());
+        }
+
+        private RoomCard card(Candidate c, ChatRoomQuery rq, LocalDate in, LocalDate out, Integer guests) {
+            RoomType rt = c.type();
+            String text = roomText(rt);
+            List<String> badges = new ArrayList<>();
+            for (ChatRoomQuery.Feature f : rq.features()) {
+                if (f.matchesRoom(text, rt.getMaxGuests() == null ? 0 : rt.getMaxGuests())) {
+                    badges.add(featureLabel(f));
+                }
+            }
+            if (badges.isEmpty()) {
+                String amen = pick(rt.getAmenities(), rt.getAmenitiesEn());
+                if (amen != null) {
+                    java.util.Arrays.stream(amen.split(",")).map(String::trim).filter(x -> !x.isEmpty()).limit(2).forEach(badges::add);
+                }
+            }
+            String price = in != null ? t("chat.card.night", money(c.room().getPrice())) : t("chat.card.from", money(c.room().getPrice()));
+            String detail = in != null
+                    ? t("chat.card.total", (int) java.time.temporal.ChronoUnit.DAYS.between(in, out), money(c.total())) + " · " + t("chat.card.left", c.free())
+                    : amenitiesShort(rt);
+            StringBuilder url = new StringBuilder("/customer/rooms/").append(c.room().getId());
+            List<String> params = new ArrayList<>();
+            if (in != null) {
+                params.add("checkIn=" + in);
+                params.add("checkOut=" + out);
+            }
+            if (guests != null) {
+                params.add("guests=" + guests);
+            }
+            if (!params.isEmpty()) {
+                url.append('?').append(String.join("&", params));
+            }
+            String subtitle = t("chat.card.sub", c.room().getRoomNumber(), rt.getMaxGuests());
+            return new RoomCard(c.room().getId(), pick(rt.getName(), rt.getNameEn()), subtitle, c.room().getCoverImageUrl(), price, detail,
+                    badges.stream().limit(3).toList(), url.toString());
+        }
+
+        private String amenitiesShort(RoomType rt) {
+            String amen = pick(rt.getAmenities(), rt.getAmenitiesEn());
+            if (amen == null || amen.isBlank()) {
+                return t("chat.card.guests", rt.getMaxGuests());
+            }
+            return java.util.Arrays.stream(amen.split(",")).map(String::trim).filter(x -> !x.isEmpty()).limit(3)
+                    .collect(java.util.stream.Collectors.joining(" · "));
+        }
+
+        private record Finder(String text, List<RoomCard> cards, List<String> typeNames, List<Action> actions, List<String> suggestions) {
+        }
+
+        private Finder findRooms(ChatRoomQuery rq, List<RoomType> named) {
+            LocalDate in = rq.checkIn();
+            LocalDate out = rq.checkOut();
+            Integer guests = rq.guests();
+            List<RoomType> all = roomTypeRepository.findAll();
+            int maxCap = all.stream().map(RoomType::getMaxGuests).filter(java.util.Objects::nonNull).max(Integer::compare).orElse(0);
+            List<String> notes = new ArrayList<>();
+            List<String> sugg = new ArrayList<>();
+            List<Action> acts = new ArrayList<>();
+            Integer capGuests = guests;
+            if (guests != null && maxCap > 0 && guests > maxCap) {
+                notes.add(t("chat.find.tooMany", maxCap, guests));
+                capGuests = null;
+            }
+            final Integer cap = capGuests;
+            // Diem: so dac diem khop; khach goi ten loai phong thi chi xet loai do
+            List<RoomType> pool = (named.isEmpty() ? all : named).stream()
+                    .filter(rt -> cap == null || rt.getMaxGuests() == null || rt.getMaxGuests() >= cap).toList();
+            java.util.Map<RoomType, Integer> score = new java.util.HashMap<>();
+            for (RoomType rt : pool) {
+                String text = roomText(rt);
+                int sc = 0;
+                for (ChatRoomQuery.Feature f : rq.features()) {
+                    if (f.matchesRoom(text, rt.getMaxGuests() == null ? 0 : rt.getMaxGuests())) {
+                        sc++;
+                    }
+                }
+                score.put(rt, sc);
+            }
+            List<RoomType> matching = pool.stream().filter(rt -> rq.features().isEmpty() || score.get(rt) > 0).toList();
+            String crit = criteriaText(rq, cap);
+            if (matching.isEmpty() && !rq.features().isEmpty()) {
+                notes.add(t("chat.find.noMatch", rq.features().stream().map(this::featureLabel).collect(java.util.stream.Collectors.joining(", "))));
+                matching = pool;
+            }
+            java.util.Comparator<Candidate> order = java.util.Comparator.comparingInt((Candidate c) -> -c.score())
+                    .thenComparing(c -> c.room().getPrice());
+            List<Candidate> found = new ArrayList<>();
+            for (RoomType rt : matching) {
+                Candidate c = candidate(rt, rq, in, out, cap, score.getOrDefault(rt, 0));
+                if (c != null) {
+                    found.add(c);
+                }
+            }
+            List<Candidate> inBudget = rq.maxPrice() == null ? found
+                    : found.stream().filter(c -> c.room().getPrice().compareTo(rq.maxPrice()) <= 0).toList();
+            if (rq.maxPrice() != null && inBudget.isEmpty() && !found.isEmpty()) {
+                notes.add(t("chat.find.overBudget", money(rq.maxPrice())));
+                order = java.util.Comparator.comparing((Candidate c) -> c.room().getPrice());
+                inBudget = found;
+            } else if (rq.cheapest() && rq.features().isEmpty()) {
+                order = java.util.Comparator.comparing((Candidate c) -> c.room().getPrice());
+            }
+            List<Candidate> top = inBudget.stream().sorted(order).limit(4).toList();
+
+            StringBuilder text = new StringBuilder();
+            if (!top.isEmpty()) {
+                text.append(in != null ? t("chat.find.found", top.size()) : t("chat.find.foundNoDates", top.size()));
+            } else if (in != null) {
+                // Dung y nhung kin ngay: goi y phong khac con trong + ngay gan nhat loai hop nhat con trong
+                notes.add(t("chat.find.full", crit));
+                RoomType bestType = matching.stream().max(java.util.Comparator.comparingInt(rt -> score.getOrDefault(rt, 0))).orElse(null);
+                if (bestType != null) {
+                    int nights = rq.nights();
+                    for (int shift = 1; shift <= 14; shift++) {
+                        LocalDate a = in.plusDays(shift);
+                        Candidate c = candidate(bestType, rq, a, a.plusDays(nights), cap, score.getOrDefault(bestType, 0));
+                        if (c != null) {
+                            notes.add(t("chat.find.nextFree", pick(bestType.getName(), bestType.getNameEn()), dm(a), dm(a.plusDays(nights))));
+                            top = List.of(c);
+                            in = a;
+                            out = a.plusDays(nights);
+                            break;
+                        }
+                    }
+                }
+                if (top.isEmpty()) {
+                    List<Candidate> others = new ArrayList<>();
+                    for (RoomType rt : pool) {
+                        if (!matching.contains(rt)) {
+                            Candidate c = candidate(rt, rq, rq.checkIn(), rq.checkOut(), cap, 0);
+                            if (c != null) {
+                                others.add(c);
+                            }
+                        }
+                    }
+                    if (!others.isEmpty()) {
+                        notes.add(t("chat.find.alternatives"));
+                        top = others.stream().sorted(java.util.Comparator.comparing((Candidate c) -> c.room().getPrice())).limit(3).toList();
+                        in = rq.checkIn();
+                        out = rq.checkOut();
+                    } else {
+                        notes.add(t("chat.find.none"));
+                        acts.add(action("chat.act.zalo", "https://zalo.me/" + HOTEL_ZALO));
+                    }
+                }
+            } else {
+                notes.add(t("chat.find.none"));
+            }
+            final LocalDate cin = in;
+            final LocalDate cout = out;
+            List<RoomCard> cards = top.stream().map(c -> card(c, rq, cin, cout, cap)).toList();
+            List<String> parts = new ArrayList<>();
+            if (!crit.isEmpty()) {
+                parts.add(t("chat.find.criteria", crit));
+            }
+            parts.addAll(notes);
+            if (text.length() > 0) {
+                parts.add(text.toString());
+            }
+            if (!cards.isEmpty()) {
+                parts.add(t("chat.find.tapHint"));
+            }
+            if (!rq.hasDates()) {
+                parts.add(t("chat.find.askDates"));
+                LocalDate sat = LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.SATURDAY));
+                String feat = rq.features().isEmpty() ? t("chat.find.sgRoom") : featureLabel(rq.features().iterator().next());
+                sugg.add(t("chat.find.sgDates", feat, sat.getDayOfMonth() + "/" + sat.getMonthValue(),
+                        sat.plusDays(1).getDayOfMonth() + "/" + sat.plusDays(1).getMonthValue(), cap != null ? cap : 2));
+            } else {
+                sugg.add(t("chat.sg.deposit"));
+            }
+            if (rq.features().isEmpty() || !rq.features().contains(ChatRoomQuery.Feature.SEA)) {
+                sugg.add(t("chat.find.sgSea"));
+            }
+            acts.add(action("chat.act.rooms", "/rooms"));
+            return new Finder(String.join("\n", parts), cards, top.stream().map(c -> c.type().getName()).toList(), acts, sugg);
         }
 
         private String buildPriceAnswer(List<RoomType> matchedTypes) {
@@ -561,13 +824,22 @@ public class ChatbotService {
         return matched;
     }
 
+    // Tu trong ten loai phong qua chung (dac diem / tu thuong gap) - khong dung de nhan ra loai phong
+    private static final Set<String> GENERIC_NAME_WORDS = Set.of("phong", "room", "view", "huong", "bien", "vuon", "dao", "vinh",
+            "pho", "gia", "dinh", "boi", "giuong", "sat", "toan", "canh", "hoang", "hon", "sea", "garden", "pool", "family",
+            "city", "island", "bay", "beach", "ocean", "double", "twin", "bed", "with");
+
+    private static String nz(String s) {
+        return s == null ? "" : s;
+    }
+
     private boolean nameMatches(String normalizedQuestion, String name) {
         String normName = normalize(name);
         if (normalizedQuestion.contains(normName)) {
             return true;
         }
         for (String word : normName.trim().split("\\s+")) {
-            if (word.length() >= 3 && !word.equals("phong") && !word.equals("room")
+            if (word.length() >= 3 && !GENERIC_NAME_WORDS.contains(word)
                     && normalizedQuestion.contains(" " + word + " ")) {
                 return true;
             }

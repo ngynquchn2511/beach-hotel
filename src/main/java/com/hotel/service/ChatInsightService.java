@@ -38,7 +38,7 @@ public class ChatInsightService {
 
     // Nhan tieng Viet cho trang quan tri (thu tu = thu tu hien trong bieu do khi bang nhau)
     public static final Map<String, String> TOPIC_LABELS = labels(
-            "PRICE", "Giá phòng", "AVAILABILITY", "Phòng trống", "SUGGEST_ROOM", "Gợi ý phòng", "ROOM_TYPE", "Hỏi về 1 loại phòng",
+            "FIND_ROOM", "Tìm phòng theo nhu cầu", "PRICE", "Giá phòng", "AVAILABILITY", "Phòng trống", "SUGGEST_ROOM", "Gợi ý phòng", "ROOM_TYPE", "Hỏi về 1 loại phòng",
             "DEPOSIT", "Đặt cọc", "PAYMENT", "Thanh toán", "HOW_TO_BOOK", "Cách đặt phòng", "CANCEL", "Hủy / đổi ngày / hoàn cọc",
             "PROMOTION", "Ưu đãi / mã giảm", "FACILITIES", "Tiện ích, dịch vụ", "COMBO", "Combo ăn uống", "FOOD", "Đặc sản, ăn gì",
             "TOUR", "Tour lặn biển", "TRANSFER", "Đưa đón sân bay", "EXPLORE", "Đi chơi đâu", "WEATHER", "Thời tiết",

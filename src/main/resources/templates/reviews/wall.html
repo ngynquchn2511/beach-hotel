@@ -12,7 +12,10 @@
     <style>
         .rw-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
         .rw-tabs a { text-decoration: none; padding: 6px 14px; border-radius: 999px; border: 1.5px solid #13395e; color: #13395e; font-weight: 600; font-size: .88rem; background: #fff; }
-        .rw-tabs a.on { background: #13395e; color: #fff; }
+        /* Theme chung to mau chu moi link (body.eaut a:not(.btn)) -> phai ghi de de tab dang chon khong mat chu */
+        body.eaut .rw-tabs a, body.eaut .rw-tabs a:hover { color: #13395e; text-decoration: none; }
+        body.eaut .rw-tabs a.on, body.eaut .rw-tabs a.on:hover { background: #13395e; color: #fff; }
+        body.eaut .rw-tabs a:not(.on):hover { background: #e8f5fd; }
         .rw-tabs a .n { opacity: .7; font-weight: 500; margin-left: 4px; }
         .rw-grid { columns: 3 300px; column-gap: 16px; }
         .rw-card { break-inside: avoid; background: #fff; border-radius: 14px; padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(19,57,94,.12), 0 0 0 1px #e3edf5; }

@@ -52,6 +52,7 @@ public class ChatbotController {
         out.put("reply", reply.text());
         out.put("actions", reply.actions());
         out.put("suggestions", reply.suggestions());
+        out.put("cards", reply.cards());
         if (insightService != null) {
             // Luu thong ke loi thi van tra loi khach binh thuong
             try {

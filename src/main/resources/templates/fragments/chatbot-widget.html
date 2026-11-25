@@ -150,6 +150,27 @@
         #chatbotSend:disabled { opacity: .45; cursor: default; transform: none; }
         .may-footnote { text-align: center; font-size: .68rem; color: var(--may-ink-soft); padding: 0 0 8px; background: var(--may-paper); }
 
+        /* The phong Song goi y: keo ngang, bam mo trang phong voi ngay / so khach dien san */
+        .may-cards { display: flex; gap: 10px; overflow-x: auto; padding: 2px 2px 8px; scroll-snap-type: x mandatory; max-width: 100%; }
+        .may-card {
+            flex: 0 0 196px; scroll-snap-align: start; display: flex; flex-direction: column; overflow: hidden;
+            background: var(--may-paper); border: var(--may-line); border-radius: 14px; box-shadow: 3px 3px 0 var(--may-baby);
+            color: var(--may-ink) !important; text-decoration: none !important; transition: transform .12s, box-shadow .12s;
+        }
+        .may-card:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--may-baby-deep); }
+        .may-card .img { height: 104px; background: linear-gradient(135deg, var(--may-baby), var(--may-baby-soft)) center / cover no-repeat;
+                         border-bottom: var(--may-line); }
+        .may-card .body { padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 3px; flex: 1; }
+        .may-card .ttl { font-weight: 800; font-size: .86rem; line-height: 1.25; }
+        .may-card .sub { font-size: .72rem; color: var(--may-ink-soft); }
+        .may-card .tags { display: flex; flex-wrap: wrap; gap: 3px; margin: 2px 0; }
+        .may-card .tags span { font-size: .68rem; font-weight: 700; background: var(--may-baby-soft); border-radius: 999px; padding: 1px 7px; }
+        .may-card .price { font-weight: 800; font-size: .9rem; color: #1d7a4c; }
+        .may-card .det { font-size: .72rem; color: var(--may-ink-soft); }
+        .may-card .cta { margin-top: auto; align-self: flex-start; background: var(--may-sun); border: var(--may-line); border-radius: 9px;
+                         padding: 3px 10px; font-size: .76rem; font-weight: 800; }
+        .may-row .may-col.wide { max-width: calc(100% - 38px); }
+
         /* Hoi lai "da giai quyet chua?" + form gop y */
         .may-check { display: flex; flex-direction: column; gap: 6px; }
         .may-check button, .may-reasons label {
@@ -301,6 +322,7 @@
             var T_REASON_PICK = /*[[#{chat.w.reasonPick}]]*/ '';
             var T_FEEDBACK_SENT = /*[[#{chat.w.feedbackSent}]]*/ '';
             var T_CONTACT_PAGE = /*[[#{chat.w.contactPage}]]*/ '';
+            var T_CARD_CTA = /*[[#{chat.card.cta}]]*/ '';
             var ZALO_PHONE = /*[[${@environment.getProperty('app.contact.zalo-phone')}]]*/ '';
             var REASONS = [ ['NO_ROOM', T_REASON_NO_ROOM], ['PRICE', T_REASON_PRICE], ['WRONG_ANSWER', T_REASON_WRONG],
                 ['WANT_STAFF', T_REASON_STAFF], ['OTHER', T_REASON_OTHER] ];
@@ -446,6 +468,10 @@
                     });
                     col.appendChild(acts);
                 }
+                if (m.cards && m.cards.length) {
+                    col.classList.add('wide');
+                    col.appendChild(roomCards(m.cards));
+                }
                 if (m.kind === 'check' && !m.done) col.appendChild(checkButtons(m));
                 if (m.kind === 'reason' && !m.done) col.appendChild(reasonForm(m));
                 var time = document.createElement('div');
@@ -456,6 +482,44 @@
                 if (m.from === 'bot') row.appendChild(avatar());
                 row.appendChild(col);
                 list.appendChild(row);
+            }
+
+            // The phong (anh, ten, dac diem, gia, tong tien) - bam di toi trang phong
+            function roomCards(cards) {
+                var wrap = document.createElement('div');
+                wrap.className = 'may-cards';
+                cards.forEach(function (c) {
+                    var a = document.createElement('a');
+                    a.className = 'may-card';
+                    a.href = c.url;
+                    var img = document.createElement('div');
+                    img.className = 'img';
+                    if (c.image) img.style.backgroundImage = 'url("' + String(c.image).replace(/["\\]/g, '') + '")';
+                    a.appendChild(img);
+                    var body = document.createElement('div');
+                    body.className = 'body';
+                    function line(cls, text) {
+                        if (!text) return;
+                        var d = document.createElement('div');
+                        d.className = cls;
+                        d.textContent = text;
+                        body.appendChild(d);
+                    }
+                    line('ttl', c.title);
+                    line('sub', c.subtitle);
+                    if (c.badges && c.badges.length) {
+                        var tags = document.createElement('div');
+                        tags.className = 'tags';
+                        c.badges.forEach(function (b) { var t = document.createElement('span'); t.textContent = b; tags.appendChild(t); });
+                        body.appendChild(tags);
+                    }
+                    line('price', c.price);
+                    line('det', c.detail);
+                    line('cta', T_CARD_CTA + ' →');
+                    a.appendChild(body);
+                    wrap.appendChild(a);
+                });
+                return wrap;
             }
 
             // Goi y cau hoi tiep theo - bo cac cau khach da hoi
@@ -542,7 +606,7 @@
             function addBot(data) {
                 var t = document.getElementById('mayTyping');
                 if (t) t.remove();
-                var m = { from: 'bot', time: Date.now(), text: data.reply, actions: data.actions || [], suggestions: data.suggestions || [] };
+                var m = { from: 'bot', time: Date.now(), text: data.reply, actions: data.actions || [], suggestions: data.suggestions || [], cards: data.cards || [] };
                 history.push(m);
                 save();
                 renderMessage(m);

@@ -20,7 +20,7 @@
         .ci-q .vz-bar { min-width: 70px; }
         .ci-q.miss .vz-bar > span { background: var(--vz-amber); }
         .ci-tabs a { text-decoration: none; padding: 5px 12px; border-radius: 999px; color: var(--vz-ink); font-size: .85rem; font-weight: 600; }
-        .ci-tabs a.on { background: var(--vz-ink); color: #fff; }
+        body.eaut .ci-tabs a.on, body.eaut .ci-tabs a.on:hover { background: var(--vz-ink); color: #fff; }
         .ci-fb { border: 1px solid var(--vz-line); border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; background: #fff; }
         .ci-fb.done { background: #fbfdfe; }
         .ci-fb .quote { background: #fff6f7; border-left: 3px solid var(--vz-red); padding: 8px 12px; border-radius: 6px; margin: 8px 0; white-space: pre-line; }
@@ -48,7 +48,7 @@
                 </div>
                 <div class="vz-period">
                     <a th:each="pd : ${periods}" th:href="@{/admin/chat-insights(days=${pd})}" th:text="|${pd} ngày|"
-                       th:style="${pd == days} ? 'background:#13395e;color:#fff;font-weight:700' : ''"></a>
+                       th:style="${pd == days} ? 'background:#13395e;color:#fff !important;font-weight:700' : ''"></a>
                 </div>
             </div>
 
