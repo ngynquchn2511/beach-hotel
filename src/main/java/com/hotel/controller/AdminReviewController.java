@@ -31,6 +31,24 @@ public class AdminReviewController {
         this.autoReplyService = autoReplyService;
     }
 
+    // Tuong tac cua khach khac voi danh gia (tim / binh luan / chia se)
+    private com.hotel.service.ReviewSocialService socialService;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    void setSocialService(com.hotel.service.ReviewSocialService socialService) {
+        this.socialService = socialService;
+    }
+
+    // Quan tri an / hien binh luan khong phu hop
+    @PostMapping("/comments/{commentId}/toggle-hidden")
+    public String toggleComment(@PathVariable Long commentId, @RequestParam(required = false) String back,
+                                RedirectAttributes ra) {
+        var c = socialService.toggleCommentHidden(commentId);
+        ra.addFlashAttribute("successMessage", c.isHidden() ? "Đã ẩn bình luận" : "Đã hiện lại bình luận");
+        String to = back != null && back.startsWith("/admin/reviews") ? back : "/admin/reviews";
+        return "redirect:" + to + "#tuong-tac";
+    }
+
     @GetMapping
     public String list(@RequestParam(required = false) Integer rating,
                        @RequestParam(required = false) Boolean hidden,
@@ -48,6 +66,11 @@ public class AdminReviewController {
             pageItems.stream().filter(r -> !r.isReplied())
                     .forEach(r -> autoReplyService.match(r).ifPresent(m -> suggestions.put(r.getId(), m)));
             model.addAttribute("suggestions", suggestions);
+        }
+        if (socialService != null) {
+            model.addAttribute("reviewSocial", socialService.stats(pageItems, null));
+            model.addAttribute("reviewComments", socialService.allComments(pageItems.stream().map(Review::getId).toList()));
+            model.addAttribute("engagement", socialService.engagement(30, java.time.LocalDate.now()));
         }
         model.addAttribute("totalElements", all.size());
         model.addAttribute("averageRating", all.isEmpty() ? 0

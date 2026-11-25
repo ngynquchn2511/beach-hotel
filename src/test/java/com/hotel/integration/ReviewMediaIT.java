@@ -170,7 +170,7 @@ class ReviewMediaIT {
 
         String bookingPage = mockMvc.perform(get("/customer/bookings/{id}", booking.getId()).with(user(me)))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
-        assertThat(bookingPage).contains("src=\"/uploads/reviews/x.jpg\"").contains("<video src=\"/uploads/reviews/y.mp4\"");
+        assertThat(bookingPage).contains("src=\"/uploads/reviews/x.jpg\"").contains("data-rv-src=\"/uploads/reviews/y.mp4\"").contains("data-rv-type=\"video\"");
 
         String roomPage = mockMvc.perform(get("/customer/rooms/{id}", room.getId()))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);

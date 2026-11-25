@@ -26,6 +26,14 @@ import java.util.List;
 @Controller
 public class CustomerController {
 
+    private com.hotel.service.ReviewSocialService reviewSocialService;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    void setReviewSocialService(com.hotel.service.ReviewSocialService reviewSocialService) {
+        this.reviewSocialService = reviewSocialService;
+    }
+
+
     // So phong goi y o muc "Phong tuong tu" duoi trang chi tiet
     static final int SIMILAR_ROOMS = 3;
 
@@ -166,7 +174,12 @@ public class CustomerController {
         model.addAttribute("selectedComboId", comboId);
         // Danh gia cua khach da o cung loai phong (diem trung binh + 5 nhan xet moi nhat)
         model.addAttribute("ratingStats", reviewService.statsForRoomType(room.getRoomType().getId()));
-        model.addAttribute("roomReviews", reviewService.findLatestForRoomType(room.getRoomType().getId(), 5));
+        var roomReviews = reviewService.findLatestForRoomType(room.getRoomType().getId(), 5);
+        model.addAttribute("roomReviews", roomReviews);
+        // Tha tim / binh luan / chia se duoi moi danh gia
+        if (reviewSocialService != null) {
+            model.addAttribute("reviewSocial", reviewSocialService.stats(roomReviews, userDetails == null ? null : userDetails.getUser()));
+        }
         model.addAttribute("similarRooms", roomService.findSimilarRooms(room, checkIn, checkOut, guests, SIMILAR_ROOMS));
         // Bang ron cac khuyen mai dang chay (dat online thoa dieu kien la tu giam)
         model.addAttribute("activePromotions", promotionService.findActive());

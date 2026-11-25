@@ -75,6 +75,43 @@
                 </div>
             </div>
 
+            <!-- Tuong tac cua khach voi danh gia: tim / binh luan / chia se 30 ngay -->
+            <div class="vz-card" id="tuong-tac" th:if="${engagement != null}" th:with="e=${engagement}">
+                <div class="vz-head">
+                    <div><h5>Khách tương tác với đánh giá (30 ngày)</h5>
+                        <div class="sub">Thả tim, bình luận, chia sẻ ở trang <a th:href="@{/reviews}" target="_blank">Khách nói gì</a> và trang phòng</div></div>
+                    <div class="vz-key">
+                        <span><i style="background: var(--vz-red)"></i>Tim <b th:text="${e.likes}"></b></span>
+                        <span><i style="background: var(--vz-blue)"></i>Bình luận <b th:text="${e.comments}"></b></span>
+                        <span><i style="background: var(--vz-teal)"></i>Chia sẻ <b th:text="${e.shares}"></b></span>
+                    </div>
+                </div>
+                <div class="vz-chart" style="height: 200px"><canvas id="rvEngage" role="img" aria-label="Tương tác theo ngày"></canvas></div>
+                <div class="row g-3 mt-1">
+                    <div class="col-lg-6">
+                        <div class="small fw-semibold mb-1">Được tương tác nhiều nhất</div>
+                        <div th:if="${#lists.isEmpty(e.top)}" class="small text-muted">Chưa có.</div>
+                        <div th:each="t : ${e.top}" class="d-flex justify-content-between gap-2 small py-1 border-bottom">
+                            <a th:href="@{/reviews/{id}(id=${t.review.id})}" target="_blank" class="text-truncate"
+                               th:text="${t.review.displayName} + ' · ' + ${t.review.rating} + '★ · ' + ${t.review.comment != null ? t.review.comment : '(ảnh / video)'}"></a>
+                            <span class="text-nowrap text-muted" th:text="'♥ ' + ${t.likes} + ' · 💬 ' + ${t.comments} + ' · ↗ ' + ${t.shares}"></span>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="small fw-semibold mb-1">Bình luận mới nhất</div>
+                        <div th:if="${#lists.isEmpty(e.latestComments)}" class="small text-muted">Chưa có bình luận.</div>
+                        <div th:each="c : ${e.latestComments}" th:if="${cStat.index < 6}" class="d-flex justify-content-between gap-2 small py-1 border-bottom"
+                             th:style="${c.hidden} ? 'opacity:.55' : ''">
+                            <span class="text-truncate"><b th:text="${c.user.fullName}"></b>: <span th:text="${c.content}"></span></span>
+                            <form th:action="@{/admin/reviews/comments/{id}/toggle-hidden(id=${c.id})}" method="post" class="m-0">
+                                <button class="btn btn-link btn-sm p-0 text-nowrap" th:classappend="${c.hidden} ? 'text-success' : 'text-danger'"
+                                        th:text="${c.hidden} ? 'Hiện lại' : 'Ẩn'"></button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
             <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
 
@@ -143,6 +180,25 @@
                             <p class="review-comment" th:if="${r.comment != null}" th:text="${r.comment}"></p>
                             <span class="text-muted fst-italic" th:if="${r.comment == null}">(Không có nhận xét)</span>
                             <div th:replace="~{fragments/review-media :: gallery(${r.media})}"></div>
+                            <div class="small text-muted mt-1" th:if="${reviewSocial != null and reviewSocial[r.id] != null}"
+                                 th:with="st=${reviewSocial[r.id]}, cs=${reviewComments[r.id]}">
+                                <span th:text="'♥ ' + ${st.likes} + ' tim · 💬 ' + ${cs != null ? #lists.size(cs) : 0} + ' bình luận'"></span>
+                                <a class="ms-1" th:href="@{/reviews/{id}(id=${r.id})}" target="_blank" th:unless="${r.hidden}">xem trang công khai ↗</a>
+                                <details th:if="${cs != null}" class="mt-1">
+                                    <summary class="text-primary">Bình luận của khách</summary>
+                                    <div th:each="c : ${cs}" class="d-flex justify-content-between gap-2 py-1 border-bottom" th:style="${c.hidden} ? 'opacity:.55' : ''">
+                                        <span><b th:text="${c.user.fullName}"></b>
+                                            <span th:text="${#temporals.format(c.createdAt, 'dd/MM HH:mm')}"></span>:
+                                            <span th:text="${c.content}"></span>
+                                            <span th:if="${c.hidden}" class="badge bg-secondary">Đã ẩn</span></span>
+                                        <form th:action="@{/admin/reviews/comments/{id}/toggle-hidden(id=${c.id})}" method="post" class="m-0">
+                                            <input type="hidden" name="back" th:value="@{/admin/reviews(page=${currentPage}, q=${q}, rating=${rating}, hidden=${hidden}, replied=${replied})}">
+                                            <button class="btn btn-link btn-sm p-0 text-nowrap" th:classappend="${c.hidden} ? 'text-success' : 'text-danger'"
+                                                    th:text="${c.hidden} ? 'Hiện lại' : 'Ẩn'"></button>
+                                        </form>
+                                    </div>
+                                </details>
+                            </div>
                             <!-- Tra loi cong khai cua resort: hien duoi danh gia o trang phong / trang don cua khach -->
                             <details class="mt-2" th:open="${!r.replied}">
                                 <summary class="small fw-semibold text-primary">
@@ -221,6 +277,27 @@
         n: /*[[${trendCount}]]*/ []
     };
     /*]]>*/
+    const RE = {
+        days: /*[[${engagement != null ? engagement.labels : null}]]*/ null,
+        likes: /*[[${engagement != null ? engagement.dayLikes : null}]]*/ null,
+        comments: /*[[${engagement != null ? engagement.dayComments : null}]]*/ null,
+        shares: /*[[${engagement != null ? engagement.dayShares : null}]]*/ null
+    };
+    (function () {
+        const el = document.getElementById('rvEngage');
+        if (!el || !window.VZ || !RE.days) return;
+        const { C, axisX, axisY } = VZ;
+        new Chart(el, {
+            type: 'bar',
+            data: { labels: RE.days, datasets: [
+                { label: 'Tim', data: RE.likes, backgroundColor: C.red, stack: 's', borderRadius: 2 },
+                { label: 'Bình luận', data: RE.comments, backgroundColor: C.blue, stack: 's', borderRadius: 2 },
+                { label: 'Chia sẻ', data: RE.shares, backgroundColor: C.teal, stack: 's', borderRadius: 2 }] },
+            options: { interaction: { mode: 'index', intersect: false },
+                scales: { x: axisX({ stacked: true, ticks: { color: C.mut, autoSkip: true, maxTicksLimit: 10, maxRotation: 0 } }),
+                          y: axisY({ stacked: true, beginAtZero: true, ticks: { color: C.mut, precision: 0, maxTicksLimit: 5 } }) } }
+        });
+    })();
     (function () {
         const el = document.getElementById('rvTrend');
         if (!el || !window.VZ || !RV.m) return;

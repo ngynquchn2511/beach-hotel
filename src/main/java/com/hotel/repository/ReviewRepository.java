@@ -31,4 +31,19 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     // [diem trung binh, so luot] danh gia dang hien cua 1 loai phong
     @Query("select avg(r.rating), count(r) from Review r where r.booking.room.roomType.id = :roomTypeId and (r.hidden is null or r.hidden = false)")
     List<Object[]> statsByRoomType(@Param("roomTypeId") Long roomTypeId);
+
+    // ===== Trang "Khach noi gi" (/reviews): media 0 = tat ca, 1 = co anh / video, 2 = co video; rating null = moi so sao =====
+    String WALL_WHERE = "(r.hidden is null or r.hidden = false) and (:rating is null or r.rating = :rating)"
+            + " and (:media = 0 or (:media = 1 and exists (select m.id from ReviewMedia m where m.review = r))"
+            + " or (:media = 2 and exists (select m.id from ReviewMedia m where m.review = r and m.mediaType = com.hotel.entity.MediaType.VIDEO)))";
+
+    @Query(value = "select r from Review r where " + WALL_WHERE + " order by r.createdAt desc",
+            countQuery = "select count(r) from Review r where " + WALL_WHERE)
+    org.springframework.data.domain.Page<Review> wallNewest(@Param("rating") Integer rating, @Param("media") int media, Pageable pageable);
+
+    // Duoc tha tim nhieu nhat truoc
+    @Query(value = "select r from Review r where " + WALL_WHERE
+            + " order by (select count(l.id) from ReviewLike l where l.review = r) desc, r.createdAt desc",
+            countQuery = "select count(r) from Review r where " + WALL_WHERE)
+    org.springframework.data.domain.Page<Review> wallTop(@Param("rating") Integer rating, @Param("media") int media, Pageable pageable);
 }

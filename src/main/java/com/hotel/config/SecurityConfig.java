@@ -199,6 +199,10 @@ public class SecurityConfig {
                                 "/forgot-password", "/reset-password", "/verify-email", "/resend-verification", "/robots.txt", "/sitemap.xml",
                                 "/css/**", "/js/**", "/images/**", "/uploads/**", "/page-images/**").permitAll()
                         // Chatbot tu van - bat buoc dang nhap (khach chua dang nhap thay nut "Dang nhap" trong khung chat)
+                        // "Khach noi gi": ai cung xem / chia se; tha tim, binh luan can tai khoan khach
+                        .requestMatchers(HttpMethod.GET, "/reviews", "/reviews/*").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/reviews/*/share").permitAll()
+                        .requestMatchers("/reviews/**").hasRole("CUSTOMER")
                         .requestMatchers("/api/chatbot/**").authenticated()
                         // Form "Gui yeu cau tu van" (lien he) - bat buoc dang nhap; GET /contact = dang nhap roi quay lai form
                         .requestMatchers("/contact").authenticated()

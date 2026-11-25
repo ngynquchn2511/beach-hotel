@@ -1,13 +1,37 @@
-<!-- Anh / video dinh kem cua 1 danh gia: anh bam de xem lon (tab moi), video phat ngay tai cho.
-     Style viet inline de nhung duoc o bat ky trang nao (trang khach, trang quan tri) ma khong can them CSS. -->
+<!-- Anh / video dinh kem cua 1 danh gia: bam 1 o mo trinh xem toan man hinh (/js/review-lightbox.js) -
+     bam vao anh dang xem chuyen anh tiep theo, video het tu sang video tiep theo, noi tiep qua cac danh gia tren trang.
+     Style viet inline de nhung duoc o bat ky trang nao (trang khach, trang quan tri) ma khong can them CSS.
+     Neu model co "reviewSocial" (Map id danh gia -> ReviewSocialService.Stats) thi trinh xem hien tha tim / binh luan / chia se. -->
 <div th:fragment="gallery(items)" th:if="${items != null and !#lists.isEmpty(items)}"
+     th:with="rv=${items[0].review}, st=${reviewSocial != null ? reviewSocial[rv.id] : null}"
+     data-rv-gallery th:attr="data-rv-id=${st != null ? rv.id : null}, data-rv-name=${rv.displayName}, data-rv-rating=${rv.rating},
+        data-rv-comment=${rv.comment}, data-rv-likes=${st != null ? st.likes : null}, data-rv-comments=${st != null ? st.comments : null},
+        data-rv-liked=${st != null ? st.liked : null}"
      style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;">
-    <th:block th:each="m : ${items}">
-        <a th:unless="${m.video}" th:href="${m.url}" target="_blank" rel="noopener" th:title="#{review.media.photo}">
-            <img th:src="${m.url}" loading="lazy" th:alt="#{review.media.photo}"
-                 style="width: 112px; height: 84px; object-fit: cover; border-radius: 8px; border: 1.5px solid #13395e; display: block;">
-        </a>
-        <video th:if="${m.video}" th:src="${m.url}" controls preload="metadata" playsinline th:title="#{review.media.video}"
-               style="width: 168px; height: 112px; border-radius: 8px; border: 1.5px solid #13395e; background: #000;"></video>
+    <th:block th:each="m, it : ${items}">
+        <button type="button" class="rv-thumb" style="position: relative; padding: 0; border: 1.5px solid #13395e; border-radius: 8px; overflow: hidden; background: #000; cursor: zoom-in;"
+                th:attr="data-rv-src=${m.url}, data-rv-type=${m.video ? 'video' : 'photo'}"
+                th:title="${m.video} ? #{review.media.video} : #{review.media.photo}">
+            <img th:unless="${m.video}" th:src="${m.url}" loading="lazy" th:alt="#{review.media.photo}" style="width: 112px; height: 84px; object-fit: cover; display: block;">
+            <video th:if="${m.video}" th:src="${m.url} + '#t=0.5'" muted preload="metadata" playsinline style="width: 112px; height: 84px; object-fit: cover; display: block;"></video>
+            <span th:if="${m.video}" class="rv-play" aria-hidden="true" style="position: absolute; inset: 0; display: grid; place-items: center; color: #fff; font-size: 28px; background: rgba(0,0,0,.2);">&#9654;</span>
+        </button>
     </th:block>
+    <script th:src="@{/js/review-lightbox.js}" defer></script>
+</div>
+
+<!-- Thanh tuong tac duoi 1 danh gia: tha tim, so binh luan (mo trang danh gia), chia se. Can model "reviewSocial" -->
+<div th:fragment="social(rv)" th:if="${reviewSocial != null and reviewSocial[rv.id] != null}" th:with="st=${reviewSocial[rv.id]}"
+     class="rv-social" style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px;"
+     th:attr="data-rv-anon=${#authorization.expression('isAnonymous()')}">
+    <button type="button" class="rv-like btn btn-sm btn-light rounded-pill" th:classappend="${st.liked} ? 'liked'"
+            th:attr="data-rv-id=${rv.id}, aria-pressed=${st.liked}" th:title="#{reviews.like}">
+        <i th:class="${st.liked} ? 'bi bi-heart-fill' : 'bi bi-heart'" style="color: #e0607a;"></i> <span class="n" th:text="${st.likes}">0</span>
+    </button>
+    <a class="btn btn-sm btn-light rounded-pill" th:href="@{/reviews/{id}(id=${rv.id})} + '#binh-luan'" th:title="#{reviews.comments}">
+        <i class="bi bi-chat"></i> <span th:text="${st.comments}">0</span></a>
+    <button type="button" class="rv-share btn btn-sm btn-light rounded-pill" th:attr="data-rv-id=${rv.id}">
+        <i class="bi bi-share"></i> <span th:text="#{reviews.share}">Chia sẻ</span></button>
+    <input type="hidden" class="rv-csrf" th:if="${_csrf != null}" th:value="${_csrf.token}" th:attr="data-header=${_csrf.headerName}">
+    <script th:src="@{/js/review-social.js}" defer></script>
 </div>

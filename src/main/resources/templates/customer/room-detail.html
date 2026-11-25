@@ -52,6 +52,7 @@
         .room-stars .bi { color: #f2b705; }
         .room-review { padding: .9rem 0 0; }
         .room-review + .room-review { margin-top: .9rem; border-top: 1.5px dashed #b9dcf0; }
+        .rv-like.liked { background: #fde8ec; }
     </style>
 </head>
 <body class="eaut" th:style="'--page-bg: url(' + @{/page-images/chitietphong.jpg} + ')'">
@@ -136,7 +137,10 @@
                         <div class="small fw-bold" th:text="#{review.replyTitle}">Phản hồi từ Sóng Xanh Resort</div>
                         <p class="small mb-0" style="white-space: pre-line" th:text="${rv.reply}"></p>
                     </div>
+                    <div th:replace="~{fragments/review-media :: social(${rv})}"></div>
                 </div>
+                <a th:if="${not #lists.isEmpty(roomReviews)}" th:href="@{/reviews(filter='media')}" class="small fw-semibold d-inline-block mt-3"
+                   th:text="#{reviews.seeAll} + ' →'"></a>
             </div>
 
             <!-- Phong tuong tu: cung loai / gia gan nhat, con trong dung ngay khach da chon (neu co) -->

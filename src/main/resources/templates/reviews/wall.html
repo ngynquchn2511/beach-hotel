@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="vi" th:lang="${#locale.language}" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{reviews.title} + ' | Sóng Xanh Resort'">Khách nói gì | Sóng Xanh Resort</title>
+    <th:block th:replace="~{fragments/seo :: meta(#{reviews.title} + ' | Sóng Xanh Resort', #{reviews.lead}, '/page-images/trangchu.jpg', '/reviews')}"></th:block>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+    <style>
+        .rw-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+        .rw-tabs a { text-decoration: none; padding: 6px 14px; border-radius: 999px; border: 1.5px solid #13395e; color: #13395e; font-weight: 600; font-size: .88rem; background: #fff; }
+        .rw-tabs a.on { background: #13395e; color: #fff; }
+        .rw-tabs a .n { opacity: .7; font-weight: 500; margin-left: 4px; }
+        .rw-grid { columns: 3 300px; column-gap: 16px; }
+        .rw-card { break-inside: avoid; background: #fff; border-radius: 14px; padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(19,57,94,.12), 0 0 0 1px #e3edf5; }
+        .rw-card .stars .bi { color: #f2b705; font-size: .85rem; }
+        .rw-card .who { display: flex; align-items: center; gap: 10px; }
+        .rw-card .avatar { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, #3d9bd6, #89cff0); color: #fff;
+                           display: grid; place-items: center; font-weight: 800; flex: 0 0 auto; }
+        .rw-card .txt { margin: 8px 0 0; white-space: pre-line; }
+        .rw-card .room { font-size: .78rem; color: #6c7f92; }
+        .rw-card .reply { font-size: .84rem; background: #f3f9fd; border-radius: 8px; padding: 8px 10px; margin-top: 8px; }
+        .rv-like.liked { background: #fde8ec; }
+        .rw-card [data-rv-gallery] .rv-thumb img, .rw-card [data-rv-gallery] .rv-thumb video { width: 96px !important; height: 96px !important; }
+    </style>
+</head>
+<body class="eaut">
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="container py-5">
+    <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-3">
+        <div>
+            <h1 class="fw-bold mb-1" style="font-family: var(--display, Fraunces, serif);" th:text="#{reviews.title}">Khách nói gì</h1>
+            <p class="text-muted mb-0" th:text="#{reviews.lead}">Đánh giá thật của khách đã ở resort, kèm ảnh và video.</p>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+            <span class="small text-muted" th:text="#{reviews.sort}">Sắp xếp</span>
+            <div class="rw-tabs">
+                <a th:href="@{/reviews(filter=${filter}, rating=${rating}, sort='new')}" th:classappend="${sort == 'new'} ? 'on'" th:text="#{reviews.sort.new}">Mới nhất</a>
+                <a th:href="@{/reviews(filter=${filter}, rating=${rating}, sort='top')}" th:classappend="${sort == 'top'} ? 'on'" th:text="#{reviews.sort.top}">Nhiều tim nhất</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2 align-items-center mb-4">
+        <div class="rw-tabs">
+            <a th:href="@{/reviews(sort=${sort}, rating=${rating})}" th:classappend="${filter == 'all'} ? 'on'">
+                <span th:text="#{reviews.filter.all}">Tất cả</span><span class="n" th:text="${countAll}"></span></a>
+            <a th:href="@{/reviews(filter='media', sort=${sort}, rating=${rating})}" th:classappend="${filter == 'media'} ? 'on'">
+                <i class="bi bi-images"></i> <span th:text="#{reviews.filter.media}">Có ảnh / video</span><span class="n" th:text="${countMedia}"></span></a>
+            <a th:href="@{/reviews(filter='video', sort=${sort}, rating=${rating})}" th:classappend="${filter == 'video'} ? 'on'">
+                <i class="bi bi-play-circle"></i> <span th:text="#{reviews.filter.video}">Video</span><span class="n" th:text="${countVideo}"></span></a>
+        </div>
+        <div class="rw-tabs ms-md-auto">
+            <a th:href="@{/reviews(filter=${filter}, sort=${sort})}" th:classappend="${rating == null} ? 'on'" th:text="#{reviews.filter.anyStar}">Mọi số sao</a>
+            <a th:each="n : ${#numbers.sequence(5, 1, -1)}" th:href="@{/reviews(filter=${filter}, sort=${sort}, rating=${n})}"
+               th:classappend="${rating == n} ? 'on'" th:text="${n} + ' ★'"></a>
+        </div>
+    </div>
+
+    <div th:if="${#lists.isEmpty(reviews)}" class="text-center text-muted py-5">
+        <i class="bi bi-chat-square-heart fs-1 d-block mb-2"></i><span th:text="#{reviews.empty}">Chưa có đánh giá nào phù hợp.</span>
+    </div>
+
+    <div class="rw-grid">
+        <article class="rw-card" th:each="rv : ${reviews}" th:id="'danh-gia-' + ${rv.id}">
+            <div class="who">
+                <div class="avatar" th:text="${#strings.substring(rv.displayName, 0, 1)}">K</div>
+                <div class="flex-grow-1">
+                    <div class="fw-semibold" th:text="${rv.displayName}"></div>
+                    <div class="stars"><i th:each="n : ${#numbers.sequence(1, 5)}" th:class="${n <= rv.rating} ? 'bi bi-star-fill' : 'bi bi-star'"></i>
+                        <span class="room ms-1" th:text="${#temporals.format(rv.createdAt, 'dd/MM/yyyy')}"></span></div>
+                </div>
+            </div>
+            <div class="room mt-1" th:if="${rv.booking != null and rv.booking.room != null}" th:text="${rv.booking.room.roomType.localizedName}"></div>
+            <p class="txt" th:if="${rv.comment != null}" th:text="${rv.comment}"></p>
+            <div th:replace="~{fragments/review-media :: gallery(${rv.media})}"></div>
+            <div class="reply" th:if="${rv.replied}">
+                <div class="fw-semibold small" th:text="#{review.replyTitle}">Phản hồi từ Sóng Xanh Resort</div>
+                <span th:text="${#strings.abbreviate(rv.reply, 220)}"></span>
+            </div>
+            <div th:replace="~{fragments/review-media :: social(${rv})}"></div>
+        </article>
+    </div>
+
+    <nav th:if="${totalPages > 1}" th:aria-label="#{pager.label}">
+        <ul class="pagination justify-content-center flex-wrap mt-3 mb-0">
+            <li th:each="p : ${pageNumbers}" class="page-item" th:classappend="${p == 0} ? 'disabled' : (${p == currentPage} ? 'active')">
+                <span th:if="${p == 0}" class="page-link">&hellip;</span>
+                <a th:unless="${p == 0}" class="page-link" th:text="${p}"
+                   th:href="@{/reviews(page=${p}, filter=${filter}, sort=${sort}, rating=${rating})}"></a>
+            </li>
+        </ul>
+    </nav>
+</main>
+
+<div th:replace="~{fragments/chatbot-widget :: widget}"></div>
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

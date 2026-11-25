@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="vi" th:lang="${#locale.language}" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{reviews.detailTitle(${review.displayName})} + ' | Sóng Xanh Resort'">Đánh giá | Sóng Xanh Resort</title>
+    <th:block th:replace="~{fragments/seo :: meta(#{reviews.detailTitle(${review.displayName})} + ' ' + ${review.rating} + '★ | Sóng Xanh Resort',
+              ${review.comment != null ? #strings.abbreviate(review.comment, 180) : #messages.msg('reviews.lead')},
+              ${ogImage}, '/reviews/' + ${review.id})}"></th:block>
+    <meta property="og:video" th:if="${ogVideo != null}" th:content="${siteBaseUrl + ogVideo}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+    <style>
+        .rd-card { background: #fff; border-radius: 16px; padding: 22px; box-shadow: 0 1px 3px rgba(19,57,94,.12), 0 0 0 1px #e3edf5; }
+        .rd-card .stars .bi { color: #f2b705; }
+        .rd-card .avatar { width: 46px; height: 46px; border-radius: 50%; background: linear-gradient(135deg, #3d9bd6, #89cff0); color: #fff;
+                           display: grid; place-items: center; font-weight: 800; font-size: 1.1rem; flex: 0 0 auto; }
+        .rd-comment { display: flex; gap: 10px; padding: 12px 0; border-top: 1px solid #eef3f7; }
+        .rd-comment .avatar { width: 34px; height: 34px; font-size: .9rem; background: linear-gradient(135deg, #7b61c9, #3d9bd6); }
+        .rd-comment .body { flex: 1; min-width: 0; }
+        .rd-comment p { margin: 2px 0 0; white-space: pre-line; word-wrap: break-word; }
+        .rv-like.liked { background: #fde8ec; }
+        [data-rv-gallery] .rv-thumb img, [data-rv-gallery] .rv-thumb video { width: 150px !important; height: 112px !important; }
+    </style>
+</head>
+<body class="eaut">
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="container py-5" style="max-width: 820px;">
+    <a th:href="@{/reviews}" class="small text-decoration-none"><i class="bi bi-arrow-left"></i> <span th:text="#{reviews.back}">Tất cả đánh giá</span></a>
+
+    <article class="rd-card mt-2">
+        <div class="d-flex align-items-center gap-3">
+            <div class="avatar" th:text="${#strings.substring(review.displayName, 0, 1)}">K</div>
+            <div>
+                <div class="fw-bold" th:text="${review.displayName}"></div>
+                <div class="stars small"><i th:each="n : ${#numbers.sequence(1, 5)}" th:class="${n <= review.rating} ? 'bi bi-star-fill' : 'bi bi-star'"></i>
+                    <span class="text-muted ms-1" th:text="${#temporals.format(review.createdAt, 'dd/MM/yyyy')}"></span>
+                    <span class="text-muted" th:if="${review.booking != null and review.booking.room != null}"
+                          th:text="' · ' + ${review.booking.room.roomType.localizedName}"></span></div>
+            </div>
+        </div>
+        <p class="mt-3 mb-0 fs-6" style="white-space: pre-line" th:if="${review.comment != null}" th:text="${review.comment}"></p>
+        <div th:replace="~{fragments/review-media :: gallery(${review.media})}"></div>
+        <div th:if="${review.replied}" class="mt-3 ps-3 border-start border-2 border-info">
+            <div class="small fw-bold" th:text="#{review.replyTitle}">Phản hồi từ Sóng Xanh Resort</div>
+            <p class="small mb-0" style="white-space: pre-line" th:text="${review.reply}"></p>
+        </div>
+        <div class="d-flex flex-wrap gap-2 align-items-center mt-2">
+            <div th:replace="~{fragments/review-media :: social(${review})}"></div>
+            <button type="button" class="rv-share btn btn-sm btn-light rounded-pill mt-2" data-channel="facebook" th:attr="data-rv-id=${review.id}">
+                <i class="bi bi-facebook" style="color: #1877f2"></i> Facebook</button>
+        </div>
+    </article>
+
+    <!-- Binh luan cua khach khac -->
+    <section class="rd-card mt-3" id="binh-luan">
+        <h2 class="h5 fw-bold mb-2"><i class="bi bi-chat-dots me-1"></i><span th:text="#{reviews.comments}">Bình luận</span>
+            <span class="text-muted fw-normal" th:text="'(' + ${#lists.size(comments)} + ')'"></span></h2>
+
+        <div th:if="${successMessage}" class="alert alert-success py-2" th:text="${successMessage}"></div>
+        <div th:if="${errorMessage}" class="alert alert-danger py-2" th:text="${errorMessage}"></div>
+
+        <p th:if="${#lists.isEmpty(comments)}" class="text-muted small mb-2" th:text="#{reviews.noComments}">Chưa có bình luận. Hãy là người đầu tiên!</p>
+        <div class="rd-comment" th:each="c : ${comments}" th:id="'bl-' + ${c.id}">
+            <div class="avatar" th:text="${#strings.substring(c.displayName, 0, 1)}">K</div>
+            <div class="body">
+                <span class="fw-semibold" th:text="${c.displayName}"></span>
+                <span class="small text-muted ms-1" th:text="${#temporals.format(c.createdAt, 'dd/MM/yyyy HH:mm')}"></span>
+                <p th:text="${c.content}"></p>
+            </div>
+            <form th:if="${viewerId != null and c.user.id == viewerId}" th:action="@{/reviews/comments/{id}/delete(id=${c.id})}" method="post"
+                  th:attr="onsubmit='return confirm(\'' + #{reviews.deleteConfirm} + '\')'">
+                <button class="btn btn-link btn-sm text-danger p-0" th:text="#{reviews.delete}">Xóa</button>
+            </form>
+        </div>
+
+        <form th:if="${canComment}" th:action="@{/reviews/{id}/comments(id=${review.id})}" method="post" class="mt-3">
+            <textarea name="content" class="form-control" rows="2" th:maxlength="${commentMax}" required
+                      th:placeholder="#{reviews.commentPlaceholder}" th:text="${draft}"></textarea>
+            <button class="btn btn-primary btn-sm mt-2" th:text="#{reviews.commentSend}">Gửi bình luận</button>
+        </form>
+        <div th:if="${anonymous}" class="mt-3 small">
+            <a th:href="@{/login}" class="btn btn-outline-primary btn-sm" th:text="#{reviews.loginToComment}">Đăng nhập để bình luận</a>
+        </div>
+    </section>
+</main>
+
+<div th:replace="~{fragments/chatbot-widget :: widget}"></div>
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

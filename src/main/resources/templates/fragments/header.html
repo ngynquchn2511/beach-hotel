@@ -10,6 +10,7 @@
             <a th:href="@{/rooms}" class="text-decoration-none text-dark" sec:authorize="!hasAnyRole('ADMIN','STAFF','HOUSEKEEPER','ACCOUNTANT')" th:text="#{nav.rooms}">Danh sách phòng</a>
             <a th:href="@{/rooms/suggest}" class="text-decoration-none text-dark" sec:authorize="!hasAnyRole('ADMIN','STAFF','HOUSEKEEPER','ACCOUNTANT')"><i class="bi bi-magic me-1"></i><span th:text="#{suggest.nav}">Gợi ý phòng</span></a>
             <a th:href="@{/services}" class="text-decoration-none text-dark" sec:authorize="!hasAnyRole('ADMIN','STAFF','HOUSEKEEPER','ACCOUNTANT')" th:text="#{nav.services}">Dịch vụ</a>
+            <a th:href="@{/reviews}" class="text-decoration-none text-dark" sec:authorize="!hasAnyRole('ADMIN','STAFF','HOUSEKEEPER','ACCOUNTANT')" th:text="#{nav.reviews}">Đánh giá</a>
             <a th:href="@{/admin/rooms}" class="text-decoration-none text-dark" sec:authorize="hasAnyRole('ADMIN','STAFF')">Danh sách phòng</a>
             <a th:href="@{/customer/bookings}" class="text-decoration-none text-dark" sec:authorize="hasRole('CUSTOMER')" th:text="#{nav.history}">Lịch sử đặt phòng</a>
             <a th:href="@{/customer/favorites}" class="text-decoration-none text-dark" sec:authorize="hasRole('CUSTOMER')"><i class="bi bi-heart me-1"></i><span th:text="#{nav.favorites}">Yêu thích</span></a>
