@@ -104,6 +104,23 @@ public class HousekeepingService {
             return m < 60 ? m + " phút" : m < 24 * 60 ? (m / 60) + " giờ" : (m / (24 * 60)) + " ngày";
         }
 
+        // Chua co nguoi chiu trach nhiem (khong ai trong ca de tu giao)
+        public boolean noOwner() {
+            return room.getCleaningAssignee() == null && !room.isBeingCleaned() && !room.isAwaitingInspection();
+        }
+
+        // Giao bao lau roi ma chua bat dau (phut); qua 20 phut nhac
+        public long waitingForAssigneeMinutes() {
+            if (room.getCleaningAssignee() == null || room.isBeingCleaned() || room.isAwaitingInspection() || room.getCleaningAssignedAt() == null) {
+                return 0;
+            }
+            return Math.max(0, java.time.Duration.between(room.getCleaningAssignedAt(), LocalDateTime.now()).toMinutes());
+        }
+
+        public boolean notStartedLong() {
+            return waitingForAssigneeMinutes() > 20;
+        }
+
         public String state() {
             return room.isAwaitingInspection() ? "inspect" : room.isBeingCleaned() ? "cleaning" : "waiting";
         }
@@ -128,6 +145,10 @@ public class HousekeepingService {
 
         public long unassignedWaiting() {
             return waiting.stream().filter(t -> t.assignee() == null).count();
+        }
+
+        public long notStartedLongCount() {
+            return waiting.stream().filter(Task::notStartedLong).count();
         }
     }
 
@@ -268,16 +289,33 @@ public class HousekeepingService {
         return team.stream().filter(Member::available).findFirst().orElse(null);
     }
 
-    // Chia cac phong cho don chua giao ai cho nhung nguoi dang trong ca, phong uu tien truoc, nguoi it viec nhat nhan truoc
+    // ===== Tu phan viec: phong nao cung co 1 nguoi chiu trach nhiem =====
+
+    // Giao roi ma nguoi do het ca / khong di lam va chua bat dau don qua chung nay phut -> chuyen cho nguoi dang trong ca
+    public static final long HANDOVER_MINUTES = 30;
+    // Giao kiem phong truoc khi tra ma chua bam "Nhan kiem" qua chung nay phut -> chuyen nguoi khac
+    public static final long ROOM_CHECK_ACCEPT_MINUTES = 3;
+    // Tu chuyen toi da may lan, sau do bao le tan tu kiem
+    public static final int ROOM_CHECK_MAX_MOVES = 2;
+
+    // Giao cac phong cho don chua co nguoi (hoac nguoi duoc giao da het ca, chua dong tay) cho nguoi dang trong ca:
+    // phong uu tien truoc, ai it viec nhan truoc. Goi ngay khi khach tra phong + moi phut (HousekeepingScheduler).
+    // Khong ai trong ca -> giu nguyen, bang don phong bao do "chua co nguoi" de le tan goi nguoi / giao tay.
     @Transactional
-    public int autoAssign(String byName, LocalDateTime now) {
-        List<Member> available = team(now).stream().filter(Member::available).toList();
+    public int dispatchRooms(LocalDateTime now, String byName) {
+        List<Member> team = team(now);
+        List<Member> available = team.stream().filter(Member::available).toList();
         if (available.isEmpty()) {
-            throw new BusinessException("Chưa có nhân viên buồng phòng nào trong ca - giao tay từng phòng");
+            return 0;
         }
-        List<Task> open = board(now.toLocalDate()).waiting().stream().filter(t -> t.assignee() == null).toList();
+        java.util.Set<Long> availableIds = available.stream().map(m -> m.user().getId()).collect(Collectors.toSet());
+        List<Task> open = board(now.toLocalDate()).waiting().stream()
+                .filter(t -> t.assignee() == null || (!availableIds.contains(t.assignee().getId())
+                        && (t.room().getCleaningAssignedAt() == null
+                        || t.room().getCleaningAssignedAt().isBefore(now.minusMinutes(HANDOVER_MINUTES)))))
+                .toList();
         if (open.isEmpty()) {
-            throw new BusinessException("Không còn phòng chờ dọn nào chưa giao");
+            return 0;
         }
         Map<Long, Long> load = new java.util.HashMap<>();
         available.forEach(m -> load.put(m.user().getId(), m.load()));
@@ -287,16 +325,75 @@ public class HousekeepingService {
                     .min(Comparator.comparing((Member m) -> load.get(m.user().getId())).thenComparing(m -> !m.present()))
                     .orElseThrow();
             Room room = t.room();
+            User previous = room.getCleaningAssignee();
+            if (previous != null) {
+                load.computeIfPresent(previous.getId(), (k, v) -> Math.max(0, v - 1));
+            }
             room.setCleaningAssignee(pick.user());
+            room.setCleaningAssignedAt(now);
             roomRepository.save(room);
             load.merge(pick.user().getId(), 1L, Long::sum);
             given.computeIfAbsent(pick.user().getId(), k -> new java.util.ArrayList<>())
-                    .add(room.getRoomNumber() + (t.priority() ? " (ưu tiên)" : ""));
+                    .add(room.getRoomNumber() + (t.priority() ? " (ưu tiên)" : "") + (previous != null ? " (nhận thay " + previous.getFullName() + ")" : ""));
         }
         given.forEach((userId, rooms) -> notify(EnumSet.of(Audience.HOUSEKEEPING), userId, Level.INFO,
                 "Bạn được giao dọn " + rooms.size() + " phòng", "Phòng " + String.join(", ", rooms)
-                        + (byName != null ? " · giao bởi " + byName : "")));
+                        + (byName != null ? " · giao bởi " + byName : " · hệ thống tự giao")));
         return open.size();
+    }
+
+    // Le tan bam "Chia ngay" - nhu dispatchRooms nhung bao ro vi sao khong chia duoc
+    @Transactional
+    public int autoAssign(String byName, LocalDateTime now) {
+        if (team(now).stream().noneMatch(Member::available)) {
+            throw new BusinessException("Không có nhân viên buồng phòng nào trong ca - gọi người hoặc giao tay từng phòng");
+        }
+        int n = dispatchRooms(now, byName);
+        if (n == 0) {
+            throw new BusinessException("Phòng nào cũng đã có người dọn");
+        }
+        return n;
+    }
+
+    // Kiem phong truoc khi tra: qua ROOM_CHECK_ACCEPT_MINUTES ma nguoi duoc giao chua bam "Nhan kiem" -> chuyen nguoi
+    // dang trong ca it viec nhat (khac nguoi cu); het nguoi / da chuyen ROOM_CHECK_MAX_MOVES lan -> bao le tan tu kiem
+    @Transactional
+    public int escalateRoomChecks(LocalDateTime now) {
+        int changed = 0;
+        for (Booking b : pendingRoomChecks()) {
+            if (b.getRoomCheckAcceptedAt() != null || b.isRoomCheckStuck()) {
+                continue;
+            }
+            LocalDateTime since = b.getRoomCheckAssignedAt() != null ? b.getRoomCheckAssignedAt() : b.getRoomCheckRequestedAt();
+            if (since == null || since.isAfter(now.minusMinutes(ROOM_CHECK_ACCEPT_MINUTES))) {
+                continue;
+            }
+            String room = b.getRoom().getRoomNumber();
+            User previous = b.getRoomCheckAssignee();
+            int moves = b.getRoomCheckAutoMoves();
+            Member next = moves >= ROOM_CHECK_MAX_MOVES ? null : team(now).stream()
+                    .filter(Member::available)
+                    .filter(m -> previous == null || !m.user().getId().equals(previous.getId()))
+                    .findFirst().orElse(null);
+            if (next == null) {
+                b.setRoomCheckEscalations(Booking.ROOM_CHECK_GAVE_UP);
+                bookingRepository.save(b);
+                notify(EnumSet.of(Audience.FRONT_DESK), null, Level.WARNING, "Không ai nhận kiểm phòng " + room,
+                        (previous != null ? previous.getFullName() + " chưa nhận sau " + ROOM_CHECK_ACCEPT_MINUTES + " phút. " : "")
+                                + "Lễ tân tự kiểm hoặc gọi người", "/admin/bookings/" + b.getId() + "/check-out#kiem-phong");
+            } else {
+                b.setRoomCheckAssignee(next.user());
+                b.setRoomCheckAssignedAt(now);
+                b.setRoomCheckEscalations(moves + 1);
+                bookingRepository.save(b);
+                notifyRoomCheck(b, null);
+                notify(EnumSet.of(Audience.FRONT_DESK), null, Level.INFO, "Kiểm phòng " + room + ": chuyển sang " + next.user().getFullName(),
+                        (previous != null ? previous.getFullName() : "Người được giao") + " chưa nhận sau " + ROOM_CHECK_ACCEPT_MINUTES + " phút",
+                        "/admin/bookings/" + b.getId() + "/check-out#kiem-phong");
+            }
+            changed++;
+        }
+        return changed;
     }
 
     private User requireHousekeeper(Long userId) {
@@ -332,6 +429,7 @@ public class HousekeepingService {
                     .orElseThrow(() -> new BusinessException("Chỉ giao phòng cho tài khoản Buồng phòng"));
         }
         room.setCleaningAssignee(assignee);
+        room.setCleaningAssignedAt(assignee != null ? LocalDateTime.now() : null);
         roomRepository.save(room);
         if (assignee != null) {
             notify(EnumSet.of(Audience.HOUSEKEEPING), assignee.getId(), Level.INFO, "Bạn được giao dọn phòng " + room.getRoomNumber(),
@@ -354,8 +452,9 @@ public class HousekeepingService {
         if (housekeeper && room.getCleaningAssignee() != null && !room.getCleaningAssignee().getId().equals(staff.getId())) {
             throw new BusinessException("Phòng " + room.getRoomNumber() + " đã giao cho " + room.getCleaningAssignee().getFullName());
         }
-        if (housekeeper && room.getCleaningAssignee() == null) {
+        if (housekeeper && (room.getCleaningAssignee() == null || !room.getCleaningAssignee().getId().equals(staff.getId()))) {
             room.setCleaningAssignee(staff);
+            room.setCleaningAssignedAt(LocalDateTime.now());
         }
         room.setCleaningBy(staff != null ? staff.getFullName() : null);
         room.setCleaningStartedAt(LocalDateTime.now());
@@ -449,20 +548,25 @@ public class HousekeepingService {
 
     // ===== Kiem phong truoc khi tra phong (do mat / hu hong) =====
 
-    // Le tan mo man hinh tra phong -> yeu cau buong phong kiem phong cua don dang o (yeu cau lai thi xoa ket qua cu)
+    // Le tan mo man hinh tra phong -> giao 1 nhan vien buong phong kiem phong cua don dang o (yeu cau lai thi xoa ket qua cu)
     @Transactional
     public Booking requestRoomCheck(Long bookingId, String byName) {
         return requestRoomCheck(bookingId, byName, null);
     }
 
-    // assigneeId: nhan vien buong phong duoc giao kiem (null = bao chung cho ca buong phong)
+    // assigneeId: nguoi le tan chon; null = he thong chon nguoi dang trong ca it viec nhat.
+    // Luon co 1 nguoi chiu trach nhiem: khong ai trong ca thi bao loi de le tan tu kiem / chon tay nguoi khac
     @Transactional
     public Booking requestRoomCheck(Long bookingId, String byName, Long assigneeId) {
         Booking booking = requireStaying(bookingId);
-        User assignee = assigneeId != null ? requireHousekeeper(assigneeId) : null;
-        booking.setRoomCheckRequestedAt(LocalDateTime.now());
+        User assignee = assigneeId != null ? requireHousekeeper(assigneeId) : suggestedChecker();
+        LocalDateTime now = LocalDateTime.now();
+        booking.setRoomCheckRequestedAt(now);
         booking.setRoomCheckRequestedBy(byName);
         booking.setRoomCheckAssignee(assignee);
+        booking.setRoomCheckAssignedAt(now);
+        booking.setRoomCheckAcceptedAt(null);
+        booking.setRoomCheckEscalations(0);
         booking.setRoomCheckedAt(null);
         booking.setRoomCheckedBy(null);
         booking.setRoomCheckIssue(null);
@@ -472,17 +576,78 @@ public class HousekeepingService {
         return booking;
     }
 
-    // Doi nguoi kiem khi yeu cau dang cho (giu nguyen gio yeu cau)
+    private User suggestedChecker() {
+        Member m = recommended(team(LocalDateTime.now()));
+        if (m == null) {
+            throw new BusinessException("Không có nhân viên buồng phòng nào trong ca - chọn tay 1 người hoặc lễ tân tự kiểm phòng");
+        }
+        return m.user();
+    }
+
+    // Doi nguoi kiem khi yeu cau dang cho (giu gio yeu cau, tinh lai 3 phut cho nguoi moi nhan)
     @Transactional
     public Booking assignRoomCheck(Long bookingId, Long assigneeId, String byName) {
         Booking booking = requireStaying(bookingId);
         if (!booking.isRoomCheckPending()) {
             throw new BusinessException("Phòng " + booking.getRoom().getRoomNumber() + " không có yêu cầu kiểm đang chờ");
         }
-        booking.setRoomCheckAssignee(assigneeId != null ? requireHousekeeper(assigneeId) : null);
+        if (assigneeId == null) {
+            throw new BusinessException("Vui lòng chọn người kiểm phòng");
+        }
+        booking.setRoomCheckAssignee(requireHousekeeper(assigneeId));
+        booking.setRoomCheckAssignedAt(LocalDateTime.now());
+        booking.setRoomCheckAcceptedAt(null);
+        booking.setRoomCheckEscalations(0);
         bookingRepository.save(booking);
         notifyRoomCheck(booking, byName);
         return booking;
+    }
+
+    // Nguoi duoc giao bam "Nhan kiem - dang len phong" -> le tan biet co nguoi dang lam, he thong thoi tu chuyen nguoi
+    @Transactional
+    public Booking acceptRoomCheck(Long bookingId, User staff) {
+        Booking booking = requireStaying(bookingId);
+        if (!booking.isRoomCheckPending()) {
+            throw new BusinessException("Phòng " + booking.getRoom().getRoomNumber() + " không có yêu cầu kiểm đang chờ");
+        }
+        User assignee = booking.getRoomCheckAssignee();
+        boolean housekeeper = staff != null && staff.getRole() == UserRole.HOUSEKEEPER;
+        if (housekeeper && assignee != null && !assignee.getId().equals(staff.getId())) {
+            throw new BusinessException("Phòng " + booking.getRoom().getRoomNumber() + " đã giao cho " + assignee.getFullName() + " kiểm");
+        }
+        if (housekeeper) {
+            booking.setRoomCheckAssignee(staff);
+        }
+        booking.setRoomCheckAcceptedAt(LocalDateTime.now());
+        bookingRepository.save(booking);
+        notify(EnumSet.of(Audience.FRONT_DESK), null, Level.INFO,
+                (staff != null ? staff.getFullName() : "Buồng phòng") + " đang lên kiểm phòng " + booking.getRoom().getRoomNumber(), "",
+                "/admin/bookings/" + booking.getId() + "/check-out#kiem-phong");
+        return booking;
+    }
+
+    // Le tan tu kiem (khong co buong phong / khong ai nhan): ghi ket qua ngay
+    @Transactional
+    public Booking frontDeskCheck(Long bookingId, boolean issue, String note, String byName) {
+        Booking booking = requireStaying(bookingId);
+        String text = note == null ? "" : note.trim();
+        if (issue && text.isEmpty()) {
+            throw new BusinessException("Vui lòng ghi đồ bị mất / hư hỏng");
+        }
+        if (text.length() > NOTE_MAX) {
+            throw new BusinessException("Ghi chú tối đa " + NOTE_MAX + " ký tự");
+        }
+        LocalDateTime now = LocalDateTime.now();
+        if (!booking.isRoomCheckPending()) {
+            booking.setRoomCheckRequestedAt(now);
+            booking.setRoomCheckRequestedBy(byName);
+        }
+        booking.setRoomCheckAcceptedAt(booking.getRoomCheckAcceptedAt() != null ? booking.getRoomCheckAcceptedAt() : now);
+        booking.setRoomCheckedAt(now);
+        booking.setRoomCheckedBy(byName != null ? byName + " (lễ tân)" : "Lễ tân");
+        booking.setRoomCheckIssue(issue);
+        booking.setRoomCheckNote(text.isEmpty() ? null : text);
+        return bookingRepository.save(booking);
     }
 
     private void notifyRoomCheck(Booking booking, String byName) {
@@ -490,7 +655,8 @@ public class HousekeepingService {
         String guest = booking.getGuestName() != null ? " · khách " + booking.getGuestName() : "";
         notify(EnumSet.of(Audience.HOUSEKEEPING), assignee != null ? assignee.getId() : null, Level.WARNING,
                 (assignee != null ? "Bạn được giao kiểm phòng " : "Kiểm phòng ") + booking.getRoom().getRoomNumber() + " trước khi trả",
-                "Kiểm minibar, đồ mất / hư hỏng rồi báo lễ tân" + guest + (byName != null ? " · " + byName : ""), "/admin/housekeeping#kiem-truoc-tra");
+                "Bấm «Nhận kiểm» trong " + ROOM_CHECK_ACCEPT_MINUTES + " phút, kiểm minibar, đồ mất / hư hỏng rồi báo lễ tân" + guest
+                        + (byName != null ? " · " + byName : ""), "/admin/housekeeping#kiem-truoc-tra");
     }
 
     // Nhan vien buong phong bao ket qua: khong co gi / co do mat, hu hong (bat buoc ghi ro) -> bao le tan tinh phu phi
@@ -519,6 +685,9 @@ public class HousekeepingService {
         }
         if (text.length() > NOTE_MAX) {
             throw new BusinessException("Ghi chú tối đa " + NOTE_MAX + " ký tự");
+        }
+        if (booking.getRoomCheckAcceptedAt() == null) {
+            booking.setRoomCheckAcceptedAt(LocalDateTime.now());
         }
         booking.setRoomCheckedAt(LocalDateTime.now());
         booking.setRoomCheckedBy(checkerName);

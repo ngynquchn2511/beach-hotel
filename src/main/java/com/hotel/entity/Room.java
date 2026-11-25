@@ -75,6 +75,10 @@ public class Room {
     @com.fasterxml.jackson.annotation.JsonIgnore
     private User cleaningAssignee;
 
+    // Luc giao phong cho nguoi hien tai (giao tay hoac he thong tu giao) - de biet giao lau ma chua bat dau
+    @Column(name = "cleaning_assigned_at")
+    private LocalDateTime cleaningAssignedAt;
+
     // Buong phong bao don xong, cho le tan / quan ly kiem (khi bat buoc kiem phong)
     @Column(name = "inspection_requested_at")
     private LocalDateTime inspectionRequestedAt;

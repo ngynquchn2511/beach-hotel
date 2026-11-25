@@ -419,6 +419,33 @@ public class Booking {
     @com.fasterxml.jackson.annotation.JsonIgnore
     private User roomCheckAssignee;
 
+    // Luc giao cho nguoi hien tai; nguoi duoc giao bam "Nhan kiem" (accepted). Qua 3 phut chua nhan -> he thong chuyen nguoi khac
+    @Column(name = "room_check_assigned_at")
+    private LocalDateTime roomCheckAssignedAt;
+
+    @Column(name = "room_check_accepted_at")
+    private LocalDateTime roomCheckAcceptedAt;
+
+    // So lan he thong da tu chuyen nguoi; = ROOM_CHECK_GAVE_UP: khong con ai nhan, bao le tan tu kiem
+    @Column(name = "room_check_escalations")
+    private Integer roomCheckEscalations;
+
+    public static final int ROOM_CHECK_GAVE_UP = 99;
+
+    public boolean isRoomCheckAccepted() {
+        return isRoomCheckPending() && roomCheckAcceptedAt != null;
+    }
+
+    // Dang cho ma khong ai nhan -> le tan phai tu kiem / goi nguoi
+    public boolean isRoomCheckStuck() {
+        return isRoomCheckPending() && roomCheckAcceptedAt == null
+                && (roomCheckAssignee == null || (roomCheckEscalations != null && roomCheckEscalations >= ROOM_CHECK_GAVE_UP));
+    }
+
+    public int getRoomCheckAutoMoves() {
+        return roomCheckEscalations == null || roomCheckEscalations >= ROOM_CHECK_GAVE_UP ? 0 : roomCheckEscalations;
+    }
+
     // Da yeu cau kiem phong, buong phong chua bao ket qua
     public boolean isRoomCheckPending() {
         return roomCheckRequestedAt != null && roomCheckedAt == null;

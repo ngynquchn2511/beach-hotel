@@ -38,6 +38,8 @@
         /* Kiem truoc khi tra */
         .rc-card { border: 1.5px solid #f1a5a5; background: #fff6f6; border-radius: 10px; padding: 10px 12px; height: 100%; }
         .rc-card.mine { border-color: #c92a2a; box-shadow: inset 4px 0 0 #c92a2a; }
+        .rc-card.stuck { border-color: #c92a2a; background: #ffe3e3; }
+        .hk-task.no-owner { border-color: #e03131; border-style: dashed; }
         /* Doi buong phong */
         .tm { display: flex; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px dashed #d6ebf8; }
         .tm:last-child { border-bottom: 0; }
@@ -115,9 +117,8 @@
                     <span class="small fw-normal text-muted ms-1">khách đang đợi ở quầy - làm ngay</span></h5>
                 <div class="row g-2">
                     <div th:each="b : ${roomChecks}" class="col-md-6"
-                         th:with="assigned=${b.roomCheckAssignee}, isMine=${b.roomCheckAssignee != null and b.roomCheckAssignee.id == myId},
-                                  canReport=${!isHousekeeper or b.roomCheckAssignee == null or b.roomCheckAssignee.id == myId}">
-                        <div class="rc-card" th:classappend="${isMine} ? 'mine'">
+                         th:with="assigned=${b.roomCheckAssignee}, isMine=${b.roomCheckAssignee != null and b.roomCheckAssignee.id == myId}">
+                        <div class="rc-card" th:classappend="${(isMine ? 'mine ' : '') + (b.roomCheckStuck ? 'stuck' : '')}">
                             <div class="d-flex justify-content-between align-items-start gap-2">
                                 <div>
                                     <div class="fw-bold fs-5" th:text="'Phòng ' + ${b.room.roomNumber}"></div>
@@ -130,17 +131,27 @@
                                 <i class="bi bi-person"></i>
                                 <b th:if="${isMine}">Giao cho bạn</b>
                                 <span th:if="${assigned != null and !isMine}" th:text="'Giao: ' + ${assigned.fullName}"></span>
-                                <span th:if="${assigned == null}" class="text-muted">Báo chung - ai rảnh nhận</span>
+                                <span th:if="${b.roomCheckAccepted}" class="text-success" th:text="' · đã nhận lúc ' + ${#temporals.format(b.roomCheckAcceptedAt, 'HH:mm')}"></span>
+                                <span th:if="${!b.roomCheckAccepted and !b.roomCheckStuck}" class="text-muted"> · chưa nhận (quá 3 phút tự chuyển người)</span>
+                                <span th:if="${b.roomCheckAutoMoves > 0}" class="text-muted" th:text="' · đã tự chuyển ' + ${b.roomCheckAutoMoves} + ' lần'"></span>
                             </div>
+                            <div th:if="${b.roomCheckStuck}" class="small fw-semibold text-danger mt-1">
+                                <i class="bi bi-exclamation-octagon"></i> Không ai nhận - lễ tân chọn người hoặc tự kiểm</div>
                             <form sec:authorize="hasAnyRole('ADMIN','STAFF')" method="post" class="d-flex gap-1 mt-1"
                                   th:action="@{/admin/housekeeping/room-checks/{id}/assign(id=${b.id})}">
-                                <select name="assigneeId" class="form-select form-select-sm" aria-label="Đổi người kiểm" onchange="this.form.submit()">
-                                    <option value="">Báo chung (ai rảnh nhận)</option>
+                                <select name="assigneeId" class="form-select form-select-sm" aria-label="Đổi người kiểm" required onchange="this.form.submit()">
+                                    <option value="" th:if="${assigned == null}">-- Chọn người kiểm --</option>
                                     <option th:each="m : ${team}" th:value="${m.user.id}" th:selected="${assigned != null and assigned.id == m.user.id}"
                                             th:text="${m.user.fullName} + ' - ' + ${m.status()} + ' · ' + ${m.workload()}"></option>
                                 </select>
                             </form>
-                            <form th:if="${canReport}" method="post" th:action="@{/admin/housekeeping/room-checks/{id}(id=${b.id})}" class="mt-2">
+                            <!-- Nguoi duoc giao: bam Nhan kiem truoc, roi bao ket qua -->
+                            <form th:if="${isMine and !b.roomCheckAccepted}" method="post" class="mt-2"
+                                  th:action="@{/admin/housekeeping/room-checks/{id}/accept(id=${b.id}, mine=${mine})}">
+                                <button type="submit" class="btn btn-danger w-100"><i class="bi bi-person-walking me-1"></i>Nhận kiểm - đang lên phòng</button>
+                            </form>
+                            <form th:if="${!isHousekeeper or (isMine and b.roomCheckAccepted)}" method="post"
+                                  th:action="@{/admin/housekeeping/room-checks/{id}(id=${b.id})}" class="mt-2">
                                 <input type="hidden" name="mine" th:value="${mine}">
                                 <input type="text" name="note" class="form-control form-control-sm mb-1" maxlength="300"
                                        placeholder="Đồ mất / hư hỏng, minibar đã dùng (nếu có)">
@@ -166,14 +177,25 @@
                             <form sec:authorize="hasAnyRole('ADMIN','STAFF')" method="post" th:action="@{/admin/housekeeping/auto-assign}" class="m-0"
                                   th:if="${board.unassignedWaiting() > 0}">
                                 <button type="submit" class="btn btn-sm btn-primary"
-                                        title="Chia các phòng chưa giao cho người đang trong ca, phòng ưu tiên trước, ai ít việc nhận trước">
-                                    <i class="bi bi-shuffle me-1"></i><span th:text="'Tự chia ' + ${board.unassignedWaiting()} + ' phòng chưa giao'"></span></button>
+                                        title="Giao các phòng chưa có người cho người đang trong ca, phòng ưu tiên trước, ai ít việc nhận trước">
+                                    <i class="bi bi-shuffle me-1"></i><span th:text="'Giao ngay ' + ${board.unassignedWaiting()} + ' phòng chưa có người'"></span></button>
                             </form>
+                        </div>
+                        <!-- Phong nao cung phai co nguoi: he thong tu giao moi phut cho nguoi trong ca; khong ai trong ca thi bao do -->
+                        <div th:if="${board.unassignedWaiting() > 0}" class="alert alert-danger small py-2">
+                            <i class="bi bi-exclamation-octagon me-1"></i>
+                            <b th:text="${board.unassignedWaiting()} + ' phòng chưa có người dọn'"></b>
+                            <span th:if="${#lists.isEmpty(team.?[available()])}"> vì không có nhân viên buồng phòng nào trong ca. Hệ thống sẽ tự giao khi có người vào ca; cần gấp thì gọi người và giao tay.</span>
+                            <span th:unless="${#lists.isEmpty(team.?[available()])}"> - hệ thống sẽ tự giao trong 1 phút, hoặc bấm «Giao ngay».</span>
+                        </div>
+                        <div th:if="${board.notStartedLongCount() > 0}" class="alert alert-warning small py-2">
+                            <i class="bi bi-clock-history me-1"></i>
+                            <b th:text="${board.notStartedLongCount()} + ' phòng giao quá 20 phút chưa bắt đầu dọn'"></b> - gọi nhắc hoặc giao người khác (người được giao hết ca sẽ tự chuyển sau 30 phút).
                         </div>
                         <div class="btn-group btn-group-sm mb-3 flex-wrap hk-filter" role="group">
                             <button type="button" class="btn btn-outline-primary active" data-filter="all">Tất cả</button>
                             <button type="button" class="btn btn-outline-primary" data-filter="priority">Ưu tiên</button>
-                            <button type="button" class="btn btn-outline-primary" data-filter="unassigned">Chưa giao</button>
+                            <button type="button" class="btn btn-outline-primary" data-filter="unassigned">Chưa có người</button>
                             <button type="button" class="btn btn-outline-primary" data-filter="waiting">Chờ dọn</button>
                             <button type="button" class="btn btn-outline-primary" data-filter="cleaning">Đang dọn</button>
                             <button type="button" class="btn btn-outline-primary" data-filter="inspect">Chờ kiểm</button>
@@ -184,7 +206,7 @@
 
                         <div th:each="t : ${board.all()}" class="hk-task"
                              th:with="isMine=${t.assignee() != null and t.assignee().id == myId}"
-                             th:classappend="${'st-' + t.state() + (t.priority() ? ' priority' : '') + (isMine ? ' mine' : '')}"
+                             th:classappend="${'st-' + t.state() + (t.priority() ? ' priority' : '') + (isMine ? ' mine' : '') + (t.noOwner() ? ' no-owner' : '')}"
                              th:attr="data-state=${t.state()},data-priority=${t.priority()},data-unassigned=${t.assignee() == null}">
                             <div class="hk-num" th:title="'Phòng ' + ${t.room.roomNumber}">
                                 <span th:text="${t.room.roomNumber}"></span>
@@ -195,6 +217,7 @@
                                 <!-- Trang thai + thoi gian -->
                                 <div class="hk-line" th:if="${t.state() == 'waiting'}">
                                     <span th:if="${t.dirtyFor() != null}" th:text="'Chờ dọn ' + ${t.dirtyFor()} + ' (từ ' + ${#temporals.format(t.room.dirtySince, 'HH:mm dd/MM')} + ')'"></span>
+                                    <span th:if="${t.notStartedLong()}" class="hk-slow" th:text="' · giao ' + ${t.waitingForAssigneeMinutes()} + ' phút chưa bắt đầu'"></span>
                                 </div>
                                 <div class="hk-line" th:if="${t.state() == 'cleaning'}">
                                     <i class="bi bi-person-workspace"></i>
@@ -218,7 +241,7 @@
                                       th:action="@{/admin/housekeeping/{id}/assign(id=${t.room.id})}">
                                     <i class="bi bi-person text-muted"></i>
                                     <select name="assigneeId" class="form-select form-select-sm" aria-label="Giao cho" onchange="this.form.submit()">
-                                        <option value="">Chưa giao</option>
+                                        <option value="" th:if="${t.assignee() == null}">-- Chưa có người --</option>
                                         <option th:each="m : ${team}" th:value="${m.user.id}"
                                                 th:selected="${t.assignee() != null and t.assignee().id == m.user.id}"
                                                 th:text="${m.user.fullName} + (${m.available()} ? '' : ' (không trong ca)') + ' · ' + ${m.load()} + ' việc'"></option>
@@ -228,7 +251,7 @@
                                     <i class="bi bi-person"></i>
                                     <b th:if="${isMine}">Giao cho bạn</b>
                                     <span th:if="${t.assignee() != null and !isMine}" th:text="'Giao: ' + ${t.assignee().fullName}"></span>
-                                    <span th:if="${t.assignee() == null}" class="text-muted">Chưa giao - ai rảnh nhận</span>
+                                    <span th:if="${t.assignee() == null}" class="text-danger">Chưa có người - bạn rảnh thì bấm «Nhận dọn»</span>
                                 </div>
                             </div>
                             <!-- Nut theo trang thai -->

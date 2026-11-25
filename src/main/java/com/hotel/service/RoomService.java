@@ -258,6 +258,7 @@ public class RoomService {
         room.setCleaningBy(null);
         room.setCleaningStartedAt(null);
         room.setCleaningAssignee(null);
+        room.setCleaningAssignedAt(null);
         room.setInspectionRequestedAt(null);
         room.setInspectionNote(null);
         roomRepository.save(room);

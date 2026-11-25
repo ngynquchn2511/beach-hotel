@@ -81,7 +81,8 @@ class HousekeepingIT extends ItFixtures {
     @Test
     void roomCheckBeforeCheckout_housekeeperReportsDamage_frontDeskSeesIt() throws Exception {
         User housekeeper = persistUser(UserRole.HOUSEKEEPER, null);
-        mockMvc.perform(post("/admin/bookings/{id}/room-check", leaving.getId()).with(csrf()).with(as(staff)))
+        mockMvc.perform(post("/admin/bookings/{id}/room-check", leaving.getId()).with(csrf()).with(as(staff))
+                        .param("assigneeId", housekeeper.getId().toString()))
                 .andExpect(redirectedUrl("/admin/bookings/" + leaving.getId() + "/check-out#kiem-phong"));
         Booking b = bookingRepository.findById(leaving.getId()).orElseThrow();
         assertThat(b.isRoomCheckPending()).isTrue();

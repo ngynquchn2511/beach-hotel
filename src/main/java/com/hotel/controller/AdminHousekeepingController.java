@@ -57,13 +57,21 @@ public class AdminHousekeepingController {
         return back(false);
     }
 
+    // Nguoi duoc giao bam "Nhan kiem" - dang len phong
+    @PostMapping("/room-checks/{bookingId}/accept")
+    public String acceptRoomCheck(@PathVariable Long bookingId, @RequestParam(defaultValue = "false") boolean mine,
+                                  @AuthenticationPrincipal CustomUserDetails user, RedirectAttributes redirectAttributes) {
+        return run(() -> housekeepingService.acceptRoomCheck(bookingId, staff(user)), "Đã nhận kiểm - lễ tân biết bạn đang lên phòng",
+                redirectAttributes, mine);
+    }
+
     // Doi nguoi kiem phong truoc khi tra (yeu cau dang cho)
     @PostMapping("/room-checks/{bookingId}/assign")
     public String assignRoomCheck(@PathVariable Long bookingId, @RequestParam(required = false) Long assigneeId,
                                   @RequestParam(required = false) String back,
                                   @AuthenticationPrincipal CustomUserDetails user, RedirectAttributes redirectAttributes) {
         String view = run(() -> housekeepingService.assignRoomCheck(bookingId, assigneeId, staffName(user)),
-                assigneeId != null ? "Đã đổi người kiểm phòng" : "Đã bỏ giao, báo chung cho buồng phòng", redirectAttributes, false);
+                "Đã đổi người kiểm phòng", redirectAttributes, false);
         return "checkout".equals(back) ? "redirect:/admin/bookings/" + bookingId + "/check-out#kiem-phong" : view;
     }
 

@@ -79,7 +79,16 @@ class HousekeepingTeamIT extends ItFixtures {
                 .andExpect(redirectedUrl("/admin/bookings/" + leaving.getId() + "/check-out#kiem-phong"));
         assertThat(reload().getRoomCheckAssignee().getId()).isEqualTo(lan.getId());
         mockMvc.perform(get("/admin/bookings/{id}/check-out", leaving.getId()).with(as(staff)))
-                .andExpect(content().string(containsString("Đang chờ " + lan.getFullName() + " kiểm phòng")));
+                .andExpect(content().string(containsString("Đã giao " + lan.getFullName() + " - chờ bấm «Nhận kiểm»")));
+
+        // Lan bam "Nhan kiem" -> le tan thay dang len phong; Mai (nguoi cu) khong nhan thay duoc
+        mockMvc.perform(post("/admin/housekeeping/room-checks/{id}/accept", leaving.getId()).with(csrf()).with(as(mai)))
+                .andExpect(flash().attribute("errorMessage", containsString("đã giao cho " + lan.getFullName())));
+        mockMvc.perform(post("/admin/housekeeping/room-checks/{id}/accept", leaving.getId()).with(csrf()).with(as(lan)))
+                .andExpect(flash().attribute("successMessage", containsString("Đã nhận kiểm")));
+        assertThat(reload().isRoomCheckAccepted()).isTrue();
+        mockMvc.perform(get("/admin/bookings/{id}/check-out", leaving.getId()).with(as(staff)))
+                .andExpect(content().string(containsString(lan.getFullName() + " đang lên kiểm phòng")));
 
         mockMvc.perform(post("/admin/housekeeping/room-checks/{id}", leaving.getId()).with(csrf()).with(as(lan))
                         .param("issue", "true").param("note", "Uống 2 lon bia minibar"))
@@ -93,17 +102,82 @@ class HousekeepingTeamIT extends ItFixtures {
     }
 
     @Test
-    void roomCheck_assigneeMustBeHousekeeper_unassignedMeansAnyone() throws Exception {
+    void roomCheck_alwaysHasOwner_noOneOnShift_frontDeskChecksItself() throws Exception {
+        // Chi giao cho tai khoan buong phong
         mockMvc.perform(post("/admin/bookings/{id}/room-check", leaving.getId()).with(csrf()).with(as(staff))
                         .param("assigneeId", staff.getId().toString()))
                 .andExpect(flash().attribute("errorMessage", containsString("Buồng phòng")));
+        // Khong chon ai + khong ai trong ca -> khong "bao chung" ma bao loi
+        mockMvc.perform(post("/admin/bookings/{id}/room-check", leaving.getId()).with(csrf()).with(as(staff)))
+                .andExpect(flash().attribute("errorMessage", containsString("lễ tân tự kiểm")));
         assertThat(reload().getRoomCheckRequestedAt()).isNull();
 
-        mockMvc.perform(post("/admin/bookings/{id}/room-check", leaving.getId()).with(csrf()).with(as(staff)))
-                .andExpect(flash().attribute("successMessage", containsString("báo chung")));
-        assertThat(reload().getRoomCheckAssignee()).isNull();
-        mockMvc.perform(post("/admin/housekeeping/room-checks/{id}", leaving.getId()).with(csrf()).with(as(offShift)).param("issue", "false"))
-                .andExpect(flash().attribute("successMessage", containsString("Đã báo")));
+        // Khong chon ai nhung co nguoi trong ca -> he thong giao nguoi do
+        onCurrentShift(mai);
+        mockMvc.perform(post("/admin/bookings/{id}/room-check", leaving.getId()).with(csrf()).with(as(staff)));
+        assertThat(reload().getRoomCheckAssignee().getId()).isEqualTo(mai.getId());
+
+        // Le tan tu kiem va ghi ket qua
+        mockMvc.perform(post("/admin/bookings/{id}/room-check/self", leaving.getId()).with(csrf()).with(as(staff))
+                        .param("issue", "true").param("note", "Vỡ 1 ly"))
+                .andExpect(redirectedUrl("/admin/bookings/" + leaving.getId() + "/check-out#kiem-phong"));
+        Booking b = reload();
+        assertThat(b.isRoomCheckDone()).isTrue();
+        assertThat(b.getRoomCheckNote()).isEqualTo("Vỡ 1 ly");
+        assertThat(b.getRoomCheckedBy()).contains("lễ tân");
+        mockMvc.perform(post("/admin/bookings/{id}/room-check/self", leaving.getId()).with(csrf()).with(as(lan))
+                .param("issue", "false")).andExpect(status().isForbidden());
+    }
+
+    // Qua 3 phut chua bam "Nhan kiem" -> chuyen nguoi khac trong ca; het nguoi -> bao le tan (khong treo mai)
+    @Test
+    void roomCheck_notAccepted_escalatesThenGivesUp() throws Exception {
+        onCurrentShift(lan);
+        onCurrentShift(mai);
+        mockMvc.perform(post("/admin/bookings/{id}/room-check", leaving.getId()).with(csrf()).with(as(staff))
+                .param("assigneeId", lan.getId().toString()));
+        LocalDateTime now = LocalDateTime.now();
+        assertThat(housekeepingService.escalateRoomChecks(now.plusMinutes(1))).isZero();
+
+        assertThat(housekeepingService.escalateRoomChecks(now.plusMinutes(4))).isEqualTo(1);
+        assertThat(reload().getRoomCheckAssignee().getId()).isEqualTo(mai.getId());
+        assertThat(reload().getRoomCheckAutoMoves()).isEqualTo(1);
+
+        // Mai cung khong nhan -> chuyen lai Lan (nguoi khac Mai), lan 3 thi bo cuoc, bao le tan
+        housekeepingService.escalateRoomChecks(now.plusMinutes(8));
+        assertThat(reload().getRoomCheckAssignee().getId()).isEqualTo(lan.getId());
+        housekeepingService.escalateRoomChecks(now.plusMinutes(12));
+        assertThat(reload().isRoomCheckStuck()).isTrue();
+        assertThat(housekeepingService.escalateRoomChecks(now.plusMinutes(20))).isZero();
+        mockMvc.perform(get("/admin/bookings/{id}/check-out", leaving.getId()).with(as(staff)))
+                .andExpect(content().string(containsString("Không ai nhận kiểm phòng")));
+
+        // Da nhan thi khong tu chuyen nua
+        mockMvc.perform(post("/admin/housekeeping/room-checks/{id}/assign", leaving.getId()).with(csrf()).with(as(staff))
+                .param("assigneeId", mai.getId().toString()));
+        assertThat(reload().isRoomCheckStuck()).isFalse();
+        housekeepingService.acceptRoomCheck(leaving.getId(), mai);
+        assertThat(housekeepingService.escalateRoomChecks(now.plusMinutes(30))).isZero();
+        assertThat(reload().getRoomCheckAssignee().getId()).isEqualTo(mai.getId());
+    }
+
+    // Khach tra phong -> phong cho don duoc giao ngay cho nguoi trong ca; nguoi het ca chua bat dau -> chuyen nguoi khac
+    @Test
+    void checkout_assignsRoomImmediately_andHandsOverWhenAssigneeOffShift() throws Exception {
+        onCurrentShift(mai);
+        mockMvc.perform(post("/admin/bookings/{id}/check-out", leaving.getId()).with(csrf()).with(as(staff))
+                .param("paymentMethod", "CASH"));
+        Room room = roomRepository.findById(leaving.getRoom().getId()).orElseThrow();
+        assertThat(room.getStatus()).isEqualTo(RoomStatus.NOT_READY);
+        assertThat(room.getCleaningAssignee().getId()).isEqualTo(mai.getId());
+        assertThat(room.getCleaningAssignedAt()).isNotNull();
+
+        // Giao cho nguoi khong trong ca, 31 phut sau van chua bat dau -> chuyen cho Mai
+        room.setCleaningAssignee(offShift);
+        room.setCleaningAssignedAt(LocalDateTime.now().minusMinutes(31));
+        roomRepository.save(room);
+        assertThat(housekeepingService.dispatchRooms(LocalDateTime.now(), null)).isEqualTo(1);
+        assertThat(roomRepository.findById(room.getId()).orElseThrow().getCleaningAssignee().getId()).isEqualTo(mai.getId());
     }
 
     @Test

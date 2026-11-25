@@ -336,7 +336,22 @@ public class AdminBookingController {
             Booking b = housekeepingService.requestRoomCheck(id, user != null ? user.getUser().getFullName() : null, assigneeId);
             redirectAttributes.addFlashAttribute("successMessage", b.getRoomCheckAssignee() != null
                     ? "Đã giao " + b.getRoomCheckAssignee().getFullName() + " kiểm phòng " + b.getRoom().getRoomNumber()
-                    : "Đã báo chung cho buồng phòng kiểm phòng");
+                    : "Đã giao kiểm phòng");
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "redirect:/admin/bookings/" + id + "/check-out#kiem-phong";
+    }
+
+    // Le tan tu kiem phong (khong co / khong ai nhan kiem): ghi ket qua ngay
+    @PostMapping("/{id}/room-check/self")
+    public String selfRoomCheck(@PathVariable Long id, @RequestParam(defaultValue = "false") boolean issue,
+                                @RequestParam(required = false) String note,
+                                @org.springframework.security.core.annotation.AuthenticationPrincipal com.hotel.security.CustomUserDetails user,
+                                RedirectAttributes redirectAttributes) {
+        try {
+            housekeepingService.frontDeskCheck(id, issue, note, user != null ? user.getUser().getFullName() : null);
+            redirectAttributes.addFlashAttribute("successMessage", issue ? "Đã ghi đồ mất / hư hỏng - thêm phụ phí bên dưới" : "Đã ghi: phòng không mất / hỏng gì");
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
@@ -377,6 +392,12 @@ public class AdminBookingController {
                            RedirectAttributes redirectAttributes) {
         try {
             paymentService.checkOutWithPayment(id, paymentMethod);
+            // Phong vua thanh "Cho don" -> giao ngay cho nguoi buong phong dang trong ca (khong doi lich chay moi phut)
+            try {
+                housekeepingService.dispatchRooms(java.time.LocalDateTime.now(), null);
+            } catch (RuntimeException ignored) {
+                // khong chan tra phong; lich chay moi phut se giao lai
+            }
             redirectAttributes.addFlashAttribute("successMessage", "Check-out thành công. Bạn có thể xuất hóa đơn cho khách.");
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
