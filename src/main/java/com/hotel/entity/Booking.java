@@ -413,9 +413,21 @@ public class Booking {
     @Column(name = "room_check_note", length = 300)
     private String roomCheckNote;
 
+    // Nhan vien buong phong le tan giao di kiem (null = bao chung, ai trong ca nhan cung duoc)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "room_check_assignee_id")
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private User roomCheckAssignee;
+
     // Da yeu cau kiem phong, buong phong chua bao ket qua
     public boolean isRoomCheckPending() {
         return roomCheckRequestedAt != null && roomCheckedAt == null;
+    }
+
+    // Yeu cau kiem da cho bao nhieu phut
+    public long getRoomCheckWaitingMinutes() {
+        return roomCheckRequestedAt == null ? 0
+                : Math.max(0, java.time.Duration.between(roomCheckRequestedAt, LocalDateTime.now()).toMinutes());
     }
 
     public boolean isRoomCheckDone() {

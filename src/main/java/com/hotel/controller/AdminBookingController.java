@@ -241,6 +241,10 @@ public class AdminBookingController {
         model.addAttribute("depositPaid", booking.getDepositPaidAmount());
         model.addAttribute("amountDue", paymentService.amountDue(booking));
         model.addAttribute("chargeTypes", ChargeType.manualTypes());
+        // Kiem phong truoc khi tra: danh sach buong phong (ai trong ca, dang giu bao nhieu viec) + nguoi nen giao
+        java.util.List<com.hotel.service.HousekeepingService.Member> hkTeam = housekeepingService.team(java.time.LocalDateTime.now());
+        model.addAttribute("hkTeam", hkTeam);
+        model.addAttribute("hkSuggested", com.hotel.service.HousekeepingService.recommended(hkTeam));
         // Khach o qua ngay tra: hien bao gia cac dem o them ngay dau trang, bat buoc tinh (hoac mien) truoc khi thu tien
         long overdue = stayExtensionService.overdueNights(booking);
         model.addAttribute("overdueNights", overdue);
@@ -325,12 +329,14 @@ public class AdminBookingController {
 
     // Yeu cau nhan vien buong phong kiem phong (do mat / hu hong) truoc khi tinh tien tra phong
     @PostMapping("/{id}/room-check")
-    public String requestRoomCheck(@PathVariable Long id,
+    public String requestRoomCheck(@PathVariable Long id, @RequestParam(required = false) Long assigneeId,
                                    @org.springframework.security.core.annotation.AuthenticationPrincipal com.hotel.security.CustomUserDetails user,
                                    RedirectAttributes redirectAttributes) {
         try {
-            housekeepingService.requestRoomCheck(id, user != null ? user.getUser().getFullName() : null);
-            redirectAttributes.addFlashAttribute("successMessage", "Đã báo buồng phòng kiểm phòng");
+            Booking b = housekeepingService.requestRoomCheck(id, user != null ? user.getUser().getFullName() : null, assigneeId);
+            redirectAttributes.addFlashAttribute("successMessage", b.getRoomCheckAssignee() != null
+                    ? "Đã giao " + b.getRoomCheckAssignee().getFullName() + " kiểm phòng " + b.getRoom().getRoomNumber()
+                    : "Đã báo chung cho buồng phòng kiểm phòng");
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }

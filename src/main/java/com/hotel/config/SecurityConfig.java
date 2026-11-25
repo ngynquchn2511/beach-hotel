@@ -144,7 +144,8 @@ public class SecurityConfig {
                         // Buong phong: don phong, bao hong / bao tri, do that lac
                         // Phan cong / kiem phong / cai dat: le tan, quan ly
                         .requestMatchers("/admin/housekeeping/*/assign", "/admin/housekeeping/*/inspect/**",
-                                "/admin/housekeeping/settings", "/admin/housekeeping/stats").hasAnyRole("ADMIN", "STAFF")
+                                "/admin/housekeeping/settings", "/admin/housekeeping/stats", "/admin/housekeeping/auto-assign",
+                                "/admin/housekeeping/room-checks/*/assign").hasAnyRole("ADMIN", "STAFF")
                         // Thong bao tuc thoi: le tan va buong phong (moi vai tro chi nhan thong bao cua minh)
                         .requestMatchers("/admin/notifications/**").hasAnyRole("ADMIN", "STAFF", "HOUSEKEEPER")
                         .requestMatchers("/admin/housekeeping", "/admin/housekeeping/**", "/admin/maintenance", "/admin/maintenance/**",

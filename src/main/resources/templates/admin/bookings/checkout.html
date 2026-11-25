@@ -13,6 +13,19 @@
         .method-option .bi { font-size: 1.6rem; }
         .qr-box img { width: 260px; max-width: 100%; }
         .section-anchor { scroll-margin-top: 90px; }
+        /* Chon nguoi kiem phong */
+        .rc-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; }
+        .rc-person { display: flex; align-items: center; gap: 10px; border: 1.5px solid #d6ebf8; border-radius: 10px; padding: 8px 10px; cursor: pointer; margin: 0; }
+        .rc-person:has(input:checked) { border-color: var(--baby-deep); background: var(--baby-soft); box-shadow: 3px 3px 0 var(--baby); }
+        .rc-person.off { opacity: .7; }
+        .rc-avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--ink); color: #fff; display: inline-flex;
+                     align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; }
+        .rc-dot { font-size: .5rem; vertical-align: 2px; color: #adb5bd; }
+        .rc-dot.on { color: #2f9e44; }
+        .rc-dot.late { color: #f08c00; }
+        .rc-pending { border: 1.5px solid #f2cf6b; background: #fff8e1; border-radius: 10px; padding: 10px 12px; }
+        .rc-pick summary { cursor: pointer; }
+        .min-w-0 { min-width: 0; }
     </style>
 </head>
 <body class="eaut eaut-admin">
@@ -117,32 +130,90 @@
                 </table>
             </div>
 
-            <!-- Kiem phong truoc khi tra: buong phong kiem do mat / hu hong, le tan dua vao do them phu phi -->
+            <!-- Kiem phong truoc khi tra: le tan chon 1 nhan vien buong phong (ai trong ca, dang ranh) di kiem do mat / hu hong -->
             <div class="bg-white p-4 rounded shadow-sm mb-4 section-anchor" id="kiem-phong">
-                <h6 class="fw-bold mb-3">Kiểm tra phòng (đồ mất / hư hỏng)</h6>
-                <th:block th:if="${booking.roomCheckRequestedAt == null}">
-                    <p class="text-muted small mb-2">Chưa yêu cầu kiểm phòng. Báo buồng phòng kiểm minibar, đồ dùng, hư hỏng trước khi tính tiền.</p>
-                </th:block>
-                <div th:if="${booking.roomCheckPending}" class="alert alert-warning small mb-2">
-                    <i class="bi bi-hourglass-split me-1"></i>Đang chờ buồng phòng kiểm (yêu cầu lúc
-                    <span th:text="${#temporals.format(booking.roomCheckRequestedAt, 'HH:mm dd/MM')}"></span>).
+                <h6 class="fw-bold mb-3">Kiểm tra phòng (minibar, đồ mất / hư hỏng)</h6>
+
+                <!-- Dang cho kiem -->
+                <div th:if="${booking.roomCheckPending}" class="rc-pending mb-3">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <i class="bi bi-hourglass-split fs-5"></i>
+                        <div>
+                            <div class="fw-semibold">
+                                <span th:if="${booking.roomCheckAssignee != null}" th:text="'Đang chờ ' + ${booking.roomCheckAssignee.fullName} + ' kiểm phòng ' + ${booking.room.roomNumber}"></span>
+                                <span th:unless="${booking.roomCheckAssignee != null}">Đã báo chung - chờ người trong ca nhận kiểm</span>
+                            </div>
+                            <div class="small text-muted"
+                                 th:text="|Yêu cầu lúc ${#temporals.format(booking.roomCheckRequestedAt, 'HH:mm')} bởi ${booking.roomCheckRequestedBy != null ? booking.roomCheckRequestedBy : 'lễ tân'} · đã chờ ${booking.roomCheckWaitingMinutes} phút|"></div>
+                        </div>
+                        <span th:if="${booking.roomCheckWaitingMinutes >= 10}" class="badge bg-danger ms-auto">Quá 10 phút - gọi nhắc</span>
+                    </div>
+                    <form th:unless="${#lists.isEmpty(hkTeam)}" method="post" class="d-flex gap-2 mt-2 flex-wrap"
+                          th:action="@{/admin/housekeeping/room-checks/{id}/assign(id=${booking.id}, back='checkout')}">
+                        <select name="assigneeId" class="form-select form-select-sm w-auto" aria-label="Đổi người kiểm">
+                            <option value="">Báo chung (ai rảnh nhận)</option>
+                            <option th:each="m : ${hkTeam}" th:value="${m.user.id}"
+                                    th:selected="${booking.roomCheckAssignee != null and booking.roomCheckAssignee.id == m.user.id}"
+                                    th:text="${m.user.fullName} + ' - ' + ${m.status()} + ' · ' + ${m.workload()}"></option>
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-repeat me-1"></i>Đổi người kiểm</button>
+                    </form>
                 </div>
+
+                <!-- Da co ket qua -->
                 <th:block th:if="${booking.roomCheckDone}">
-                    <div th:if="${booking.roomCheckHasIssue}" class="alert alert-danger small mb-2">
+                    <div th:if="${booking.roomCheckHasIssue}" class="alert alert-danger small mb-3">
                         <i class="bi bi-exclamation-triangle me-1"></i><b>Có đồ mất / hư hỏng:</b>
                         <span th:text="${booking.roomCheckNote}"></span>
-                        <div class="text-muted" th:text="|${booking.roomCheckedBy} · ${#temporals.format(booking.roomCheckedAt, 'HH:mm dd/MM')}|"></div>
+                        <div class="text-muted" th:text="|${booking.roomCheckedBy} · ${#temporals.format(booking.roomCheckedAt, 'HH:mm dd/MM')} - thêm phụ phí ở khung bên dưới|"></div>
                     </div>
-                    <div th:unless="${booking.roomCheckHasIssue}" class="alert alert-success small mb-2">
+                    <div th:unless="${booking.roomCheckHasIssue}" class="alert alert-success small mb-3">
                         <i class="bi bi-check2-circle me-1"></i>Không mất / hỏng gì<span th:if="${booking.roomCheckNote}" th:text="' - ' + ${booking.roomCheckNote}"></span>
                         <div class="text-muted" th:text="|${booking.roomCheckedBy} · ${#temporals.format(booking.roomCheckedAt, 'HH:mm dd/MM')}|"></div>
                     </div>
                 </th:block>
-                <form th:unless="${paid}" method="post" th:action="@{/admin/bookings/{id}/room-check(id=${booking.id})}">
-                    <button type="submit" class="btn btn-sm btn-outline-primary">
-                        <i class="bi bi-clipboard-check me-1"></i><span th:text="${booking.roomCheckRequestedAt == null} ? 'Yêu cầu buồng phòng kiểm phòng' : 'Yêu cầu kiểm lại'"></span>
-                    </button>
-                </form>
+
+                <!-- Chon nguoi di kiem (lan dau, hoac kiem lai) -->
+                <th:block th:if="${!paid and !booking.roomCheckPending}">
+                    <p th:if="${booking.roomCheckRequestedAt == null}" class="text-muted small mb-2">
+                        Chọn 1 nhân viên buồng phòng đi kiểm minibar, đồ dùng, hư hỏng trước khi tính tiền. Người được chọn nhận thông báo ngay;
+                        người đang trong ca và ít việc nhất được gợi ý sẵn.</p>
+                    <details th:open="${booking.roomCheckRequestedAt == null}" class="rc-pick">
+                        <summary th:unless="${booking.roomCheckRequestedAt == null}" class="small fw-semibold mb-2">Yêu cầu kiểm lại</summary>
+                        <form method="post" th:action="@{/admin/bookings/{id}/room-check(id=${booking.id})}">
+                            <div class="rc-list">
+                                <label th:each="m : ${hkTeam}" class="rc-person" th:classappend="${m.available() ? '' : 'off'}">
+                                    <input type="radio" name="assigneeId" class="form-check-input" th:value="${m.user.id}"
+                                           th:checked="${hkSuggested != null and hkSuggested.user.id == m.user.id}">
+                                    <span class="rc-avatar" th:text="${#strings.substring(m.user.fullName, m.user.fullName.lastIndexOf(' ') + 1, m.user.fullName.lastIndexOf(' ') + 2)}"></span>
+                                    <span class="flex-grow-1 min-w-0">
+                                        <span class="fw-semibold d-block">
+                                            <span th:text="${m.user.fullName}"></span>
+                                            <span th:if="${hkSuggested != null and hkSuggested.user.id == m.user.id}" class="badge bg-success-subtle text-success-emphasis">Gợi ý</span>
+                                        </span>
+                                        <span class="small d-block">
+                                            <i class="bi bi-circle-fill rc-dot" th:classappend="${m.present ? 'on' : (m.onShift ? 'late' : '')}"></i>
+                                            <span th:text="${m.status()}"></span>
+                                            <span class="text-muted" th:text="' · ' + ${m.workload()}"></span>
+                                        </span>
+                                    </span>
+                                </label>
+                                <label class="rc-person">
+                                    <input type="radio" name="assigneeId" value="" class="form-check-input" th:checked="${hkSuggested == null}">
+                                    <span class="rc-avatar"><i class="bi bi-megaphone"></i></span>
+                                    <span class="flex-grow-1">
+                                        <span class="fw-semibold d-block">Báo chung cả buồng phòng</span>
+                                        <span class="small text-muted d-block">Ai trong ca rảnh thì nhận kiểm</span>
+                                    </span>
+                                </label>
+                            </div>
+                            <p th:if="${#lists.isEmpty(hkTeam)}" class="small text-warning-emphasis mb-2">Chưa có tài khoản Buồng phòng nào - yêu cầu sẽ báo chung.</p>
+                            <button type="submit" class="btn btn-sm btn-primary mt-2">
+                                <i class="bi bi-clipboard-check me-1"></i><span th:text="${booking.roomCheckRequestedAt == null} ? 'Giao kiểm phòng' : 'Giao kiểm lại'"></span>
+                            </button>
+                        </form>
+                    </details>
+                </th:block>
             </div>
 
             <!-- Phu phi phat sinh: chi them/xoa khi chua thanh toan -->

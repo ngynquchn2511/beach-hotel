@@ -84,11 +84,50 @@ public class HousekeepingService {
         public User assignee() {
             return room.getCleaningAssignee();
         }
+
+        // Da dang don bao lau (phut) - qua 45 phut to do de quan ly de y
+        public long cleaningMinutes() {
+            return room.getCleaningStartedAt() == null ? 0
+                    : Math.max(0, java.time.Duration.between(room.getCleaningStartedAt(), LocalDateTime.now()).toMinutes());
+        }
+
+        public boolean slow() {
+            return room.isBeingCleaned() && cleaningMinutes() > 45;
+        }
+
+        // Phong ban bao lau roi, VD "35 phút", "3 giờ", "1 ngày"
+        public String dirtyFor() {
+            if (room.getDirtySince() == null) {
+                return null;
+            }
+            long m = Math.max(0, java.time.Duration.between(room.getDirtySince(), LocalDateTime.now()).toMinutes());
+            return m < 60 ? m + " phút" : m < 24 * 60 ? (m / 60) + " giờ" : (m / (24 * 60)) + " ngày";
+        }
+
+        public String state() {
+            return room.isAwaitingInspection() ? "inspect" : room.isBeingCleaned() ? "cleaning" : "waiting";
+        }
     }
 
     public record Board(List<Task> waiting, List<Task> inProgress, List<Task> awaitingInspection, List<Room> cleanedToday) {
         public int total() {
             return waiting.size() + inProgress.size() + awaitingInspection.size();
+        }
+
+        // Danh sach 1 cot: dang don, cho kiem, roi cho don (moi nhom da xep uu tien truoc)
+        public List<Task> all() {
+            List<Task> out = new java.util.ArrayList<>(inProgress);
+            out.addAll(awaitingInspection);
+            out.addAll(waiting);
+            return out;
+        }
+
+        public long priorityCount() {
+            return all().stream().filter(Task::priority).count();
+        }
+
+        public long unassignedWaiting() {
+            return waiting.stream().filter(t -> t.assignee() == null).count();
         }
     }
 
@@ -132,6 +171,138 @@ public class HousekeepingService {
     @Transactional(readOnly = true)
     public long countDirty() {
         return roomRepository.findByStatus(RoomStatus.NOT_READY).size();
+    }
+
+    // ===== Doi buong phong: ai dang trong ca, dang giu bao nhieu viec -> goi y nguoi giao =====
+
+    private StaffShiftService shiftService;
+
+    @Autowired
+    void setShiftService(StaffShiftService shiftService) {
+        this.shiftService = shiftService;
+    }
+
+    // onShift: co ten trong lich truc ca hien tai; present: dang thao tac tren he thong (da cham cong vao, chua het ca)
+    // assigned: phong chua sach dang giao cho nguoi nay; cleaning: trong do dang don; checks: phong khach sap tra cho kiem
+    public record Member(User user, boolean onShift, boolean present, String shiftLabel,
+                         long assigned, long cleaning, long checks, long doneToday) {
+        public long load() {
+            return assigned + checks;
+        }
+
+        public boolean available() {
+            return onShift || present;
+        }
+
+        public String status() {
+            if (present) {
+                return "Đang làm" + (shiftLabel != null ? " · " + shiftLabel.toLowerCase() : "");
+            }
+            if (onShift) {
+                return "Trong ca, chưa vào";
+            }
+            return shiftLabel != null ? "Hôm nay làm " + shiftLabel.toLowerCase() : "Không trong ca";
+        }
+
+        public String workload() {
+            if (load() == 0) {
+                return "Đang rảnh";
+            }
+            StringBuilder sb = new StringBuilder();
+            if (cleaning > 0) {
+                sb.append("đang dọn ").append(cleaning);
+            }
+            long queued = assigned - cleaning;
+            if (queued > 0) {
+                sb.append(sb.isEmpty() ? "" : " · ").append("chờ ").append(queued).append(" phòng");
+            }
+            if (checks > 0) {
+                sb.append(sb.isEmpty() ? "" : " · ").append("kiểm ").append(checks);
+            }
+            String s = sb.toString();
+            return Character.toUpperCase(s.charAt(0)) + s.substring(1);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public List<Member> team(LocalDateTime now) {
+        java.util.Set<Long> onShift = new java.util.HashSet<>();
+        java.util.Set<Long> present = new java.util.HashSet<>();
+        Map<String, String> shiftByName = new java.util.HashMap<>();
+        String currentShift = null;
+        if (shiftService != null) {
+            StaffShiftService.OnDuty duty = shiftService.onDuty(now);
+            currentShift = duty.shift() != null ? duty.shift().getLabel() : null;
+            for (StaffShiftService.Duty d : duty.scheduled()) {
+                onShift.add(d.staff().getId());
+                if (d.present()) {
+                    present.add(d.staff().getId());
+                }
+            }
+            duty.extra().forEach(d -> present.add(d.staff().getId()));
+            duty.dayRoster().forEach((shift, names) -> names.forEach(n -> shiftByName.putIfAbsent(n, shift.getLabel())));
+        }
+        List<Room> dirty = roomRepository.findByStatus(RoomStatus.NOT_READY);
+        List<Booking> checks = pendingRoomChecks();
+        Map<Long, Long> done = logRepository == null ? Map.of()
+                : logRepository.findBetween(now.toLocalDate().atStartOfDay(), now.toLocalDate().plusDays(1).atStartOfDay()).stream()
+                .filter(l -> l.getCleaner() != null && l.getResult() != com.hotel.entity.HousekeepingLog.Result.FAILED)
+                .collect(Collectors.groupingBy(l -> l.getCleaner().getId(), Collectors.counting()));
+        String current = currentShift;
+        return housekeepers().stream().map(u -> {
+            Long id = u.getId();
+            long assigned = dirty.stream().filter(r -> r.getCleaningAssignee() != null && r.getCleaningAssignee().getId().equals(id)).count();
+            long cleaning = dirty.stream().filter(r -> r.isBeingCleaned() && r.getCleaningAssignee() != null
+                    && r.getCleaningAssignee().getId().equals(id)).count();
+            long check = checks.stream().filter(b -> b.getRoomCheckAssignee() != null && b.getRoomCheckAssignee().getId().equals(id)).count();
+            String label = onShift.contains(id) ? current : shiftByName.get(u.getFullName());
+            return new Member(u, onShift.contains(id), present.contains(id), label, assigned, cleaning, check, done.getOrDefault(id, 0L));
+        }).sorted(Comparator.comparing((Member m) -> !m.present())
+                .thenComparing(m -> !m.onShift())
+                .thenComparing(Member::load)
+                .thenComparing(m -> m.user().getFullName())).toList();
+    }
+
+    // Nguoi nen giao: dang trong ca / dang lam va it viec nhat (team da sap xep san)
+    public static Member recommended(List<Member> team) {
+        return team.stream().filter(Member::available).findFirst().orElse(null);
+    }
+
+    // Chia cac phong cho don chua giao ai cho nhung nguoi dang trong ca, phong uu tien truoc, nguoi it viec nhat nhan truoc
+    @Transactional
+    public int autoAssign(String byName, LocalDateTime now) {
+        List<Member> available = team(now).stream().filter(Member::available).toList();
+        if (available.isEmpty()) {
+            throw new BusinessException("Chưa có nhân viên buồng phòng nào trong ca - giao tay từng phòng");
+        }
+        List<Task> open = board(now.toLocalDate()).waiting().stream().filter(t -> t.assignee() == null).toList();
+        if (open.isEmpty()) {
+            throw new BusinessException("Không còn phòng chờ dọn nào chưa giao");
+        }
+        Map<Long, Long> load = new java.util.HashMap<>();
+        available.forEach(m -> load.put(m.user().getId(), m.load()));
+        Map<Long, List<String>> given = new java.util.LinkedHashMap<>();
+        for (Task t : open) {
+            Member pick = available.stream()
+                    .min(Comparator.comparing((Member m) -> load.get(m.user().getId())).thenComparing(m -> !m.present()))
+                    .orElseThrow();
+            Room room = t.room();
+            room.setCleaningAssignee(pick.user());
+            roomRepository.save(room);
+            load.merge(pick.user().getId(), 1L, Long::sum);
+            given.computeIfAbsent(pick.user().getId(), k -> new java.util.ArrayList<>())
+                    .add(room.getRoomNumber() + (t.priority() ? " (ưu tiên)" : ""));
+        }
+        given.forEach((userId, rooms) -> notify(EnumSet.of(Audience.HOUSEKEEPING), userId, Level.INFO,
+                "Bạn được giao dọn " + rooms.size() + " phòng", "Phòng " + String.join(", ", rooms)
+                        + (byName != null ? " · giao bởi " + byName : "")));
+        return open.size();
+    }
+
+    private User requireHousekeeper(Long userId) {
+        return userRepository.findById(userId)
+                .filter(u -> u.getRole() == UserRole.HOUSEKEEPER && !Boolean.TRUE.equals(u.getLocked()))
+                .orElseThrow(() -> new BusinessException("Chỉ giao cho tài khoản Buồng phòng đang hoạt động"));
     }
 
     public List<User> housekeepers() {
@@ -281,25 +452,66 @@ public class HousekeepingService {
     // Le tan mo man hinh tra phong -> yeu cau buong phong kiem phong cua don dang o (yeu cau lai thi xoa ket qua cu)
     @Transactional
     public Booking requestRoomCheck(Long bookingId, String byName) {
+        return requestRoomCheck(bookingId, byName, null);
+    }
+
+    // assigneeId: nhan vien buong phong duoc giao kiem (null = bao chung cho ca buong phong)
+    @Transactional
+    public Booking requestRoomCheck(Long bookingId, String byName, Long assigneeId) {
         Booking booking = requireStaying(bookingId);
+        User assignee = assigneeId != null ? requireHousekeeper(assigneeId) : null;
         booking.setRoomCheckRequestedAt(LocalDateTime.now());
         booking.setRoomCheckRequestedBy(byName);
+        booking.setRoomCheckAssignee(assignee);
         booking.setRoomCheckedAt(null);
         booking.setRoomCheckedBy(null);
         booking.setRoomCheckIssue(null);
         booking.setRoomCheckNote(null);
         bookingRepository.save(booking);
-        notify(EnumSet.of(Audience.HOUSEKEEPING), null, Level.WARNING, "Kiểm phòng " + booking.getRoom().getRoomNumber() + " trước khi trả",
-                "Kiểm đồ mất / hư hỏng, minibar rồi báo lễ tân", "/admin/housekeeping");
+        notifyRoomCheck(booking, byName);
         return booking;
+    }
+
+    // Doi nguoi kiem khi yeu cau dang cho (giu nguyen gio yeu cau)
+    @Transactional
+    public Booking assignRoomCheck(Long bookingId, Long assigneeId, String byName) {
+        Booking booking = requireStaying(bookingId);
+        if (!booking.isRoomCheckPending()) {
+            throw new BusinessException("Phòng " + booking.getRoom().getRoomNumber() + " không có yêu cầu kiểm đang chờ");
+        }
+        booking.setRoomCheckAssignee(assigneeId != null ? requireHousekeeper(assigneeId) : null);
+        bookingRepository.save(booking);
+        notifyRoomCheck(booking, byName);
+        return booking;
+    }
+
+    private void notifyRoomCheck(Booking booking, String byName) {
+        User assignee = booking.getRoomCheckAssignee();
+        String guest = booking.getGuestName() != null ? " · khách " + booking.getGuestName() : "";
+        notify(EnumSet.of(Audience.HOUSEKEEPING), assignee != null ? assignee.getId() : null, Level.WARNING,
+                (assignee != null ? "Bạn được giao kiểm phòng " : "Kiểm phòng ") + booking.getRoom().getRoomNumber() + " trước khi trả",
+                "Kiểm minibar, đồ mất / hư hỏng rồi báo lễ tân" + guest + (byName != null ? " · " + byName : ""), "/admin/housekeeping#kiem-truoc-tra");
     }
 
     // Nhan vien buong phong bao ket qua: khong co gi / co do mat, hu hong (bat buoc ghi ro) -> bao le tan tinh phu phi
     @Transactional
     public Booking reportRoomCheck(Long bookingId, boolean issue, String note, String checkerName) {
+        return reportRoomCheck(bookingId, issue, note, checkerName == null ? null
+                : User.builder().fullName(checkerName).role(UserRole.STAFF).build());
+    }
+
+    // Phong da giao cho 1 nhan vien buong phong thi nhan vien buong khac khong bao thay (le tan / quan ly van bao duoc)
+    @Transactional
+    public Booking reportRoomCheck(Long bookingId, boolean issue, String note, User checker) {
+        String checkerName = checker != null ? checker.getFullName() : null;
         Booking booking = requireStaying(bookingId);
         if (!booking.isRoomCheckPending()) {
             throw new BusinessException("Phòng " + booking.getRoom().getRoomNumber() + " không có yêu cầu kiểm trước khi trả");
+        }
+        User assignee = booking.getRoomCheckAssignee();
+        if (checker != null && checker.getRole() == UserRole.HOUSEKEEPER && assignee != null
+                && !assignee.getId().equals(checker.getId())) {
+            throw new BusinessException("Phòng " + booking.getRoom().getRoomNumber() + " đã giao cho " + assignee.getFullName() + " kiểm");
         }
         String text = note == null ? "" : note.trim();
         if (issue && text.isEmpty()) {
@@ -324,8 +536,16 @@ public class HousekeepingService {
     // Cac phong dang cho buong phong kiem truoc khi tra (yeu cau cu nhat len dau)
     @Transactional(readOnly = true)
     public List<Booking> pendingRoomChecks() {
+        return pendingRoomChecks(null);
+    }
+
+    // onlyAssigneeId != null: chi yeu cau giao cho nguoi nay + yeu cau bao chung
+    @Transactional(readOnly = true)
+    public List<Booking> pendingRoomChecks(Long onlyAssigneeId) {
         return bookingRepository.findByStatusOrderByCreatedAtDesc(BookingStatus.CHECKED_IN).stream()
                 .filter(Booking::isRoomCheckPending)
+                .filter(b -> onlyAssigneeId == null || b.getRoomCheckAssignee() == null
+                        || b.getRoomCheckAssignee().getId().equals(onlyAssigneeId))
                 .sorted(Comparator.comparing(Booking::getRoomCheckRequestedAt))
                 .toList();
     }

@@ -37,9 +37,34 @@ public class AdminHousekeepingController {
         model.addAttribute("isHousekeeper", housekeeper);
         model.addAttribute("myId", user != null ? user.getUser().getId() : null);
         model.addAttribute("housekeepers", housekeepingService.housekeepers());
+        java.util.List<HousekeepingService.Member> team = housekeepingService.team(java.time.LocalDateTime.now());
+        model.addAttribute("team", team);
+        model.addAttribute("teamById", team.stream().collect(java.util.stream.Collectors.toMap(m -> m.user().getId(), m -> m)));
         model.addAttribute("inspectionRequired", housekeepingService.inspectionRequired());
-        model.addAttribute("roomChecks", housekeepingService.pendingRoomChecks());
+        model.addAttribute("roomChecks", housekeepingService.pendingRoomChecks(housekeeper && mine ? user.getUser().getId() : null));
         return "admin/housekeeping/index";
+    }
+
+    // Chia cac phong cho don chua giao cho nhung nguoi dang trong ca (it viec nhan truoc)
+    @PostMapping("/auto-assign")
+    public String autoAssign(@AuthenticationPrincipal CustomUserDetails user, RedirectAttributes redirectAttributes) {
+        try {
+            int n = housekeepingService.autoAssign(staffName(user), java.time.LocalDateTime.now());
+            redirectAttributes.addFlashAttribute("successMessage", "Đã chia " + n + " phòng cho nhân viên đang trong ca");
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return back(false);
+    }
+
+    // Doi nguoi kiem phong truoc khi tra (yeu cau dang cho)
+    @PostMapping("/room-checks/{bookingId}/assign")
+    public String assignRoomCheck(@PathVariable Long bookingId, @RequestParam(required = false) Long assigneeId,
+                                  @RequestParam(required = false) String back,
+                                  @AuthenticationPrincipal CustomUserDetails user, RedirectAttributes redirectAttributes) {
+        String view = run(() -> housekeepingService.assignRoomCheck(bookingId, assigneeId, staffName(user)),
+                assigneeId != null ? "Đã đổi người kiểm phòng" : "Đã bỏ giao, báo chung cho buồng phòng", redirectAttributes, false);
+        return "checkout".equals(back) ? "redirect:/admin/bookings/" + bookingId + "/check-out#kiem-phong" : view;
     }
 
     @PostMapping("/{roomId}/assign")
@@ -91,7 +116,7 @@ public class AdminHousekeepingController {
     public String reportRoomCheck(@PathVariable Long bookingId, @RequestParam(defaultValue = "false") boolean issue,
                                   @RequestParam(required = false) String note, @RequestParam(defaultValue = "false") boolean mine,
                                   @AuthenticationPrincipal CustomUserDetails user, RedirectAttributes redirectAttributes) {
-        return run(() -> housekeepingService.reportRoomCheck(bookingId, issue, note, staffName(user)),
+        return run(() -> housekeepingService.reportRoomCheck(bookingId, issue, note, staff(user)),
                 "Đã báo kết quả kiểm phòng cho lễ tân", redirectAttributes, mine);
     }
 
