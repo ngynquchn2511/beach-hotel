@@ -329,23 +329,60 @@
                 <div class="small text-muted mt-2">▲/▼: kỳ này so với kỳ đó. Kỳ trước = cùng số ngày ngay trước kỳ đang xem. Công suất so bằng điểm %.</div>
             </div>
 
+            <!-- Bieu do: duong doanh thu rong (xem xu huong), donut trang thai + chu giai co so, cot ngang loai phong (ten dai van doc duoc) -->
+            <style>
+                .ch-card { background:#fff; border-radius:.75rem; box-shadow:0 1px 3px rgba(19,57,94,.12); padding:1rem 1.1rem; height:100%; display:flex; flex-direction:column; }
+                .ch-head { display:flex; justify-content:space-between; align-items:flex-start; gap:.75rem; margin-bottom:.75rem; }
+                .ch-title { font-weight:700; font-size:.95rem; }
+                .ch-sub { color:#6c7a89; font-size:.78rem; }
+                .ch-big { font-size:1.35rem; font-weight:800; line-height:1.1; text-align:right; white-space:nowrap; }
+                .ch-box { position:relative; }
+                .ch-box.grow { flex:1 1 auto; min-height:290px; }
+                .ch-donut { position:relative; width:100%; max-width:200px; margin:0 auto; }
+                .ch-center { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; pointer-events:none; }
+                .ch-center b { font-size:1.6rem; line-height:1; }
+                .ch-center span { color:#6c7a89; font-size:.75rem; }
+                .ch-legend { list-style:none; padding:0; margin:.9rem 0 0; font-size:.83rem; }
+                .ch-legend li { display:flex; align-items:center; gap:.5rem; padding:.28rem .3rem; border-radius:.35rem; }
+                .ch-legend li:hover { background:#f2f8fc; }
+                .ch-legend i { width:10px; height:10px; border-radius:3px; flex:0 0 auto; }
+                .ch-legend .n { margin-left:auto; font-weight:700; font-variant-numeric:tabular-nums; }
+                .ch-legend .p { width:3.2rem; text-align:right; color:#6c7a89; font-variant-numeric:tabular-nums; }
+                .ch-empty { color:#6c7a89; font-size:.85rem; text-align:center; padding:2rem 0; }
+            </style>
             <div class="row g-3 mt-2">
-                <div class="col-md-4">
-                    <div class="bg-white p-3 rounded shadow-sm">
-                        <div class="fw-semibold mb-2">Tỷ lệ đơn theo trạng thái</div>
-                        <canvas id="statusPieChart" height="220"></canvas>
+                <div class="col-lg-8">
+                    <div class="ch-card">
+                        <div class="ch-head">
+                            <div><div class="ch-title">Doanh thu theo thời gian</div>
+                                <div class="ch-sub" id="trendSub">Đường đứt: trung bình kỳ</div></div>
+                            <div><div class="ch-big" id="trendTotal">-</div><div class="ch-sub text-end">tổng kỳ đang xem</div></div>
+                        </div>
+                        <div class="ch-box grow"><canvas id="trendLineChart" aria-label="Doanh thu theo thời gian" role="img"></canvas></div>
+                        <div class="ch-sub mt-2"><span style="display:inline-block;width:18px;border-top:2px solid #3d9bd6;vertical-align:middle"></span> Doanh thu
+                            <span style="display:inline-block;width:18px;border-top:2px dashed #f2b134;vertical-align:middle;margin-left:.8rem"></span> Trung bình kỳ</div>
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <div class="bg-white p-3 rounded shadow-sm">
-                        <div class="fw-semibold mb-2">Doanh thu theo loại phòng</div>
-                        <canvas id="roomTypeBarChart" height="220"></canvas>
+                <div class="col-lg-4">
+                    <div class="ch-card">
+                        <div class="ch-head">
+                            <div><div class="ch-title">Đơn theo trạng thái</div>
+                                <div class="ch-sub">Trong khoảng ngày đã chọn</div></div>
+                        </div>
+                        <div class="ch-donut">
+                            <canvas id="statusPieChart" width="200" height="200" aria-label="Tỷ lệ đơn theo trạng thái" role="img"></canvas>
+                            <div class="ch-center"><b id="statusTotal">0</b><span>đơn</span></div>
+                        </div>
+                        <ul class="ch-legend" id="statusLegend"></ul>
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <div class="bg-white p-3 rounded shadow-sm">
-                        <div class="fw-semibold mb-2">Doanh thu theo thời gian</div>
-                        <canvas id="trendLineChart" height="220"></canvas>
+                <div class="col-12">
+                    <div class="ch-card">
+                        <div class="ch-head">
+                            <div><div class="ch-title">Doanh thu theo loại phòng</div>
+                                <div class="ch-sub">Xếp từ cao đến thấp · % là tỷ trọng trong tổng</div></div>
+                        </div>
+                        <div class="ch-box" id="roomTypeBox"><canvas id="roomTypeBarChart" aria-label="Doanh thu theo loại phòng" role="img"></canvas></div>
                     </div>
                 </div>
             </div>
@@ -450,63 +487,127 @@
         : Math.abs(v) >= 1e3 ? (v / 1e3).toLocaleString('vi-VN') + 'k' : v;
     const moneyTooltip = { callbacks: { label: c => ' ' + Number(c.parsed.y).toLocaleString('vi-VN') + ' VND' } };
 
-    new Chart(document.getElementById('statusPieChart'), {
-        type: 'pie',
-        data: {
-            labels: bookingStatusLabels,
-            datasets: [{
-                data: bookingStatusData,
-                backgroundColor: ['#ffcf73', BABY, '#bdeccf', '#e8f5fd', '#ffd4dc'],
-                borderColor: INK,
-                borderWidth: 1.5
-            }]
-        },
-        options: {
-            plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 8, font: { size: 11 } } } }
-        }
-    });
+    const vnd = v => Number(v).toLocaleString('vi-VN');
+    const pctText = (n, total) => (n * 100 / total).toLocaleString('vi-VN', { maximumFractionDigits: 1 }) + '%';
+    const shortMoney = v => Math.abs(v) >= 1e9 ? (v / 1e9).toLocaleString('vi-VN', { maximumFractionDigits: 2 }) + ' tỷ'
+        : Math.abs(v) >= 1e6 ? (v / 1e6).toLocaleString('vi-VN', { maximumFractionDigits: 1 }) + ' tr' : vnd(v);
+    const tooltipBase = { backgroundColor: INK, padding: 10, cornerRadius: 6, titleFont: { weight: '600' }, displayColors: false };
+    const GRID = '#edf3f8', MUTED = '#6c7a89';
 
-    new Chart(document.getElementById('roomTypeBarChart'), {
-        type: 'bar',
-        data: {
-            labels: roomTypeLabels,
-            datasets: [{
-                label: 'Doanh thu (VNĐ)',
-                data: roomTypeRevenueData,
-                backgroundColor: BABY,
-                borderColor: INK,
-                borderWidth: 1.5,
-                borderRadius: 6,
-                hoverBackgroundColor: BABY_DEEP
-            }]
-        },
-        options: {
-            plugins: { legend: { display: false }, tooltip: moneyTooltip },
-            scales: { y: { beginAtZero: true, ticks: { callback: moneyTick } } }
-        }
-    });
+    // --- Trang thai: donut + chu giai co so va %; mau co dinh theo trang thai (khong theo thu tu) ---
+    (function () {
+        const STATUS_COLOR = { 'Chờ xác nhận': '#f2b134', 'Đã xác nhận': '#3d9bd6', 'Đã nhận phòng': '#2a9d6a',
+                               'Đã trả phòng': '#13395e', 'Đã hủy': '#e0607a' };
+        const rows = bookingStatusLabels.map((l, k) => ({ l, n: Number(bookingStatusData[k]) || 0, c: STATUS_COLOR[l] || '#9aa8b6' }));
+        const total = rows.reduce((s, r) => s + r.n, 0);
+        document.getElementById('statusTotal').textContent = vnd(total);
+        const legend = document.getElementById('statusLegend');
+        if (!total) { legend.innerHTML = '<li class="ch-empty d-block">Chưa có đơn trong khoảng này</li>'; return; }
+        const chart = new Chart(document.getElementById('statusPieChart'), {
+            type: 'doughnut',
+            data: { labels: rows.map(r => r.l), datasets: [{ data: rows.map(r => r.n), backgroundColor: rows.map(r => r.c),
+                    borderColor: '#fff', borderWidth: 2, hoverOffset: 6 }] },
+            options: { cutout: '68%', layout: { padding: 6 },
+                plugins: { legend: { display: false },
+                    tooltip: { ...tooltipBase, callbacks: { label: c => ' ' + vnd(c.parsed) + ' đơn · ' + pctText(c.parsed, total) } } } }
+        });
+        rows.forEach((r, k) => {
+            const li = document.createElement('li');
+            li.innerHTML = '<i></i><span></span><span class="n"></span><span class="p"></span>';
+            li.children[0].style.background = r.c;
+            li.children[1].textContent = r.l;
+            li.children[2].textContent = vnd(r.n);
+            li.children[3].textContent = pctText(r.n, total);
+            if (!r.n) li.style.opacity = .5;
+            // Re chuot vao dong chu giai -> lam noi lat cat tuong ung
+            li.addEventListener('mouseenter', () => { if (!r.n) return; chart.setActiveElements([{ datasetIndex: 0, index: k }]); chart.update(); });
+            li.addEventListener('mouseleave', () => { chart.setActiveElements([]); chart.update(); });
+            legend.appendChild(li);
+        });
+    })();
 
-    new Chart(document.getElementById('trendLineChart'), {
-        type: 'line',
-        data: {
-            labels: trendLabels,
-            datasets: [{
-                label: 'Doanh thu (VNĐ)',
-                data: trendData,
-                borderColor: INK,
-                borderWidth: 2,
-                backgroundColor: 'rgba(159, 216, 245, 0.45)',
-                pointBackgroundColor: '#ffcf73',
-                pointBorderColor: INK,
-                tension: 0.3,
-                fill: true
-            }]
-        },
-        options: {
-            plugins: { legend: { display: false }, tooltip: moneyTooltip },
-            scales: { y: { beginAtZero: true, ticks: { callback: moneyTick } } }
-        }
-    });
+    // --- Loai phong: cot ngang, sap giam dan, ten day du ben trai, nhan so tien + % cuoi cot ---
+    (function () {
+        const rows = roomTypeLabels.map((l, k) => ({ l, v: Number(roomTypeRevenueData[k]) || 0 })).sort((x, y) => y.v - x.v);
+        const box = document.getElementById('roomTypeBox');
+        const total = rows.reduce((s, r) => s + r.v, 0);
+        if (!rows.length || !total) { box.innerHTML = '<div class="ch-empty">Chưa có doanh thu trong khoảng này</div>'; return; }
+        box.style.height = Math.max(140, rows.length * 34 + 34) + 'px';
+        const endLabels = { id: 'endLabels', afterDatasetsDraw(chart) {
+            const ctx = chart.ctx, meta = chart.getDatasetMeta(0);
+            ctx.save(); ctx.font = '600 12px "Be Vietnam Pro", system-ui, sans-serif'; ctx.textBaseline = 'middle';
+            meta.data.forEach((bar, k) => {
+                ctx.fillStyle = INK;
+                ctx.fillText(shortMoney(rows[k].v), bar.x + 8, bar.y);
+                const w = ctx.measureText(shortMoney(rows[k].v) + '  ').width;
+                ctx.fillStyle = MUTED;
+                ctx.fillText(pctText(rows[k].v, total), bar.x + 8 + w, bar.y);
+            });
+            ctx.restore();
+        } };
+        new Chart(document.getElementById('roomTypeBarChart'), {
+            type: 'bar',
+            data: { labels: rows.map(r => r.l), datasets: [{ data: rows.map(r => r.v),
+                    backgroundColor: rows.map((r, k) => k === 0 ? BABY_DEEP : '#a9d8f2'), hoverBackgroundColor: INK,
+                    borderRadius: 4, borderSkipped: 'start', barThickness: 18 }] },
+            options: { indexAxis: 'y', maintainAspectRatio: false, layout: { padding: { left: 4, right: 110 } },
+                plugins: { legend: { display: false },
+                    tooltip: { ...tooltipBase, callbacks: { title: c => rows[c[0].dataIndex].l, label: c => ' ' + vnd(c.parsed.x) + ' VND · ' + pctText(c.parsed.x, total) } } },
+                scales: {
+                    x: { beginAtZero: true, grid: { color: GRID }, border: { display: false }, ticks: { color: MUTED, callback: moneyTick, maxTicksLimit: 6 } },
+                    y: { grid: { display: false }, border: { display: false }, afterFit: s => { s.width = Math.min(Math.max(s.width + 12, 120), 280); },
+                         ticks: { color: INK, font: { size: 12 }, callback: (v, k) => rows[k].l.length > 34 ? rows[k].l.slice(0, 33) + '…' : rows[k].l } }
+                } },
+            plugins: [endLabels]
+        });
+    })();
+
+    // --- Doanh thu theo thoi gian: duong mem khong cham diem, vung to nhat, duong trung binh, tooltip theo cot doc ---
+    (function () {
+        const data = trendData.map(v => Number(v) || 0);
+        const total = data.reduce((s, v) => s + v, 0);
+        const avg = data.length ? total / data.length : 0;
+        const max = data.length ? Math.max(...data) : 0;
+        document.getElementById('trendTotal').textContent = shortMoney(total) + (total >= 1e6 ? '' : ' VND');
+        document.getElementById('trendSub').textContent = data.length
+            ? 'Trung bình ' + shortMoney(avg) + ' / mốc · cao nhất ' + shortMoney(max) + ' (' + trendLabels[data.indexOf(max)] + ')'
+            : 'Chưa có dữ liệu';
+        const canvas = document.getElementById('trendLineChart');
+        const g = canvas.getContext('2d').createLinearGradient(0, 0, 0, canvas.parentNode.clientHeight || 290);
+        g.addColorStop(0, 'rgba(61,155,214,.28)'); g.addColorStop(1, 'rgba(61,155,214,0)');
+        // Ve 1 duong doc tai vi tri dang re chuot
+        const crosshair = { id: 'crosshair', afterDraw(chart) {
+            const a = chart.tooltip && chart.tooltip.getActiveElements();
+            if (!a || !a.length) return;
+            const x = a[0].element.x, area = chart.chartArea, ctx = chart.ctx;
+            ctx.save(); ctx.strokeStyle = 'rgba(19,57,94,.25)'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(x, area.top); ctx.lineTo(x, area.bottom); ctx.stroke(); ctx.restore();
+        } };
+        new Chart(canvas, {
+            type: 'line',
+            data: { labels: trendLabels, datasets: [
+                { label: 'Doanh thu', data, borderColor: BABY_DEEP, borderWidth: 2, backgroundColor: g, fill: true,
+                  cubicInterpolationMode: 'monotone', pointRadius: 0, pointHoverRadius: 5,
+                  pointHoverBackgroundColor: '#fff', pointHoverBorderColor: BABY_DEEP, pointHoverBorderWidth: 2 },
+                { label: 'Trung bình', data: data.map(() => avg), borderColor: '#f2b134', borderWidth: 1.5, borderDash: [5, 4],
+                  pointRadius: 0, pointHoverRadius: 0, fill: false }
+            ] },
+            options: { maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+                plugins: { legend: { display: false },
+                    tooltip: { ...tooltipBase, filter: i => i.datasetIndex === 0,
+                        callbacks: { label: c => ' ' + vnd(c.parsed.y) + ' VND', afterLabel: c => {
+                            if (!avg) return '';
+                            const d = (c.parsed.y - avg) * 100 / avg;
+                            return ' ' + (d >= 0 ? '▲ ' : '▼ ') + Math.abs(d).toLocaleString('vi-VN', { maximumFractionDigits: 0 }) + '% so với trung bình'; } } } },
+                scales: {
+                    x: { grid: { display: false }, border: { color: GRID }, ticks: { color: MUTED, maxRotation: 0, autoSkip: true, maxTicksLimit: 10 } },
+                    y: { beginAtZero: true, grid: { color: GRID }, border: { display: false }, ticks: { color: MUTED, callback: moneyTick, maxTicksLimit: 5 } }
+                } },
+            plugins: [crosshair]
+        });
+    })();
+    // Font web tai xong sau khi Chart.js do chu -> do lai de nhan dai khong bi cat
+    if (document.fonts) document.fonts.ready.then(() => Object.values(Chart.instances).forEach(c => c.update()));
     // ===== Bang dieu hanh: cong suat 14 ngay toi + lai lo 12 thang =====
     /*<![CDATA[*/
     const xbDays = /*[[${board != null ? board.forecast.days.![#temporals.format(date, 'dd/MM')] : {}}]]*/ [];
