@@ -7,6 +7,16 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+    <th:block th:replace="~{fragments/viz :: styles}"></th:block>
+    <style>
+        .rank { width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: .75rem; font-weight: 700;
+                background: #eef3f7; color: var(--vz-ink); }
+        .rank.top { background: #13395e; color: #fff; }
+        .fail-item { display: grid; grid-template-columns: 64px 1fr; gap: 12px; padding: 10px 0; border-bottom: 1px solid #eef3f7; }
+        .fail-item:last-child { border-bottom: 0; }
+        .fail-item .room { background: #fde8ec; color: #b8384f; border-radius: 8px; text-align: center; font-weight: 800; padding: 6px 0; height: fit-content; }
+        .fail-item .room small { display: block; font-weight: 500; font-size: .68rem; }
+    </style>
 </head>
 <body class="eaut eaut-admin">
 
@@ -17,7 +27,6 @@
         <div class="col-md-3">
             <div th:replace="~{fragments/admin-sidebar :: sidebar}"></div>
         </div>
-
         <div class="col-md-9">
             <a th:href="@{/admin/housekeeping}" class="small"><i class="bi bi-arrow-left"></i> Dọn phòng</a>
             <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
@@ -25,44 +34,136 @@
                     <h3 class="fw-bold mb-1">Thống kê buồng phòng</h3>
                     <p class="text-muted small mb-0">Thời gian dọn tính từ lúc nhận dọn đến lúc báo xong. Tỷ lệ chưa đạt chỉ tính các lượt qua bước kiểm phòng.</p>
                 </div>
-                <form method="get" class="d-flex gap-2">
-                    <input type="date" name="from" class="form-control form-control-sm" th:value="${from}">
-                    <input type="date" name="to" class="form-control form-control-sm" th:value="${to}">
-                    <button class="btn btn-sm btn-outline-primary">Xem</button>
+                <form method="get" class="vz-period" aria-label="Khoảng ngày">
+                    <input type="date" name="from" th:value="${from}" aria-label="Từ ngày">
+                    <span class="px-1 text-muted">→</span>
+                    <input type="date" name="to" th:value="${to}" aria-label="Đến ngày">
+                    <button type="submit">Xem</button>
                 </form>
             </div>
 
-            <div th:if="${#lists.isEmpty(stats.cleaners)}" class="alert alert-info">Chưa có lượt dọn nào trong khoảng này.</div>
-            <div class="bg-white p-3 rounded shadow-sm mb-4" th:unless="${#lists.isEmpty(stats.cleaners)}">
-                <div class="small text-muted mb-2" th:text="'Tổng ' + ${stats.totalCleaned} + ' phòng dọn xong'"></div>
-                <table class="table table-sm align-middle mb-0 text-end">
-                    <thead><tr><th class="text-start">Nhân viên</th><th>Phòng dọn xong</th><th>TB (phút)</th><th>Lượt kiểm</th><th>Chưa đạt</th><th>Tỷ lệ chưa đạt</th></tr></thead>
-                    <tbody>
-                    <tr th:each="c : ${stats.cleaners}">
-                        <td class="text-start fw-semibold" th:text="${c.name}"></td>
-                        <td th:text="${c.cleaned}"></td>
-                        <td th:text="${c.avgMinutes != null} ? ${c.avgMinutes} : '-'"></td>
-                        <td th:text="${c.inspected}"></td>
-                        <td th:text="${c.failed}"></td>
-                        <td th:classappend="${c.failRate >= 20} ? 'text-danger fw-semibold'" th:text="${c.inspected > 0} ? ${c.failRate} + '%' : '-'"></td>
-                    </tr>
-                    </tbody>
-                </table>
-            </div>
+            <div th:if="${#lists.isEmpty(stats.cleaners)}" class="vz-card vz-empty"><i class="bi bi-stars"></i>Chưa có lượt dọn nào trong khoảng này.</div>
 
-            <h6 class="fw-bold">Lần kiểm chưa đạt gần đây</h6>
-            <div th:if="${#lists.isEmpty(stats.recentFailures)}" class="text-muted small">Không có.</div>
-            <div class="bg-white p-3 rounded shadow-sm" th:unless="${#lists.isEmpty(stats.recentFailures)}">
-                <div th:each="l : ${stats.recentFailures}" class="small border-bottom py-1">
-                    <b th:text="'Phòng ' + ${l.room.roomNumber}"></b>
-                    <span class="text-muted" th:text="' · ' + ${#temporals.format(l.finishedAt, 'dd/MM HH:mm')} + ' · ' + ${l.cleanerName} + (${l.inspectedBy != null} ? ' · kiểm: ' + ${l.inspectedBy} : '')"></span>
-                    <div class="fst-italic" th:text="${l.note}"></div>
+            <th:block th:unless="${#lists.isEmpty(stats.cleaners)}"
+                      th:with="insp=${#aggregates.sum(stats.cleaners.![inspected])}, fail=${#aggregates.sum(stats.cleaners.![failed])}">
+                <!-- So lieu chinh -->
+                <div class="row g-3 mb-3">
+                    <div class="col-lg-4"><div class="vz-kpi hero"><div class="lbl">Phòng dọn xong</div>
+                        <div class="val" th:text="${stats.totalCleaned}"></div>
+                        <div class="sub" th:text="${#lists.size(stats.cleaners)} + ' nhân viên · ' + ${#temporals.format(from, 'dd/MM')} + ' – ' + ${#temporals.format(to, 'dd/MM')}"></div></div></div>
+                    <div class="col-6 col-lg"><div class="vz-kpi"><div class="lbl"><i class="bi bi-stopwatch me-1"></i>Thời gian dọn TB</div>
+                        <div class="val" id="hsAvg">–</div><div class="sub">phút / phòng (theo số phòng)</div></div></div>
+                    <div class="col-6 col-lg"><div class="vz-kpi"><div class="lbl"><i class="bi bi-clipboard-check me-1"></i>Lượt kiểm phòng</div>
+                        <div class="val" th:text="${insp}"></div><div class="sub" th:text="${fail} + ' lượt chưa đạt'"></div></div></div>
+                    <div class="col-12 col-lg"><div class="vz-kpi"><div class="lbl"><i class="bi bi-x-octagon me-1"></i>Tỷ lệ chưa đạt</div>
+                        <div class="val" id="hsFail" th:attr="data-insp=${insp}, data-fail=${fail}">–</div>
+                        <div class="sub">trên số lượt được kiểm</div></div></div>
                 </div>
-            </div>
+
+                <!-- Xep hang -->
+                <div class="vz-card">
+                    <div class="vz-head"><div><h5>Theo nhân viên</h5><div class="sub">Xếp theo số phòng dọn xong · thời gian dọn: xanh ≤ 30 phút, vàng ≤ 45, đỏ &gt; 45</div></div></div>
+                    <div class="table-responsive">
+                        <table class="vz-table" id="hsTable">
+                            <thead><tr><th></th><th>Nhân viên</th><th style="min-width:200px">Phòng dọn xong</th><th class="r">TB (phút)</th>
+                                <th class="r">Lượt kiểm</th><th class="r">Chưa đạt</th><th class="r">Tỷ lệ chưa đạt</th></tr></thead>
+                            <tbody>
+                            <tr th:each="c, st : ${stats.cleaners}"
+                                th:attr="data-name=${c.name}, data-n=${c.cleaned}, data-avg=${c.avgMinutes != null ? c.avgMinutes : ''}, data-fr=${c.failRate}, data-insp=${c.inspected}">
+                                <td><span class="rank" th:classappend="${st.index < 3} ? 'top'" th:text="${st.count}"></span></td>
+                                <td class="fw-semibold" th:text="${c.name}"></td>
+                                <td><div class="d-flex align-items-center gap-2"><div class="vz-bar flex-grow-1 hs-bar"><span></span></div>
+                                    <b class="text-nowrap" th:text="${c.cleaned}"></b></div></td>
+                                <td class="r"><span th:if="${c.avgMinutes != null}" class="vz-pill"
+                                          th:classappend="${c.avgMinutes <= 30} ? 'ok' : (${c.avgMinutes <= 45} ? 'warn' : 'bad')" th:text="${c.avgMinutes}"></span>
+                                    <span th:if="${c.avgMinutes == null}" class="zero">–</span></td>
+                                <td class="r" th:text="${c.inspected}"></td>
+                                <td class="r" th:classappend="${c.failed == 0} ? 'zero'" th:text="${c.failed}"></td>
+                                <td class="r"><span th:if="${c.inspected > 0}" th:classappend="${c.failRate >= 20} ? 'vz-neg fw-bold'" th:text="${c.failRate} + '%'"></span>
+                                    <span th:if="${c.inspected == 0}" class="zero">–</span></td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    <!-- Nhanh hay ky -->
+                    <div class="col-lg-7">
+                        <div class="vz-card h-100 mb-0">
+                            <div class="vz-head"><div><h5>Nhanh hay kỹ?</h5>
+                                <div class="sub">Mỗi chấm 1 nhân viên: càng sang trái càng nhanh, càng thấp càng ít lỗi; chấm to = dọn nhiều phòng. Góc dưới trái là tốt nhất.</div></div></div>
+                            <div class="vz-chart" style="height:290px"><canvas id="hsScatter" role="img" aria-label="Thời gian dọn và tỷ lệ chưa đạt theo nhân viên"></canvas></div>
+                        </div>
+                    </div>
+                    <!-- Loi gan day -->
+                    <div class="col-lg-5">
+                        <div class="vz-card h-100 mb-0">
+                            <div class="vz-head"><div><h5>Lần kiểm chưa đạt gần đây</h5><div class="sub">Ghi chú của người kiểm</div></div></div>
+                            <div style="max-height:330px;overflow-y:auto">
+                            <div th:if="${#lists.isEmpty(stats.recentFailures)}" class="vz-empty"><i class="bi bi-emoji-smile"></i>Không có.</div>
+                            <div th:each="l : ${stats.recentFailures}" class="fail-item">
+                                <div class="room" th:text="${l.room.roomNumber}">101<small></small></div>
+                                <div>
+                                    <div class="small text-muted" th:text="${#temporals.format(l.finishedAt, 'dd/MM HH:mm')} + ' · ' + ${l.cleanerName} + (${l.inspectedBy != null} ? ' · kiểm: ' + ${l.inspectedBy} : '')"></div>
+                                    <div class="fst-italic" th:text="${l.note}"></div>
+                                </div>
+                            </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </th:block>
         </div>
     </div>
 </main>
 
 <div th:replace="~{fragments/footer :: footer}"></div>
+<th:block th:replace="~{fragments/viz :: scripts}"></th:block>
+<script>
+    (function () {
+        const { C, num, axisX, axisY } = VZ;
+        const rows = [...document.querySelectorAll('#hsTable tbody tr')].map(tr => ({ tr, name: tr.dataset.name, n: num(tr.dataset.n),
+            avg: tr.dataset.avg === '' ? null : num(tr.dataset.avg), fr: num(tr.dataset.fr), insp: num(tr.dataset.insp) }));
+        if (!rows.length) return;
+        const mx = Math.max(1, ...rows.map(r => r.n));
+        rows.forEach(r => r.tr.querySelector('.hs-bar span').style.width = r.n * 100 / mx + '%');
+        // TB co trong so theo so phong
+        const timed = rows.filter(r => r.avg != null);
+        const wn = timed.reduce((s, r) => s + r.n, 0);
+        const fEl = document.getElementById('hsFail'), fi = num(fEl.dataset.insp), ff = num(fEl.dataset.fail);
+        if (fi) { const v = ff * 100 / fi; fEl.textContent = VZ.pct(v); if (v >= 20) fEl.classList.add('bad'); }
+        if (wn) document.getElementById('hsAvg').textContent = Math.round(timed.reduce((s, r) => s + r.avg * r.n, 0) / wn);
+
+        const pts = timed.map(r => ({ x: r.avg, y: r.insp ? r.fr : 0, r: 5 + 13 * Math.sqrt(r.n / mx), name: r.name, n: r.n, insp: r.insp }));
+        const colorOf = p => p.y >= 20 || p.x > 45 ? C.red : (p.x > 30 || p.y >= 10 ? C.amber : C.green);
+        new Chart(document.getElementById('hsScatter'), {
+            type: 'bubble',
+            data: { datasets: [{ data: pts, backgroundColor: pts.map(p => colorOf(p) + 'b3'), borderColor: pts.map(colorOf), borderWidth: 1.5 }] },
+            options: {
+                plugins: { tooltip: { displayColors: false, callbacks: {
+                    title: it => it[0].raw.name,
+                    label: it => [it.raw.n + ' phòng · TB ' + it.raw.x + ' phút', it.raw.insp ? 'Chưa đạt ' + it.raw.y + '% (' + it.raw.insp + ' lượt kiểm)' : 'Chưa có lượt kiểm'] } } },
+                scales: {
+                    x: axisX({ title: { display: true, text: 'Phút dọn trung bình', color: C.mut, font: { size: 11 } }, beginAtZero: true,
+                               suggestedMax: Math.max(50, ...pts.map(p => p.x + 5)), grid: { color: C.grid }, ticks: { color: C.mut } }),
+                    y: axisY({ title: { display: true, text: '% chưa đạt', color: C.mut, font: { size: 11 } }, beginAtZero: true,
+                               suggestedMax: Math.max(25, ...pts.map(p => p.y + 5)), ticks: { color: C.mut, callback: v => v + '%' } })
+                }
+            },
+            plugins: [{ id: 'names', afterDatasetsDraw(c) {
+                const ctx = c.ctx; ctx.save(); ctx.font = '600 11px "Be Vietnam Pro", system-ui'; ctx.fillStyle = C.ink; ctx.textAlign = 'left';
+                c.getDatasetMeta(0).data.forEach((el, k) => { const p = pts[k]; ctx.fillText(p.name.split(' ').slice(-1)[0], el.x + p.r + 3, el.y + 4); });
+                ctx.restore();
+            } }, { id: 'goal', beforeDatasetsDraw(c) {
+                const { ctx, chartArea: a, scales: { x, y } } = c;
+                const x30 = x.getPixelForValue(30), y10 = y.getPixelForValue(10);
+                ctx.save(); ctx.fillStyle = 'rgba(42,157,106,.07)'; ctx.fillRect(a.left, y10, x30 - a.left, a.bottom - y10);
+                ctx.fillStyle = '#1d7a4c'; ctx.font = '600 10.5px "Be Vietnam Pro", system-ui'; ctx.fillText('Nhanh & kỹ', a.left + 6, a.bottom - 6);
+                ctx.restore();
+            } }]
+        });
+    })();
+</script>
 </body>
 </html>

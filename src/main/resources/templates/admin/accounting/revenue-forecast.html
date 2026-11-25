@@ -7,6 +7,25 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+    <th:block th:replace="~{fragments/viz :: styles}"></th:block>
+    <style>
+        .fm-head { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; }
+        .fm-head h6 { font-weight: 700; margin: 0; }
+        .fm-big { font-size: 1.5rem; font-weight: 800; line-height: 1.15; font-variant-numeric: tabular-nums; color: var(--vz-ink); }
+        /* Thanh: tren so (dac) + dat them (soc) + dich vu; vach = nam truoc, vach do = ke hoach */
+        .fm-track { position: relative; height: 14px; background: #eef3f7; border-radius: 4px; margin: 14px 0 6px; }
+        .fm-track .seg { position: absolute; top: 0; bottom: 0; }
+        .fm-track .otb { background: var(--vz-blue); border-radius: 4px 0 0 4px; }
+        .fm-track .pick { background: repeating-linear-gradient(45deg, #9fd0ef 0 4px, #c9e5f7 4px 8px); }
+        .fm-track .svc { background: var(--vz-teal); }
+        .fm-track .ly { position: absolute; top: -5px; bottom: -5px; width: 2px; background: var(--vz-gray); }
+        .fm-track .tg { position: absolute; top: -5px; bottom: -5px; width: 0; border-left: 2px dashed var(--vz-red); }
+        .fm-rows { font-size: .82rem; margin-top: 10px; }
+        .fm-rows > div { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px dashed #eef3f7; }
+        .fm-rows > div:last-child { border-bottom: 0; }
+        .fm-rows span:first-child { color: var(--vz-mut); }
+        .fm-rows b { font-variant-numeric: tabular-nums; }
+    </style>
 </head>
 <body class="eaut eaut-admin">
 
@@ -17,7 +36,6 @@
         <div class="col-md-3">
             <div th:replace="~{fragments/admin-sidebar :: sidebar}"></div>
         </div>
-
         <div class="col-md-9">
             <h3 class="fw-bold mb-1">Dự báo doanh thu</h3>
             <p class="text-muted small">Tính đến <span th:text="${#temporals.format(today, 'dd/MM/yyyy')}"></span>.
@@ -25,35 +43,55 @@
                 (từ thời điểm này đến cuối tháng), điều chỉnh theo tốc độ bán năm nay. <b>Dịch vụ</b> = chi tiêu dịch vụ trên mỗi phòng-đêm
                 (cùng kỳ năm trước, chưa có thì lấy trung bình 3 tháng gần nhất) × số phòng-đêm dự báo.</p>
 
+            <!-- Bieu do tong hop cac thang -->
+            <div class="vz-card">
+                <div class="vz-head">
+                    <div><h5>Dự báo các tháng tới</h5><div class="sub">Cột chồng = dự báo; cột xám = kết quả cùng kỳ năm trước; gạch đỏ = kế hoạch</div></div>
+                    <div class="vz-key">
+                        <span><i style="background:var(--vz-blue)"></i>Đã có trên sổ</span>
+                        <span><i style="background:repeating-linear-gradient(45deg,#9fd0ef 0 3px,#c9e5f7 3px 6px)"></i>Dự kiến đặt thêm</span>
+                        <span><i style="background:var(--vz-teal)"></i>Dịch vụ</span>
+                        <span><i style="background:#d5dee6"></i>Năm trước</span>
+                        <span><i class="line" style="border-color:var(--vz-red)"></i>Kế hoạch</span>
+                    </div>
+                </div>
+                <div class="vz-chart" style="height:300px"><canvas id="rfChart" role="img" aria-label="Dự báo doanh thu các tháng tới"></canvas></div>
+            </div>
+
+            <!-- Tung thang -->
             <div class="row g-3">
                 <div class="col-lg-4" th:each="f : ${forecasts}">
-                    <div class="bg-white rounded shadow-sm p-3 h-100">
-                        <div class="d-flex justify-content-between align-items-baseline">
-                            <h5 class="fw-bold m-0" th:text="'Tháng ' + ${f.month.monthValue} + '/' + ${f.month.year}"></h5>
-                            <span class="badge" th:classappend="${f.confidence.name() == 'HIGH'} ? 'bg-success' : (${f.confidence.name() == 'MEDIUM'} ? 'bg-info text-dark' : 'bg-secondary')"
-                                  th:text="'Tin cậy: ' + ${f.confidence.label}"></span>
+                    <div class="vz-card h-100 mb-0 rf-month"
+                         th:attr="data-m=${f.month.monthValue + '/' + f.month.year}, data-otb=${f.onTheBooks.revenue}, data-pick=${f.pickup},
+                                  data-svc=${f.forecastServiceRevenue()}, data-ly=${f.lastYearFinal.revenue}, data-tg=${f.revenueTarget != null ? f.revenueTarget : ''},
+                                  data-occ=${f.forecastOccupancy}, data-conf=${f.confidence.label}">
+                        <div class="fm-head">
+                            <h6 th:text="'Tháng ' + ${f.month.monthValue} + '/' + ${f.month.year}"></h6>
+                            <span class="vz-pill dot" th:classappend="${f.confidence.name() == 'HIGH'} ? 'ok' : (${f.confidence.name() == 'MEDIUM'} ? 'info' : 'muted')"
+                                  th:text="'Tin cậy ' + ${#strings.toLowerCase(f.confidence.label)}"></span>
                         </div>
                         <div class="small text-muted mt-2">Dự báo tổng doanh thu</div>
-                        <div class="fs-4 fw-bold" th:text="${#numbers.formatDecimal(f.forecastTotalRevenue(), 1, 'POINT', 0, 'COMMA')}"></div>
-                        <div class="small" th:text="'Phòng ' + ${#numbers.formatDecimal(f.forecastRevenue, 1, 'POINT', 0, 'COMMA')}
-                             + ' · dịch vụ ' + ${#numbers.formatDecimal(f.forecastServiceRevenue(), 1, 'POINT', 0, 'COMMA')}"></div>
-                        <div class="small" th:text="'Công suất dự báo ' + ${f.forecastOccupancy} + '%'"></div>
-                        <hr class="my-2">
-                        <table class="table table-sm small mb-0">
-                            <tbody>
-                            <tr><td>Đã có trên sổ</td><td class="text-end" th:text="${#numbers.formatDecimal(f.onTheBooks.revenue, 1, 'POINT', 0, 'COMMA')}"></td></tr>
-                            <tr><td>· phòng-đêm / công suất</td><td class="text-end" th:text="${f.onTheBooks.nights} + ' / ' + ${f.otbOccupancy} + '%'"></td></tr>
-                            <tr><td>Dự kiến đặt thêm</td><td class="text-end" th:text="'+' + ${#numbers.formatDecimal(f.pickup, 1, 'POINT', 0, 'COMMA')}"></td></tr>
-                            <tr><td>Cùng kỳ năm trước (kết quả)</td><td class="text-end" th:text="${#numbers.formatDecimal(f.lastYearFinal.revenue, 1, 'POINT', 0, 'COMMA')}"></td></tr>
-                            <tr><td>Cùng kỳ, cùng thời điểm này</td><td class="text-end" th:text="${#numbers.formatDecimal(f.lastYearAtSameLead.revenue, 1, 'POINT', 0, 'COMMA')}"></td></tr>
-                            <tr><td>Dịch vụ / phòng-đêm <span class="text-muted" th:text="'(' + ${f.serviceBasis} + ')'"></span></td>
-                                <td class="text-end" th:text="${#numbers.formatDecimal(f.serviceSpendPerNight, 1, 'POINT', 0, 'COMMA')}"></td></tr>
-                            <tr><td>Tốc độ bán so với năm trước</td><td class="text-end" th:classappend="${f.pace < 1} ? 'text-danger' : 'text-success'" th:text="'×' + ${f.pace}"></td></tr>
-                            <tr th:if="${f.revenueTarget != null}"><td>So với kế hoạch</td>
-                                <td class="text-end fw-semibold" th:classappend="${f.forecastVsTargetPercent < 100} ? 'text-danger' : 'text-success'"
-                                    th:text="${f.forecastVsTargetPercent} + '%'"></td></tr>
-                            </tbody>
-                        </table>
+                        <div class="fm-big" th:text="${#numbers.formatDecimal(f.forecastTotalRevenue(), 1, 'POINT', 0, 'COMMA')}"></div>
+                        <div class="small">
+                            <span th:if="${f.revenueTarget != null}" th:classappend="${f.forecastVsTargetPercent < 100} ? 'vz-down' : 'vz-up'"
+                                  th:text="${f.forecastVsTargetPercent} + '% kế hoạch'"></span>
+                            <span th:if="${f.revenueTarget != null}" class="text-muted"> · </span>
+                            <span class="text-muted" th:text="'công suất ' + ${f.forecastOccupancy} + '%'"></span>
+                        </div>
+                        <div class="fm-track" role="img" th:aria-label="'Trên sổ, đặt thêm và dịch vụ so với năm trước và kế hoạch'">
+                            <span class="seg otb"></span><span class="seg pick"></span><span class="seg svc"></span>
+                            <span class="ly" title="Cùng kỳ năm trước"></span><span class="tg" title="Kế hoạch"></span>
+                        </div>
+                        <div class="small text-muted" th:text="'Đã có trên sổ ' + ${f.onTheBooks.nights} + ' phòng-đêm · ' + ${f.otbOccupancy} + '% công suất'"></div>
+                        <div class="fm-rows">
+                            <div><span>Đã có trên sổ</span><b th:text="${#numbers.formatDecimal(f.onTheBooks.revenue, 1, 'POINT', 0, 'COMMA')}"></b></div>
+                            <div><span>Dự kiến đặt thêm</span><b th:text="'+' + ${#numbers.formatDecimal(f.pickup, 1, 'POINT', 0, 'COMMA')}"></b></div>
+                            <div><span>Dịch vụ <span th:text="'(' + ${#numbers.formatDecimal(f.serviceSpendPerNight, 1, 'POINT', 0, 'COMMA')} + '/đêm, ' + ${f.serviceBasis} + ')'"></span></span>
+                                <b th:text="'+' + ${#numbers.formatDecimal(f.forecastServiceRevenue(), 1, 'POINT', 0, 'COMMA')}"></b></div>
+                            <div><span>Cùng kỳ năm trước (kết quả)</span><b th:text="${#numbers.formatDecimal(f.lastYearFinal.revenue, 1, 'POINT', 0, 'COMMA')}"></b></div>
+                            <div><span>Cùng kỳ, cùng thời điểm này</span><b th:text="${#numbers.formatDecimal(f.lastYearAtSameLead.revenue, 1, 'POINT', 0, 'COMMA')}"></b></div>
+                            <div><span>Tốc độ bán so với năm trước</span><b th:classappend="${f.pace < 1} ? 'vz-neg' : 'vz-up'" th:text="'×' + ${f.pace}"></b></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -63,5 +101,46 @@
 </main>
 
 <div th:replace="~{fragments/footer :: footer}"></div>
+<th:block th:replace="~{fragments/viz :: scripts}"></th:block>
+<script>
+    (function () {
+        const { C, num, vnd, short, axisX, axisY } = VZ;
+        const ms = [...document.querySelectorAll('.rf-month')].map(el => ({ el, m: el.dataset.m, otb: num(el.dataset.otb), pick: Math.max(0, num(el.dataset.pick)),
+            svc: num(el.dataset.svc), ly: num(el.dataset.ly), tg: el.dataset.tg === '' ? null : num(el.dataset.tg), occ: el.dataset.occ, conf: el.dataset.conf }));
+        if (!ms.length) return;
+        // Thanh nho trong tung the: cung thang do giua cac the de so sanh duoc
+        const scale = Math.max(...ms.map(m => Math.max(m.otb + m.pick + m.svc, m.ly, m.tg || 0))) * 1.05 || 1;
+        ms.forEach(m => {
+            const w = v => v * 100 / scale + '%';
+            const [o, p, s] = m.el.querySelectorAll('.seg');
+            o.style.left = 0; o.style.width = w(m.otb);
+            p.style.left = w(m.otb); p.style.width = w(m.pick);
+            s.style.left = w(m.otb + m.pick); s.style.width = w(m.svc); s.style.borderRadius = '0 4px 4px 0';
+            m.el.querySelector('.ly').style.left = w(m.ly);
+            const tg = m.el.querySelector('.tg'); if (m.tg == null) tg.remove(); else tg.style.left = w(m.tg);
+        });
+        const hatch = (() => { const c = document.createElement('canvas'); c.width = c.height = 8; const x = c.getContext('2d');
+            x.fillStyle = '#c9e5f7'; x.fillRect(0, 0, 8, 8); x.strokeStyle = '#9fd0ef'; x.lineWidth = 3;
+            x.beginPath(); x.moveTo(-2, 10); x.lineTo(10, -2); x.moveTo(6, 10); x.lineTo(10, 6); x.moveTo(-2, 2); x.lineTo(2, -2); x.stroke();
+            return document.getElementById('rfChart').getContext('2d').createPattern(c, 'repeat'); })();
+        const bar = (label, data, color, stack) => ({ type: 'bar', label, data, backgroundColor: color, stack, borderRadius: 2, categoryPercentage: .7, barPercentage: .92, maxBarThickness: 54 });
+        new Chart(document.getElementById('rfChart'), {
+            data: { labels: ms.map(m => 'Tháng ' + m.m), datasets: [
+                bar('Đã có trên sổ', ms.map(m => m.otb), C.blue, 'f'),
+                bar('Dự kiến đặt thêm', ms.map(m => m.pick), hatch, 'f'),
+                bar('Dịch vụ', ms.map(m => m.svc), C.teal, 'f'),
+                bar('Cùng kỳ năm trước', ms.map(m => m.ly), '#d5dee6', 'ly'),
+                { type: 'line', label: 'Kế hoạch', data: ms.map(m => m.tg), showLine: false, borderColor: C.red, backgroundColor: C.red,
+                  pointStyle: 'line', pointRadius: 28, pointHoverRadius: 28, pointBorderWidth: 3, order: -1 }
+            ] },
+            options: { interaction: { mode: 'index', intersect: false },
+                plugins: { tooltip: { filter: i => i.parsed.y != null, callbacks: {
+                    label: c => ' ' + c.dataset.label + ': ' + vnd(c.parsed.y) + ' đ',
+                    footer: it => { const m = ms[it[0].dataIndex], t = m.otb + m.pick + m.svc;
+                        return ['Tổng dự báo: ' + vnd(t) + ' đ', 'Công suất dự báo: ' + m.occ + '% · tin cậy ' + m.conf.toLowerCase()]; } } } },
+                scales: { x: axisX({ stacked: true }), y: axisY({ stacked: true, beginAtZero: true, ticks: { color: C.mut, maxTicksLimit: 6, callback: v => short(v) } }) } }
+        });
+    })();
+</script>
 </body>
 </html>

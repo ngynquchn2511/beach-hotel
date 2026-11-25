@@ -52,6 +52,31 @@ public class AdminReviewController {
         model.addAttribute("totalElements", all.size());
         model.addAttribute("averageRating", all.isEmpty() ? 0
                 : Math.round(all.stream().mapToInt(Review::getRating).average().orElse(0) * 10) / 10.0);
+        // Tong quan (khong theo bo loc): phan bo so sao, ty le da tra loi, diem TB 12 thang
+        List<Review> everything = rating == null && hidden == null && replied == null && (q == null || q.isBlank())
+                ? all : reviewService.findAllForAdmin(null, null, null, null);
+        long[] stars = new long[6];
+        everything.forEach(r -> { if (r.getRating() >= 1 && r.getRating() <= 5) stars[r.getRating()]++; });
+        model.addAttribute("starCounts", List.of(stars[5], stars[4], stars[3], stars[2], stars[1]));
+        model.addAttribute("overviewTotal", everything.size());
+        model.addAttribute("overviewAverage", everything.isEmpty() ? 0
+                : Math.round(everything.stream().mapToInt(Review::getRating).average().orElse(0) * 10) / 10.0);
+        model.addAttribute("repliedCount", everything.stream().filter(Review::isReplied).count());
+        java.time.YearMonth now = java.time.YearMonth.now();
+        List<String> trendMonths = new java.util.ArrayList<>();
+        List<Double> trendAvg = new java.util.ArrayList<>();
+        List<Long> trendCount = new java.util.ArrayList<>();
+        for (int k = 11; k >= 0; k--) {
+            java.time.YearMonth ym = now.minusMonths(k);
+            List<Review> ofMonth = everything.stream().filter(r -> r.getCreatedAt() != null
+                    && java.time.YearMonth.from(r.getCreatedAt()).equals(ym)).toList();
+            trendMonths.add(ym.getMonthValue() + "/" + (ym.getYear() % 100));
+            trendCount.add((long) ofMonth.size());
+            trendAvg.add(ofMonth.isEmpty() ? null : Math.round(ofMonth.stream().mapToInt(Review::getRating).average().orElse(0) * 100) / 100.0);
+        }
+        model.addAttribute("trendMonths", trendMonths);
+        model.addAttribute("trendAvg", trendAvg);
+        model.addAttribute("trendCount", trendCount);
         model.addAttribute("currentPage", Math.max(1, Math.min(page, totalPages)));
         model.addAttribute("totalPages", totalPages);
         model.addAttribute("pageNumbers", PaginationUtil.pageNumbersToShow(page, totalPages));

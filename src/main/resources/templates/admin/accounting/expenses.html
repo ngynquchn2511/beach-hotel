@@ -169,7 +169,11 @@
 <th:block th:replace="~{fragments/viz :: scripts}"></th:block>
 <script th:inline="javascript">
     /*<![CDATA[*/
-    const EX = { months: /*[[${histMonths}]]*/ [], byCat: /*[[${histByCategory}]]*/ {}, labels: /*[[${categoryLabels}]]*/ {} };
+    const EX = {
+        months: /*[[${histMonths}]]*/ [],
+        byCat: /*[[${histByCategory}]]*/ {},
+        labels: /*[[${categoryLabels}]]*/ {}
+    };
     EX.months = EX.months || []; EX.byCat = EX.byCat || {}; EX.labels = EX.labels || {};
     /*]]>*/
     (function () {

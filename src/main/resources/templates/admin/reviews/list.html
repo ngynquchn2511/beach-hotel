@@ -11,7 +11,19 @@
         .stars .bi { color: #f2b705; }
         .review-comment { white-space: pre-line; margin: 0; }
         tr.is-hidden td { opacity: .55; }
+        .rv-avg { font-size: 3rem; font-weight: 800; line-height: 1; color: var(--vz-ink); font-variant-numeric: tabular-nums; }
+        .rv-stars .bi { color: #f2b705; font-size: 1.05rem; }
+        .rv-dist a { display: grid; grid-template-columns: 34px 1fr 44px; gap: 8px; align-items: center; padding: 3px 4px; border-radius: 6px;
+                     text-decoration: none; color: var(--vz-ink); font-size: .82rem; }
+        .rv-dist a:hover, .rv-dist a.on { background: #f1f7fc; }
+        .rv-dist .vz-bar { height: 9px; }
+        .rv-dist .vz-bar span { background: #f2b705; }
+        .rv-dist .n { text-align: right; color: var(--vz-mut); font-variant-numeric: tabular-nums; }
+        .rv-reply { display: flex; align-items: center; gap: 14px; }
+        .rv-ring { width: 74px; height: 74px; border-radius: 50%; display: grid; place-items: center; flex: 0 0 auto; }
+        .rv-ring b { width: 58px; height: 58px; border-radius: 50%; background: #fff; display: grid; place-items: center; font-size: .95rem; }
     </style>
+    <th:block th:replace="~{fragments/viz :: styles}"></th:block>
 </head>
 <body class="eaut eaut-admin">
 
@@ -30,6 +42,37 @@
                     <span th:text="|${totalElements} đánh giá|"></span>
                     <span th:if="${totalElements > 0}"> · trung bình <b th:text="${averageRating}"></b> <i class="bi bi-star-fill text-warning"></i></span>
                 </span>
+            </div>
+
+            <!-- Tong quan danh gia (toan bo, khong theo bo loc) -->
+            <div class="vz-card" th:if="${overviewTotal > 0}">
+                <div class="row g-4 align-items-center">
+                    <div class="col-md-3 text-center">
+                        <div class="rv-avg" th:text="${overviewAverage}"></div>
+                        <div class="rv-stars my-1">
+                            <i th:each="n : ${#numbers.sequence(1, 5)}" th:class="${n <= overviewAverage + 0.25} ? 'bi bi-star-fill' : (${n - 0.75 <= overviewAverage} ? 'bi bi-star-half' : 'bi bi-star')"></i></div>
+                        <div class="small text-muted" th:text="${overviewTotal} + ' đánh giá'"></div>
+                    </div>
+                    <div class="col-md-4 rv-dist">
+                        <a th:each="c, st : ${starCounts}" th:with="star=${5 - st.index}" th:classappend="${rating == star} ? 'on'"
+                           th:href="@{/admin/reviews(rating=${star})}" th:title="'Lọc ' + ${star} + ' sao'">
+                            <span th:text="${star} + ' ★'"></span>
+                            <div class="vz-bar"><span th:style="'width:' + ${overviewTotal > 0 ? c * 100.0 / overviewTotal : 0} + '%'"></span></div>
+                            <span class="n" th:text="${c}"></span>
+                        </a>
+                    </div>
+                    <div class="col-md-5">
+                        <div class="rv-reply mb-2" th:with="pct=${repliedCount * 100 / overviewTotal}">
+                            <div class="rv-ring" th:style="'background: conic-gradient(var(--vz-green) ' + ${pct} + '%, #eef3f7 0)'"><b th:text="${pct} + '%'"></b></div>
+                            <div><div class="fw-semibold">Đã trả lời</div>
+                                <div class="small text-muted" th:text="${repliedCount} + ' / ' + ${overviewTotal} + ' đánh giá'"></div>
+                                <a class="small fw-semibold" th:if="${overviewTotal - repliedCount > 0}" th:href="@{/admin/reviews(replied=false)}"
+                                   th:text="${overviewTotal - repliedCount} + ' chưa trả lời →'"></a></div>
+                        </div>
+                        <div class="small text-muted mb-1">Điểm trung bình 12 tháng</div>
+                        <div class="vz-chart" style="height:110px"><canvas id="rvTrend" role="img" aria-label="Điểm trung bình theo tháng"></canvas></div>
+                    </div>
+                </div>
             </div>
 
             <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
@@ -169,5 +212,29 @@
 
 <div th:replace="~{fragments/footer :: footer}"></div>
 
+<th:block th:replace="~{fragments/viz :: scripts}"></th:block>
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    const RV = {
+        m: /*[[${trendMonths}]]*/ [],
+        avg: /*[[${trendAvg}]]*/ [],
+        n: /*[[${trendCount}]]*/ []
+    };
+    /*]]>*/
+    (function () {
+        const el = document.getElementById('rvTrend');
+        if (!el || !window.VZ || !RV.m) return;
+        const { C } = VZ;
+        new Chart(el, {
+            data: { labels: RV.m, datasets: [
+                { type: 'line', label: 'Điểm TB', data: RV.avg, borderColor: '#e0a800', backgroundColor: '#e0a800', borderWidth: 2, tension: .3,
+                  pointRadius: 2.5, spanGaps: true } ] },
+            options: { interaction: { mode: 'index', intersect: false },
+                plugins: { tooltip: { callbacks: { label: c => ' Điểm TB: ' + (c.parsed.y ?? '–') + ' · ' + RV.n[c.dataIndex] + ' đánh giá' } } },
+                scales: { x: { grid: { display: false }, border: { display: false }, ticks: { color: C.mut, font: { size: 9.5 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 6 } },
+                          y: { min: 1, max: 5, grid: { color: C.grid }, border: { display: false }, ticks: { color: C.mut, stepSize: 1, font: { size: 9.5 } } } } }
+        });
+    })();
+</script>
 </body>
 </html>

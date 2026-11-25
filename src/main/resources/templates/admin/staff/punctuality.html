@@ -20,7 +20,9 @@
         .rate-bar > div { height: 100%; }
         .stat .num { font-size: 1.5rem; font-weight: 700; line-height: 1.1; }
         tr.row-link { cursor: pointer; }
+        .vz-kpi .num { font-size: 1.45rem; font-weight: 800; line-height: 1.2; }
     </style>
+    <th:block th:replace="~{fragments/viz :: styles}"></th:block>
 </head>
 <body class="eaut eaut-admin">
 
@@ -52,20 +54,40 @@
             <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
 
             <div class="row g-3 mb-4">
-                <div class="col-6 col-lg"><div class="bg-white p-3 rounded shadow-sm h-100 stat"><div class="small text-muted">Ca đã qua</div>
+                <div class="col-6 col-lg"><div class="vz-kpi"><div class="small text-muted">Ca đã qua</div>
                     <div class="num" th:text="${totalDone}"></div></div></div>
-                <div class="col-6 col-lg"><div class="bg-white p-3 rounded shadow-sm h-100 stat"><div class="small text-muted">Lượt đi muộn</div>
+                <div class="col-6 col-lg"><div class="vz-kpi"><div class="small text-muted">Lượt đi muộn</div>
                     <div class="num text-warning" th:text="${totalLate}"></div></div></div>
-                <div class="col-6 col-lg"><div class="bg-white p-3 rounded shadow-sm h-100 stat"><div class="small text-muted">Về sớm</div>
+                <div class="col-6 col-lg"><div class="vz-kpi"><div class="small text-muted">Về sớm</div>
                     <div class="num" style="color:#a0521b" th:text="${totalEarly}"></div></div></div>
-                <div class="col-6 col-lg"><div class="bg-white p-3 rounded shadow-sm h-100 stat"><div class="small text-muted">Vắng không báo</div>
+                <div class="col-6 col-lg"><div class="vz-kpi"><div class="small text-muted">Vắng không báo</div>
                     <div class="num text-danger" th:text="${totalAbsent}"></div></div></div>
-                <div class="col-12 col-lg"><div class="bg-white p-3 rounded shadow-sm h-100 stat"><div class="small text-muted">Gợi ý trừ lương</div>
+                <div class="col-12 col-lg"><div class="vz-kpi"><div class="small text-muted">Gợi ý trừ lương</div>
                     <div class="num" th:text="${#numbers.formatDecimal(totalDeduction, 1, 'POINT', 0, 'COMMA')} + ' đ'"></div></div></div>
             </div>
 
+            <!-- Bieu do: ty le ca theo ket qua tung nguoi + vi pham theo ngay -->
+            <div class="row g-3 mb-3" th:unless="${#lists.isEmpty(ranking)}">
+                <div class="col-lg-7">
+                    <div class="vz-card h-100 mb-0">
+                        <div class="vz-head"><div><h5>Kết quả các ca theo nhân viên</h5><div class="sub" id="pcSub">Mỗi thanh = 100% số ca đã qua của 1 người</div></div></div>
+                        <div class="vz-chart" id="pcPeopleBox"><canvas id="pcPeople" role="img" aria-label="Kết quả ca theo nhân viên"></canvas></div>
+                        <div class="vz-key mt-2">
+                            <span><i style="background:var(--vz-green)"></i>Đúng giờ</span><span><i style="background:var(--vz-amber)"></i>Đi muộn</span>
+                            <span><i style="background:#e8915a"></i>Về sớm</span><span><i style="background:var(--vz-red)"></i>Vắng</span>
+                            <span><i style="background:var(--vz-gray)"></i>Có phép</span></div>
+                    </div>
+                </div>
+                <div class="col-lg-5">
+                    <div class="vz-card h-100 mb-0">
+                        <div class="vz-head"><div><h5>Vi phạm theo ngày</h5><div class="sub" id="pcDaySub">Số lượt đi muộn / về sớm / vắng mỗi ngày trong tháng</div></div></div>
+                        <div class="vz-chart" style="height:240px"><canvas id="pcDays" role="img" aria-label="Vi phạm theo ngày"></canvas></div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Bang tong hop tung nhan vien -->
-            <div class="bg-white p-4 rounded shadow-sm mb-4">
+            <div class="vz-card">
                 <h6 class="fw-bold mb-3">Tổng hợp theo nhân viên <span class="text-muted fw-normal small">(nhiều vi phạm nhất lên đầu · bấm để xem chi tiết)</span></h6>
                 <div th:if="${#lists.isEmpty(ranking)}" class="text-muted small">Tháng này chưa có lịch trực.</div>
                 <div class="table-responsive" th:unless="${#lists.isEmpty(ranking)}">
@@ -74,7 +96,8 @@
                             <th class="text-center">Đi muộn</th><th class="text-center">Về sớm</th><th class="text-center">Vắng</th>
                             <th class="text-center">Có phép</th><th>Chuyên cần</th><th class="text-end">Gợi ý trừ</th><th class="text-end">Gợi ý thưởng</th></tr></thead>
                         <tbody>
-                        <tr th:each="s : ${ranking}" class="row-link" th:classappend="${s.staff.id == staffId} ? 'table-active'"
+                        <tr th:each="s : ${ranking}" class="row-link pc-person" th:classappend="${s.staff.id == staffId} ? 'table-active'"
+                            th:attr="data-name=${s.staff.fullName}, data-done=${s.done}, data-ontime=${s.onTime}, data-late=${s.late}, data-early=${s.early}, data-absent=${s.absent}, data-excused=${s.excused}, data-rate=${s.rate}"
                             th:data-href="@{/admin/punctuality(month=${month}, staffId=${s.staff.id})}">
                             <td><div class="fw-semibold" th:text="${s.staff.fullName}"></div>
                                 <div class="text-muted" th:text="${s.staff.role.vietnameseLabel}"></div></td>
@@ -101,7 +124,7 @@
             </div>
 
             <!-- Chi tiet 1 nhan vien -->
-            <div th:if="${staffId != null}" class="bg-white p-4 rounded shadow-sm mb-4">
+            <div th:if="${staffId != null}" class="vz-card">
                 <div th:if="${person == null}" class="text-muted small">Nhân viên này không có ca trực nào trong tháng.</div>
                 <th:block th:if="${person != null}">
                     <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
@@ -175,14 +198,14 @@
             </div>
 
             <!-- Vi pham ca thang (khi chua chon nhan vien) -->
-            <div th:if="${staffId == null}" class="bg-white p-4 rounded shadow-sm mb-4">
+            <div th:if="${staffId == null}" class="vz-card">
                 <h6 class="fw-bold mb-3">Ai đi muộn / vắng, lúc nào <span class="text-muted fw-normal small">(mới nhất trước)</span></h6>
                 <div th:if="${#lists.isEmpty(incidents)}" class="small text-muted">Tháng này chưa có ai đi muộn, về sớm hay vắng ca.</div>
                 <div class="table-responsive" th:unless="${#lists.isEmpty(incidents)}" style="max-height: 460px; overflow-y: auto">
                     <table class="table table-sm small align-middle mb-0">
                         <thead class="table-light" style="position: sticky; top: 0"><tr><th>Ngày</th><th>Nhân viên</th><th>Ca</th><th>Giờ vào</th><th>Kết quả</th></tr></thead>
                         <tbody>
-                        <tr th:each="c : ${incidents}">
+                        <tr th:each="c : ${incidents}" class="pc-inc" th:attr="data-day=${c.duty.workDate.dayOfMonth}, data-st=${c.status.name()}, data-early=${c.earlyMinutes > 0}">
                             <td class="text-nowrap" th:text="${#temporals.format(c.duty.workDate, 'EEE dd/MM')}"></td>
                             <td><a th:href="@{/admin/punctuality(month=${month}, staffId=${c.duty.staff.id})}" th:text="${c.duty.staff.fullName}"></a></td>
                             <td class="text-nowrap" th:text="${c.duty.shift.label} + ' ' + ${c.duty.shift.timeRange}"></td>
@@ -196,8 +219,8 @@
                 </div>
             </div>
 
-            <div class="bg-white p-4 rounded shadow-sm small text-muted">
-                <div class="fw-semibold text-body mb-1">Cách tính</div>
+            <details class="vz-card small text-muted">
+                <summary class="fw-semibold text-body mb-1">Cách tính</summary>
                 <ul class="mb-0">
                     <li>Giờ vào = lần đầu mở cổng quản trị trong ngày; vào trễ quá <span th:text="${policy.grace}"></span> phút so với giờ bắt đầu ca là <b>đi muộn</b>.</li>
                     <li><span th:text="${policy.freeLates}"></span> lần muộn đầu tháng (mỗi lần ≤ <span th:text="${policy.freeLateMinutes}"></span> phút) chỉ nhắc nhở. Từ lần thứ
@@ -208,13 +231,58 @@
                     <li><b>Thưởng chuyên cần</b> <span th:text="${#numbers.formatDecimal(policy.bonus, 1, 'POINT', 0, 'COMMA')}"></span> đ:
                         từ <span th:text="${policy.bonusMinShifts}"></span> ca trong tháng, không muộn, không về sớm, không vắng không báo.</li>
                 </ul>
-            </div>
+            </details>
         </div>
     </div>
 </main>
 
 <div th:replace="~{fragments/footer :: footer}"></div>
-<script>
+<th:block th:replace="~{fragments/viz :: scripts}"></th:block>
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    const PC_MONTH = /*[[${month.toString()}]]*/ '2026-11';
+    /*]]>*/
+    (function () {
+        if (!window.VZ) return;
+        const { C, num, axisX, axisY } = VZ;
+        const ppl = [...document.querySelectorAll('tr.pc-person')].map(tr => ({ name: tr.dataset.name, done: num(tr.dataset.done), on: num(tr.dataset.ontime),
+            late: num(tr.dataset.late), early: num(tr.dataset.early), abs: num(tr.dataset.absent), exc: num(tr.dataset.excused), rate: num(tr.dataset.rate) }))
+            .filter(p => p.done > 0);
+        if (ppl.length) {
+            const totDone = ppl.reduce((s, p) => s + p.done, 0), totOn = ppl.reduce((s, p) => s + p.on, 0);
+            document.getElementById('pcSub').textContent = 'Toàn đội đúng giờ ' + VZ.pct(totOn * 100 / totDone) + ' số ca · mỗi thanh = 100% số ca đã qua của 1 người';
+            document.getElementById('pcPeopleBox').style.height = Math.max(160, ppl.length * 30 + 40) + 'px';
+            const share = (p, v) => p.done ? v * 100 / p.done : 0;
+            const ds = (label, key, color) => ({ label, data: ppl.map(p => share(p, p[key])), raw: ppl.map(p => p[key]), backgroundColor: color, stack: 's', barThickness: 16, borderRadius: 2 });
+            new Chart(document.getElementById('pcPeople'), { type: 'bar',
+                data: { labels: ppl.map(p => p.name), datasets: [ds('Đúng giờ', 'on', C.green), ds('Đi muộn', 'late', C.amber), ds('Về sớm', 'early', '#e8915a'),
+                                                               ds('Vắng', 'abs', C.red), ds('Có phép', 'exc', C.gray)] },
+                options: { indexAxis: 'y', interaction: { mode: 'index', intersect: false },
+                    plugins: { tooltip: { filter: i => i.dataset.raw[i.dataIndex] > 0, callbacks: {
+                        label: c => ' ' + c.dataset.label + ': ' + c.dataset.raw[c.dataIndex] + ' ca (' + VZ.pct(c.parsed.x) + ')',
+                        footer: it => ppl[it[0].dataIndex].done + ' ca đã qua · chuyên cần ' + ppl[it[0].dataIndex].rate + '%' } } },
+                    scales: { x: axisY({ stacked: true, max: 100, beginAtZero: true, ticks: { color: C.mut, callback: v => v + '%', stepSize: 25 } }),
+                              y: { stacked: true, grid: { display: false }, border: { display: false }, afterFit: a => { a.width += 10; }, ticks: { color: C.ink, font: { size: 12 } } } } } });
+        }
+        // Vi pham theo ngay trong thang
+        const [y, m] = PC_MONTH.split('-').map(Number), nDays = new Date(y, m, 0).getDate();
+        const late = Array(nDays).fill(0), early = Array(nDays).fill(0), abs = Array(nDays).fill(0);
+        document.querySelectorAll('tr.pc-inc').forEach(tr => { const d = num(tr.dataset.day) - 1, st = tr.dataset.st;
+            if (st === 'LATE') late[d]++; else if (st === 'ABSENT') abs[d]++; else if (tr.dataset.early === 'true') early[d]++; });
+        const canvas = document.getElementById('pcDays');
+        if (canvas) {
+            const tot = late.map((v, k) => v + early[k] + abs[k]);
+            const worst = tot.indexOf(Math.max(...tot));
+            if (tot[worst] > 0) document.getElementById('pcDaySub').textContent = 'Nhiều nhất ngày ' + (worst + 1) + '/' + m + ' (' + tot[worst] + ' lượt) · tổng ' + tot.reduce((a, b) => a + b, 0) + ' lượt';
+            const b = (label, data, color) => ({ label, data, backgroundColor: color, stack: 's', borderRadius: 2, categoryPercentage: .8, barPercentage: .9 });
+            new Chart(canvas, { type: 'bar',
+                data: { labels: Array.from({ length: nDays }, (_, k) => k + 1), datasets: [b('Đi muộn', late, C.amber), b('Về sớm', early, '#e8915a'), b('Vắng', abs, C.red)] },
+                options: { interaction: { mode: 'index', intersect: false },
+                    plugins: { tooltip: { filter: i => i.parsed.y > 0, callbacks: { title: it => 'Ngày ' + it[0].label + '/' + m } } },
+                    scales: { x: axisX({ stacked: true, ticks: { color: C.mut, autoSkip: false, maxRotation: 0, font: { size: 10 }, callback: (v, k) => (k === 0 || (k + 1) % 5 === 0) ? k + 1 : '' } }),
+                              y: axisY({ stacked: true, beginAtZero: true, ticks: { color: C.mut, precision: 0, maxTicksLimit: 5 } }) } } });
+        }
+    })();
     document.querySelectorAll('tr.row-link').forEach(tr => tr.addEventListener('click', () => location.href = tr.dataset.href));
 </script>
 </body>
