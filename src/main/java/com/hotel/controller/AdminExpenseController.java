@@ -46,6 +46,25 @@ public class AdminExpenseController {
         model.addAttribute("totals", expenseService.totalsByCategory(m));
         model.addAttribute("total", expenses.stream().map(Expense::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add));
         model.addAttribute("categories", Expense.Category.values());
+        // Xu huong 6 thang (ket thuc o thang dang xem) theo nhom chi, cho bieu do cot chong
+        List<String> histMonths = new java.util.ArrayList<>();
+        java.util.Map<String, List<BigDecimal>> histByCategory = new java.util.LinkedHashMap<>();
+        java.util.Map<String, String> categoryLabels = new java.util.LinkedHashMap<>();
+        for (Expense.Category c : Expense.Category.values()) {
+            histByCategory.put(c.name(), new java.util.ArrayList<>());
+            categoryLabels.put(c.name(), c.getLabel());
+        }
+        for (int k = 5; k >= 0; k--) {
+            YearMonth hm = m.minusMonths(k);
+            histMonths.add(hm.getMonthValue() + "/" + (hm.getYear() % 100));
+            java.util.Map<Expense.Category, BigDecimal> t = k == 0 ? expenseService.totalsByCategory(m) : expenseService.totalsByCategory(hm);
+            for (Expense.Category c : Expense.Category.values()) {
+                histByCategory.get(c.name()).add(t.getOrDefault(c, BigDecimal.ZERO));
+            }
+        }
+        model.addAttribute("histMonths", histMonths);
+        model.addAttribute("histByCategory", histByCategory);
+        model.addAttribute("categoryLabels", categoryLabels);
         model.addAttribute("costTypes", COSTED_TYPES);
         // Khoa chuoi (ten enum): SpEL khong tra duoc EnumMap bang khoa enum
         Map<String, Integer> rates = new java.util.HashMap<>();

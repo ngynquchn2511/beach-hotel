@@ -7,6 +7,18 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+    <th:block th:replace="~{fragments/viz :: styles}"></th:block>
+    <style>
+        .ch-row { display: grid; grid-template-columns: minmax(110px, 180px) 1fr 190px; gap: 12px; align-items: center; padding: 8px 0; border-bottom: 1px solid #eef3f7; }
+        .ch-row:last-child { border-bottom: 0; }
+        .ch-row .nm { font-weight: 600; }
+        .ch-row .nm small { display: block; color: var(--vz-mut); font-weight: 400; font-size: .75rem; }
+        .ch-row .vz-stack { height: 14px; border-radius: 4px; }
+        .ch-row .vals { text-align: right; font-size: .84rem; font-variant-numeric: tabular-nums; }
+        .ch-row .vals b { font-size: .95rem; }
+        .ch-row .thr { position: relative; }
+        .ch-row .thr::after { content: ""; position: absolute; top: -4px; bottom: -4px; left: 20%; border-left: 2px dashed var(--vz-red); }
+    </style>
 </head>
 <body class="eaut eaut-admin">
 
@@ -22,71 +34,170 @@
             <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
                 <div>
                     <h3 class="fw-bold mb-1">Hủy &amp; không đến</h3>
-                    <p class="text-muted small mb-0">Tính theo tháng khách đặt. "Hủy sát ngày" = hủy trong <span th:text="${lateHours}"></span> giờ trước giờ nhận phòng.
+                    <p class="text-muted small mb-0">Tính theo tháng khách đặt. «Hủy sát ngày» = hủy trong <span th:text="${lateHours}"></span> giờ trước giờ nhận phòng.
                         Cọc giữ lại = cọc đã thu trừ tiền hoàn.</p>
                 </div>
-                <form method="get" class="d-flex gap-2 align-items-end">
-                    <input type="month" name="from" class="form-control form-control-sm" th:value="${from}">
-                    <input type="month" name="to" class="form-control form-control-sm" th:value="${to}">
-                    <button class="btn btn-sm btn-outline-primary">Xem</button>
+                <div class="d-flex gap-2 align-items-center flex-wrap">
+                    <form method="get" class="vz-period" aria-label="Khoảng tháng">
+                        <input type="month" name="from" th:value="${from}" aria-label="Từ tháng">
+                        <span class="px-1 text-muted">→</span>
+                        <input type="month" name="to" th:value="${to}" aria-label="Đến tháng">
+                        <button type="submit">Xem</button>
+                    </form>
                     <a class="btn btn-sm btn-success text-nowrap" th:href="@{/admin/reports/cancellations/export(from=${from}, to=${to})}">
                         <i class="bi bi-file-earmark-excel me-1"></i>Excel</a>
-                </form>
+                </div>
             </div>
 
-            <div class="row g-3 mb-4" th:with="t=${r.total}">
-                <div class="col-6 col-lg-3"><div class="bg-white p-3 rounded shadow-sm h-100"><div class="small text-muted">Tỷ lệ hủy</div>
-                    <div class="fw-bold fs-5" th:classappend="${t.cancelRate >= 20} ? 'text-danger'" th:text="${t.cancelRate} + '%'"></div>
-                    <div class="small text-muted" th:text="${t.cancelled} + ' / ' + ${t.created} + ' đơn'"></div></div></div>
-                <div class="col-6 col-lg-3"><div class="bg-white p-3 rounded shadow-sm h-100"><div class="small text-muted">Không đến</div>
-                    <div class="fw-bold fs-5" th:text="${t.noShows} + ' (' + ${t.noShowRate} + '%)'"></div></div></div>
-                <div class="col-6 col-lg-3"><div class="bg-white p-3 rounded shadow-sm h-100"><div class="small text-muted">Hủy sát ngày</div>
-                    <div class="fw-bold fs-5" th:text="${t.lateCancels}"></div></div></div>
-                <div class="col-6 col-lg-3"><div class="bg-white p-3 rounded shadow-sm h-100"><div class="small text-muted">Cọc giữ lại (VND)</div>
-                    <div class="fw-bold fs-5" th:text="${#numbers.formatDecimal(t.forfeited, 1, 'POINT', 0, 'COMMA')}"></div></div></div>
+            <!-- So lieu chinh -->
+            <div class="row g-3 mb-3" th:with="t=${r.total}">
+                <div class="col-lg-4">
+                    <div class="vz-kpi hero"><div class="lbl">Tỷ lệ hủy</div>
+                        <div class="val" th:text="${t.cancelRate} + '%'"></div>
+                        <div class="sub" th:text="${t.cancelled} + ' / ' + ${t.created} + ' đơn bị hủy' + (${t.cancelRate >= 20} ? ' · vượt mức 20%' : ' · dưới mức 20%')"></div></div>
+                </div>
+                <div class="col-6 col-lg">
+                    <div class="vz-kpi"><div class="lbl"><i class="bi bi-person-x me-1" style="color:var(--vz-amber)"></i>Không đến</div>
+                        <div class="val" th:text="${t.noShows}"></div>
+                        <div class="sub" th:text="${t.noShowRate} + '% số đơn'"></div></div>
+                </div>
+                <div class="col-6 col-lg">
+                    <div class="vz-kpi"><div class="lbl"><i class="bi bi-alarm me-1" style="color:var(--vz-red)"></i>Hủy sát ngày</div>
+                        <div class="val" th:text="${t.lateCancels}"></div>
+                        <div class="sub" th:text="${t.cancelled > 0} ? ${t.lateCancels * 100 / t.cancelled} + '% số đơn hủy' : 'chưa có đơn hủy'"></div></div>
+                </div>
+                <div class="col-12 col-lg">
+                    <div class="vz-kpi"><div class="lbl"><i class="bi bi-safe me-1" style="color:var(--vz-green)"></i>Cọc giữ lại</div>
+                        <div class="val" th:text="${#numbers.formatDecimal(t.forfeited, 1, 'POINT', 0, 'COMMA')}"></div>
+                        <div class="sub">VND, đã trừ tiền hoàn</div></div>
+                </div>
             </div>
 
-            <th:block th:each="section : ${ {'Theo tháng', 'Theo kênh đặt'} }">
-                <h6 class="fw-bold" th:text="${section}"></h6>
-                <div class="bg-white p-3 rounded shadow-sm mb-4 table-responsive">
-                    <table class="table table-sm align-middle mb-0 text-end">
-                        <thead><tr><th class="text-start"></th><th>Đơn đặt</th><th>Hủy</th><th>%</th><th>Không đến</th><th>%</th><th>Sát ngày</th><th>Cọc giữ lại</th></tr></thead>
+            <!-- Xu huong theo thang -->
+            <div class="vz-card">
+                <div class="vz-head">
+                    <div><h5>Theo tháng đặt</h5><div class="sub" id="cxSub">Cột: số đơn bị hủy / không đến · đường: tỷ lệ trên tổng số đơn</div></div>
+                    <div class="vz-key">
+                        <span><i style="background:#f3b3c0"></i>Đơn hủy</span>
+                        <span><i style="background:#f8d58d"></i>Không đến</span>
+                        <span><i class="line" style="border-color:var(--vz-red)"></i>Tỷ lệ hủy</span>
+                        <span><i class="line" style="border-color:var(--vz-amber)"></i>Tỷ lệ không đến</span>
+                    </div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-lg-6"><div class="small fw-semibold text-muted mb-1">Số đơn</div>
+                        <div class="vz-chart" style="height:240px"><canvas id="cxCount" role="img" aria-label="Số đơn hủy và không đến theo tháng"></canvas></div></div>
+                    <div class="col-lg-6"><div class="small fw-semibold text-muted mb-1">Tỷ lệ (%) · vạch đứt = mức cảnh báo 20%</div>
+                        <div class="vz-chart" style="height:240px"><canvas id="cxRate" role="img" aria-label="Tỷ lệ hủy và không đến theo tháng"></canvas></div></div>
+                </div>
+            </div>
+
+            <!-- Theo kenh -->
+            <div class="vz-card" th:unless="${#lists.isEmpty(r.channels)}">
+                <div class="vz-head">
+                    <div><h5>Theo kênh đặt</h5><div class="sub">Thanh: phần đơn bị hủy (đỏ) và không đến (vàng) trong tổng đơn của kênh · vạch đứt = 20%</div></div>
+                </div>
+                <div th:each="m : ${r.channels}" class="ch-row">
+                    <div class="nm" th:text="${m.label}">Kênh<small></small></div>
+                    <div class="thr"><div class="vz-stack">
+                        <span th:style="'width:' + ${m.cancelRate} + '%;background:var(--vz-red)'" th:title="'Hủy ' + ${m.cancelRate} + '%'"></span>
+                        <span th:style="'width:' + ${m.noShowRate} + '%;background:var(--vz-amber)'" th:title="'Không đến ' + ${m.noShowRate} + '%'"></span></div></div>
+                    <div class="vals"><b th:classappend="${m.cancelRate >= 20} ? 'vz-neg'" th:text="${m.cancelRate} + '%'"></b> hủy
+                        <div class="small text-muted" th:text="${m.cancelled} + '/' + ${m.created} + ' đơn · ' + ${m.noShows} + ' không đến'"></div></div>
+                </div>
+            </div>
+
+            <!-- Bang so lieu -->
+            <div class="vz-card">
+                <div class="vz-head"><div><h5>Bảng số liệu</h5><div class="sub">Theo tháng và theo kênh</div></div></div>
+                <th:block th:each="section : ${ {'Theo tháng', 'Theo kênh đặt'} }">
+                    <div class="small fw-semibold text-muted mt-2 mb-1" th:text="${section}"></div>
+                    <div class="table-responsive mb-3">
+                        <table class="vz-table" th:classappend="${section == 'Theo tháng'} ? 'cx-months'">
+                            <thead><tr><th></th><th class="r">Đơn đặt</th><th class="r">Hủy</th><th class="r">% hủy</th><th class="r">Không đến</th><th class="r">%</th><th class="r">Sát ngày</th><th class="r">Cọc giữ lại</th></tr></thead>
+                            <tbody>
+                            <tr th:each="m : ${section == 'Theo tháng' ? r.months : r.channels}"
+                                th:attr="data-label=${m.label}, data-created=${m.created}, data-cancelled=${m.cancelled}, data-noshow=${m.noShows}, data-cr=${m.cancelRate}, data-nr=${m.noShowRate}">
+                                <td class="fw-semibold" th:text="${m.label}"></td>
+                                <td class="r" th:text="${m.created}"></td>
+                                <td class="r" th:text="${m.cancelled}"></td>
+                                <td class="r" th:classappend="${m.cancelRate >= 20} ? 'vz-neg fw-bold'" th:text="${m.cancelRate} + '%'"></td>
+                                <td class="r" th:text="${m.noShows}"></td>
+                                <td class="r" th:text="${m.noShowRate} + '%'"></td>
+                                <td class="r" th:text="${m.lateCancels}"></td>
+                                <td class="r" th:text="${#numbers.formatDecimal(m.forfeited, 1, 'POINT', 0, 'COMMA')}"></td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </th:block>
+            </div>
+
+            <!-- Khach huy nhieu lan -->
+            <div class="vz-card">
+                <div class="vz-head"><div><h5>Khách hủy / không đến từ 2 lần</h5><div class="sub">Nên yêu cầu đặt cọc cao hơn hoặc gọi xác nhận trước ngày đến</div></div></div>
+                <div th:if="${#lists.isEmpty(r.repeatGuests)}" class="vz-empty"><i class="bi bi-emoji-smile"></i>Không có khách nào.</div>
+                <div class="table-responsive" th:unless="${#lists.isEmpty(r.repeatGuests)}">
+                    <table class="vz-table">
+                        <thead><tr><th>Khách</th><th>Liên hệ</th><th class="c">Hủy</th><th class="c">Không đến</th><th>Đơn gần nhất</th></tr></thead>
                         <tbody>
-                        <tr th:each="m : ${section == 'Theo tháng' ? r.months : r.channels}">
-                            <td class="text-start" th:text="${m.label}"></td>
-                            <td th:text="${m.created}"></td>
-                            <td th:text="${m.cancelled}"></td>
-                            <td th:classappend="${m.cancelRate >= 20} ? 'text-danger fw-semibold'" th:text="${m.cancelRate}"></td>
-                            <td th:text="${m.noShows}"></td>
-                            <td th:text="${m.noShowRate}"></td>
-                            <td th:text="${m.lateCancels}"></td>
-                            <td th:text="${#numbers.formatDecimal(m.forfeited, 1, 'POINT', 0, 'COMMA')}"></td>
+                        <tr th:each="g : ${r.repeatGuests}">
+                            <td class="fw-semibold" th:text="${g.customer.fullName}"></td>
+                            <td class="small text-muted" th:text="${g.customer.email} + (${g.customer.phoneNumber != null} ? ' · ' + ${g.customer.phoneNumber} : '')"></td>
+                            <td class="c"><span class="vz-pill bad" th:text="${g.cancelled}"></span></td>
+                            <td class="c"><span th:if="${g.noShows > 0}" class="vz-pill warn" th:text="${g.noShows}"></span><span th:if="${g.noShows == 0}" class="zero">0</span></td>
+                            <td><a class="fw-semibold" th:href="@{/admin/bookings/{id}(id=${g.last.id})}" th:text="'#' + ${g.last.code}"></a></td>
                         </tr>
                         </tbody>
                     </table>
                 </div>
-            </th:block>
-
-            <h6 class="fw-bold">Khách hủy / không đến từ 2 lần</h6>
-            <div th:if="${#lists.isEmpty(r.repeatGuests)}" class="alert alert-info">Không có khách nào.</div>
-            <div class="bg-white p-3 rounded shadow-sm" th:unless="${#lists.isEmpty(r.repeatGuests)}">
-                <table class="table table-sm align-middle mb-0">
-                    <thead><tr><th>Khách</th><th>Liên hệ</th><th class="text-end">Hủy</th><th class="text-end">Không đến</th><th>Đơn gần nhất</th></tr></thead>
-                    <tbody>
-                    <tr th:each="g : ${r.repeatGuests}">
-                        <td class="fw-semibold" th:text="${g.customer.fullName}"></td>
-                        <td class="small" th:text="${g.customer.email} + (${g.customer.phoneNumber != null} ? ' · ' + ${g.customer.phoneNumber} : '')"></td>
-                        <td class="text-end" th:text="${g.cancelled}"></td>
-                        <td class="text-end" th:classappend="${g.noShows > 0} ? 'text-danger fw-semibold'" th:text="${g.noShows}"></td>
-                        <td><a th:href="@{/admin/bookings/{id}(id=${g.last.id})}" th:text="'#' + ${g.last.code}"></a></td>
-                    </tr>
-                    </tbody>
-                </table>
             </div>
         </div>
     </div>
 </main>
 
 <div th:replace="~{fragments/footer :: footer}"></div>
+<th:block th:replace="~{fragments/viz :: scripts}"></th:block>
+<script>
+    (function () {
+        const { C, num, axisX, axisY } = VZ;
+        const rows = [...document.querySelectorAll('.cx-months tbody tr')].map(tr => ({
+            label: tr.dataset.label, created: num(tr.dataset.created), cancelled: num(tr.dataset.cancelled),
+            noshow: num(tr.dataset.noshow), cr: num(tr.dataset.cr), nr: num(tr.dataset.nr) }));
+        if (!rows.length) return;
+        const labels = rows.map(r => r.label);
+        const worst = rows.reduce((a, b) => b.cr > a.cr ? b : a);
+        const over = rows.filter(r => r.cr >= 20).length;
+        document.getElementById('cxSub').textContent = 'Cao nhất: ' + worst.label + ' (' + VZ.pct(worst.cr) + ')'
+            + (over ? ' · ' + over + ' tháng vượt 20%' : ' · không tháng nào vượt 20%');
+        const tip = { callbacks: { afterTitle: it => rows[it[0].dataIndex].created + ' đơn đặt' } };
+        new Chart(document.getElementById('cxCount'), {
+            type: 'bar',
+            data: { labels, datasets: [
+                { label: 'Đơn hủy', data: rows.map(r => r.cancelled), backgroundColor: '#f3b3c0', stack: 's', borderRadius: 2 },
+                { label: 'Không đến', data: rows.map(r => r.noshow), backgroundColor: '#f8d58d', stack: 's', borderRadius: 2 } ] },
+            options: { interaction: { mode: 'index', intersect: false }, plugins: { tooltip: tip },
+                datasets: { bar: { categoryPercentage: .7, barPercentage: .9, maxBarThickness: 34 } },
+                scales: { x: axisX({ stacked: true }), y: axisY({ stacked: true, beginAtZero: true, ticks: { color: C.mut, precision: 0, maxTicksLimit: 6 } }) } }
+        });
+        const maxRate = Math.max(25, ...rows.map(r => Math.max(r.cr, r.nr)));
+        new Chart(document.getElementById('cxRate'), {
+            type: 'line',
+            data: { labels, datasets: [
+                { label: 'Tỷ lệ hủy', data: rows.map(r => r.cr), borderColor: C.red, backgroundColor: C.red, borderWidth: 2.5, tension: .3,
+                  pointRadius: 3, pointBackgroundColor: '#fff', pointBorderWidth: 2 },
+                { label: 'Tỷ lệ không đến', data: rows.map(r => r.nr), borderColor: C.amber, backgroundColor: C.amber, borderWidth: 2, tension: .3,
+                  pointRadius: 3, pointBackgroundColor: '#fff', pointBorderWidth: 2 } ] },
+            options: { interaction: { mode: 'index', intersect: false },
+                plugins: { tooltip: { callbacks: { label: c => ' ' + c.dataset.label + ': ' + VZ.pct(c.parsed.y), afterTitle: tip.callbacks.afterTitle } } },
+                scales: { x: axisX(), y: axisY({ beginAtZero: true, suggestedMax: Math.ceil(maxRate / 5) * 5, ticks: { color: C.mut, callback: v => v + '%', maxTicksLimit: 6 } }) } },
+            plugins: [{ id: 'thr', afterDatasetsDraw(c) {
+                const { ctx, chartArea: a, scales: { y } } = c, yy = y.getPixelForValue(20);
+                ctx.save(); ctx.strokeStyle = C.red; ctx.globalAlpha = .55; ctx.setLineDash([5, 4]); ctx.lineWidth = 1.2;
+                ctx.beginPath(); ctx.moveTo(a.left, yy); ctx.lineTo(a.right, yy); ctx.stroke(); ctx.restore();
+            } }]
+        });
+    })();
+</script>
 </body>
 </html>

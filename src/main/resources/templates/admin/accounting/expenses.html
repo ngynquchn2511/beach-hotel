@@ -7,6 +7,19 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+    <th:block th:replace="~{fragments/viz :: styles}"></th:block>
+    <style>
+        .cat-list { list-style: none; padding: 0; margin: 0; font-size: .86rem; }
+        .cat-list li { display: grid; grid-template-columns: 12px 1fr auto 46px; gap: 8px; align-items: center; padding: 6px 4px; border-bottom: 1px solid #f0f4f8; }
+        .cat-list li:last-child { border-bottom: 0; }
+        .cat-list i { width: 10px; height: 10px; border-radius: 3px; }
+        .cat-list .a { font-weight: 700; font-variant-numeric: tabular-nums; }
+        .cat-list .p { text-align: right; color: var(--vz-mut); font-variant-numeric: tabular-nums; font-size: .8rem; }
+        .donut { position: relative; width: 190px; height: 190px; margin: 0 auto 10px; }
+        .donut .ctr { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
+        .ex-cat { background: #f4f7fa; color: var(--vz-ink); font-weight: 500; } .ex-cat::before { background: var(--dot, #a7b6c4) !important; }
+        .donut .ctr b { font-size: 1.05rem; } .donut .ctr span { font-size: .72rem; color: var(--vz-mut); }
+    </style>
 </head>
 <body class="eaut eaut-admin">
 
@@ -24,18 +37,80 @@
                     <h3 class="fw-bold mb-1">Chi phí vận hành</h3>
                     <p class="text-muted small mb-0">Khoản chi cố định hàng tháng (lương, thuê, điện nước ước tính...) và khoản phát sinh. Dùng để tính lãi lỗ.</p>
                 </div>
-                <form method="get" class="d-flex gap-2">
-                    <input type="month" name="month" class="form-control form-control-sm" th:value="${month}">
-                    <button class="btn btn-sm btn-outline-primary">Xem</button>
+                <div class="d-flex gap-2 align-items-center">
+                    <form method="get" class="vz-period" aria-label="Chọn tháng">
+                        <a th:href="@{/admin/accounting/expenses(month=${month.minusMonths(1)})}" title="Tháng trước"><i class="bi bi-chevron-left"></i></a>
+                        <input type="month" name="month" th:value="${month}" onchange="this.form.submit()" aria-label="Tháng">
+                        <a th:href="@{/admin/accounting/expenses(month=${month.plusMonths(1)})}" title="Tháng sau"><i class="bi bi-chevron-right"></i></a>
+                    </form>
                     <a class="btn btn-sm btn-primary text-nowrap" th:href="@{/admin/accounting/pnl(month=${month})}"><i class="bi bi-graph-up me-1"></i>Lãi lỗ tháng</a>
-                </form>
+                </div>
             </div>
 
             <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
             <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
 
-            <div class="bg-white p-4 rounded shadow-sm mb-4">
-                <h5 class="fw-bold mb-3">Thêm khoản chi</h5>
+            <!-- Co cau chi + xu huong 6 thang -->
+            <div class="row g-3 mb-3">
+                <div class="col-lg-5">
+                    <div class="vz-card h-100 mb-0">
+                        <div class="vz-head"><div><h5 th:text="'Cơ cấu chi tháng ' + ${month.monthValue} + '/' + ${month.year}"></h5>
+                            <div class="sub" th:text="${#lists.size(expenses)} + ' khoản'"></div></div></div>
+                        <div th:if="${#lists.isEmpty(expenses)}" class="vz-empty"><i class="bi bi-wallet2"></i>Chưa có khoản chi nào trong tháng.</div>
+                        <th:block th:unless="${#lists.isEmpty(expenses)}">
+                            <div class="donut"><canvas id="exDonut" role="img" aria-label="Cơ cấu chi theo nhóm"></canvas>
+                                <div class="ctr"><b th:text="${#numbers.formatDecimal(total, 1, 'POINT', 0, 'COMMA')}"></b><span>tổng chi (VND)</span></div></div>
+                            <ul class="cat-list" id="exCats">
+                                <li th:each="e : ${totals}" th:attr="data-c=${e.key.name()}, data-v=${e.value}">
+                                    <i></i><span th:text="${e.key.label}"></span>
+                                    <span class="a" th:text="${#numbers.formatDecimal(e.value, 1, 'POINT', 0, 'COMMA')}"></span><span class="p"></span></li>
+                            </ul>
+                        </th:block>
+                    </div>
+                </div>
+                <div class="col-lg-7">
+                    <div class="vz-card h-100 mb-0">
+                        <div class="vz-head"><div><h5>6 tháng gần nhất</h5><div class="sub" id="exTrendSub">Tổng chi theo nhóm, mỗi cột 1 tháng</div></div></div>
+                        <div class="vz-chart" style="height:250px"><canvas id="exTrend" role="img" aria-label="Chi phí 6 tháng theo nhóm"></canvas></div>
+                        <div class="vz-key mt-2" id="exKey"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="vz-card">
+                <div class="d-flex justify-content-between align-items-baseline">
+                    <h5 class="fw-bold mb-3">Các khoản chi tháng <span th:text="${month.monthValue} + '/' + ${month.year}"></span></h5>
+                    <div class="fw-bold" th:text="'Tổng ' + ${#numbers.formatDecimal(total, 1, 'POINT', 0, 'COMMA')} + ' VND'"></div>
+                </div>
+                <div th:if="${#lists.isEmpty(expenses)}" class="vz-empty"><i class="bi bi-inbox"></i>Chưa có khoản chi nào trong tháng.</div>
+                <div class="table-responsive" th:unless="${#lists.isEmpty(expenses)}"><table class="vz-table">
+                    <thead><tr><th>Nhóm</th><th>Nội dung</th><th>Loại</th><th class="r">Số tiền</th><th></th></tr></thead>
+                    <tbody>
+                    <tr th:each="e : ${expensePager.items}">
+                        <td><span class="vz-pill dot ex-cat" th:attr="data-c=${e.category.name()}" th:text="${e.category.label}"></span></td>
+                        <td><span th:text="${e.description}"></span>
+                            <div class="small text-muted" th:if="${e.createdBy != null}" th:text="'Nhập bởi ' + ${e.createdBy}"></div></td>
+                        <td class="small" th:text="${e.monthly} ? 'Hàng tháng từ ' + ${#temporals.format(e.startMonth, 'MM/yyyy')}
+                                + (${e.endMonth != null} ? ' đến ' + ${#temporals.format(e.endMonth, 'MM/yyyy')} : '') : ${#temporals.format(e.expenseDate, 'dd/MM/yyyy')}"></td>
+                        <td class="r fw-semibold" th:text="${#numbers.formatDecimal(e.amount, 1, 'POINT', 0, 'COMMA')}"></td>
+                        <td class="text-end text-nowrap">
+                            <form th:if="${e.monthly}" method="post" class="d-inline" th:action="@{/admin/accounting/expenses/{id}/stop(id=${e.id}, month=${month})}"
+                                  onsubmit="return confirm('Dừng khoản chi này từ tháng đang xem? Các tháng trước giữ nguyên.')">
+                                <button class="btn btn-sm btn-outline-secondary">Dừng từ tháng này</button>
+                            </form>
+                            <form method="post" class="d-inline" th:action="@{/admin/accounting/expenses/{id}/delete(id=${e.id}, month=${month})}"
+                                  onsubmit="return confirm('Xóa hẳn khoản chi này (kể cả các tháng trước)?')">
+                                <button class="btn btn-sm btn-outline-danger">Xóa</button>
+                            </form>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table></div>
+                <div th:replace="~{fragments/pagination :: pager(${expensePager})}"></div>
+            </div>
+
+            <div class="vz-card" id="them-khoan-chi">
+                <h5 class="fw-bold mb-3"><i class="bi bi-plus-circle me-1"></i>Thêm khoản chi</h5>
                 <form method="post" th:action="@{/admin/accounting/expenses}" class="row g-2 align-items-end">
                     <div class="col-md-3"><label class="form-label small">Nhóm</label>
                         <select name="category" class="form-select form-select-sm" required>
@@ -60,43 +135,7 @@
                 </form>
             </div>
 
-            <div class="bg-white p-4 rounded shadow-sm mb-4">
-                <div class="d-flex justify-content-between align-items-baseline">
-                    <h5 class="fw-bold mb-3">Tháng <span th:text="${month.monthValue} + '/' + ${month.year}"></span></h5>
-                    <div class="fw-bold" th:text="'Tổng ' + ${#numbers.formatDecimal(total, 1, 'POINT', 0, 'COMMA')} + ' VND'"></div>
-                </div>
-                <div class="d-flex flex-wrap gap-2 mb-3">
-                    <span th:each="e : ${totals}" class="badge bg-light text-dark border"
-                          th:text="${e.key.label} + ': ' + ${#numbers.formatDecimal(e.value, 1, 'POINT', 0, 'COMMA')}"></span>
-                </div>
-                <div th:if="${#lists.isEmpty(expenses)}" class="alert alert-info mb-0">Chưa có khoản chi nào trong tháng.</div>
-                <table class="table table-sm align-middle mb-0" th:unless="${#lists.isEmpty(expenses)}">
-                    <thead><tr><th>Nhóm</th><th>Nội dung</th><th>Loại</th><th class="text-end">Số tiền</th><th></th></tr></thead>
-                    <tbody>
-                    <tr th:each="e : ${expensePager.items}">
-                        <td class="small" th:text="${e.category.label}"></td>
-                        <td><span th:text="${e.description}"></span>
-                            <div class="small text-muted" th:if="${e.createdBy != null}" th:text="'Nhập bởi ' + ${e.createdBy}"></div></td>
-                        <td class="small" th:text="${e.monthly} ? 'Hàng tháng từ ' + ${#temporals.format(e.startMonth, 'MM/yyyy')}
-                                + (${e.endMonth != null} ? ' đến ' + ${#temporals.format(e.endMonth, 'MM/yyyy')} : '') : ${#temporals.format(e.expenseDate, 'dd/MM/yyyy')}"></td>
-                        <td class="text-end" th:text="${#numbers.formatDecimal(e.amount, 1, 'POINT', 0, 'COMMA')}"></td>
-                        <td class="text-end text-nowrap">
-                            <form th:if="${e.monthly}" method="post" class="d-inline" th:action="@{/admin/accounting/expenses/{id}/stop(id=${e.id}, month=${month})}"
-                                  onsubmit="return confirm('Dừng khoản chi này từ tháng đang xem? Các tháng trước giữ nguyên.')">
-                                <button class="btn btn-sm btn-outline-secondary">Dừng từ tháng này</button>
-                            </form>
-                            <form method="post" class="d-inline" th:action="@{/admin/accounting/expenses/{id}/delete(id=${e.id}, month=${month})}"
-                                  onsubmit="return confirm('Xóa hẳn khoản chi này (kể cả các tháng trước)?')">
-                                <button class="btn btn-sm btn-outline-danger">Xóa</button>
-                            </form>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
-                <div th:replace="~{fragments/pagination :: pager(${expensePager})}"></div>
-            </div>
-
-            <div class="bg-white p-4 rounded shadow-sm" id="gia-von">
+            <div class="vz-card" id="gia-von">
                 <h5 class="fw-bold">Giá vốn &amp; chi phí biến đổi</h5>
                 <p class="small text-muted">Tỷ lệ giá vốn (%) trên doanh thu từng dịch vụ, ví dụ đồ ăn gọi lên phòng tốn khoảng 35% nguyên liệu.
                     Để trống = 0. Cột gợi ý là mức tham khảo, hãy chỉnh theo thực tế của resort.</p>
@@ -127,5 +166,47 @@
 </main>
 
 <div th:replace="~{fragments/footer :: footer}"></div>
+<th:block th:replace="~{fragments/viz :: scripts}"></th:block>
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    const EX = { months: /*[[${histMonths}]]*/ [], byCat: /*[[${histByCategory}]]*/ {}, labels: /*[[${categoryLabels}]]*/ {} };
+    EX.months = EX.months || []; EX.byCat = EX.byCat || {}; EX.labels = EX.labels || {};
+    /*]]>*/
+    (function () {
+        const { C, num, vnd, short, axisX, axisY } = VZ;
+        // Mau co dinh theo nhom chi (khong doi khi doi thang)
+        const COL = { PAYROLL: C.blue, UTILITIES: C.teal, SUPPLIES: C.purple, FOOD_BEVERAGE: C.amber, MAINTENANCE: C.red,
+                      MARKETING: '#e98ac0', RENT: C.ink, TAX_FEES: '#8a9a5b', OTHER: C.gray };
+        document.querySelectorAll('.ex-cat').forEach(p => p.style.setProperty('--dot', COL[p.dataset.c]));
+
+        const items = [...document.querySelectorAll('#exCats li')].map(li => ({ li, c: li.dataset.c, v: num(li.dataset.v) })).sort((a, b) => b.v - a.v);
+        const tot = items.reduce((s, i) => s + i.v, 0);
+        const ul = document.getElementById('exCats');
+        items.forEach(i => { i.li.querySelector('i').style.background = COL[i.c]; i.li.querySelector('.p').textContent = tot ? VZ.pct(i.v * 100 / tot) : ''; ul.appendChild(i.li); });
+        if (items.length) {
+            new Chart(document.getElementById('exDonut'), { type: 'doughnut',
+                data: { labels: items.map(i => EX.labels[i.c]), datasets: [{ data: items.map(i => i.v), backgroundColor: items.map(i => COL[i.c]), borderColor: '#fff', borderWidth: 2, hoverOffset: 5 }] },
+                options: { cutout: '70%', plugins: { tooltip: { callbacks: { label: c => ' ' + vnd(c.parsed) + ' đ · ' + VZ.pct(c.parsed * 100 / tot) } } } } });
+        }
+
+        // Cot chong 6 thang: chi ve nhom co phat sinh
+        const cats = Object.keys(EX.byCat).filter(k => EX.byCat[k].some(v => num(v) > 0));
+        const totals = EX.months.map((m, k) => cats.reduce((s, c) => s + num(EX.byCat[c][k]), 0));
+        if (totals.length > 1) {
+            const last = totals[totals.length - 1], prev = totals[totals.length - 2];
+            const avg = totals.reduce((a, b) => a + b, 0) / totals.length;
+            document.getElementById('exTrendSub').textContent = 'TB 6 tháng ' + short(avg) + ' / tháng'
+                + (prev ? ' · tháng này ' + (last >= prev ? '▲ ' : '▼ ') + VZ.pct(Math.abs(last - prev) * 100 / prev) + ' so với tháng trước' : '');
+        }
+        document.getElementById('exKey').innerHTML = cats.map(c => '<span><i style="background:' + COL[c] + '"></i>' + EX.labels[c] + '</span>').join('');
+        new Chart(document.getElementById('exTrend'), { type: 'bar',
+            data: { labels: EX.months, datasets: cats.map(c => ({ label: EX.labels[c], data: EX.byCat[c].map(num), backgroundColor: COL[c], stack: 's', borderRadius: 2 })) },
+            options: { interaction: { mode: 'index', intersect: false },
+                datasets: { bar: { categoryPercentage: .65, barPercentage: .95, maxBarThickness: 44 } },
+                plugins: { tooltip: { filter: i => i.parsed.y > 0, callbacks: { label: c => ' ' + c.dataset.label + ': ' + vnd(c.parsed.y),
+                    footer: it => 'Tổng: ' + vnd(totals[it[0].dataIndex]) + ' đ' } } },
+                scales: { x: axisX({ stacked: true }), y: axisY({ stacked: true, beginAtZero: true, ticks: { color: C.mut, maxTicksLimit: 6, callback: v => short(v) } }) } } });
+    })();
+</script>
 </body>
 </html>
