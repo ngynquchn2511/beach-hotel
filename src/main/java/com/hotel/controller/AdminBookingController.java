@@ -38,6 +38,12 @@ public class AdminBookingController {
 
     private com.hotel.service.HousekeepingService housekeepingService;
     private com.hotel.service.StayExtensionService stayExtensionService;
+    private com.hotel.service.RoomMoveBoardService roomMoveBoardService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setRoomMoveBoardService(com.hotel.service.RoomMoveBoardService roomMoveBoardService) {
+        this.roomMoveBoardService = roomMoveBoardService;
+    }
 
     @org.springframework.beans.factory.annotation.Autowired
     void setStayExtensionService(com.hotel.service.StayExtensionService stayExtensionService) {
@@ -422,13 +428,17 @@ public class AdminBookingController {
 
     // Doi phong: chon phong con trong cac dem cua don (kem chenh lech gia)
     @GetMapping("/{id}/move")
-    public String moveForm(@PathVariable Long id, Model model) {
+    public String moveForm(@PathVariable Long id,
+                           @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate from,
+                           Model model) {
         Booking booking = bookingService.findById(id);
         if (!bookingService.canMoveRoom(booking)) {
             return "redirect:/admin/bookings/" + id;
         }
         model.addAttribute("booking", booking);
-        model.addAttribute("options", bookingService.roomMoveOptions(id));
+        com.hotel.service.RoomMoveBoardService.Board board = roomMoveBoardService.build(id, from);
+        model.addAttribute("board", board);
+        model.addAttribute("options", board.rows().stream().filter(r -> r.selectable()).map(r -> r.option()).toList());
         return "admin/bookings/move";
     }
 

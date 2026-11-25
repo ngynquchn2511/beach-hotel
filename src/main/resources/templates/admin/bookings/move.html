@@ -7,6 +7,45 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+    <style>
+        /* Lich trong / ban tung phong: moi o = 1 dem, cot room dinh ben trai khi cuon ngang */
+        .mv-scroll { overflow-x: auto; }
+        .mv-board { border-collapse: separate; border-spacing: 0; width: 100%; table-layout: fixed; }
+        .mv-board th, .mv-board td { padding: 0; }
+        .mv-room-col { position: sticky; left: 0; z-index: 2; background: #fff; width: 250px; min-width: 250px;
+                       padding: .45rem .6rem .45rem 0 !important; border-bottom: 1px dashed #d6ebf8; vertical-align: top; }
+        thead .mv-room-col { font-size: .75rem; letter-spacing: .12em; text-transform: uppercase; vertical-align: bottom;
+                             border-bottom: 2px solid var(--ink); }
+        .mv-day { width: 36px; min-width: 36px; text-align: center; font-size: .78rem; font-weight: 600; padding: .25rem 0 !important;
+                  border-bottom: 2px solid var(--ink); }
+        .mv-day .mv-wd { font-size: .65rem; color: var(--ink-soft); font-weight: 500; }
+        .mv-day.mv-weekend { color: #b4462b; }
+        .mv-day.mv-today { background: var(--sun); border-radius: 6px 6px 0 0; }
+        .mv-day.mv-stay-head { background: var(--baby-soft); box-shadow: inset 0 3px 0 var(--baby-deep); }
+        .mv-cell { border-bottom: 1px dashed #d6ebf8; vertical-align: middle; height: 46px; padding: 3px 1px !important; }
+        .mv-cell.mv-in-stay { background: var(--baby-soft); }
+        .mv-bar { display: block; height: 26px; line-height: 24px; border-radius: 6px; font-size: .7rem; font-weight: 600;
+                  overflow: hidden; white-space: nowrap; text-overflow: ellipsis; padding: 0 4px; text-decoration: none; }
+        a.mv-bar:hover { filter: brightness(.93); }
+        .mv-FREE { background: #e3f6ea; border: 1px solid #b7e4c7; }
+        .mv-in-stay .mv-FREE { background: #bfe9cf; border-color: #4caf7a; }
+        .mv-THIS { background: var(--baby); color: var(--ink); border: 1px solid var(--ink); }
+        .mv-BOOKED { background: #f4cccc; color: #8a1f1f; border: 1px solid #e6a3a3; }
+        .mv-PENDING { background: #ffe9a8; color: #7a5800; border: 1px solid #f2cf6b; }
+        .mv-OTA { background: #e4dafa; color: #4b2a8c; border: 1px solid #c4b2ef; }
+        .mv-MAINTENANCE { background: repeating-linear-gradient(45deg, #e5e7eb 0 5px, #f5f5f5 5px 10px); color: #555; border: 1px solid #d1d5db; }
+        .mv-type { font-size: .78rem; color: var(--ink-soft); }
+        .mv-meta { font-size: .74rem; line-height: 1.3; margin-top: 2px; }
+        .mv-free { color: #23784a; }
+        tr.mv-current td, tr.mv-current .mv-room-col { background: #f3f9fe; }
+        tr.mv-no .mv-room-col label { color: var(--ink-soft); }
+        tr.mv-ok { cursor: pointer; }
+        tr.mv-selected .mv-room-col { box-shadow: inset 4px 0 0 var(--baby-deep); background: #eef7fd; }
+        .mv-legend { display: flex; flex-wrap: wrap; gap: .35rem 1rem; align-items: center; }
+        .mv-sw { display: inline-block; width: 16px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 4px; }
+        .mv-sw.mv-stay-sw { background: var(--baby-soft); box-shadow: inset 0 3px 0 var(--baby-deep); border: 1px solid #b9dcf3; }
+        .min-w-0 { min-width: 0; }
+    </style>
 </head>
 <body class="eaut eaut-admin">
 
@@ -27,45 +66,158 @@
 
             <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
             <div class="alert alert-info small" th:if="${booking.status.name() == 'CHECKED_IN'}">
-                Khách đang ở: chỉ hiện phòng đang sạch và trống từ hôm nay tới ngày trả. Phòng cũ sẽ chuyển sang "Chờ dọn".
+                Khách đang ở: chỉ đổi được sang phòng đang sạch và trống từ hôm nay tới ngày trả. Phòng cũ sẽ chuyển sang "Chờ dọn".
                 Các đêm đã ở giữ nguyên tiền phòng cũ.
             </div>
 
             <div th:if="${#lists.isEmpty(options)}" class="alert alert-warning">
-                Không còn phòng nào trống phù hợp cho các đêm của đơn này. Có thể đổi ngày hoặc hủy đơn (hoàn cọc 100% nếu lỗi phía resort).
+                Không còn phòng nào trống <b>đủ tất cả</b> các đêm của đơn này. Xem lịch bên dưới: mỗi phòng ghi rõ trống từ ngày nào tới ngày nào -
+                có thể đổi ngày ở của khách cho khớp, hoặc hủy đơn (hoàn cọc 100% nếu lỗi phía resort).
             </div>
 
-            <form th:unless="${#lists.isEmpty(options)}" th:action="@{/admin/bookings/{id}/move(id=${booking.id})}" method="post"
-                  class="bg-white p-4 rounded shadow-sm"
+            <!-- Thanh dieu huong khoang ngay + loc -->
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                <div class="btn-group btn-group-sm" role="group">
+                    <a th:if="${board.canGoBack}" class="btn btn-outline-secondary"
+                       th:href="@{/admin/bookings/{id}/move(id=${booking.id}, from=${board.prevFrom})}">&laquo; 7 ngày trước</a>
+                    <span class="btn btn-outline-secondary disabled fw-semibold"
+                          th:text="${#temporals.format(board.from, 'dd/MM')} + ' – ' + ${#temporals.format(board.dayList[board.days - 1].date, 'dd/MM/yyyy')}"></span>
+                    <a class="btn btn-outline-secondary"
+                       th:href="@{/admin/bookings/{id}/move(id=${booking.id}, from=${board.nextFrom})}">7 ngày sau &raquo;</a>
+                </div>
+                <a class="btn btn-sm btn-link" th:href="@{/admin/bookings/{id}/move(id=${booking.id})}">Về các đêm của đơn</a>
+                <div class="btn-group btn-group-sm ms-auto mv-filter" role="group">
+                    <button type="button" class="btn btn-outline-primary active" data-show="all">Tất cả</button>
+                    <button type="button" class="btn btn-outline-primary" data-show="ok"
+                            th:text="'Đổi được (' + ${board.selectableCount()} + ')'">Đổi được</button>
+                    <button type="button" class="btn btn-outline-primary" data-show="part"
+                            th:text="'Trống một phần (' + ${board.partlyFreeCount()} + ')'">Trống một phần</button>
+                </div>
+            </div>
+            <div class="mv-legend small mb-2">
+                <span><i class="mv-sw mv-FREE"></i>Trống</span>
+                <span><i class="mv-sw mv-THIS"></i>Đơn này</span>
+                <span><i class="mv-sw mv-BOOKED"></i>Đã có khách đặt</span>
+                <span><i class="mv-sw mv-PENDING"></i>Chờ xác nhận</span>
+                <span><i class="mv-sw mv-OTA"></i>Bán trên Booking.com / Airbnb</span>
+                <span><i class="mv-sw mv-MAINTENANCE"></i>Bảo trì</span>
+                <span><i class="mv-sw mv-stay-sw"></i>Các đêm cần chuyển
+                    (<b th:text="${#temporals.format(board.stayFrom, 'dd/MM')} + ' → ' + ${#temporals.format(board.stayTo, 'dd/MM')}"></b>)</span>
+            </div>
+            <p class="small text-muted mb-2"
+               th:text="'Mỗi ô là 1 đêm (ô ngày 25 = đêm 25 sang 26). Chỉ hiện phòng đủ chỗ cho ' + ${board.guests} + ' khách. Rê chuột vào ô để xem đơn nào đang giữ phòng, bấm vào thanh để mở đơn đó.'"></p>
+
+            <form th:action="@{/admin/bookings/{id}/move(id=${booking.id})}" method="post"
+                  class="bg-white p-3 rounded shadow-sm"
                   onsubmit="return confirm('Đổi phòng cho đơn này? Khách sẽ nhận email báo phòng mới.')">
-                <div class="table-responsive">
-                    <table class="table align-middle">
-                        <thead><tr><th></th><th>Phòng</th><th>Hạng</th><th>Tiền phòng mới</th><th>Chênh lệch</th></tr></thead>
+                <div class="mv-scroll">
+                    <table class="mv-board">
+                        <thead>
+                        <tr>
+                            <th class="mv-room-col">Phòng</th>
+                            <th th:each="d : ${board.dayList}" class="mv-day"
+                                th:classappend="${(d.inStay ? 'mv-stay-head ' : '') + (d.weekend ? 'mv-weekend ' : '') + (d.today ? 'mv-today' : '')}"
+                                th:title="${#temporals.format(d.date, 'dd/MM/yyyy')}">
+                                <span class="d-block mv-wd" th:text="${d.today ? 'Nay' : d.weekdayShort()}"></span>
+                                <span class="d-block" th:text="${d.monthStart ? #temporals.format(d.date, 'd/M') : #temporals.format(d.date, 'd')}"></span>
+                            </th>
+                        </tr>
+                        </thead>
                         <tbody>
-                        <tr th:each="o, st : ${options}">
-                            <td><input class="form-check-input" type="radio" name="newRoomId" required
-                                       th:id="'r' + ${o.room.id}" th:value="${o.room.id}" th:checked="${st.first}"></td>
-                            <td><label class="fw-semibold mb-0" th:for="'r' + ${o.room.id}" th:text="'Phòng ' + ${o.room.roomNumber}"></label>
-                                <span th:if="${o.room.roomType.id == booking.room.roomType.id}" class="badge bg-success-subtle text-success-emphasis ms-1">cùng hạng</span></td>
-                            <td class="small" th:text="${o.room.roomType.name}"></td>
-                            <td th:text="${#numbers.formatDecimal(o.newRoomAmount, 1, 'POINT', 0, 'COMMA')}"></td>
-                            <td th:classappend="${o.difference.signum() > 0} ? 'text-danger' : (${o.difference.signum() < 0} ? 'text-success' : '')"
-                                th:text="${o.difference.signum() > 0 ? '+' : ''} + ${#numbers.formatDecimal(o.difference, 1, 'POINT', 0, 'COMMA')}"></td>
+                        <tr th:each="r : ${board.rows}"
+                            th:attr="data-kind=${r.current ? 'current' : (r.selectable ? 'ok' : (r.partlyFree ? 'part' : 'no'))}"
+                            th:classappend="${r.current ? 'mv-current' : (r.selectable ? 'mv-ok' : 'mv-no')}">
+                            <td class="mv-room-col">
+                                <div class="d-flex align-items-start gap-2">
+                                    <input th:if="${r.selectable}" class="form-check-input mt-1 flex-shrink-0" type="radio" name="newRoomId" required
+                                           th:id="'r' + ${r.room.id}" th:value="${r.room.id}" th:checked="${r.option == options[0]}">
+                                    <i th:unless="${r.selectable}" class="bi flex-shrink-0 mt-1"
+                                       th:classappend="${r.current ? 'bi-geo-alt-fill text-primary' : 'bi-slash-circle text-muted'}"></i>
+                                    <div class="min-w-0">
+                                        <label class="fw-semibold mb-0" th:for="${r.selectable ? 'r' + r.room.id : null}"
+                                               th:text="'Phòng ' + ${r.room.roomNumber}"></label>
+                                        <span th:if="${r.current}" class="badge bg-primary-subtle text-primary-emphasis">đang giữ</span>
+                                        <span th:if="${!r.current and r.room.roomType.id == booking.room.roomType.id}"
+                                              class="badge bg-success-subtle text-success-emphasis">cùng hạng</span>
+                                        <div class="mv-type" th:text="${r.room.roomType.name}"></div>
+                                        <div th:if="${r.selectable}" class="mv-meta">
+                                            Tiền phòng mới <span th:text="${#numbers.formatDecimal(r.option.newRoomAmount, 1, 'POINT', 0, 'COMMA')}"></span>
+                                            <b th:classappend="${r.option.difference.signum() > 0} ? 'text-danger' : (${r.option.difference.signum() < 0} ? 'text-success' : 'text-muted')"
+                                               th:text="'(' + (${r.option.difference.signum() > 0} ? '+' : '') + ${#numbers.formatDecimal(r.option.difference, 1, 'POINT', 0, 'COMMA')} + ')'"></b>
+                                        </div>
+                                        <div th:if="${r.reason != null and !r.current}" class="mv-meta text-muted" th:text="${r.reason}"></div>
+                                        <div class="mv-meta mv-free" th:unless="${r.current}">
+                                            <span th:if="${r.freeWholeWindow}">Trống cả khoảng đang xem</span>
+                                            <span th:if="${!r.freeWholeWindow and #lists.isEmpty(r.freeRanges)}" class="text-muted">Không trống đêm nào trong khoảng này</span>
+                                            <span th:if="${!r.freeWholeWindow and !#lists.isEmpty(r.freeRanges)}"
+                                                  th:text="'Trống: ' + ${#strings.listJoin(r.freeRanges, ', ')}"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td th:each="s : ${r.segments}" th:colspan="${s.span}" class="mv-cell"
+                                th:classappend="${s.inStay ? 'mv-in-stay' : ''}" th:title="${s.title}">
+                                <a th:if="${s.bookingId != null and s.state.name() != 'THIS'}" class="mv-bar"
+                                   th:classappend="'mv-' + ${s.state}" th:href="@{/admin/bookings/{b}(b=${s.bookingId})}" target="_blank"
+                                   th:text="${s.span >= 2 ? s.label : ''}"></a>
+                                <span th:unless="${s.bookingId != null and s.state.name() != 'THIS'}" class="mv-bar"
+                                      th:classappend="'mv-' + ${s.state}" th:text="${s.span >= 2 ? s.label : ''}"></span>
+                            </td>
                         </tr>
                         </tbody>
                     </table>
                 </div>
-                <div class="form-check mb-2">
-                    <input class="form-check-input" type="checkbox" name="waiveDifference" value="true" id="waive">
-                    <label class="form-check-label" for="waive">Miễn chênh lệch (lỗi phía resort / nâng hạng miễn phí) - giữ nguyên tiền phòng</label>
+
+                <div th:unless="${#lists.isEmpty(options)}" class="mt-3">
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" name="waiveDifference" value="true" id="waive">
+                        <label class="form-check-label" for="waive">Miễn chênh lệch (lỗi phía resort / nâng hạng miễn phí) - giữ nguyên tiền phòng</label>
+                    </div>
+                    <input type="text" name="note" class="form-control mb-3" maxlength="200" placeholder="Lý do (VD: điều hòa hỏng, khách xin view biển)">
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-arrow-left-right me-1"></i><span id="mvSubmit">Đổi phòng</span></button>
                 </div>
-                <input type="text" name="note" class="form-control mb-3" maxlength="200" placeholder="Lý do (VD: điều hòa hỏng, khách xin view biển)">
-                <button type="submit" class="btn btn-primary"><i class="bi bi-arrow-left-right me-1"></i>Đổi phòng</button>
             </form>
         </div>
     </div>
 </main>
 
 <div th:replace="~{fragments/footer :: footer}"></div>
+<script>
+    (function () {
+        // Loc hang: tat ca / doi duoc / trong mot phan (phong dang giu luon hien de so sanh)
+        document.querySelectorAll('.mv-filter button').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                document.querySelectorAll('.mv-filter button').forEach(function (b) { b.classList.toggle('active', b === btn); });
+                var show = btn.dataset.show;
+                document.querySelectorAll('.mv-board tbody tr').forEach(function (tr) {
+                    var k = tr.dataset.kind;
+                    tr.style.display = (show === 'all' || k === 'current' || k === show) ? '' : 'none';
+                });
+            });
+        });
+        // Danh dau hang dang chon + ghi so phong len nut
+        function mark() {
+            document.querySelectorAll('.mv-board tbody tr').forEach(function (tr) {
+                var r = tr.querySelector('input[name=newRoomId]');
+                tr.classList.toggle('mv-selected', !!(r && r.checked));
+                if (r && r.checked) {
+                    var lbl = tr.querySelector('label');
+                    var out = document.getElementById('mvSubmit');
+                    if (out && lbl) out.textContent = 'Đổi sang ' + lbl.textContent;
+                }
+            });
+        }
+        document.querySelectorAll('input[name=newRoomId]').forEach(function (r) { r.addEventListener('change', mark); });
+        // Bam vao hang phong doi duoc = chon phong do
+        document.querySelectorAll('.mv-board tr.mv-ok').forEach(function (tr) {
+            tr.addEventListener('click', function (e) {
+                if (e.target.closest('a')) return;
+                var r = tr.querySelector('input[name=newRoomId]');
+                if (r && !r.checked) { r.checked = true; mark(); }
+            });
+        });
+        mark();
+    })();
+</script>
 </body>
 </html>

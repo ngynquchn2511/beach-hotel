@@ -64,6 +64,40 @@ class RoomMoveIT extends ItFixtures {
         assertThat(ids.indexOf(sameType.getId())).isLessThan(ids.indexOf(bigger.getId()));
     }
 
+    // Lich trong theo dem: phong dang giu dau tien, phong doi duoc co nut chon,
+    // phong trong mot phan ghi ro vuong don nao va trong may dem; xem duoc khoang ngay khac
+    @Test
+    void movePage_showsFreeNightsBoard() throws Exception {
+        MvcResult result = mockMvc.perform(get("/admin/bookings/{id}/move", booking.getId()).with(as(staff)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Các đêm cần chuyển")))
+                .andReturn();
+        com.hotel.service.RoomMoveBoardService.Board board =
+                (com.hotel.service.RoomMoveBoardService.Board) result.getModelAndView().getModel().get("board");
+        assertThat(board.stayFrom()).isEqualTo(booking.getCheckInDate());
+        assertThat(board.from()).isEqualTo(booking.getCheckInDate().minusDays(3));
+        assertThat(board.rows().get(0).room().getId()).isEqualTo(roomA.getId());
+        assertThat(board.rows().get(0).current()).isTrue();
+
+        var takenRow = board.rows().stream().filter(r -> r.room().getId().equals(taken.getId())).findFirst().orElseThrow();
+        assertThat(takenRow.selectable()).isFalse();
+        assertThat(takenRow.partlyFree()).isTrue();
+        assertThat(takenRow.freeStayNights()).isEqualTo(1);
+        assertThat(takenRow.reason()).contains("Vướng #").contains("trống 1/2 đêm");
+        assertThat(takenRow.segments()).anyMatch(s -> s.state() == com.hotel.service.RoomMoveBoardService.State.BOOKED && s.inStay());
+
+        var maintRow = board.rows().stream().filter(r -> r.room().getId().equals(maintenance.getId())).findFirst().orElseThrow();
+        assertThat(maintRow.reason()).isEqualTo("Đang bảo trì");
+        var sameRow = board.rows().stream().filter(r -> r.room().getId().equals(sameType.getId())).findFirst().orElseThrow();
+        assertThat(sameRow.selectable()).isTrue();
+
+        // Xem 7 ngay sau
+        java.time.LocalDate later = board.nextFrom();
+        MvcResult next = mockMvc.perform(get("/admin/bookings/{id}/move", booking.getId()).param("from", later.toString()).with(as(staff)))
+                .andExpect(status().isOk()).andReturn();
+        assertThat(((com.hotel.service.RoomMoveBoardService.Board) next.getModelAndView().getModel().get("board")).from()).isEqualTo(later);
+    }
+
     @Test
     void moveToPricierRoom_chargesDifference_orWaived() throws Exception {
         mockMvc.perform(post("/admin/bookings/{id}/move", booking.getId()).with(csrf()).with(as(staff))
