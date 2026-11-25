@@ -7,6 +7,65 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+    <style>
+        /* Tab trang thai */
+        .bk-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+        .bk-tab { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: 999px; border: 1px solid #d5e3ee;
+                  background: #fff; color: #13395e; text-decoration: none; font-size: .86rem; font-weight: 600; white-space: nowrap; }
+        .bk-tab:hover { border-color: #3d9bd6; color: #13395e; }
+        .bk-tab .n { font-size: .74rem; font-weight: 700; background: #eef4f9; color: #4d6b88; border-radius: 999px; padding: 1px 8px; font-variant-numeric: tabular-nums; }
+        .bk-tab.active, .bk-tab.active:hover { background: #13395e; border-color: #13395e; color: #fff !important; }
+        .bk-tab.active .n { background: rgba(255,255,255,.18); color: #fff; }
+        .bk-tab .dot { width: 8px; height: 8px; border-radius: 50%; }
+        .bk-tab.warn .n { background: #fff1d1; color: #8a5a00; }
+
+        /* Tim kiem */
+        .bk-search { position: relative; flex: 1 1 280px; max-width: 420px; }
+        .bk-search i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #7d93a8; }
+        .bk-search input { padding-left: 34px; border-radius: 999px; }
+
+        /* Bang */
+        .bk-wrap { background: #fff; border-radius: 14px; box-shadow: 0 1px 3px rgba(19,57,94,.10), 0 0 0 1px #e3edf5; overflow: hidden; }
+        .bk-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: .9rem; }
+        .bk-table th { font-size: .72rem; font-weight: 700; color: #6c7f92; text-transform: uppercase; letter-spacing: .06em;
+                       padding: 11px 14px; background: #f7fafc; border-bottom: 1px solid #e3edf5; white-space: nowrap; }
+        .bk-table td { padding: 12px 14px; border-bottom: 1px solid #eef3f7; vertical-align: middle; color: #13395e; }
+        .bk-table tbody tr:last-child td { border-bottom: 0; }
+        .bk-table tbody tr { transition: background .12s; cursor: pointer; }
+        .bk-table tbody tr:hover td { background: #f4f9fd; }
+        .bk-table tr.is-new td:first-child { box-shadow: inset 4px 0 0 #e0607a; }
+        .bk-table tr.is-new td { background: #fff8f9; }
+        .bk-table tr.is-dim td { color: #8a9aab; }
+        .bk-table tr.is-dim .who b, .bk-table tr.is-dim .money { color: #8a9aab; }
+        .bk-code { font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: .01em; }
+        .bk-new { display: inline-block; margin-top: 3px; font-size: .68rem; font-weight: 700; color: #c23d58; background: #fde6ea; border-radius: 4px; padding: 1px 6px; }
+        .who b { display: block; font-weight: 600; line-height: 1.25; }
+        .who span { font-size: .8rem; color: #6c7f92; font-variant-numeric: tabular-nums; }
+        .room-chip { display: inline-block; font-weight: 700; background: #eaf5fc; border-radius: 6px; padding: 2px 8px; font-variant-numeric: tabular-nums; }
+        .room-type { display: block; font-size: .76rem; color: #6c7f92; margin-top: 2px; max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .stay { white-space: nowrap; font-variant-numeric: tabular-nums; font-weight: 600; }
+        .stay i { color: #9bb0c2; margin: 0 4px; font-size: .8rem; }
+        .stay-sub { font-size: .78rem; color: #6c7f92; }
+        .money { text-align: right; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+        .money small { font-weight: 500; color: #6c7f92; }
+
+        /* Nhan trang thai: nen nhat + cham mau, khong vien dam */
+        .st { display: inline-flex; align-items: center; gap: 6px; font-size: .78rem; font-weight: 600; padding: 3px 10px 3px 8px; border-radius: 999px; white-space: nowrap; }
+        .st::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+        .st-PENDING     { background: #fff4dc; color: #9a6400; }
+        .st-CONFIRMED   { background: #e3f1fb; color: #1f6fb0; }
+        .st-CHECKED_IN  { background: #e2f5ea; color: #1d7a4c; }
+        .st-CHECKED_OUT { background: #eef1f4; color: #4d6b88; }
+        .st-CANCELLED   { background: #fde8ec; color: #b8384f; }
+        .flag { display: inline-flex; align-items: center; gap: 4px; font-size: .72rem; font-weight: 600; margin-top: 4px; padding: 1px 7px; border-radius: 4px; white-space: nowrap; }
+        .flag-warn { background: #fff4dc; color: #8a5a00; }
+        .flag-info { background: #e3f1fb; color: #1f6fb0; }
+        .flag-ok { background: #e2f5ea; color: #1d7a4c; }
+        .bk-go { color: #9bb0c2; font-size: 1.1rem; }
+        .bk-table tbody tr:hover .bk-go { color: #13395e; }
+        .bk-empty { padding: 48px 16px; text-align: center; color: #6c7f92; }
+        .bk-empty i { font-size: 2rem; display: block; margin-bottom: 8px; color: #b6c8d8; }
+    </style>
 </head>
 <body class="eaut eaut-admin">
 
@@ -19,84 +78,115 @@
         </div>
 
         <div class="col-md-9">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h3 class="fw-bold m-0">Quản lý đặt phòng</h3>
-                <a th:href="@{/admin/bookings/walk-in/new}" class="btn btn-primary">Đặt phòng tại quầy</a>
+            <div class="d-flex justify-content-between align-items-end flex-wrap gap-2 mb-3">
+                <div>
+                    <h3 class="fw-bold m-0">Quản lý đặt phòng</h3>
+                    <div class="text-muted small" th:text="${resultCount} + ' đơn' + (${searchQuery != null and !#strings.isEmpty(searchQuery)} ? ' khớp «' + ${searchQuery} + '»' : '')"></div>
+                </div>
+                <a th:href="@{/admin/bookings/walk-in/new}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Đặt phòng tại quầy</a>
             </div>
 
-            <div class="bg-white p-3 rounded shadow-sm mb-3">
-                <form th:action="@{/admin/bookings}" method="get" class="d-flex gap-2 align-items-center flex-wrap">
-                    <label class="form-label m-0">Lọc theo trạng thái:</label>
-                    <select name="status" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
-                        <option value="">Tất cả</option>
-                        <option th:each="s : ${allStatuses}" th:value="${s}" th:text="${s.vietnameseLabel}"
-                                th:selected="${s == statusFilter}"></option>
-                    </select>
+            <!-- Loc: tab trang thai + o tim -->
+            <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between mb-3">
+                <nav class="bk-tabs" aria-label="Lọc theo trạng thái">
+                    <a class="bk-tab" th:classappend="${statusFilter == null and !refundPending} ? 'active'"
+                       th:href="@{/admin/bookings(q=${searchQuery})}">Tất cả <span class="n" th:text="${totalCount}"></span></a>
+                    <a th:each="s : ${allStatuses}" class="bk-tab" th:classappend="${s == statusFilter and !refundPending} ? 'active'"
+                       th:href="@{/admin/bookings(status=${s}, q=${searchQuery})}">
+                        <span class="dot" th:classappend="'st-' + ${s}" style="background:currentColor"></span>
+                        <span th:text="${s.vietnameseLabel}"></span><span class="n" th:text="${statusCounts[s.name()]}"></span></a>
+                    <a th:if="${refundCount > 0 or refundPending}" class="bk-tab warn" th:classappend="${refundPending} ? 'active'"
+                       th:href="@{/admin/bookings(refund='pending', q=${searchQuery})}">
+                        <i class="bi bi-arrow-counterclockwise"></i>Chờ hoàn cọc <span class="n" th:text="${refundCount}"></span></a>
+                </nav>
+                <form th:action="@{/admin/bookings}" method="get" class="bk-search d-flex gap-2" role="search">
+                    <input type="hidden" name="status" th:if="${statusFilter != null}" th:value="${statusFilter}">
+                    <input type="hidden" name="refund" value="pending" th:if="${refundPending}">
+                    <i class="bi bi-search"></i>
                     <input type="text" name="q" th:value="${searchQuery}" class="form-control form-control-sm"
-                           style="width: 260px;" placeholder="Tìm theo tên, email hoặc SĐT khách hàng">
-                    <div class="form-check m-0">
-                        <input class="form-check-input" type="checkbox" name="refund" value="pending" id="refundPending"
-                               th:checked="${refundPending}" onchange="this.form.submit()">
-                        <label class="form-check-label small" for="refundPending">Chờ hoàn cọc</label>
-                    </div>
-                    <button type="submit" class="btn btn-sm btn-primary">Tìm kiếm</button>
-                    <a th:if="${statusFilter != null or refundPending or (searchQuery != null and !#strings.isEmpty(searchQuery))}"
-                       th:href="@{/admin/bookings}" class="btn btn-sm btn-outline-secondary">Bỏ lọc</a>
+                           placeholder="Tìm tên, email, SĐT khách hoặc mã đơn" aria-label="Tìm đơn">
+                    <a th:if="${searchQuery != null and !#strings.isEmpty(searchQuery)}" th:href="@{/admin/bookings}"
+                       class="btn btn-sm btn-outline-secondary text-nowrap" title="Bỏ lọc"><i class="bi bi-x-lg"></i></a>
                 </form>
             </div>
 
             <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
 
-            <div th:if="${#lists.isEmpty(bookings)}" class="alert alert-info">
-                Không có đơn đặt phòng nào phù hợp.
+            <div class="bk-wrap">
+                <div th:if="${#lists.isEmpty(bookings)}" class="bk-empty">
+                    <i class="bi bi-inbox"></i>Không có đơn đặt phòng nào phù hợp.
+                </div>
+                <div class="table-responsive" th:unless="${#lists.isEmpty(bookings)}">
+                    <table class="bk-table">
+                        <thead>
+                        <tr>
+                            <th>Mã đơn</th>
+                            <th>Khách hàng</th>
+                            <th>Phòng</th>
+                            <th>Lưu trú</th>
+                            <th class="text-end">Tổng tiền</th>
+                            <th>Trạng thái</th>
+                            <th></th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <!-- Don moi chua ai xem: vach do ben trai + nen hong rat nhat; don huy / da tra: chu mo -->
+                        <tr th:each="b : ${bookings}"
+                            th:with="yr=${#temporals.year(today)},
+                                     arriveToday=${b.checkInDate == today and (b.status.name() == 'CONFIRMED' or b.status.name() == 'PENDING')},
+                                     leaveToday=${b.checkOutDate == today and b.status.name() == 'CHECKED_IN'}"
+                            th:classappend="${(b.newBooking ? 'is-new ' : '') + (b.status.name() == 'CANCELLED' or b.status.name() == 'CHECKED_OUT' ? 'is-dim' : '')}"
+                            th:attr="data-href=@{/admin/bookings/{id}(id=${b.id})}">
+                            <td>
+                                <div class="bk-code" th:text="'#' + ${b.code}"></div>
+                                <span th:if="${b.newBooking}" class="bk-new">Đơn mới</span>
+                            </td>
+                            <td class="who">
+                                <b th:text="${b.guestName != null} ? ${b.guestName} : ${b.customer.fullName}"></b>
+                                <span th:text="${b.guestPhone != null} ? ${b.guestPhone} : ${b.customer.phoneNumber}"></span>
+                            </td>
+                            <td>
+                                <span class="room-chip" th:text="'Phòng ' + ${b.room.roomNumber}"></span>
+                                <span class="room-type" th:if="${b.room.roomType != null}" th:text="${b.room.roomType.name}" th:title="${b.room.roomType.name}"></span>
+                            </td>
+                            <td th:title="'Nhận ' + ${#temporals.format(b.checkInDate, 'dd/MM/yyyy')} + ' ' + ${b.checkInTime} + ' · trả ' + ${#temporals.format(b.checkOutDate, 'dd/MM/yyyy')} + ' ' + ${b.checkOutTime}">
+                                <div class="stay">
+                                    <span th:text="${#temporals.format(b.checkInDate, #temporals.year(b.checkInDate) == yr ? 'dd/MM' : 'dd/MM/yy')}"></span><i class="bi bi-arrow-right"></i><span
+                                        th:text="${#temporals.format(b.checkOutDate, #temporals.year(b.checkOutDate) == yr ? 'dd/MM' : 'dd/MM/yy')}"></span>
+                                </div>
+                                <div class="stay-sub" th:text="${b.nights} + ' đêm · ' + ${b.checkInTime} + ' – ' + ${b.checkOutTime}"></div>
+                                <span th:if="${arriveToday}" class="flag flag-info"><i class="bi bi-box-arrow-in-right"></i>Nhận hôm nay</span>
+                                <span th:if="${leaveToday}" class="flag flag-ok"><i class="bi bi-box-arrow-right"></i>Trả hôm nay</span>
+                            </td>
+                            <td class="money"><span th:text="${#numbers.formatDecimal(b.totalAmount, 1, 'POINT', 0, 'COMMA')}"></span> <small>đ</small></td>
+                            <td>
+                                <span class="st" th:classappend="'st-' + ${b.status}" th:text="${b.status.vietnameseLabel}"></span>
+                                <div th:if="${b.refundPending}"><span class="flag flag-warn"
+                                      th:text="'Chờ hoàn ' + ${#numbers.formatDecimal(b.refundAmount, 1, 'POINT', 0, 'COMMA')} + 'đ'"></span></div>
+                                <div th:if="${b.checkInTimeChanged}"><span class="flag flag-warn"><i class="bi bi-clock"></i>Khách đổi giờ nhận phòng</span></div>
+                                <div th:if="${b.datesChanged}"><span class="flag flag-warn"><i class="bi bi-calendar-event"></i>Khách đổi ngày lưu trú</span></div>
+                            </td>
+                            <td class="text-end">
+                                <a th:href="@{/admin/bookings/{id}(id=${b.id})}" class="bk-go" title="Xem chi tiết" aria-label="Xem chi tiết"><i class="bi bi-chevron-right"></i></a>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
-            <table class="table table-striped bg-white align-middle" style="--bs-table-striped-bg: #eaf6ff;"
-                   th:if="${not #lists.isEmpty(bookings)}">
-                <thead>
-                <tr>
-                    <th>Mã đơn</th>
-                    <th>Khách hàng</th>
-                    <th>SĐT</th>
-                    <th>Phòng</th>
-                    <th>Ngày nhận</th>
-                    <th>Ngày trả</th>
-                    <th>Tổng tiền</th>
-                    <th>Trạng thái</th>
-                    <th></th>
-                </tr>
-                </thead>
-                <tbody>
-                <!-- Don moi chua duoc staff xem qua se to nguyen ca dong 1 mau rieng, de len tren mau soc xen ke -->
-                <tr th:each="b : ${bookings}" th:classappend="${b.newBooking} ? 'table-danger'">
-                    <td th:text="'#' + ${b.code}"></td>
-                    <td th:text="${b.guestName != null} ? ${b.guestName} : ${b.customer.fullName}"></td>
-                    <td th:text="${b.guestPhone != null} ? ${b.guestPhone} : ${b.customer.phoneNumber}"></td>
-                    <td th:text="'Phòng ' + ${b.room.roomNumber}"></td>
-                    <td th:text="${b.checkInDate} + ' ' + ${b.checkInTime}"></td>
-                    <td th:text="${b.checkOutDate} + ' ' + ${b.checkOutTime}"></td>
-                    <td th:text="${#numbers.formatDecimal(b.totalAmount, 1, 'POINT', 0, 'COMMA')} + 'VND'"></td>
-                    <td>
-                        <span th:class="'badge ' + ${b.status.badgeClass}" th:text="${b.status.vietnameseLabel}"></span>
-                        <span th:if="${b.newBooking}" class="badge bg-danger d-block mt-1">Đơn mới</span>
-                        <span th:if="${b.refundPending}" class="badge bg-warning text-dark d-block mt-1"
-                              th:text="'Chờ hoàn ' + ${#numbers.formatDecimal(b.refundAmount, 1, 'POINT', 0, 'COMMA')} + 'đ'"></span>
-                    </td>
-                    <td>
-                        <span th:if="${b.checkInTimeChanged}" class="badge bg-warning text-dark d-block mb-1">Khách đổi giờ nhận phòng</span>
-                        <span th:if="${b.datesChanged}" class="badge bg-warning text-dark d-block mb-1">Khách đổi ngày lưu trú</span>
-                        <a th:href="@{/admin/bookings/{id}(id=${b.id})}" class="btn btn-sm btn-outline-primary">Xem chi tiết</a>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
-
-            <div th:replace="~{fragments/pagination :: pagination(${refundPending} ? '/admin/bookings?refund=pending' : '/admin/bookings', ${currentPage}, ${totalPages}, ${pageNumbers}, ${statusFilter}, ${searchQuery})}"></div>
+            <div class="mt-3" th:replace="~{fragments/pagination :: pagination(${refundPending} ? '/admin/bookings?refund=pending' : '/admin/bookings', ${currentPage}, ${totalPages}, ${pageNumbers}, ${statusFilter}, ${searchQuery})}"></div>
         </div>
     </div>
 </main>
 
 <div th:replace="~{fragments/footer :: footer}"></div>
-
+<script>
+    // Bam ca dong de mo don (tru khi bam vao link / nut ben trong)
+    document.querySelectorAll('.bk-table tr[data-href]').forEach(tr => tr.addEventListener('click', e => {
+        if (e.target.closest('a, button, input, select')) return;
+        if (e.ctrlKey || e.metaKey) window.open(tr.dataset.href, '_blank'); else location.href = tr.dataset.href;
+    }));
+</script>
 </body>
 </html>

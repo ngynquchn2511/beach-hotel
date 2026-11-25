@@ -86,6 +86,16 @@ public class AdminBookingController {
             all = all.stream().filter(Booking::isRefundPending).toList();
         }
         model.addAttribute("refundPending", refundPending);
+        // Dem so don moi trang thai (theo o tim kiem hien tai) cho thanh tab loc
+        List<Booking> matching = status == null && !refundPending ? all : bookingService.findAllBookings(null, q);
+        java.util.Map<String, Long> statusCounts = new java.util.HashMap<>();
+        for (BookingStatus s : BookingStatus.values()) statusCounts.put(s.name(), 0L);
+        matching.forEach(b -> statusCounts.merge(b.getStatus().name(), 1L, Long::sum));
+        model.addAttribute("statusCounts", statusCounts);
+        model.addAttribute("totalCount", (long) matching.size());
+        model.addAttribute("refundCount", matching.stream().filter(Booking::isRefundPending).count());
+        model.addAttribute("resultCount", all.size());
+        model.addAttribute("today", LocalDate.now());
         int totalPages = PaginationUtil.totalPages(all.size(), PaginationUtil.DEFAULT_PAGE_SIZE);
         model.addAttribute("bookings", PaginationUtil.slice(all, page, PaginationUtil.DEFAULT_PAGE_SIZE));
         model.addAttribute("currentPage", Math.max(1, Math.min(page, totalPages)));
