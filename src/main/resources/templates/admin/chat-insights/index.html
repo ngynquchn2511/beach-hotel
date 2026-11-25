@@ -217,6 +217,69 @@
             </div>
             </th:block>
 
+            <!-- AI (Claude) tra loi cau Song chua hieu: chi phi, tran, chan spam, cai dat -->
+            <div class="vz-card mt-3" id="tro-ly-ai" th:if="${aiSettings != null}" th:with="s=${aiSettings}, ai=${report.ai}">
+                <div class="vz-head">
+                    <div><h5>AI trả lời câu Sóng chưa hiểu</h5>
+                        <div class="sub">Giá, phòng trống, tìm phòng vẫn do Sóng trả lời bằng số liệu thật (miễn phí). Chỉ câu Sóng chưa hiểu mới gửi AI, trả lời 1 - 3 dòng.</div></div>
+                    <span th:if="${aiReady and s.enabled}" class="vz-pill ok dot" th:text="'Đang bật · ' + ${aiModel}"></span>
+                    <span th:if="${aiReady and !s.enabled}" class="vz-pill muted dot">Đang tắt</span>
+                    <span th:unless="${aiReady}" class="vz-pill warn dot">Chưa có khóa API (ANTHROPIC_API_KEY)</span>
+                </div>
+                <div class="row g-3 mb-2">
+                    <div class="col-md-4">
+                        <div class="small text-muted">Chi phí tháng này</div>
+                        <div class="fw-bold fs-5"><span th:text="'$' + ${#numbers.formatDecimal(aiSpentMonth, 1, 2)}"></span>
+                            <span class="small text-muted fw-normal" th:text="' / $' + ${s.monthlyBudgetUsd}"></span></div>
+                        <div class="vz-bar mt-1" th:with="p=${s.monthlyBudgetUsd.doubleValue() > 0 ? aiSpentMonth * 100 / s.monthlyBudgetUsd.doubleValue() : 0}">
+                            <span th:style="|width: ${p > 100 ? 100 : p}%; background: ${p >= 90 ? 'var(--vz-red)' : (p >= 70 ? 'var(--vz-amber)' : 'var(--vz-green)')}|"></span></div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="small text-muted">Hôm nay</div>
+                        <div class="fw-bold fs-5"><span th:text="'$' + ${#numbers.formatDecimal(aiSpentToday, 1, 3)}"></span>
+                            <span class="small text-muted fw-normal" th:text="' / $' + ${s.dailyBudgetUsd}"></span></div>
+                        <div class="vz-bar mt-1" th:with="p=${s.dailyBudgetUsd.doubleValue() > 0 ? aiSpentToday * 100 / s.dailyBudgetUsd.doubleValue() : 0}">
+                            <span th:style="|width: ${p > 100 ? 100 : p}%; background: ${p >= 90 ? 'var(--vz-red)' : (p >= 70 ? 'var(--vz-amber)' : 'var(--vz-green)')}|"></span></div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="small text-muted" th:text="|${report.days} ngày qua|"></div>
+                        <div class="fw-bold fs-5" th:text="|${ai.answers} câu AI trả lời|"></div>
+                        <div class="small text-muted" th:text="'TB $' + ${#numbers.formatDecimal(ai.avgCostUsd(), 1, 4)} + ' / câu · tổng $' + ${#numbers.formatDecimal(ai.costUsd(), 1, 2)}"></div>
+                    </div>
+                </div>
+                <div class="vz-chart" style="height: 170px"><canvas id="ciAi" role="img" aria-label="Chi phí AI theo ngày"></canvas></div>
+                <div class="d-flex flex-wrap gap-2 mt-2 small">
+                    <span class="vz-pill info" th:text="|Nhắn quá nhanh (bị chặn): ${ai.rateLimited}|"></span>
+                    <span class="vz-pill info" th:text="|Gửi lại y hệt: ${ai.duplicates}|"></span>
+                    <span class="vz-pill muted" th:text="|Câu vô nghĩa (không gọi AI): ${ai.lowQuality}|"></span>
+                    <span class="vz-pill warn" th:text="|Khách hết lượt AI: ${ai.limitUser}|"></span>
+                    <span class="vz-pill bad" th:text="|Hết trần chi phí: ${ai.limitBudget}|"></span>
+                    <span class="vz-pill bad" th:if="${ai.errors > 0}" th:text="|AI lỗi: ${ai.errors}|"></span>
+                </div>
+                <form sec:authorize="hasRole('ADMIN')" th:action="@{/admin/chat-insights/ai-settings}" method="post" class="row g-2 align-items-end mt-3 pt-3 border-top">
+                    <input type="hidden" name="days" th:value="${days}">
+                    <div class="col-6 col-md-2">
+                        <div class="form-check form-switch mb-1">
+                            <input class="form-check-input" type="checkbox" role="switch" id="aiEnabled" name="enabled" value="true" th:checked="${s.enabled}">
+                            <label class="form-check-label small fw-semibold" for="aiEnabled">Bật AI</label>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-2"><label class="small text-muted">Trần tháng (USD)</label>
+                        <input class="form-control form-control-sm" type="number" step="0.01" min="0" max="1000" name="monthlyBudgetUsd" th:value="${s.monthlyBudgetUsd}"></div>
+                    <div class="col-6 col-md-2"><label class="small text-muted">Trần ngày (USD)</label>
+                        <input class="form-control form-control-sm" type="number" step="0.01" min="0" name="dailyBudgetUsd" th:value="${s.dailyBudgetUsd}"></div>
+                    <div class="col-6 col-md-2"><label class="small text-muted">Câu AI / khách / ngày</label>
+                        <input class="form-control form-control-sm" type="number" min="0" max="200" name="perUserDaily" th:value="${s.perUserDaily}"></div>
+                    <div class="col-6 col-md-1"><label class="small text-muted">Tin / phút</label>
+                        <input class="form-control form-control-sm" type="number" min="1" max="60" name="perMinute" th:value="${s.perMinute}"></div>
+                    <div class="col-6 col-md-1"><label class="small text-muted">Tin / giờ</label>
+                        <input class="form-control form-control-sm" type="number" min="1" max="1000" name="perHour" th:value="${s.perHour}"></div>
+                    <div class="col-12 col-md-2"><button class="btn btn-sm btn-primary w-100">Lưu cài đặt</button></div>
+                    <div class="col-12 small text-muted" th:if="${s.updatedAt != null}"
+                         th:text="|Sửa lần cuối ${#temporals.format(s.updatedAt, 'dd/MM HH:mm')}${s.updatedBy != null ? ' · ' + s.updatedBy : ''}|"></div>
+                </form>
+            </div>
+
             <!-- Gop y khach chua hai long -->
             <div class="vz-card mt-3" id="gop-y">
                 <div class="vz-head">
@@ -296,7 +359,9 @@
         hours: /*[[${report.hours}]]*/ [],
         res: /*[[${report.resolved}]]*/ 0,
         unres: /*[[${report.unresolved}]]*/ 0,
-        none: /*[[${report.noResponse}]]*/ 0
+        none: /*[[${report.noResponse}]]*/ 0,
+        aiCost: /*[[${report.ai.dayCostUsd}]]*/ [],
+        aiN: /*[[${report.ai.dayAnswers}]]*/ []
     };
     CI.outcome = [CI.res, CI.unres, CI.none];
     /*]]>*/
@@ -348,6 +413,20 @@
                                                                label: c => ' ' + c.parsed.y + ' câu hỏi' } } },
                     scales: { x: axisX({ ticks: { color: C.mut, autoSkip: true, maxTicksLimit: 12, maxRotation: 0 } }),
                               y: axisY({ beginAtZero: true, ticks: { color: C.mut, precision: 0, maxTicksLimit: 5 } }) } }
+            });
+        }
+        if (el('ciAi')) {
+            new Chart(el('ciAi'), {
+                data: { labels: CI.days, datasets: [
+                    { type: 'bar', label: 'Chi phí (USD)', data: CI.aiCost, backgroundColor: C.purple, borderRadius: 2, yAxisID: 'y' },
+                    { type: 'line', label: 'Câu AI trả lời', data: CI.aiN, borderColor: C.teal, backgroundColor: C.teal, borderWidth: 2,
+                      pointRadius: 0, tension: .3, yAxisID: 'y1' }] },
+                options: { interaction: { mode: 'index', intersect: false },
+                    plugins: { legend: { display: true, position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } },
+                               tooltip: { callbacks: { label: c => c.datasetIndex === 0 ? ' $' + c.parsed.y.toFixed(4) : ' ' + c.parsed.y + ' câu' } } },
+                    scales: { x: axisX({ ticks: { color: C.mut, autoSkip: true, maxTicksLimit: 10, maxRotation: 0 } }),
+                              y: axisY({ beginAtZero: true, ticks: { color: C.mut, callback: v => '$' + v } }),
+                              y1: { position: 'right', beginAtZero: true, grid: { display: false }, border: { display: false }, ticks: { color: C.mut, precision: 0 } } } }
             });
         }
         if (el('ciRooms')) {

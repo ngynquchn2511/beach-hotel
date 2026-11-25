@@ -28,6 +28,11 @@ public class AiAdvisorService {
     public static final int QUESTION_MAX = 1000;
     // Gia tham khao (USD / 1 trieu token vao, ra) theo model - chi de hien uoc tinh chi phi.
     // Haiku 5.5: gia nay ap cho prompt <= 100K token (so lieu 1 thang chi vai nghin token)
+    // Cho tro ly Song (ChatAiService) uoc tinh chi phi moi cau tra loi
+    public static double[] pricePerMTokPublic(String model) {
+        return pricePerMTok(model);
+    }
+
     static double[] pricePerMTok(String model) {
         if (model == null) {
             return new double[]{4.0, 20.0};

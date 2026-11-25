@@ -20,6 +20,12 @@ public interface AiGateway {
         return r;
     }
 
+    // Tra loi ngan cho khach (tro ly Song): gioi han so token tra ve de khong vuot tran chi phi.
+    // Mac dinh (gateway gia trong test) dung answer()
+    default Result<String> chat(String systemPrompt, String userContent, long maxTokens) {
+        return answer(systemPrompt, userContent);
+    }
+
     record Result<T>(T value, long inputTokens, long outputTokens) {
     }
 }

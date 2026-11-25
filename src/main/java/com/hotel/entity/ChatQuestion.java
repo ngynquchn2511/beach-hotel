@@ -48,4 +48,28 @@ public class ChatQuestion {
     // Cau tra loi cua Song (cat bot) de quan tri xem lai khi khach chua hai long
     @Column(name = "answer", length = 2000)
     private String answer;
+
+    // AI: null = Song tra loi theo luat; AI = Claude tra loi; AI_ERROR = goi AI loi; LIMIT_USER = khach het luot AI hom nay;
+    // LIMIT_BUDGET = het tran chi phi; RATE_LIMIT = nhan qua nhanh (chan, khong tra loi); DUPLICATE = gui lai y het; LOW_QUALITY = cau vo nghia
+    @Column(name = "ai_status", length = 20)
+    private String aiStatus;
+
+    @Column(name = "ai_input_tokens")
+    private Integer aiInputTokens;
+
+    @Column(name = "ai_output_tokens")
+    private Integer aiOutputTokens;
+
+    // Chi phi uoc tinh (phan trieu USD) de cong don tran chi phi
+    @Column(name = "ai_cost_micro")
+    private Long aiCostMicro;
+
+    public boolean isAiAnswer() {
+        return "AI".equals(aiStatus);
+    }
+
+    // Tin bi chan truoc khi Song xu ly - khong tinh vao thong ke cau hoi
+    public boolean isBlocked() {
+        return "RATE_LIMIT".equals(aiStatus) || "DUPLICATE".equals(aiStatus);
+    }
 }

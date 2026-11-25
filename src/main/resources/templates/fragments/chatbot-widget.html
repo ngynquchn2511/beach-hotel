@@ -170,6 +170,7 @@
         .may-card .cta { margin-top: auto; align-self: flex-start; background: var(--may-sun); border: var(--may-line); border-radius: 9px;
                          padding: 3px 10px; font-size: .76rem; font-weight: 800; }
         .may-row .may-col.wide { max-width: calc(100% - 38px); }
+        .may-ainote { font-size: .68rem; color: var(--may-ink-soft); padding: 0 4px; }
 
         /* Hoi lai "da giai quyet chua?" + form gop y */
         .may-check { display: flex; flex-direction: column; gap: 6px; }
@@ -323,6 +324,7 @@
             var T_FEEDBACK_SENT = /*[[#{chat.w.feedbackSent}]]*/ '';
             var T_CONTACT_PAGE = /*[[#{chat.w.contactPage}]]*/ '';
             var T_CARD_CTA = /*[[#{chat.card.cta}]]*/ '';
+            var T_AI_NOTE = /*[[#{chat.w.aiNote}]]*/ '';
             var ZALO_PHONE = /*[[${@environment.getProperty('app.contact.zalo-phone')}]]*/ '';
             var REASONS = [ ['NO_ROOM', T_REASON_NO_ROOM], ['PRICE', T_REASON_PRICE], ['WRONG_ANSWER', T_REASON_WRONG],
                 ['WANT_STAFF', T_REASON_STAFF], ['OTHER', T_REASON_OTHER] ];
@@ -474,6 +476,12 @@
                 }
                 if (m.kind === 'check' && !m.done) col.appendChild(checkButtons(m));
                 if (m.kind === 'reason' && !m.done) col.appendChild(reasonForm(m));
+                if (m.ai) {
+                    var note = document.createElement('div');
+                    note.className = 'may-ainote';
+                    note.textContent = T_AI_NOTE;
+                    col.appendChild(note);
+                }
                 var time = document.createElement('div');
                 time.className = 'may-time';
                 time.textContent = (m.from === 'bot' ? 'Sóng · ' : '') + timeLabel(m.time);
@@ -606,7 +614,7 @@
             function addBot(data) {
                 var t = document.getElementById('mayTyping');
                 if (t) t.remove();
-                var m = { from: 'bot', time: Date.now(), text: data.reply, actions: data.actions || [], suggestions: data.suggestions || [], cards: data.cards || [] };
+                var m = { from: 'bot', time: Date.now(), text: data.reply, actions: data.actions || [], suggestions: data.suggestions || [], cards: data.cards || [], ai: !!data.ai };
                 history.push(m);
                 save();
                 renderMessage(m);

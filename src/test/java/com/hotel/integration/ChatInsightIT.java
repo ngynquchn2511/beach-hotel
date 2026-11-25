@@ -141,7 +141,8 @@ class ChatInsightIT {
     @Test
     void report_countsTopicsOutcomesAndUnanswered() throws Exception {
         long a = ask(customer, "Giá phòng bao nhiêu", null).get("sessionId").asLong();
-        ask(customer, "giá phòng bao nhiêu?", a);
+        // Cung 1 khach gui lai y het trong 30 giay bi chan (chong spam) -> khach khac hoi lai
+        ask(other, "giá phòng bao nhiêu?", null);
         ask(customer, "con meo nha ban ten gi", a);
         feedback(customer, a, true, null, null);
         long b = ask(other, "Có cần đặt cọc không", null).get("sessionId").asLong();

@@ -22,9 +22,35 @@ public class AdminChatInsightController {
     private static final List<Integer> PERIODS = List.of(7, 30, 90);
 
     private final ChatInsightService service;
+    private com.hotel.service.ChatAiService aiService;
 
     public AdminChatInsightController(ChatInsightService service) {
         this.service = service;
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    void setAiService(com.hotel.service.ChatAiService aiService) {
+        this.aiService = aiService;
+    }
+
+    // Cai dat AI tra loi khach (chi ADMIN - SecurityConfig): bat / tat, tran chi phi, luot moi khach, chong spam
+    @PostMapping("/ai-settings")
+    public String aiSettings(@RequestParam(defaultValue = "false") boolean enabled,
+                             @RequestParam(required = false) java.math.BigDecimal monthlyBudgetUsd,
+                             @RequestParam(required = false) java.math.BigDecimal dailyBudgetUsd,
+                             @RequestParam(required = false) Integer perUserDaily,
+                             @RequestParam(required = false) Integer perMinute,
+                             @RequestParam(required = false) Integer perHour,
+                             @RequestParam(defaultValue = "30") int days,
+                             @AuthenticationPrincipal CustomUserDetails principal, RedirectAttributes ra) {
+        try {
+            aiService.update(enabled, monthlyBudgetUsd, dailyBudgetUsd, perUserDaily, perMinute, perHour,
+                    principal == null ? null : principal.getUser().getFullName());
+            ra.addFlashAttribute("successMessage", "Đã lưu cài đặt AI trả lời khách");
+        } catch (BusinessException e) {
+            ra.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        return "redirect:/admin/chat-insights?days=" + days + "#tro-ly-ai";
     }
 
     @GetMapping
@@ -39,6 +65,14 @@ public class AdminChatInsightController {
         model.addAttribute("feedbackPager", Pager.of(service.feedbacks(st), page, 10));
         model.addAttribute("handledCount", service.feedbacks("handled").size());
         model.addAttribute("noteMax", ChatInsightService.NOTE_MAX);
+        if (aiService != null) {
+            LocalDate today = LocalDate.now();
+            model.addAttribute("aiSettings", aiService.settings());
+            model.addAttribute("aiReady", aiService.gatewayReady());
+            model.addAttribute("aiModel", aiService.model());
+            model.addAttribute("aiSpentToday", aiService.spentTodayMicro(today) / 1_000_000.0);
+            model.addAttribute("aiSpentMonth", aiService.spentMonthMicro(today) / 1_000_000.0);
+        }
         return "admin/chat-insights/index";
     }
 

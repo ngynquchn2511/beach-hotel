@@ -77,8 +77,24 @@ public class ChatInsightService {
     // ===== Ghi nhan tu widget =====
 
     // Ghi 1 cau hoi + cau tra loi. Tra ve id cuoc tro chuyen (moi neu sessionId khong hop le / cua nguoi khac / bo do lau)
+    // Thong tin AI cua 1 cau (null = Song tra loi theo luat)
+    public record AiMeta(String status, long inputTokens, long outputTokens, long costMicro) {
+    }
+
     @Transactional
     public Long record(User customer, Long sessionId, String locale, String message, ChatbotService.Reply reply) {
+        return record(customer, sessionId, locale, message, reply, null);
+    }
+
+    // Cac cau gan nhat cua cuoc tro chuyen (cua dung khach) - lam ngu canh cho AI
+    @Transactional(readOnly = true)
+    public List<ChatQuestion> history(User customer, Long sessionId) {
+        return own(customer, sessionId).map(s -> questionRepository.findBySessionIdOrderByAskedAtAsc(s.getId()).stream()
+                .filter(q -> !q.isBlocked()).toList()).orElse(List.of());
+    }
+
+    @Transactional
+    public Long record(User customer, Long sessionId, String locale, String message, ChatbotService.Reply reply, AiMeta ai) {
         if (message == null || message.isBlank()) {
             return sessionId;
         }
@@ -92,11 +108,18 @@ public class ChatInsightService {
                 .text(cut(message.trim(), QUESTION_MAX))
                 .topics(reply.topics().isEmpty() ? null : cut(String.join(",", reply.topics()), 200))
                 .roomTypes(reply.roomTypes().isEmpty() ? null : cut(String.join(",", reply.roomTypes()), 200))
-                .answered(answered).answer(cut(reply.text(), ANSWER_MAX)).build());
+                .answered(answered).answer(cut(reply.text(), ANSWER_MAX))
+                .aiStatus(ai == null ? null : ai.status())
+                .aiInputTokens(ai == null || ai.inputTokens() == 0 ? null : (int) ai.inputTokens())
+                .aiOutputTokens(ai == null || ai.outputTokens() == 0 ? null : (int) ai.outputTokens())
+                .aiCostMicro(ai == null || ai.costMicro() == 0 ? null : ai.costMicro()).build());
         session.setLastAt(now);
-        session.setQuestionCount(session.getQuestionCount() + 1);
-        if (!answered) {
-            session.setUnansweredCount(session.getUnansweredCount() + 1);
+        boolean blocked = ai != null && ("RATE_LIMIT".equals(ai.status()) || "DUPLICATE".equals(ai.status()));
+        if (!blocked) {
+            session.setQuestionCount(session.getQuestionCount() + 1);
+            if (!answered) {
+                session.setUnansweredCount(session.getUnansweredCount() + 1);
+            }
         }
         sessionRepository.save(session);
         return session.getId();
@@ -211,10 +234,27 @@ public class ChatInsightService {
                          List<Count> topics, List<Count> roomTypes, List<Count> reasons,
                          List<Count> topQuestions, List<Count> topUnanswered,
                          List<String> dayLabels, List<Long> dayQuestions, List<Long> dayUnanswered, List<Long> daySessions,
-                         long[] hours, String busiestHour) {
+                         long[] hours, String busiestHour, AiStats ai) {
 
         public long questionsDelta() {
             return questions - prevQuestions;
+        }
+    }
+
+    // AI trong ky: so cau AI tra loi, chi phi, so lan chan / het luot, chi phi + so cau AI theo ngay
+    public record AiStats(long answers, long costMicro, long errors, long limitUser, long limitBudget, long lowQuality,
+                          long rateLimited, long duplicates, List<Double> dayCostUsd, List<Long> dayAnswers) {
+
+        public double costUsd() {
+            return costMicro / 1_000_000.0;
+        }
+
+        public double avgCostUsd() {
+            return answers == 0 ? 0 : costMicro / 1_000_000.0 / answers;
+        }
+
+        public long blocked() {
+            return rateLimited + duplicates;
         }
     }
 
@@ -224,12 +264,15 @@ public class ChatInsightService {
         LocalDate from = today.minusDays(d - 1L);
         LocalDateTime start = from.atStartOfDay();
         LocalDateTime end = today.plusDays(1).atStartOfDay();
-        List<ChatQuestion> qs = questionRepository.findByAskedAtGreaterThanEqualAndAskedAtLessThan(start, end);
+        List<ChatQuestion> raw = questionRepository.findByAskedAtGreaterThanEqualAndAskedAtLessThan(start, end);
+        // Tin bi chan (nhan qua nhanh / gui lai y het) khong tinh la cau hoi
+        List<ChatQuestion> qs = raw.stream().filter(q -> !q.isBlocked()).toList();
         List<ChatSession> ss = sessionRepository.findByStartedAtGreaterThanEqualAndStartedAtLessThan(start, end);
 
         // Ky truoc cung do dai de so sanh
         LocalDateTime prevStart = start.minusDays(d);
-        long prevQuestions = questionRepository.findByAskedAtGreaterThanEqualAndAskedAtLessThan(prevStart, start).size();
+        long prevQuestions = questionRepository.findByAskedAtGreaterThanEqualAndAskedAtLessThan(prevStart, start).stream()
+                .filter(q -> !q.isBlocked()).count();
         List<ChatSession> prevSessions = sessionRepository.findByStartedAtGreaterThanEqualAndStartedAtLessThan(prevStart, start);
         long prevResolved = prevSessions.stream().filter(ChatSession::isResolved).count();
         long prevAnsweredCheck = prevSessions.stream().filter(s -> s.isResolved() || s.isUnresolved()).count();
@@ -304,11 +347,31 @@ public class ChatInsightService {
         }
         String busiest = qs.isEmpty() ? "–" : String.format("%02d:00 – %02d:00", peak, (peak + 1) % 24);
 
+        Map<LocalDate, long[]> aiDay = new HashMap<>();
+        for (ChatQuestion q : raw) {
+            if (q.isAiAnswer() || q.getAiCostMicro() != null) {
+                long[] a = aiDay.computeIfAbsent(q.getAskedAt().toLocalDate(), k -> new long[2]);
+                a[0] += q.isAiAnswer() ? 1 : 0;
+                a[1] += q.getAiCostMicro() == null ? 0 : q.getAiCostMicro();
+            }
+        }
+        List<Double> dayCost = new ArrayList<>();
+        List<Long> dayAi = new ArrayList<>();
+        for (LocalDate day = from; !day.isAfter(today); day = day.plusDays(1)) {
+            long[] a = aiDay.getOrDefault(day, new long[2]);
+            dayAi.add(a[0]);
+            dayCost.add(Math.round(a[1] / 100.0) / 10_000.0);
+        }
+        java.util.function.Function<String, Long> st = code -> raw.stream().filter(q -> code.equals(q.getAiStatus())).count();
+        AiStats aiStats = new AiStats(st.apply("AI"), raw.stream().mapToLong(q -> q.getAiCostMicro() == null ? 0 : q.getAiCostMicro()).sum(),
+                st.apply("AI_ERROR"), st.apply("LIMIT_USER"), st.apply("LIMIT_BUDGET"), st.apply("LOW_QUALITY"),
+                st.apply("RATE_LIMIT"), st.apply("DUPLICATE"), dayCost, dayAi);
+
         return new Report(d, from, today, ss.size(), qs.size(), real, unanswered, pct(unanswered, qs.size()),
                 asked, resolved, unresolved, noResponse, pct(resolved, resolved + unresolved),
                 prevQuestions, pct(prevResolved, prevAnsweredCheck), countOpenFeedback(),
                 ss.isEmpty() ? 0 : Math.round(ss.stream().mapToInt(ChatSession::getQuestionCount).sum() * 10.0 / ss.size()) / 10.0,
-                topics, rooms, reasons, topQuestions, topUnanswered, labels, dq, du, dsn, hours, busiest);
+                topics, rooms, reasons, topQuestions, topUnanswered, labels, dq, du, dsn, hours, busiest, aiStats);
     }
 
     private static boolean isSmallTalk(ChatQuestion q) {

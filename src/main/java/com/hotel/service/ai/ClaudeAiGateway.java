@@ -143,10 +143,39 @@ public class ClaudeAiGateway implements AiGateway {
         return new Result<>(sb.toString().trim(), response.usage().inputTokens(), response.usage().outputTokens());
     }
 
+    @Override
+    public Result<String> chat(String systemPrompt, String userContent, long maxTokens) {
+        requireEnabled();
+        MessageCreateParams params = answerParams(systemPrompt, userContent, maxTokens);
+        try {
+            Message response = client().messages().create(params);
+            StopReason stop = response.stopReason().orElse(null);
+            // Cau tra loi ngan: bi cat o max_tokens thi van dung phan da viet (ChatAiService cat ve cau tron)
+            if (!StopReason.MAX_TOKENS.equals(stop)) {
+                checkStop(stop);
+            }
+            StringBuilder sb = new StringBuilder();
+            response.content().forEach(b -> b.text().ifPresent(t -> sb.append(t.text())));
+            // Du lieu resort trong system prompt duoc cache: input_tokens khong gom phan cache -> quy doi
+            // ghi cache x1,25 va doc cache x0,1 ve token vao thuong de tinh dung tran chi phi
+            var usage = response.usage();
+            long cacheWrite = usage.cacheCreationInputTokens().orElse(0L);
+            long cacheRead = usage.cacheReadInputTokens().orElse(0L);
+            long effectiveIn = usage.inputTokens() + Math.round(cacheWrite * 1.25) + Math.round(cacheRead * 0.1);
+            return new Result<>(sb.toString().trim(), effectiveIn, usage.outputTokens());
+        } catch (AnthropicServiceException ex) {
+            throw translate(ex);
+        }
+    }
+
     private MessageCreateParams answerParams(String systemPrompt, String userContent) {
+        return answerParams(systemPrompt, userContent, 8000L);
+    }
+
+    private MessageCreateParams answerParams(String systemPrompt, String userContent, long maxTokens) {
         MessageCreateParams.Builder builder = MessageCreateParams.builder()
                 .model(model)
-                .maxTokens(8000L)
+                .maxTokens(maxTokens)
                 .systemOfTextBlockParams(system(systemPrompt))
                 .addUserMessage(userContent)
                 // Hoi dap ngan ve so lieu: muc no luc thap la du, tra loi nhanh hon

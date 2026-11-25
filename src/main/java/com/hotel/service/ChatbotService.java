@@ -216,7 +216,7 @@ public class ChatbotService {
                     "payment", "how can i pay", "how do i pay", "pay by", "cash", "bank transfer", "credit card");
             boolean askFacilities = containsAny(q, "dich vu", "tien ich", "co so vat chat", "tien nghi",
                     "bbq", "ban cong", "ho boi", "be boi", "bai bien", "ghe nam", "bep", "nau an", "thue xe", "xe may", "wifi", "wi fi",
-                    "bai do xe", "do xe", "khach san co gi", "khach san phuc vu", "resort co gi", "resort phuc vu", "homestay co gi",
+                    "bai do xe", "do xe", "dau xe", "dau o to", "cho dau", "gui xe", "giu xe", "khach san co gi", "khach san phuc vu", "resort co gi", "resort phuc vu", "homestay co gi",
                     "amenit", "facilit", "balcon", "pool", "beach", "kitchen", "cook", "motorbike", "scooter", "parking",
                     "services");
             boolean askCombo = containsAny(q, "combo", "do an", "an uong", "buffet", "an lau", "mon lau", "nuong",
@@ -226,7 +226,7 @@ public class ChatbotService {
             boolean askDirections = containsAny(q, "chi duong", "duong di", "duong toi", "duong den", "duong len", "di nhu the nao", "di the nao",
                     "tu ha noi", "tu sai gon", "tu hcm", "cao toc", "bao xa", "bao lau", "xe khach", "di xe gi",
                     "direction", "get to", "get there", "how far", "from hanoi", "from saigon", "from ho chi minh", "expressway", "route", " bus", "how long");
-            boolean askAddress = !askDirections && containsAny(q, "dia chi", "o dau", "vi tri", "khach san o", "resort o", "homestay o",
+            boolean askAddress = !askDirections && containsAny(q, "dia chi", " o dau ", "vi tri", "khach san o ", "resort o ", "homestay o ",
                     "ban do", "address", "where is", "where are", "location", " map");
             boolean askContact = containsAny(q, "so dien thoai", "hotline", "lien he", " sdt ", "dien thoai", "email", "zalo",
                     "goi dien", "phone", "contact", " call");
