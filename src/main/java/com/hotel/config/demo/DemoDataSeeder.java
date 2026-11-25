@@ -43,7 +43,7 @@ public class DemoDataSeeder implements CommandLineRunner {
     static final String MARKER = "letan.thuhuong@example.com";
     static final String PASSWORD = "Songxanh@2026";
     static final LocalDate START = LocalDate.of(2025, 6, 1);
-    static final int FUTURE_DAYS = 120;
+    static final int FUTURE_DAYS = 184; // khach dat truoc toi da 6 thang
     private static final DateTimeFormatter VNP_DATE = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
     @Autowired private UserRepository users;
@@ -176,6 +176,7 @@ public class DemoDataSeeder implements CommandLineRunner {
         tx.executeWithoutResult(s -> {
             costSettingsAndExpenses();
             budget2026();
+            budget2027();
         });
         applyFixes();
         log.info("Da tao du lieu demo trong {} giay. Dang nhap nhan vien: {} / {}", (System.currentTimeMillis() - t0) / 1000, MARKER, PASSWORD);
@@ -232,6 +233,9 @@ public class DemoDataSeeder implements CommandLineRunner {
                 {"TET2026", "Du xuân Bính Ngọ - giảm 15%", DiscountType.PERCENTAGE, 15, null, LocalDate.of(2026, 1, 10), LocalDate.of(2026, 2, 28), 120, 2_000_000, 1_200_000},
                 {"HE2026", "Chào hè 2026 - giảm 10%", DiscountType.PERCENTAGE, 10, null, LocalDate.of(2026, 5, 1), LocalDate.of(2026, 8, 31), 400, 1_500_000, 800_000},
                 {"CHAOTHU", "Thu Hạ Long - giảm 300.000đ đơn từ 2 triệu", DiscountType.FIXED_AMOUNT, 300_000, null, LocalDate.of(2025, 9, 5), LocalDate.of(2026, 11, 30), null, 2_000_000, null},
+                {"DONGHALONG", "Đông Hạ Long ấm áp - giảm 12% đơn từ 2 đêm", DiscountType.PERCENTAGE, 12, null, LocalDate.of(2026, 11, 15), LocalDate.of(2027, 1, 20), 250, 2_400_000, 1_000_000},
+                {"TET2027", "Du xuân Đinh Mùi - giảm 15%", DiscountType.PERCENTAGE, 15, null, LocalDate.of(2026, 12, 15), LocalDate.of(2027, 2, 28), 150, 2_000_000, 1_200_000},
+                {"DATSOMHE27", "Đặt sớm hè 2027 - giảm 18% (đặt trước 3 tháng)", DiscountType.PERCENTAGE, 18, null, LocalDate.of(2026, 11, 1), LocalDate.of(2027, 3, 31), 200, 3_000_000, 1_800_000},
                 {"KHACHQUEN", "Cảm ơn khách quen - giảm 8%", DiscountType.PERCENTAGE, 8, CustomerType.REGULAR, START, null, null, null, 600_000},
                 {"VIPSX", "Ưu đãi riêng khách VIP - giảm 12%", DiscountType.PERCENTAGE, 12, CustomerType.VIP, START, null, null, null, 1_500_000},
         };
@@ -255,6 +259,12 @@ public class DemoDataSeeder implements CommandLineRunner {
         }
         if (!d.isBefore(LocalDate.of(2026, 2, 14)) && !d.isAfter(LocalDate.of(2026, 2, 17))) {
             return 0.25; // giap Tet, 30, mung 1: khach o nha
+        }
+        if (!d.isBefore(LocalDate.of(2027, 2, 7)) && !d.isAfter(LocalDate.of(2027, 2, 11))) {
+            return 0.93; // mung 2 - mung 6 Tet Dinh Mui
+        }
+        if (!d.isBefore(LocalDate.of(2027, 2, 3)) && !d.isAfter(LocalDate.of(2027, 2, 6))) {
+            return 0.25;
         }
         if (!d.isBefore(LocalDate.of(y, 4, 29)) && !d.isAfter(LocalDate.of(y, 5, 3))) {
             return 0.95;
@@ -319,10 +329,16 @@ public class DemoDataSeeder implements CommandLineRunner {
 
     private int leadDays(LocalDate in) {
         int r = rnd.nextInt(100);
-        int lead = r < 22 ? rnd.nextInt(4) : r < 55 ? 4 + rnd.nextInt(11) : r < 82 ? 15 + rnd.nextInt(21) : 36 + rnd.nextInt(65);
+        // Phan lon dat sat ngay, it dan khi xa: doan / dip le / he dat truoc 3-6 thang
+        int lead = r < 22 ? rnd.nextInt(4) : r < 52 ? 4 + rnd.nextInt(11) : r < 76 ? 15 + rnd.nextInt(21)
+                : r < 91 ? 36 + rnd.nextInt(55) : r < 97 ? 91 + rnd.nextInt(45) : 136 + rnd.nextInt(48);
         if (in.getMonthValue() >= 6 && in.getMonthValue() <= 8) {
-            lead += rnd.nextInt(10);
+            lead += rnd.nextInt(20);
         }
+        if (isHoliday(in)) {
+            lead += 10 + rnd.nextInt(30);
+        }
+        lead = Math.min(lead, 183);
         return lead;
     }
 
@@ -366,6 +382,8 @@ public class DemoDataSeeder implements CommandLineRunner {
         groupDefs.add(new GroupDef(DemoTexts.COMPANIES[2], LocalDate.of(2026, 3, 20), 2, 6));
         groupDefs.add(new GroupDef(DemoTexts.COMPANIES[4], LocalDate.of(2026, 6, 26), 3, 9));
         groupDefs.add(new GroupDef(DemoTexts.COMPANIES[3], today.plusDays(32), 2, 8));
+        groupDefs.add(new GroupDef(DemoTexts.COMPANIES[5], today.plusDays(68), 2, 10)); // tat nien
+        groupDefs.add(new GroupDef(DemoTexts.COMPANIES[6], today.plusDays(150), 3, 12)); // du lich he, hop dong som
         List<Room> cheap = new ArrayList<>(roomList);
         cheap.sort(Comparator.comparing(Room::getPrice));
         for (int g = 0; g < groupDefs.size(); g++) {
@@ -383,7 +401,7 @@ public class DemoDataSeeder implements CommandLineRunner {
                     s.room = r;
                     s.in = def.start();
                     s.out = def.start().plusDays(def.nights());
-                    LocalDate createdDay = def.start().minusDays(28);
+                    LocalDate createdDay = def.start().minusDays(Math.max(28, (int) ChronoUnit.DAYS.between(today, def.start()) + 8 + 3 * g));
                     s.created = (createdDay.isAfter(today) ? today.minusDays(3) : createdDay).atTime(10, 15).plusMinutes(placed);
                     s.guests = 2;
                     s.group = g;
@@ -1279,6 +1297,20 @@ public class DemoDataSeeder implements CommandLineRunner {
             BigDecimal adr = round(BigDecimal.valueOf(avgPrice * season * 1.08), 10_000);
             BigDecimal revenue = round(BigDecimal.valueOf(roomCount * m.lengthOfMonth() * occ / 100.0 * adr.doubleValue() * 1.12), 1_000_000);
             BigDecimal cost = round(BigDecimal.valueOf(640_000_000 + roomCount * m.lengthOfMonth() * occ / 100.0 * 200_000), 1_000_000);
+            budgetService.save(m, revenue, cost, occ, adr);
+        }
+    }
+
+    private void budget2027() {
+        int roomCount = roomList.size();
+        double avgPrice = roomList.stream().mapToDouble(r -> r.getPrice().doubleValue()).average().orElse(1_200_000);
+        for (int month = 1; month <= 6; month++) {
+            YearMonth m = YearMonth.of(2027, month);
+            int occ = (int) Math.round(Math.min(0.93, MONTH_OCC[month - 1] * 1.12 + 0.04) * 100);
+            double season = month >= 6 ? 1.2 : month <= 3 ? 0.9 : 1.0;
+            BigDecimal adr = round(BigDecimal.valueOf(avgPrice * season * 1.13), 10_000);
+            BigDecimal revenue = round(BigDecimal.valueOf(roomCount * m.lengthOfMonth() * occ / 100.0 * adr.doubleValue() * 1.12), 1_000_000);
+            BigDecimal cost = round(BigDecimal.valueOf(670_000_000 + roomCount * m.lengthOfMonth() * occ / 100.0 * 210_000), 1_000_000);
             budgetService.save(m, revenue, cost, occ, adr);
         }
     }

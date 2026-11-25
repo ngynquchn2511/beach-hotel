@@ -37,6 +37,9 @@
 
 ## 3. Đã làm (theo thứ tự gần nhất trước)
 
+### 25/11/2026 - Tạo lại DB dev
+Theo yêu cầu «tạo lại database, giữ tài khoản @gmail.com, tạo tài khoản test lễ tân / kế toán / buồng phòng; dữ liệu mới đông dần về gần, ít dần về 6 tháng sau, giống thật nhất». Đã sao lưu DB cũ ở `D:\CongNgheJava\backup-db\beach_hotel-2026-11-25.sql` (ngoài repo). DB `beach_hotel` tạo lại từ đầu, chạy `DEMO_DATA=true`: 60 phòng, 8.376 đơn (từ 06/2025 đến ~6 tháng tới), 6.700+ khách, 2.500+ đánh giá, lịch trực / chấm công. `DemoDataSeeder` sửa: `FUTURE_DAYS` 120 → 184, thời gian đặt trước có đuôi dài 3-6 tháng (dịp lễ / hè đặt sớm hơn, tối đa 183 ngày) nên đơn tương lai dày ở tuần tới (~30% công suất) và thưa dần còn vài đơn ở tháng 5/2027; Tết Đinh Mùi 2027 (3-11/02/2027), mã `DONGHALONG`, `TET2027`, `DATSOMHE27`, thêm 2 đoàn công ty (+68 ngày tất niên, +150 ngày du lịch hè), kế hoạch tháng 1-6/2027. Tài khoản giữ lại: `ngqhoan214@gmail.com` (ADMIN, id 3), `hoanquoc2511@gmail.com` (khách, id 4), mật khẩu cũ. Tài khoản test mật khẩu `Test@123`: `test.letan@hotel.com`, `test.ketoan@hotel.com`, `test.buongphong@hotel.com`. Nhân viên demo `@example.com` mật khẩu `Songxanh@2026`; `admin@hotel.com / admin123`, `staff@hotel.com / staff123`.
+
 ### Đợt 26 (22/11/2026) - Khách quá hạn trả phòng: thu tiền thế nào, gia hạn thế nào
 Chủ dự án hỏi: «khách quá hạn check out sau vài ngày thì thu tiền thế nào, gia hạn thế nào. hãy làm rõ bước này». Trước đây màn hình check-out chỉ tính số đêm đã đặt (khách ở quá 3 ngày vẫn thu tiền 2 đêm), chưa có chức năng gia hạn.
 
