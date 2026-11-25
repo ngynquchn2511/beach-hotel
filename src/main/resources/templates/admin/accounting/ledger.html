@@ -7,12 +7,82 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+    <style>
+        :root { --c-cash: #2a9d6a; --c-bank: #3d9bd6; --c-online: #7b61c9; --c-card: #f2b134; --c-out: #e0607a; --mut: #6c7f92; }
+        .lg-card { background: #fff; border-radius: 14px; box-shadow: 0 1px 3px rgba(19,57,94,.10), 0 0 0 1px #e3edf5; padding: 18px 20px; margin-bottom: 1.25rem; }
+        .lg-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; margin-bottom: .9rem; }
+        .lg-head h5 { font-weight: 700; font-size: 1.02rem; margin: 0; }
+        .lg-head .sub { color: var(--mut); font-size: .8rem; }
+        .num { font-variant-numeric: tabular-nums; }
+
+        /* Chon thang */
+        .mnav { display: inline-flex; align-items: center; border: 1px solid #d5e3ee; border-radius: 999px; background: #fff; overflow: hidden; }
+        .mnav a { padding: 5px 11px; color: #13395e; text-decoration: none; }
+        .mnav a:hover { background: #f1f7fc; }
+        .mnav a.off { color: #c3d0db; pointer-events: none; }
+        .mnav input { border: 0; border-left: 1px solid #e3edf5; border-right: 1px solid #e3edf5; padding: 4px 8px; font-weight: 600; color: #13395e; width: 150px; background: transparent; }
+        .mnav input:focus { outline: none; background: #f7fbfe; }
+
+        /* So lieu */
+        .kpi { background: #fff; border-radius: 14px; box-shadow: 0 1px 3px rgba(19,57,94,.10), 0 0 0 1px #e3edf5; padding: 14px 16px; height: 100%; }
+        .kpi .lbl { color: var(--mut); font-size: .8rem; }
+        .kpi .val { font-size: 1.45rem; font-weight: 800; line-height: 1.2; font-variant-numeric: tabular-nums; }
+        .kpi .sub { color: var(--mut); font-size: .76rem; }
+        .kpi.hero { background: linear-gradient(135deg, #13395e, #1f5a8c); color: #fff; box-shadow: none; }
+        .kpi.hero .lbl, .kpi.hero .sub { color: rgba(255,255,255,.75); }
+        .kpi.hero .val { font-size: 1.9rem; }
+        .delta { display: inline-flex; align-items: center; gap: 3px; font-weight: 700; font-size: .78rem; padding: 1px 8px; border-radius: 999px; }
+        .delta.up { background: rgba(42,157,106,.22); color: #b8f0d4; }
+        .delta.down { background: rgba(224,96,122,.25); color: #ffd0da; }
+
+        /* Co cau phuong thuc */
+        .mix { display: flex; height: 14px; border-radius: 7px; overflow: hidden; background: #eef3f7; gap: 2px; }
+        .mix span { display: block; height: 100%; }
+        .mix-legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px 18px; margin-top: 14px; }
+        .mix-legend .it { display: flex; gap: 10px; align-items: flex-start; }
+        .mix-legend i { width: 10px; height: 10px; border-radius: 3px; margin-top: 5px; flex: 0 0 auto; }
+        .mix-legend .nm { font-size: .8rem; color: var(--mut); }
+        .mix-legend .am { font-weight: 700; font-variant-numeric: tabular-nums; }
+        .mix-legend .pc { font-size: .78rem; color: var(--mut); font-weight: 500; margin-left: 4px; }
+
+        .key { display: flex; gap: 14px; flex-wrap: wrap; font-size: .78rem; color: #4a5b6c; }
+        .key span { display: inline-flex; align-items: center; gap: 6px; }
+        .key i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+        /* Bang */
+        .lg-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: .88rem; }
+        .lg-table th { font-size: .7rem; font-weight: 700; color: var(--mut); text-transform: uppercase; letter-spacing: .06em; padding: 9px 12px;
+                       background: #f7fafc; border-bottom: 1px solid #e3edf5; white-space: nowrap; position: sticky; top: 0; z-index: 1; }
+        .lg-table td { padding: 9px 12px; border-bottom: 1px solid #eef3f7; color: #13395e; vertical-align: middle; }
+        .lg-table tbody tr:hover td { background: #f6fafd; }
+        .lg-table tbody tr:last-child td { border-bottom: 0; }
+        .lg-table tfoot td { padding: 10px 12px; border-top: 2px solid #e3edf5; font-weight: 800; background: #fbfdfe; }
+        .lg-table .r { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+        .lg-table .zero { color: #c3d0db; }
+        .neg { color: #c23d58; }
+        .dow { color: var(--mut); font-size: .75rem; margin-left: 4px; }
+        .netbar { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+        .netbar .b { height: 6px; border-radius: 3px; background: #a9d4ef; min-width: 2px; }
+        .scroll { max-height: 520px; overflow-y: auto; border-radius: 10px; border: 1px solid #eef3f7; }
+
+        .pill { display: inline-flex; align-items: center; gap: 6px; font-size: .74rem; font-weight: 600; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
+        .pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+        .m-CASH { background: #e2f5ea; color: #1d7a4c; } .m-BANK_TRANSFER { background: #e3f1fb; color: #1f6fb0; }
+        .m-ONLINE { background: #efeafb; color: #5b43a8; } .m-CARD { background: #fff4dc; color: #8a5a00; }
+        .chip { border: 1px solid #d5e3ee; background: #fff; color: #13395e; border-radius: 999px; padding: 4px 12px; font-size: .8rem; font-weight: 600; }
+        .chip.active { background: #13395e; border-color: #13395e; color: #fff; }
+        .lg-search { position: relative; }
+        .lg-search i { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: #7d93a8; font-size: .85rem; }
+        .lg-search input { padding-left: 30px; border-radius: 999px; width: 230px; }
+        .empty { text-align: center; color: var(--mut); padding: 40px 10px; }
+        .empty i { display: block; font-size: 2rem; color: #b6c8d8; margin-bottom: 6px; }
+    </style>
 </head>
 <body class="eaut eaut-admin">
 
 <div th:replace="~{fragments/header :: header}"></div>
 
-<main class="container py-5" th:with="fmt='#,##0'">
+<main class="container py-5">
     <div class="row g-4">
         <div class="col-md-3">
             <div th:replace="~{fragments/admin-sidebar :: sidebar}"></div>
@@ -22,85 +92,176 @@
             <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
                 <div>
                     <h3 class="fw-bold mb-1">Sổ quỹ tháng</h3>
-                    <p class="text-muted small mb-0">Mọi khoản thu (thanh toán đơn, nhận cọc, bán thẻ quà tặng) và chi (hoàn cọc) theo ngày ghi nhận.</p>
+                    <p class="text-muted small mb-0">Mọi khoản thu (thanh toán đơn, nhận cọc, bán thẻ quà tặng) và chi (hoàn cọc), theo ngày ghi nhận.</p>
                 </div>
-                <form method="get" class="d-flex gap-2 align-items-end">
-                    <input type="month" name="month" class="form-control form-control-sm" th:value="${month}">
-                    <button type="submit" class="btn btn-sm btn-outline-primary">Xem</button>
+                <div class="d-flex gap-2 align-items-center">
+                    <form method="get" class="mnav" aria-label="Chọn tháng">
+                        <a th:href="@{/admin/accounting/ledger(month=${prevMonth})}" title="Tháng trước"><i class="bi bi-chevron-left"></i></a>
+                        <input type="month" name="month" th:value="${month}" onchange="this.form.submit()" aria-label="Tháng">
+                        <a th:href="@{/admin/accounting/ledger(month=${nextMonth})}" th:classappend="${isCurrentMonth} ? 'off'" title="Tháng sau"><i class="bi bi-chevron-right"></i></a>
+                    </form>
                     <a class="btn btn-sm btn-success text-nowrap" th:href="@{/admin/accounting/ledger.xlsx(month=${month})}">
                         <i class="bi bi-file-earmark-excel me-1"></i>Xuất Excel</a>
-                </form>
+                </div>
             </div>
 
-            <div class="row g-3 mb-4">
-                <div class="col-6 col-lg"><div class="bg-white p-3 rounded shadow-sm h-100"><div class="small text-muted">Tiền mặt</div>
-                    <div class="fw-bold" th:text="${#numbers.formatDecimal(report.totals[T(com.hotel.entity.PaymentMethod).CASH], 1, 'POINT', 0, 'COMMA')}"></div></div></div>
-                <div class="col-6 col-lg"><div class="bg-white p-3 rounded shadow-sm h-100"><div class="small text-muted">Chuyển khoản</div>
-                    <div class="fw-bold" th:text="${#numbers.formatDecimal(report.totals[T(com.hotel.entity.PaymentMethod).BANK_TRANSFER], 1, 'POINT', 0, 'COMMA')}"></div></div></div>
-                <div class="col-6 col-lg"><div class="bg-white p-3 rounded shadow-sm h-100"><div class="small text-muted">Online (VNPay)</div>
-                    <div class="fw-bold" th:text="${#numbers.formatDecimal(report.totals[T(com.hotel.entity.PaymentMethod).ONLINE], 1, 'POINT', 0, 'COMMA')}"></div></div></div>
-                <div class="col-6 col-lg"><div class="bg-white p-3 rounded shadow-sm h-100"><div class="small text-muted">Đã hoàn cọc</div>
-                    <div class="fw-bold text-danger" th:text="${#numbers.formatDecimal(report.refunds, 1, 'POINT', 0, 'COMMA')}"></div></div></div>
-                <div class="col-12 col-lg"><div class="bg-white p-3 rounded shadow-sm h-100"><div class="small text-muted">Thực thu tháng (VND)</div>
-                    <div class="fw-bold fs-5" th:text="${#numbers.formatDecimal(report.net, 1, 'POINT', 0, 'COMMA')}"></div></div></div>
+            <!-- So lieu chinh -->
+            <div class="row g-3 mb-3">
+                <div class="col-lg-4">
+                    <div class="kpi hero">
+                        <div class="lbl" th:text="'Thực thu tháng ' + ${month.monthValue} + '/' + ${month.year}"></div>
+                        <div class="val" th:text="${#numbers.formatDecimal(report.net, 1, 'POINT', 0, 'COMMA')} + ' đ'"></div>
+                        <div class="sub d-flex align-items-center gap-2 mt-1">
+                            <span id="lgDelta" class="delta"></span>
+                            <span th:if="${prevNet != null}" th:text="'Tháng trước: ' + ${#numbers.formatDecimal(prevNet, 1, 'POINT', 0, 'COMMA')} + ' đ'"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg">
+                    <div class="kpi"><div class="lbl"><i class="bi bi-arrow-down-left me-1" style="color:var(--c-cash)"></i>Tổng tiền vào</div>
+                        <div class="val" th:text="${#numbers.formatDecimal(report.net.add(report.refunds), 1, 'POINT', 0, 'COMMA')}"></div>
+                        <div class="sub">trước khi trừ hoàn cọc</div></div>
+                </div>
+                <div class="col-6 col-lg">
+                    <div class="kpi"><div class="lbl"><i class="bi bi-arrow-up-right me-1" style="color:var(--c-out)"></i>Đã hoàn cọc</div>
+                        <div class="val" th:classappend="${report.refunds.signum() > 0} ? 'neg'" th:text="${#numbers.formatDecimal(report.refunds, 1, 'POINT', 0, 'COMMA')}"></div>
+                        <div class="sub" th:text="${#lists.size(report.entries.?[amount.signum() < 0])} + ' khoản chi'"></div></div>
+                </div>
+                <div class="col-12 col-lg">
+                    <div class="kpi"><div class="lbl"><i class="bi bi-receipt me-1"></i>Giao dịch</div>
+                        <div class="val" th:text="${#lists.size(report.entries)}"></div>
+                        <div class="sub" th:text="${#lists.size(report.days)} + ' ngày có thu chi'"></div></div>
+                </div>
             </div>
-            <p class="small text-muted">Các ô theo phương thức đã trừ khoản hoàn cọc của phương thức đó.</p>
 
-            <div th:if="${#lists.isEmpty(report.days)}" class="alert alert-info">Tháng này chưa có khoản thu chi nào.</div>
-            <div class="bg-white p-4 rounded shadow-sm mb-4" th:unless="${#lists.isEmpty(report.days)}">
-                <h5 class="fw-bold mb-3">Theo ngày</h5>
+            <div th:if="${#lists.isEmpty(report.days)}" class="lg-card empty"><i class="bi bi-journal-x"></i>Tháng này chưa có khoản thu chi nào.</div>
+
+            <th:block th:unless="${#lists.isEmpty(report.days)}">
+            <!-- Co cau theo phuong thuc -->
+            <div class="lg-card" th:with="M=${T(com.hotel.entity.PaymentMethod)}">
+                <div class="lg-head">
+                    <div><h5>Thu theo phương thức</h5>
+                        <div class="sub">Đã trừ khoản hoàn cọc của chính phương thức đó</div></div>
+                </div>
+                <div class="mix" id="lgMix" role="img" aria-label="Tỷ trọng theo phương thức"></div>
+                <div class="mix-legend">
+                    <div class="it" th:each="m : ${M.values()}" 
+                         th:attr="data-m=${m.name()}, data-v=${report.totals.get(m) != null ? report.totals.get(m) : 0}">
+                        <i th:style="'background:var(--c-' + ${m.name() == 'CASH' ? 'cash' : m.name() == 'BANK_TRANSFER' ? 'bank' : m.name() == 'ONLINE' ? 'online' : 'card'} + ')'"></i>
+                        <div><div class="nm" th:text="${m.name() == 'ONLINE'} ? 'Online (VNPay)' : ${m.vietnameseLabel}"></div>
+                            <div class="am"><span th:text="${#numbers.formatDecimal(report.totals.get(m) != null ? report.totals.get(m) : 0, 1, 'POINT', 0, 'COMMA')}"></span><span class="pc"></span></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bieu do theo ngay -->
+            <div class="lg-card">
+                <div class="lg-head">
+                    <div><h5>Dòng tiền theo ngày</h5>
+                        <div class="sub" id="lgDailySub">Cột trên trục: tiền vào theo phương thức · dưới trục: hoàn cọc</div></div>
+                    <div class="key">
+                        <span><i style="background:var(--c-cash)"></i>Tiền mặt</span>
+                        <span><i style="background:var(--c-bank)"></i>Chuyển khoản</span>
+                        <span><i style="background:var(--c-card)"></i>Thẻ</span>
+                        <span><i style="background:var(--c-online)"></i>Online</span>
+                        <span><i style="background:var(--c-out)"></i>Hoàn cọc</span>
+                    </div>
+                </div>
+                <div style="position:relative;height:280px"><canvas id="lgDaily" role="img" aria-label="Dòng tiền theo ngày"></canvas></div>
+            </div>
+
+            <!-- Bang theo ngay -->
+            <div class="lg-card">
+                <div class="lg-head"><div><h5>Theo ngày</h5><div class="sub">Chỉ những ngày có phát sinh</div></div></div>
                 <div class="table-responsive">
-                    <table class="table table-sm align-middle mb-0 text-end">
-                        <thead><tr><th class="text-start">Ngày</th><th>Tiền mặt</th><th>Chuyển khoản</th><th>Online</th><th>Hoàn cọc</th><th>Thực thu</th><th></th></tr></thead>
+                    <table class="lg-table">
+                        <thead><tr><th>Ngày</th><th class="r">Tiền mặt</th><th class="r">Chuyển khoản</th><th class="r">Thẻ</th><th class="r">Online</th><th class="r">Hoàn cọc</th><th class="r">Thực thu</th><th title="Đối soát VNPay"></th></tr></thead>
                         <tbody>
                         <tr th:each="d : ${report.days}">
-                            <td class="text-start" th:text="${#temporals.format(d.day, 'dd/MM')}"></td>
-                            <td th:text="${#numbers.formatDecimal(d.cash, 1, 'POINT', 0, 'COMMA')}"></td>
-                            <td th:text="${#numbers.formatDecimal(d.transfer, 1, 'POINT', 0, 'COMMA')}"></td>
-                            <td th:text="${#numbers.formatDecimal(d.online, 1, 'POINT', 0, 'COMMA')}"></td>
-                            <td class="text-danger" th:text="${d.refunds.signum() > 0} ? ${#numbers.formatDecimal(d.refunds, 1, 'POINT', 0, 'COMMA')} : '-'"></td>
-                            <td class="fw-semibold" th:text="${#numbers.formatDecimal(d.net, 1, 'POINT', 0, 'COMMA')}"></td>
-                            <td><a class="small" th:if="${d.online.signum() > 0 or d.refunds.signum() > 0}"
-                                   th:href="@{/admin/accounting/vnpay(day=${d.day})}">Đối soát VNPay</a></td>
+                            <td class="text-nowrap"><b th:text="${#temporals.format(d.day, 'dd/MM')}"></b>
+                                <span class="dow" th:text="${ {'T2','T3','T4','T5','T6','T7','CN'}[d.day.dayOfWeek.value - 1] }"></span></td>
+                            <td class="r" th:classappend="${d.cash.signum() == 0} ? 'zero'" th:text="${d.cash.signum() == 0} ? '–' : ${#numbers.formatDecimal(d.cash, 1, 'POINT', 0, 'COMMA')}"></td>
+                            <td class="r" th:classappend="${d.transfer.signum() == 0} ? 'zero'" th:text="${d.transfer.signum() == 0} ? '–' : ${#numbers.formatDecimal(d.transfer, 1, 'POINT', 0, 'COMMA')}"></td>
+                            <td class="r" th:classappend="${d.card.signum() == 0} ? 'zero'" th:text="${d.card.signum() == 0} ? '–' : ${#numbers.formatDecimal(d.card, 1, 'POINT', 0, 'COMMA')}"></td>
+                            <td class="r" th:classappend="${d.online.signum() == 0} ? 'zero'" th:text="${d.online.signum() == 0} ? '–' : ${#numbers.formatDecimal(d.online, 1, 'POINT', 0, 'COMMA')}"></td>
+                            <td class="r" th:classappend="${d.refunds.signum() > 0} ? 'neg' : 'zero'" th:text="${d.refunds.signum() > 0} ? '−' + ${#numbers.formatDecimal(d.refunds, 1, 'POINT', 0, 'COMMA')} : '–'"></td>
+                            <td class="r fw-bold"><div class="netbar"><span class="b" th:attr="data-net=${d.net}"></span>
+                                <span th:classappend="${d.net.signum() < 0} ? 'neg'" th:text="${#numbers.formatDecimal(d.net, 1, 'POINT', 0, 'COMMA')}"></span></div></td>
+                            <td class="text-end"><a class="small text-nowrap" th:if="${d.online.signum() > 0 or d.refunds.signum() > 0}"
+                                   th:href="@{/admin/accounting/vnpay(day=${d.day})}" title="Đối soát VNPay ngày này" aria-label="Đối soát VNPay"><i class="bi bi-shield-check"></i></a></td>
                         </tr>
                         </tbody>
+                        <tfoot><tr>
+                            <td>Cả tháng</td>
+                            <td class="r" th:text="${#numbers.formatDecimal(report.totals[T(com.hotel.entity.PaymentMethod).CASH] ?: 0, 1, 'POINT', 0, 'COMMA')}"></td>
+                            <td class="r" th:text="${#numbers.formatDecimal(report.totals[T(com.hotel.entity.PaymentMethod).BANK_TRANSFER] ?: 0, 1, 'POINT', 0, 'COMMA')}"></td>
+                            <td class="r" th:text="${#numbers.formatDecimal(report.totals[T(com.hotel.entity.PaymentMethod).CARD] ?: 0, 1, 'POINT', 0, 'COMMA')}"></td>
+                            <td class="r" th:text="${#numbers.formatDecimal(report.totals[T(com.hotel.entity.PaymentMethod).ONLINE] ?: 0, 1, 'POINT', 0, 'COMMA')}"></td>
+                            <td class="r neg" th:text="${report.refunds.signum() > 0} ? '−' + ${#numbers.formatDecimal(report.refunds, 1, 'POINT', 0, 'COMMA')} : '–'"></td>
+                            <td class="r" th:text="${#numbers.formatDecimal(report.net, 1, 'POINT', 0, 'COMMA')}"></td>
+                            <td></td>
+                        </tr></tfoot>
                     </table>
                 </div>
+                <div class="small text-muted mt-2">Dòng «Cả tháng» theo phương thức đã trừ hoàn cọc của phương thức đó · <i class="bi bi-shield-check"></i> = mở đối soát VNPay của ngày.</div>
             </div>
 
-            <div class="bg-white p-4 rounded shadow-sm mb-4" th:unless="${#lists.isEmpty(report.entries)}">
-                <h5 class="fw-bold mb-3">Chi tiết</h5>
-                <div class="table-responsive" style="max-height: 480px; overflow-y: auto;">
-                    <table class="table table-sm align-middle mb-0">
-                        <thead><tr><th>Thời gian</th><th>Nội dung</th><th>Phương thức</th><th class="text-end">Số tiền</th></tr></thead>
-                        <tbody>
-                        <tr th:each="e : ${report.entries}">
-                            <td class="text-nowrap small" th:text="${#temporals.format(e.time, 'dd/MM HH:mm')}"></td>
+            <!-- Chi tiet tung khoan -->
+            <div class="lg-card">
+                <div class="lg-head">
+                    <div><h5>Chi tiết từng khoản</h5><div class="sub"><span id="lgShown" th:text="${#lists.size(report.entries)}"></span> khoản</div></div>
+                    <div class="d-flex gap-2 flex-wrap align-items-center">
+                        <div class="d-flex gap-1 flex-wrap" id="lgChips">
+                            <button type="button" class="chip active" data-f="all">Tất cả</button>
+                            <button type="button" class="chip" data-f="CASH">Tiền mặt</button>
+                            <button type="button" class="chip" data-f="BANK_TRANSFER">Chuyển khoản</button>
+                            <button type="button" class="chip" data-f="CARD">Thẻ</button>
+                            <button type="button" class="chip" data-f="ONLINE">Online</button>
+                            <button type="button" class="chip" data-f="out">Hoàn cọc</button>
+                        </div>
+                        <div class="lg-search"><i class="bi bi-search"></i>
+                            <input type="search" id="lgQ" class="form-control form-control-sm" placeholder="Tìm nội dung, mã đơn"></div>
+                    </div>
+                </div>
+                <div class="scroll">
+                    <table class="lg-table">
+                        <thead><tr><th>Thời gian</th><th>Nội dung</th><th>Phương thức</th><th class="r">Số tiền</th></tr></thead>
+                        <tbody id="lgRows">
+                        <tr th:each="e : ${report.entries}" th:attr="data-m=${e.method.name()}, data-out=${e.amount.signum() < 0}">
+                            <td class="text-nowrap"><b th:text="${#temporals.format(e.time, 'dd/MM')}"></b>
+                                <span class="dow" th:text="${#temporals.format(e.time, 'HH:mm')}"></span></td>
                             <td><a th:if="${e.bookingId != null}" th:href="@{/admin/bookings/{id}/invoice(id=${e.bookingId})}" th:text="${e.label}"></a>
                                 <span th:if="${e.bookingId == null}" th:text="${e.label}"></span></td>
-                            <td class="small" th:text="${e.method.vietnameseLabel}"></td>
-                            <td class="text-end" th:classappend="${e.amount.signum() < 0} ? 'text-danger'"
-                                th:text="${#numbers.formatDecimal(e.amount, 1, 'POINT', 0, 'COMMA')}"></td>
+                            <td><span class="pill" th:classappend="'m-' + ${e.method.name()}" th:text="${e.method.name() == 'ONLINE'} ? 'Online' : (${e.method.name() == 'BANK_TRANSFER'} ? 'Chuyển khoản' : ${e.method.vietnameseLabel})"></span></td>
+                            <td class="r fw-semibold" th:classappend="${e.amount.signum() < 0} ? 'neg' : ''"
+                                th:text="(${e.amount.signum() > 0} ? '+' : '') + ${#numbers.formatDecimal(e.amount, 1, 'POINT', 0, 'COMMA')}"></td>
                         </tr>
                         </tbody>
                     </table>
+                    <div id="lgNone" class="empty d-none"><i class="bi bi-search"></i>Không có khoản nào khớp.</div>
                 </div>
             </div>
+            </th:block>
 
-            <div class="bg-white p-4 rounded shadow-sm" th:unless="${#lists.isEmpty(report.shifts)}">
-                <h5 class="fw-bold mb-3">Ca trực trong tháng</h5>
+            <!-- Ca truc -->
+            <div class="lg-card" th:unless="${#lists.isEmpty(report.shifts)}">
+                <div class="lg-head"><div><h5>Ca trực trong tháng</h5><div class="sub">Tiền mặt thu trong ca, chênh lệch khi đóng ca và tiền nộp két</div></div></div>
                 <div class="table-responsive">
-                    <table class="table table-sm align-middle mb-0">
-                        <thead><tr><th>Ca</th><th>Mở / đóng</th><th class="text-end">Thu tiền mặt</th><th class="text-end">Chênh lệch</th><th class="text-end">Nộp két</th></tr></thead>
+                    <table class="lg-table">
+                        <thead><tr><th>Ca</th><th>Mở</th><th>Đóng</th><th class="r">Thu tiền mặt</th><th class="r">Chênh lệch</th><th class="r">Nộp két</th></tr></thead>
                         <tbody>
                         <tr th:each="s : ${report.shifts}">
-                            <td><a th:href="@{/admin/shifts/{id}(id=${s.id})}" th:text="'#' + ${s.id}"></a></td>
-                            <td class="small"><span th:text="${#temporals.format(s.openedAt, 'dd/MM HH:mm')} + ' ' + ${s.openedBy.fullName}"></span><br>
-                                <span th:text="${s.closedAt != null} ? ${#temporals.format(s.closedAt, 'dd/MM HH:mm')} + ' ' + ${s.closedBy.fullName} : 'Đang mở'"></span></td>
-                            <td class="text-end" th:text="${s.cashIn != null} ? ${#numbers.formatDecimal(s.cashIn, 1, 'POINT', 0, 'COMMA')} : '-'"></td>
-                            <td class="text-end" th:classappend="${s.cashDifference != null and s.cashDifference.signum() != 0} ? 'text-danger fw-semibold'"
-                                th:text="${s.cashDifference != null} ? ${#numbers.formatDecimal(s.cashDifference, 1, 'POINT', 0, 'COMMA')} : '-'"></td>
-                            <td class="text-end" th:text="${s.cashToSafe != null} ? ${#numbers.formatDecimal(s.cashToSafe, 1, 'POINT', 0, 'COMMA')} : '-'"></td>
+                            <td><a class="fw-bold" th:href="@{/admin/shifts/{id}(id=${s.id})}" th:text="'#' + ${s.id}"></a></td>
+                            <td><b th:text="${#temporals.format(s.openedAt, 'dd/MM HH:mm')}"></b><div class="small text-muted" th:text="${s.openedBy.fullName}"></div></td>
+                            <td th:if="${s.closedAt != null}"><b th:text="${#temporals.format(s.closedAt, 'dd/MM HH:mm')}"></b><div class="small text-muted" th:text="${s.closedBy.fullName}"></div></td>
+                            <td th:if="${s.closedAt == null}"><span class="pill m-CASH">Đang mở</span></td>
+                            <td class="r" th:text="${s.cashIn != null} ? ${#numbers.formatDecimal(s.cashIn, 1, 'POINT', 0, 'COMMA')} : '–'"></td>
+                            <td class="r">
+                                <span th:if="${s.cashDifference == null}" class="zero">–</span>
+                                <span th:if="${s.cashDifference != null and s.cashDifference.signum() == 0}" class="text-success"><i class="bi bi-check2"></i> Khớp</span>
+                                <span th:if="${s.cashDifference != null and s.cashDifference.signum() != 0}" class="neg fw-bold"
+                                      th:text="${#numbers.formatDecimal(s.cashDifference, 1, 'POINT', 0, 'COMMA')}"></span></td>
+                            <td class="r" th:text="${s.cashToSafe != null} ? ${#numbers.formatDecimal(s.cashToSafe, 1, 'POINT', 0, 'COMMA')} : '–'"></td>
                         </tr>
                         </tbody>
                     </table>
@@ -111,5 +272,126 @@
 </main>
 
 <div th:replace="~{fragments/footer :: footer}"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    const LG = {
+        month: /*[[${month.toString()}]]*/ '2026-11',
+        days: /*[[${report.days.![day.toString()]}]]*/ [],
+        cash: /*[[${report.days.![cash]}]]*/ [],
+        card: /*[[${report.days.![card]}]]*/ [],
+        bank: /*[[${report.days.![transfer]}]]*/ [],
+        online: /*[[${report.days.![online]}]]*/ [],
+        out: /*[[${report.days.![refunds]}]]*/ [],
+        net: /*[[${report.net}]]*/ 0,
+        prev: /*[[${prevNet}]]*/ 0
+    };
+    /*]]>*/
+    (function () {
+        const INK = '#13395e', MUT = '#6c7f92', GRID = '#edf3f8';
+        const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+        const vnd = v => Number(v).toLocaleString('vi-VN');
+        const short = v => { const a = Math.abs(v), s = v < 0 ? '−' : '';
+            return a >= 1e9 ? s + (a / 1e9).toLocaleString('vi-VN', { maximumFractionDigits: 2 }) + ' tỷ'
+                 : a >= 1e6 ? s + (a / 1e6).toLocaleString('vi-VN', { maximumFractionDigits: 1 }) + 'tr'
+                 : a >= 1e3 ? s + Math.round(a / 1e3) + 'k' : s + a; };
+
+        // So voi thang truoc
+        const net = Number(LG.net) || 0, prev = Number(LG.prev) || 0, dEl = document.getElementById('lgDelta');
+        if (prev > 0) {
+            const p = (net - prev) * 100 / prev;
+            dEl.className = 'delta ' + (p >= 0 ? 'up' : 'down');
+            dEl.innerHTML = '<i class="bi bi-arrow-' + (p >= 0 ? 'up' : 'down') + '-short"></i>' + Math.abs(p).toLocaleString('vi-VN', { maximumFractionDigits: 1 }) + '%';
+        } else dEl.remove();
+
+        // Thanh co cau phuong thuc
+        const mixItems = [...document.querySelectorAll('.mix-legend .it')];
+        const COL = { CASH: '--c-cash', BANK_TRANSFER: '--c-bank', ONLINE: '--c-online', CARD: '--c-card' };
+        const pos = mixItems.map(it => Math.max(0, Number(it.dataset.v) || 0));
+        const tot = pos.reduce((a, b) => a + b, 0);
+        const mix = document.getElementById('lgMix');
+        mixItems.forEach((it, k) => {
+            const pct = tot ? pos[k] * 100 / tot : 0;
+            it.querySelector('.pc').textContent = tot ? pct.toLocaleString('vi-VN', { maximumFractionDigits: 1 }) + '%' : '';
+            if (pct > 0 && mix) { const s = document.createElement('span'); s.style.width = pct + '%'; s.style.background = css(COL[it.dataset.m]);
+                s.title = it.querySelector('.nm').textContent + ': ' + pct.toFixed(1) + '%'; mix.appendChild(s); }
+        });
+
+        // Thanh nho thuc thu trong bang theo ngay
+        const bars = [...document.querySelectorAll('.netbar .b')];
+        const maxNet = Math.max(1, ...bars.map(b => Math.abs(Number(b.dataset.net) || 0)));
+        bars.forEach(b => { const v = Number(b.dataset.net) || 0; b.style.width = Math.round(Math.abs(v) * 70 / maxNet) + 'px'; if (v < 0) b.style.background = '#f3b3c0'; });
+
+        // Loc chi tiet
+        const rows = [...document.querySelectorAll('#lgRows tr')];
+        let f = 'all';
+        const apply = () => {
+            const q = (document.getElementById('lgQ')?.value || '').trim().toLowerCase();
+            let n = 0;
+            rows.forEach(r => {
+                const okF = f === 'all' || (f === 'out' ? r.dataset.out === 'true' : r.dataset.m === f && r.dataset.out !== 'true');
+                const ok = okF && (!q || r.textContent.toLowerCase().includes(q));
+                r.style.display = ok ? '' : 'none'; if (ok) n++;
+            });
+            const shown = document.getElementById('lgShown'); if (shown) shown.textContent = n;
+            document.getElementById('lgNone')?.classList.toggle('d-none', n > 0);
+        };
+        document.querySelectorAll('#lgChips .chip').forEach(c => c.addEventListener('click', () => {
+            document.querySelectorAll('#lgChips .chip').forEach(x => x.classList.remove('active'));
+            c.classList.add('active'); f = c.dataset.f; apply();
+        }));
+        document.getElementById('lgQ')?.addEventListener('input', apply);
+
+        // Bieu do dong tien: moi ngay trong thang (ngay khong phat sinh = 0)
+        const canvas = document.getElementById('lgDaily');
+        if (!canvas) return;
+        const [y, m] = LG.month.split('-').map(Number);
+        const nDays = new Date(y, m, 0).getDate();
+        const idx = {}; LG.days.forEach((d, k) => idx[Number(d.slice(8, 10))] = k);
+        const pick = (arr, day) => idx[day] === undefined ? 0 : Number(arr[idx[day]]) || 0;
+        const labels = [], cash = [], bank = [], card = [], online = [], out = [], netDay = [], cum = [];
+        let run = 0;
+        for (let d = 1; d <= nDays; d++) {
+            labels.push(d); cash.push(pick(LG.cash, d)); bank.push(pick(LG.bank, d)); card.push(pick(LG.card, d)); online.push(pick(LG.online, d));
+            const o = pick(LG.out, d); out.push(-o);
+            const nd = cash[d - 1] + bank[d - 1] + card[d - 1] + online[d - 1] - o; netDay.push(nd); run += nd; cum.push(run);
+        }
+        let best = 0; netDay.forEach((v, k) => { if (v > netDay[best]) best = k; });
+        const active = netDay.filter(v => v !== 0).length;
+        document.getElementById('lgDailySub').textContent = 'Ngày thu nhiều nhất: ' + (best + 1) + '/' + m + ' (' + short(netDay[best]) + ')'
+            + ' · trung bình ' + short(active ? net / active : 0) + ' / ngày có phát sinh';
+        const DOW = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+        const maxIn = Math.max(1, ...netDay.map((v, k) => cash[k] + bank[k] + card[k] + online[k]));
+        const maxOut = Math.max(0, ...out.map(v => -v));
+        const yMin = maxOut === 0 ? 0 : -Math.max(maxOut * 1.15, maxIn * 0.06);
+        Chart.defaults.font.family = "'Be Vietnam Pro', system-ui, sans-serif";
+        const ds = (label, data, color) => ({ label, data, backgroundColor: color, stack: 's', borderRadius: 2, borderSkipped: false,
+                                             categoryPercentage: .72, barPercentage: .95, maxBarThickness: 22 });
+        new Chart(canvas, {
+            type: 'bar',
+            data: { labels, datasets: [ds('Tiền mặt', cash, css('--c-cash')), ds('Chuyển khoản', bank, css('--c-bank')), ds('Thẻ', card, css('--c-card')),
+                                       ds('Online', online, css('--c-online')), ds('Hoàn cọc', out, css('--c-out'))] },
+            options: {
+                maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+                plugins: { legend: { display: false },
+                    tooltip: { backgroundColor: INK, padding: 10, cornerRadius: 6, boxPadding: 4, usePointStyle: true,
+                        filter: i => i.parsed.y !== 0,
+                        callbacks: {
+                            title: it => { const d = new Date(y, m - 1, Number(it[0].label)); return DOW[d.getDay()] + ', ' + it[0].label + '/' + m + '/' + y; },
+                            label: c => ' ' + c.dataset.label + ': ' + vnd(c.parsed.y) + ' đ',
+                            footer: it => { const k = it[0].dataIndex; return ['Thực thu ngày: ' + vnd(netDay[k]) + ' đ', 'Lũy kế tháng: ' + vnd(cum[k]) + ' đ']; } } } },
+                scales: {
+                    x: { stacked: true, grid: { display: false }, border: { color: '#d6e2ec' },
+                         ticks: { color: MUT, maxRotation: 0, autoSkip: false, font: { size: 10.5 },
+                                  callback: (v, k) => (k === 0 || (k + 1) % 5 === 0 || k === nDays - 1) ? k + 1 : '' } },
+                    y: { stacked: true, grid: { color: c => c.tick.value === 0 ? '#9fb3c6' : GRID }, border: { display: false },
+                         min: yMin, ticks: { color: MUT, maxTicksLimit: 6, callback: v => v < 0 && maxOut < maxIn * 0.15 ? '' : short(v) } }
+                }
+            }
+        });
+        if (document.fonts) document.fonts.ready.then(() => Object.values(Chart.instances).forEach(c => c.update()));
+    })();
+</script>
 </body>
 </html>

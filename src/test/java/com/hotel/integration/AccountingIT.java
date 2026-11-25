@@ -102,8 +102,8 @@ class AccountingIT extends ItFixtures {
             Sheet summary = wb.getSheet("Tong hop theo ngay");
             // 2 ngay co phat sinh (12/03 va 14/03) + dong cong
             assertThat(summary.getLastRowNum()).isEqualTo(3);
-            assertThat(summary.getRow(3).getCell(5).getNumericCellValue()).isEqualTo(1_750_000d);
-            assertThat(summary.getRow(3).getCell(4).getNumericCellValue()).isEqualTo(400_000d);
+            assertThat(summary.getRow(3).getCell(6).getNumericCellValue()).isEqualTo(1_750_000d);
+            assertThat(summary.getRow(3).getCell(5).getNumericCellValue()).isEqualTo(400_000d);
             assertThat(wb.getSheet("Chi tiet").getLastRowNum()).isEqualTo(6);
             Sheet shifts = wb.getSheet("Ca truc");
             assertThat(shifts.getRow(1).getCell(10).getNumericCellValue()).isEqualTo(-50_000d);

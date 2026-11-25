@@ -50,7 +50,7 @@ public class AccountingService {
 
     // ===== So quy thang =====
 
-    public record DaySummary(LocalDate day, BigDecimal cash, BigDecimal transfer, BigDecimal online, BigDecimal refunds, BigDecimal net) {
+    public record DaySummary(LocalDate day, BigDecimal cash, BigDecimal transfer, BigDecimal card, BigDecimal online, BigDecimal refunds, BigDecimal net) {
     }
 
     public record MonthReport(YearMonth month, List<DaySummary> days, Map<PaymentMethod, BigDecimal> totals, BigDecimal refunds,
@@ -70,6 +70,7 @@ public class AccountingService {
                 continue;
             }
             days.add(new DaySummary(day, income(ofDay, PaymentMethod.CASH), income(ofDay, PaymentMethod.BANK_TRANSFER),
+                    income(ofDay, PaymentMethod.CARD),
                     income(ofDay, PaymentMethod.ONLINE), refunds(ofDay), sum(ofDay)));
         }
         return new MonthReport(month, days, PaymentService.totalsByMethod(entries), refunds(entries), sum(entries), entries,
@@ -98,16 +99,17 @@ public class AccountingService {
             Styles st = new Styles(wb);
 
             Sheet summary = wb.createSheet("Tong hop theo ngay");
-            header(summary, st, "Ngày", "Tiền mặt", "Chuyển khoản", "Online (VNPay)", "Hoàn cọc (chi)", "Thực thu");
+            header(summary, st, "Ngày", "Tiền mặt", "Chuyển khoản", "Thẻ ngân hàng", "Online (VNPay)", "Hoàn cọc (chi)", "Thực thu");
             int r = 1;
             for (DaySummary d : report.days()) {
                 Row row = summary.createRow(r++);
                 row.createCell(0).setCellValue(d.day().format(DAY));
                 money(row, 1, d.cash(), st);
                 money(row, 2, d.transfer(), st);
-                money(row, 3, d.online(), st);
-                money(row, 4, d.refunds(), st);
-                money(row, 5, d.net(), st);
+                money(row, 3, d.card(), st);
+                money(row, 4, d.online(), st);
+                money(row, 5, d.refunds(), st);
+                money(row, 6, d.net(), st);
             }
             Row total = summary.createRow(r);
             Cell label = total.createCell(0);
@@ -115,10 +117,11 @@ public class AccountingService {
             label.setCellStyle(st.bold);
             money(total, 1, incomeTotal(report, PaymentMethod.CASH), st.boldMoney);
             money(total, 2, incomeTotal(report, PaymentMethod.BANK_TRANSFER), st.boldMoney);
-            money(total, 3, incomeTotal(report, PaymentMethod.ONLINE), st.boldMoney);
-            money(total, 4, report.refunds(), st.boldMoney);
-            money(total, 5, report.net(), st.boldMoney);
-            autosize(summary, 6);
+            money(total, 3, incomeTotal(report, PaymentMethod.CARD), st.boldMoney);
+            money(total, 4, incomeTotal(report, PaymentMethod.ONLINE), st.boldMoney);
+            money(total, 5, report.refunds(), st.boldMoney);
+            money(total, 6, report.net(), st.boldMoney);
+            autosize(summary, 7);
 
             Sheet detail = wb.createSheet("Chi tiet");
             header(detail, st, "Thời gian", "Nội dung", "Mã đơn", "Phương thức", "Thu", "Chi");

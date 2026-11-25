@@ -37,6 +37,11 @@ public class AdminAccountingController {
         YearMonth m = month != null ? month : YearMonth.now();
         model.addAttribute("month", m);
         model.addAttribute("report", accountingService.month(m));
+        // So voi thang truoc (thuc thu) cho o so lieu chinh
+        model.addAttribute("prevNet", accountingService.month(m.minusMonths(1)).net());
+        model.addAttribute("prevMonth", m.minusMonths(1));
+        model.addAttribute("nextMonth", m.plusMonths(1));
+        model.addAttribute("isCurrentMonth", !m.isBefore(YearMonth.now()));
         return "admin/accounting/ledger";
     }
 
