@@ -180,6 +180,8 @@
                             <p class="review-comment" th:if="${r.comment != null}" th:text="${r.comment}"></p>
                             <span class="text-muted fst-italic" th:if="${r.comment == null}">(Không có nhận xét)</span>
                             <div th:replace="~{fragments/review-media :: gallery(${r.media})}"></div>
+                            <div class="small mt-1" style="color:#1d7a4c" th:if="${r.rewardPoints != null and r.rewardPoints > 0}">
+                                <i class="bi bi-gift"></i> <span th:text="'Khách được thưởng ' + ${r.rewardPoints} + ' điểm (ẩn đánh giá sẽ thu hồi)'"></span></div>
                             <div class="small text-muted mt-1" th:if="${reviewSocial != null and reviewSocial[r.id] != null}"
                                  th:with="st=${reviewSocial[r.id]}, cs=${reviewComments[r.id]}">
                                 <span th:text="'♥ ' + ${st.likes} + ' tim · 💬 ' + ${cs != null ? #lists.size(cs) : 0} + ' bình luận'"></span>

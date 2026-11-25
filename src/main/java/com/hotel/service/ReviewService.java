@@ -116,6 +116,11 @@ public class ReviewService {
             throw ex;
         }
         Review created = reviewRepository.save(review);
+        // Thuong diem: viet nhan xet, them anh / video duoc nhieu hon
+        if (loyaltyService != null) {
+            loyaltyService.rewardReview(created);
+            created = reviewRepository.save(created);
+        }
         // Tra loi tu dong theo tu khoa (neu co quy tac khop)
         if (autoReplyService != null) {
             autoReplyService.autoReply(created);
@@ -124,6 +129,13 @@ public class ReviewService {
     }
 
     private ReviewAutoReplyService autoReplyService;
+
+    private LoyaltyService loyaltyService;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    void setLoyaltyService(LoyaltyService loyaltyService) {
+        this.loyaltyService = loyaltyService;
+    }
 
     @org.springframework.beans.factory.annotation.Autowired
     void setAutoReplyService(ReviewAutoReplyService autoReplyService) {
@@ -185,6 +197,14 @@ public class ReviewService {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new BusinessException("Không tìm thấy đánh giá"));
         review.setHidden(!review.isHidden());
+        // An (spam / khong phu hop) -> thu hoi diem thuong; hien lai -> cong lai
+        if (loyaltyService != null) {
+            if (review.isHidden()) {
+                loyaltyService.revokeReview(review);
+            } else {
+                loyaltyService.rewardReview(review);
+            }
+        }
         return reviewRepository.save(review);
     }
 

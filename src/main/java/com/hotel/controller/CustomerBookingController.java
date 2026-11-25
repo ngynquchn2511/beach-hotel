@@ -440,8 +440,14 @@ public class CustomerBookingController {
             // Khach vang lai danh gia qua link email (?token=) - viet danh gia thay mat chu don
             Booking booking = bookingService.findForViewing(id, token,
                     userDetails != null ? userDetails.getUser().getId() : null);
-            reviewService.createReview(id, booking.getCustomer().getId(), rating, comment, media);
-            redirectAttributes.addFlashAttribute("reviewSuccess", userMessages.get("msg.reviewThanks"));
+            var created = reviewService.createReview(id, booking.getCustomer().getId(), rating, comment, media);
+            String thanks = userMessages.get("msg.reviewThanks");
+            Integer pts = created.getRewardPoints();
+            if (pts != null && pts > 0) {
+                thanks += " " + userMessages.get("msg.reviewPoints", pts,
+                        com.hotel.util.Money.format(java.math.BigDecimal.valueOf((long) pts * com.hotel.service.LoyaltyService.VND_PER_REDEEMED_POINT)));
+            }
+            redirectAttributes.addFlashAttribute("reviewSuccess", thanks);
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", userMessages.of(ex));
         }

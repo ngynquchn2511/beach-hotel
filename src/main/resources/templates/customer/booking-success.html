@@ -428,6 +428,8 @@
                 <p class="small mb-0" style="white-space: pre-line" th:text="${review.reply}"></p>
             </div>
             <div class="small text-muted" th:text="#{success.reviewSent(${#temporals.format(review.createdAt, 'HH:mm dd/MM/yyyy')})}"></div>
+            <div class="small fw-semibold mt-1" style="color:#1d7a4c" th:if="${review.rewardPoints != null and review.rewardPoints > 0}">
+                <i class="bi bi-gift me-1"></i><span th:text="#{review.reward.got(${review.rewardPoints})}"></span></div>
             <div class="small text-muted mt-1" th:if="${review.hidden}">
                 <i class="bi bi-eye-slash me-1"></i><span th:text="#{success.reviewHidden}">Đánh giá này đang được ẩn khỏi trang công khai.</span>
             </div>
@@ -455,6 +457,29 @@
                      th:text="#{success.reviewMediaHint(${T(com.hotel.service.FileStorageService).MAX_IMAGE_MB}, ${T(com.hotel.service.FileStorageService).MAX_VIDEO_MB})}"></div>
                 <div id="reviewMediaError" class="text-danger small mt-1" aria-live="polite"></div>
                 <div id="reviewMediaPreview" class="d-flex flex-wrap gap-2 mt-2"></div>
+            </div>
+            <!-- Diem thuong: cang nhieu noi dung / anh / video cang duoc nhieu diem; uoc tinh ngay khi khach go / chon tep -->
+            <div class="rv-reward mb-3" id="reviewReward" th:unless="${booking.customer != null and booking.customer.email != null and booking.customer.email.endsWith('@khachvanglai.local')}"
+                 th:with="rs=${T(com.hotel.service.LoyaltyService).REVIEW_STARS_POINTS}, rt=${T(com.hotel.service.LoyaltyService).REVIEW_TEXT_POINTS}, rm=${T(com.hotel.service.LoyaltyService).REVIEW_TEXT_MIN_CHARS}, rph=${T(com.hotel.service.LoyaltyService).REVIEW_PHOTO_POINTS}, rmp=${T(com.hotel.service.LoyaltyService).REVIEW_MAX_PHOTOS}, rv=${T(com.hotel.service.LoyaltyService).REVIEW_VIDEO_POINTS}"
+                 th:attr="data-stars=${rs}, data-text=${rt}, data-min=${rm}, data-photo=${rph}, data-max-photos=${rmp}, data-video=${rv}">
+                <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap">
+                    <div>
+                        <div class="fw-bold"><i class="bi bi-gift me-1"></i><span th:text="#{review.reward.title}">Viết đánh giá nhận điểm thưởng</span></div>
+                        <div class="small text-muted" th:text="#{review.reward.value}"></div>
+                    </div>
+                    <div class="text-end">
+                        <div class="small text-muted" th:text="#{review.reward.estimate}">Đánh giá này được</div>
+                        <div class="rv-reward-total"><span id="reviewRewardPoints" th:text="${T(com.hotel.service.LoyaltyService).REVIEW_STARS_POINTS}">5</span> <small th:text="#{review.reward.points('')}">điểm</small></div>
+                    </div>
+                </div>
+                <ul class="rv-reward-rules">
+                    <li data-rule="text"><span th:text="#{review.reward.text(${T(com.hotel.service.LoyaltyService).REVIEW_TEXT_MIN_CHARS})}"></span>
+                        <b th:text="#{review.reward.points(${T(com.hotel.service.LoyaltyService).REVIEW_TEXT_POINTS})}"></b></li>
+                    <li data-rule="photo"><span th:text="#{review.reward.photo(${T(com.hotel.service.LoyaltyService).REVIEW_MAX_PHOTOS})}"></span>
+                        <b th:text="#{review.reward.plus(${T(com.hotel.service.LoyaltyService).REVIEW_PHOTO_POINTS})}"></b></li>
+                    <li data-rule="video"><span th:text="#{review.reward.video}"></span>
+                        <b th:text="#{review.reward.plus(${T(com.hotel.service.LoyaltyService).REVIEW_VIDEO_POINTS})}"></b></li>
+                </ul>
             </div>
             <button type="submit" id="reviewSubmit" class="btn btn-primary"><i class="bi bi-send me-1"></i><span th:text="#{success.reviewSubmit}">Gửi đánh giá</span></button>
         </form>
@@ -582,6 +607,43 @@
     </div>
 </main>
 
+<style>
+    .rv-reward { border: 1.5px solid #bfe3cf; background: #f3fbf6; border-radius: 12px; padding: 12px 14px; }
+    .rv-reward-total { font-size: 1.6rem; font-weight: 800; color: #1d7a4c; line-height: 1; }
+    .rv-reward-total small { font-size: .8rem; font-weight: 700; }
+    .rv-reward-rules { list-style: none; padding: 0; margin: 8px 0 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 6px; }
+    .rv-reward-rules li { display: flex; justify-content: space-between; gap: 8px; font-size: .84rem; background: #fff; border: 1px solid #d8eee1;
+                          border-radius: 8px; padding: 5px 9px; color: #4d6b88; }
+    .rv-reward-rules li b { color: #1d7a4c; white-space: nowrap; }
+    .rv-reward-rules li.on { border-color: #1d7a4c; color: #13395e; }
+</style>
+<!-- Uoc tinh diem thuong theo noi dung + so anh / video dang chon (dem o xem truoc nen bo tep cung cap nhat) -->
+<script>
+    (function () {
+        var box = document.getElementById('reviewReward');
+        if (!box) return;
+        var form = box.closest('form');
+        var text = form.querySelector('textarea[name="comment"]');
+        var preview = document.getElementById('reviewMediaPreview');
+        var out = document.getElementById('reviewRewardPoints');
+        var d = box.dataset;
+        function n(k) { return parseInt(d[k], 10) || 0; }
+        function update() {
+            var len = Array.from((text.value || '').trim()).length;
+            var photos = preview ? preview.querySelectorAll('img').length : 0;
+            var videos = preview ? preview.querySelectorAll('video').length : 0;
+            var hasText = len >= n('min');
+            var pts = (hasText ? n('text') : n('stars')) + Math.min(photos, n('maxPhotos')) * n('photo') + (videos > 0 ? n('video') : 0);
+            out.textContent = pts;
+            box.querySelector('[data-rule="text"]').classList.toggle('on', hasText);
+            box.querySelector('[data-rule="photo"]').classList.toggle('on', photos > 0);
+            box.querySelector('[data-rule="video"]').classList.toggle('on', videos > 0);
+        }
+        text.addEventListener('input', update);
+        if (preview && window.MutationObserver) new MutationObserver(update).observe(preview, { childList: true, subtree: true });
+        update();
+    })();
+</script>
 <!-- Chon anh / video cho danh gia: toi da 5 tep, xem truoc, bo tung tep, chan som tep qua dung luong / sai dinh dang
      (server van kiem tra lai). Moi gia tri inline de 1 dong rieng ket thuc bang '' -->
 <script th:inline="javascript">

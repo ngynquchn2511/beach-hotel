@@ -143,6 +143,57 @@ public class LoyaltyService {
                 .points(delta).balanceAfter(balance).build());
     }
 
+    // ===== Thuong viet danh gia =====
+    // Chi cham sao 5 diem; co nhan xet >= 20 ky tu 20 diem; moi anh +10 (toi da 3 anh); co video +30. Toi da 80 diem / danh gia
+    public static final int REVIEW_STARS_POINTS = 5;
+    public static final int REVIEW_TEXT_POINTS = 20;
+    public static final int REVIEW_TEXT_MIN_CHARS = 20;
+    public static final int REVIEW_PHOTO_POINTS = 10;
+    public static final int REVIEW_MAX_PHOTOS = 3;
+    public static final int REVIEW_VIDEO_POINTS = 30;
+
+    public static int reviewPoints(String comment, long photos, long videos) {
+        String text = comment == null ? "" : comment.trim();
+        int points = text.codePointCount(0, text.length()) >= REVIEW_TEXT_MIN_CHARS ? REVIEW_TEXT_POINTS : REVIEW_STARS_POINTS;
+        points += (int) Math.min(photos, REVIEW_MAX_PHOTOS) * REVIEW_PHOTO_POINTS;
+        if (videos > 0) {
+            points += REVIEW_VIDEO_POINTS;
+        }
+        return points;
+    }
+
+    public static int reviewPoints(com.hotel.entity.Review review) {
+        long photos = review.getMedia().stream().filter(m -> !m.isVideo()).count();
+        long videos = review.getMedia().stream().filter(com.hotel.entity.ReviewMedia::isVideo).count();
+        return reviewPoints(review.getComment(), photos, videos);
+    }
+
+    // Cong diem cho danh gia vua viet (hoac vua duoc hien lai). Tra ve so diem da cong (0 = khong cong)
+    @Transactional
+    public int rewardReview(com.hotel.entity.Review review) {
+        User customer = review.getCustomer();
+        if (customer == null || isWalkInPlaceholder(customer) || review.isHidden()
+                || (review.getRewardPoints() != null && review.getRewardPoints() > 0)) {
+            return 0;
+        }
+        int points = reviewPoints(review);
+        review.setRewardPoints(points);
+        change(customer, review.getBooking(), PointTransaction.Type.REVIEW, points);
+        return points;
+    }
+
+    // Danh gia bi an -> thu hoi diem da cong (so du khong am)
+    @Transactional
+    public int revokeReview(com.hotel.entity.Review review) {
+        Integer points = review.getRewardPoints();
+        if (points == null || points <= 0 || review.getCustomer() == null) {
+            return 0;
+        }
+        review.setRewardPoints(0);
+        change(review.getCustomer(), review.getBooking(), PointTransaction.Type.REVOKE, -points);
+        return points;
+    }
+
     // Tai khoan tam le tan tao cho khach tai quay (email @khachvanglai.local) - khong ai dang nhap de dung diem
     private static boolean isWalkInPlaceholder(User user) {
         return user.getEmail() != null && user.getEmail().endsWith("@khachvanglai.local");

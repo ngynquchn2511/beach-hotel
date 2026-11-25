@@ -1,7 +1,7 @@
 # Tiến độ dự án Sóng Xanh Resort (beach-hotel)
 
 > File bàn giao giữa các phiên làm việc với Claude. Mở phiên mới, bảo Claude: **"đọc file TIEN-DO.md"**.
-> Cập nhật lần cuối: 26/11/2026 (Sóng tìm phòng theo nhu cầu bằng thẻ phòng; AI Claude trả lời câu Sóng chưa hiểu, 1 - 3 dòng, có trần chi phí + chống spam).
+> Cập nhật lần cuối: 26/11/2026 (tối: thưởng điểm khi viết đánh giá; làm lại trang Hôm nay của lễ tân; đổi avatar Sóng; bỏ tô màu nổi 1 ô).
 
 ## 1. Dự án
 
@@ -36,6 +36,11 @@
    - Thử AI với khóa thật: đóng gói jar, chạy cổng 8084, dùng curl đăng nhập `quanly.vanthanh@example.com` / `Songxanh@2026` (lấy `_csrf` từ trang `/admin`), POST `/admin/accounting/insights/analyze?month=...` hoặc `/ask/stream`; lệnh mạng phải tắt sandbox.
 
 ## 3. Đã làm (theo thứ tự gần nhất trước)
+
+### 26/11/2026 (tối) - Thưởng điểm đánh giá, trang Hôm nay gọn hơn, avatar con sóng
+- **Thưởng điểm khi viết đánh giá** (chủ dự án: «viết đánh giá được cộng điểm thưởng, có ảnh và video được cộng nhiều hơn»). `LoyaltyService.reviewPoints / rewardReview / revokeReview`: chỉ chấm sao **5 điểm**; nhận xét ≥ 20 ký tự **20 điểm**; mỗi ảnh **+10** (tối đa 3); có video **+30** → tối đa 80 điểm (= 80.000đ, 1 điểm = 1.000đ khi đặt lần sau). Cộng ngay khi gửi đánh giá (thông báo «Bạn được cộng N điểm thưởng»), trang đơn ghi «Bạn đã nhận N điểm», lịch sử điểm ở Tài khoản có loại mới «Thưởng đánh giá» / «Thu hồi thưởng đánh giá» (`PointTransaction.Type.REVIEW / REVOKE`). Chống lạm dụng: mỗi đơn đã trả phòng 1 đánh giá (sẵn có), tài khoản tạm khách vãng lai không được thưởng, **quản trị ẩn đánh giá thì thu hồi điểm, hiện lại thì cộng lại** (`ReviewService.toggleHidden`). Form đánh giá có khung «Viết đánh giá nhận điểm thưởng»: bảng mức điểm + ước tính điểm cập nhật ngay khi khách gõ / chọn ảnh, video. Trang quản trị đánh giá ghi «Khách được thưởng N điểm». Cột mới `reviews.reward_points`, thêm `REVIEW`, `REVOKE` vào ENUM `point_transactions.type` nếu Hibernate tạo ENUM (`sql/2026-11-26_thuong-diem-danh-gia.sql`, đã kiểm validate + áp DB dev). Test `ReviewRewardIT`.
+- **Trang Hôm nay của lễ tân** (chủ dự án: «cần xử lý ngay quá xấu; khách đến, khách đi, phòng chờ dọn, phòng đang ở nữa, sửa đẹp như 1 chuyên gia»): đầu khung nền trắng + chấm màu (bỏ nền xanh / hồng / vàng). **Cần xử lý ngay** chia nhóm Quá hạn trả phòng / Chưa đến nhận phòng, mỗi khách 1 dòng (phòng | tên + phải trả, «quá N đêm», SĐT | nút chính Check-out + nút biểu tượng Gia hạn / Gọi / Xem đơn), quá 5 khách thu gọn «Xem thêm». **Khách đến / đi**: 1 dòng / khách, giờ nhận / trả, nhãn vấn đề nhỏ chỉ hiện khi có, ghi chú 1 dòng, số tiền cần thu, thanh tiến độ đã xong. **Phòng chờ dọn / Đang ở**: lưới ô phòng (khách trả hôm nay chỉ in đậm chữ, không tô viền).
+- Avatar trợ lý Sóng đổi từ đám mây sang **con sóng cuộn có mặt cười** (`#maySong`). Bỏ tô màu nổi riêng 1 ô: ngày giông ở dự báo thời tiết (nền cam + biểu tượng đỏ), giờ đẹp nhất (nền vàng), giờ đêm (nền xám), thẻ đánh giá vàng ở trang Giới thiệu.
 
 ### 26/11/2026 (chiều) - Sóng tìm phòng theo nhu cầu + AI trả lời câu Sóng chưa hiểu
 Chủ dự án: «không có 1 list dài thế này; khách hỏi muốn đặt phòng loại nào lấy từ khóa và chỉ phòng đó (ngắm biển...); khách nhắn kiểu "tôi muốn đặt 1 phòng ngày 25 - 27 view biển" thì hiện các phòng liên quan, ấn vào di chuyển đến phòng đó và lấy thông tin khách nhập»; «đổi AI của khách sang dùng token và giới hạn số tiền dùng, thêm điều kiện tránh spam»; «AI không trả lời list dài mà đi vào trọng tâm, tầm 1 - 3 dòng».

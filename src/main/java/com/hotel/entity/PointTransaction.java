@@ -27,13 +27,19 @@ public class PointTransaction {
         // Dung diem tru tien luc dat
         REDEEM,
         // Don da dung diem bi huy -> tra lai diem
-        REFUND;
+        REFUND,
+        // Thuong viet danh gia (them anh / video duoc nhieu hon)
+        REVIEW,
+        // Quan tri an danh gia (spam / khong phu hop) -> thu hoi diem thuong
+        REVOKE;
 
         public String getVietnameseLabel() {
             return switch (this) {
                 case EARN -> "Tích điểm";
                 case REDEEM -> "Dùng điểm";
                 case REFUND -> "Hoàn điểm";
+                case REVIEW -> "Thưởng đánh giá";
+                case REVOKE -> "Thu hồi thưởng đánh giá";
             };
         }
     }

@@ -57,6 +57,10 @@ public class Review {
     @Column(name = "auto_reply_rule", length = 80)
     private String autoReplyRule;
 
+    // Diem thuong da cong cho danh gia nay (null / 0 = chua cong hoac da thu hoi khi bi an)
+    @Column(name = "reward_points")
+    private Integer rewardPoints;
+
     public boolean isAutoReplied() {
         return autoReplyRule != null && reply != null;
     }
