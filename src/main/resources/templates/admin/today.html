@@ -8,6 +8,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
     <style>
+        /* Khung "Can xu ly" + so do phong dung chung voi Tong quan: o do the nam trong luoi nen cao 100%,
+           o day nam thang trong cot -> cao theo noi dung (khong thi the keo dai bang ca cot, de lai khoang trang lon) */
+        .col-md-9 > .xb-card { height: auto; }
         /* O so lieu: bam vao thi nhay toi muc tuong ung */
         .fd-stat { display: flex; align-items: center; gap: 14px; background: var(--paper); border: var(--line); border-radius: 12px;
                    padding: 14px 16px; height: 100%; text-decoration: none !important; transition: transform .12s, box-shadow .12s; }
@@ -290,9 +293,9 @@
                         <div th:if="${#lists.isEmpty(day.roomsToClean)}" class="fd-empty"><i class="bi bi-check2-circle"></i>Tất cả phòng đã sẵn sàng.</div>
                         <ul class="fd-list" th:unless="${#lists.isEmpty(day.roomsToClean)}">
                             <li th:each="r : ${day.roomsToClean}">
-                                <span><span class="room-pill" th:text="${r.roomNumber}"></span><span class="text-muted" th:text="${r.roomType.name}"></span></span>
+                                <span><span class="room-pill" th:text="${r.roomNumber}"></span><span class="text-muted text-truncate" th:text="${r.roomType.name}"></span></span>
                                 <form class="no-print m-0" method="post" th:action="@{/admin/rooms/{id}/mark-ready(id=${r.id}, back='today')}">
-                                    <button type="submit" class="btn btn-sm btn-outline-success fw-semibold"><i class="bi bi-check-lg me-1"></i>Đã dọn xong</button>
+                                    <button type="submit" class="btn btn-sm btn-outline-success fw-semibold text-nowrap"><i class="bi bi-check-lg me-1"></i>Đã dọn xong</button>
                                 </form>
                             </li>
                         </ul>
