@@ -26,14 +26,90 @@
         .t-red    { background: #fde3e3; color: #b42323; }
 
         .fd-card { background: var(--paper); border: var(--line); border-radius: 12px; box-shadow: var(--pop); margin-bottom: 22px; overflow: hidden; scroll-margin-top: 16px; }
-        .fd-card-head { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1.5px solid var(--ink); background: var(--baby-soft); }
+        .fd-card-head { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1.5px solid var(--ink); background: var(--paper); }
         .fd-card-head h5 { margin: 0; font-size: 1.1rem; display: flex; align-items: center; gap: 10px; }
         .fd-card-head .count { font-size: .85rem; font-weight: 800; padding: .15rem .6rem; border-radius: 99px; border: 1.5px solid var(--ink); background: var(--paper); }
         .fd-card-head .sub { font-size: .88rem; color: var(--ink-soft); font-weight: 500; }
+        /* Can xu ly ngay: nen trang nhu cac khung khac, chi cham do + so dem quá han mau do */
+        .fd-card.ux .ux-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 14px 18px; border-bottom: 1.5px solid var(--ink); }
+        .fd-card.ux .ux-head h5 { margin: 0; font-size: 1.1rem; display: flex; align-items: center; gap: 10px; }
+        .ux-dot { width: 10px; height: 10px; border-radius: 50%; background: #d64545; box-shadow: 0 0 0 4px #fbe1e1; }
+        .ux-count { font-size: .85rem; font-weight: 800; padding: .1rem .55rem; border-radius: 99px; background: #d64545; color: #fff; }
+        .ux-sum { margin-left: auto; display: flex; gap: 14px; font-size: .86rem; color: var(--ink-soft); }
+        .ux-group + .ux-group { border-top: 1.5px solid #e3edf5; }
+        .ux-gtitle { padding: 10px 18px 4px; font-size: .8rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--ink); }
+        .ux-gtitle i { color: #d64545; margin-right: 6px; }
+        .ux-gtitle span { text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--ink-soft); }
+        .ux-row { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 9px 18px; }
+        .ux-row + .ux-row, .ux-more .ux-row { border-top: 1px solid #eef3f7; }
+        .ux-row:hover { background: #f8fbfe; }
+        .ux-room { text-align: center; font-weight: 800; font-size: .95rem; padding: .2rem 0; border: 1.5px solid var(--ink); border-radius: 8px; background: var(--baby-soft); }
+        .ux-name { font-weight: 700; font-size: 1rem; text-decoration: none; }
+        .ux-meta { display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: .84rem; color: var(--ink-soft); }
+        .ux-meta a { color: var(--ink-soft) !important; text-decoration: none; }
+        .ux-late { color: #b42323; font-weight: 700; }
+        .ux-late.hot { background: #fbe1e1; padding: 0 .45rem; border-radius: 99px; }
+        .ux-act { display: flex; gap: 6px; align-items: center; }
+        .ux-act form { margin: 0; }
+        .ux-act .btn { font-weight: 700; border-radius: 9px; }
+        .ux-primary { background: var(--ink); color: #fff !important; border: 1.5px solid var(--ink); }
+        .ux-primary:hover { background: #0d2742; }
+        .ux-icon { width: 34px; height: 31px; display: inline-grid; place-items: center; padding: 0; border: 1.5px solid #c9d9e6; background: #fff; color: var(--ink) !important; }
+        .ux-icon:hover { border-color: var(--ink); background: var(--baby-soft); }
+        .ux-danger { border: 1.5px solid #e7b3b3; background: #fff; color: #b42323 !important; }
+        .ux-danger:hover { background: #fbe1e1; border-color: #b42323; }
+        .ux-more summary { padding: 8px 18px 10px 84px; font-size: .86rem; font-weight: 700; color: #1f6fa8; cursor: pointer; list-style: none; }
+        .ux-more summary::-webkit-details-marker { display: none; }
+        .ux-more summary::after { content: " ▾"; }
+        .ux-more[open] summary { display: none; }
+        @media (max-width: 640px) {
+            .ux-row { grid-template-columns: 48px minmax(0, 1fr); }
+            .ux-act { grid-column: 1 / -1; }
+            .ux-sum { margin-left: 0; width: 100%; }
+        }
+        /* Dau khung: cham mau theo loai + thanh tien do da xong */
+        .hd-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex: 0 0 auto; }
+        .hd-bar { display: inline-block; width: 70px; height: 6px; border-radius: 3px; background: #e6eef5; vertical-align: middle; margin-left: 8px; overflow: hidden; }
+        .hd-bar > span { display: block; height: 100%; background: #2a9d6a; }
+        /* Dong khach den / di (dung chung ux-row voi Can xu ly ngay) */
+        .ux-row.dep { grid-template-columns: 52px minmax(0, 1fr) auto auto; }
+        .ux-time { margin-left: 8px; font-size: .82rem; font-weight: 800; color: var(--ink); background: #eef4f9; border-radius: 6px; padding: .05rem .4rem; }
+        .ux-amount { font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+        .ux-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+        .ux-tags:empty { display: none; }
+        .ux-tag { font-size: .74rem; font-weight: 700; padding: .05rem .5rem; border-radius: 99px; background: #eef2f6; color: #4d6b88; white-space: nowrap; }
+        .ux-tag.ok { background: #e2f5ea; color: #1d7a4c; }
+        .ux-tag.warn { background: #fff4dc; color: #8a5a00; }
+        .ux-tag.bad { background: #fde8ec; color: #b8384f; }
+        .ux-tag.info { background: #e3f1fb; color: #1f6fa8; }
+        .ux-note { margin-top: 4px; font-size: .82rem; color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ux-note.staff { color: #8a5a00; }
+        .ux-outline { border: 1.5px solid var(--ink); background: #fff; color: var(--ink) !important; }
+        .ux-outline:hover { background: var(--baby-soft); }
+        .ux-primary:disabled { background: #c9d4de; border-color: #c9d4de; color: #fff !important; opacity: 1; }
+        .fd-done summary { padding: 10px 18px; font-size: .88rem; font-weight: 700; color: var(--ink-soft); cursor: pointer; list-style: none; border-top: 1px solid #eef3f7; }
+        .fd-done summary::-webkit-details-marker { display: none; }
+        .fd-done .ux-row { opacity: .6; }
+        /* Luoi o phong (cho don / dang o) */
+        .tile-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; padding: 14px 18px 18px; }
+        .tile { display: flex; flex-direction: column; gap: 2px; min-height: 96px; padding: 10px 10px 8px; border: 1.5px solid #d6e3ee; border-radius: 10px;
+                background: #fff; color: var(--ink) !important; text-decoration: none; }
+        .tile.link:hover { border-color: var(--ink); background: #f8fbfe; }
+        .tile-no { font-size: 1.25rem; font-weight: 800; line-height: 1.1; }
+        .tile-name { font-size: .84rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .tile-sub { font-size: .76rem; color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .tile.due .tile-sub { color: var(--ink); font-weight: 800; }
+        .tile-btn { width: 100%; margin-top: 6px; border: 1.5px solid #bfe3cf; background: #fff; color: #1d7a4c; border-radius: 8px; font-size: .78rem;
+                    font-weight: 700; padding: 3px 0; }
+        .tile-btn:hover { background: #e2f5ea; border-color: #1d7a4c; }
+        @media (max-width: 640px) {
+            .ux-row.dep { grid-template-columns: 48px minmax(0, 1fr) auto; }
+            .ux-row.dep .ux-act { grid-column: 1 / -1; }
+        }
         .fd-card.danger { border-color: #b42323; box-shadow: 5px 5px 0 #f4b9b9; }
         .fd-card.danger .fd-card-head { background: #fde3e3; border-color: #b42323; color: #b42323; }
         .fd-card.danger .fd-card-head h5 { color: #b42323; }
-        .fd-card.warn .fd-card-head { background: #fff1cc; }
+        .fd-card.warn .fd-card-head { background: var(--paper); }
         .fd-empty { padding: 22px 18px; color: var(--ink-soft); display: flex; align-items: center; gap: 10px; }
         .fd-empty i { font-size: 1.3rem; color: #1d7a43; }
 
@@ -157,51 +233,44 @@
                 </a></div>
             </div>
 
-            <!-- Can xu ly: qua han tra phong / khach khong den -->
-            <div class="fd-card danger" th:if="${day.attentionCount() > 0}">
-                <div class="fd-card-head">
-                    <h5><i class="bi bi-exclamation-octagon-fill"></i>Cần xử lý ngay</h5>
-                    <span class="count" th:text="${day.attentionCount()}"></span>
+            <!-- Can xu ly: qua han tra phong / khach khong den - moi khach 1 dong gon, 1 nut chinh + nut bieu tuong,
+                 qua 5 khach / nhom thi thu gon -->
+            <div class="fd-card ux" th:if="${day.attentionCount() > 0}">
+                <div class="ux-head">
+                    <h5><span class="ux-dot"></span>Cần xử lý ngay</h5>
+                    <span class="ux-count" th:text="${day.attentionCount()}"></span>
+                    <span class="ux-sum">
+                        <span th:unless="${#lists.isEmpty(day.overdueCheckOuts)}" th:text="${#lists.size(day.overdueCheckOuts)} + ' quá hạn trả phòng'"></span>
+                        <span th:unless="${#lists.isEmpty(day.noShows)}" th:text="${#lists.size(day.noShows)} + ' chưa đến nhận phòng'"></span>
+                    </span>
                 </div>
-                <div class="fd-row" th:each="b : ${day.overdueCheckOuts}">
-                    <div class="fd-when">
-                        <div class="label">Phải trả</div>
-                        <div class="time" th:text="${#temporals.format(b.checkOutDate, 'dd/MM')}"></div>
-                        <span class="room-pill" th:text="${b.room.roomNumber}"></span>
-                    </div>
-                    <div>
-                        <div class="fd-guest"><a th:href="@{/admin/bookings/{id}(id=${b.id})}" th:text="${b.guestName}"></a></div>
-                        <div class="fd-chips"><span class="chip t-red"><i class="bi bi-alarm"></i>Khách quá hạn trả phòng <th:block th:text="${T(java.time.temporal.ChronoUnit).DAYS.between(b.checkOutDate, day.date)}"></th:block> đêm, chưa tính tiền</span></div>
-                        <div class="fd-meta mt-2"><span><i class="bi bi-telephone"></i> <a th:href="'tel:' + ${b.guestPhone}" th:text="${b.guestPhone}"></a></span></div>
-                    </div>
-                    <div class="fd-actions no-print">
-                        <a class="btn btn-warning" th:href="@{/admin/bookings/{id}/check-out(id=${b.id})}"><i class="bi bi-box-arrow-right me-1"></i>Check-out</a>
-                        <a class="btn btn-outline-warning" th:href="@{/admin/bookings/{id}/extend(id=${b.id})}"><i class="bi bi-calendar-plus me-1"></i>Gia hạn</a>
-                        <a class="btn btn-outline-primary" th:href="'tel:' + ${b.guestPhone}"><i class="bi bi-telephone me-1"></i>Gọi khách</a>
-                    </div>
+
+                <div class="ux-group" th:unless="${#lists.isEmpty(day.overdueCheckOuts)}">
+                    <div class="ux-gtitle"><i class="bi bi-alarm"></i>Khách quá hạn trả phòng
+                        <span>· chưa tính tiền đêm ở thêm, trả phòng hoặc gia hạn</span></div>
+                    <th:block th:each="b, it : ${day.overdueCheckOuts}" th:if="${it.index < 5}">
+                        <div th:replace="~{:: overdueRow(${b})}"></div>
+                    </th:block>
+                    <details class="ux-more" th:if="${#lists.size(day.overdueCheckOuts) > 5}">
+                        <summary th:text="'Xem thêm ' + ${#lists.size(day.overdueCheckOuts) - 5} + ' khách'"></summary>
+                        <th:block th:each="b, it : ${day.overdueCheckOuts}" th:if="${it.index >= 5}">
+                            <div th:replace="~{:: overdueRow(${b})}"></div>
+                        </th:block>
+                    </details>
                 </div>
-                <div class="fd-row" th:each="b : ${day.noShows}">
-                    <div class="fd-when">
-                        <div class="label">Lẽ ra đến</div>
-                        <div class="time" th:text="${#temporals.format(b.checkInDate, 'dd/MM')}"></div>
-                        <span class="room-pill" th:text="${b.room.roomNumber}"></span>
-                    </div>
-                    <div>
-                        <div class="fd-guest"><a th:href="@{/admin/bookings/{id}(id=${b.id})}" th:text="${b.guestName}"></a></div>
-                        <div class="fd-chips"><span class="chip t-red"><i class="bi bi-person-x"></i>Chưa đến nhận phòng</span></div>
-                        <div class="fd-meta mt-2">
-                            <span th:text="'Đơn #' + ${b.code}"></span>
-                            <span><i class="bi bi-telephone"></i> <a th:href="'tel:' + ${b.guestPhone}" th:text="${b.guestPhone}"></a></span>
-                        </div>
-                    </div>
-                    <div class="fd-actions no-print">
-                        <a class="btn btn-primary" th:href="'tel:' + ${b.guestPhone}"><i class="bi bi-telephone me-1"></i>Gọi khách</a>
-                        <a class="btn btn-outline-primary" th:href="@{/admin/bookings/{id}(id=${b.id})}">Xem đơn</a>
-                        <form method="post" th:action="@{/admin/bookings/{id}/no-show(id=${b.id}, back='today')}"
-                              onsubmit="return confirm('Đánh dấu khách không đến? Đơn sẽ đóng, phòng trả lại để bán, tiền cọc không hoàn.')">
-                            <button type="submit" class="btn btn-outline-danger"><i class="bi bi-x-circle me-1"></i>Khách không đến</button>
-                        </form>
-                    </div>
+
+                <div class="ux-group" th:unless="${#lists.isEmpty(day.noShows)}">
+                    <div class="ux-gtitle"><i class="bi bi-person-x"></i>Chưa đến nhận phòng
+                        <span>· gọi khách, quá giờ thì đánh dấu không đến để mở bán lại phòng</span></div>
+                    <th:block th:each="b, it : ${day.noShows}" th:if="${it.index < 5}">
+                        <div th:replace="~{:: noShowRow(${b})}"></div>
+                    </th:block>
+                    <details class="ux-more" th:if="${#lists.size(day.noShows) > 5}">
+                        <summary th:text="'Xem thêm ' + ${#lists.size(day.noShows) - 5} + ' khách'"></summary>
+                        <th:block th:each="b, it : ${day.noShows}" th:if="${it.index >= 5}">
+                            <div th:replace="~{:: noShowRow(${b})}"></div>
+                        </th:block>
+                    </details>
                 </div>
             </div>
 
@@ -240,10 +309,12 @@
             <!-- Khach den: viec con phai lam o tren, khach da nhan phong gom xuong duoi -->
             <div class="fd-card" id="khach-den">
                 <div class="fd-card-head">
-                    <h5><i class="bi bi-box-arrow-in-right" style="color:#1f6fa8"></i>Khách đến</h5>
+                    <h5><span class="hd-dot" style="background:#3d9bd6"></span>Khách đến</h5>
                     <span class="count" th:text="${#lists.size(day.arrivals)}"></span>
-                    <span class="sub ms-auto" th:unless="${#lists.isEmpty(day.arrivals)}"
-                          th:text="'Còn ' + ${day.arrivalsLeft()} + ' khách chưa nhận phòng'"></span>
+                    <span class="sub ms-auto" th:unless="${#lists.isEmpty(day.arrivals)}">
+                        <span th:text="'Còn ' + ${day.arrivalsLeft()} + ' khách chưa nhận phòng'"></span>
+                        <span class="hd-bar"><span th:style="'width:' + ${#lists.isEmpty(day.arrivals) ? 0 : (#lists.size(day.arrivals) - day.arrivalsLeft()) * 100 / #lists.size(day.arrivals)} + '%'"></span></span>
+                    </span>
                 </div>
                 <div th:if="${#lists.isEmpty(day.arrivals)}" class="fd-empty"><i class="bi bi-check2-circle"></i>Không có khách nhận phòng.</div>
                 <th:block th:each="e : ${day.arrivals}" th:unless="${e.done}">
@@ -262,10 +333,12 @@
             <!-- Khach di -->
             <div class="fd-card" id="khach-di">
                 <div class="fd-card-head">
-                    <h5><i class="bi bi-box-arrow-right" style="color:#8a5a00"></i>Khách đi</h5>
+                    <h5><span class="hd-dot" style="background:#e0a400"></span>Khách đi</h5>
                     <span class="count" th:text="${#lists.size(day.departures)}"></span>
-                    <span class="sub ms-auto" th:unless="${#lists.isEmpty(day.departures)}"
-                          th:text="'Còn ' + ${day.departuresLeft()} + ' phòng chưa trả'"></span>
+                    <span class="sub ms-auto" th:unless="${#lists.isEmpty(day.departures)}">
+                        <span th:text="'Còn ' + ${day.departuresLeft()} + ' phòng chưa trả'"></span>
+                        <span class="hd-bar"><span th:style="'width:' + ${#lists.isEmpty(day.departures) ? 0 : (#lists.size(day.departures) - day.departuresLeft()) * 100 / #lists.size(day.departures)} + '%'"></span></span>
+                    </span>
                 </div>
                 <div th:if="${#lists.isEmpty(day.departures)}" class="fd-empty"><i class="bi bi-check2-circle"></i>Không có khách trả phòng.</div>
                 <th:block th:each="e : ${day.departures}" th:if="${e.booking.status.name() == 'CHECKED_IN'}">
@@ -282,40 +355,42 @@
             </div>
 
             <div class="row g-4">
-                <!-- Phong cho don -->
+                <!-- Phong cho don: luoi o phong, bam "Da don xong" ngay tren o -->
                 <div class="col-lg-6">
                     <div class="fd-card h-100" id="cho-don">
                         <div class="fd-card-head">
-                            <h5><i class="bi bi-stars" style="color:#5b3fb0"></i>Phòng chờ dọn</h5>
+                            <h5><span class="hd-dot" style="background:#7b61c9"></span>Phòng chờ dọn</h5>
                             <span class="count" th:text="${#lists.size(day.roomsToClean)}"></span>
                             <a th:href="@{/admin/housekeeping}" class="ms-auto small fw-semibold no-print">Bảng dọn phòng &rarr;</a>
                         </div>
                         <div th:if="${#lists.isEmpty(day.roomsToClean)}" class="fd-empty"><i class="bi bi-check2-circle"></i>Tất cả phòng đã sẵn sàng.</div>
-                        <ul class="fd-list" th:unless="${#lists.isEmpty(day.roomsToClean)}">
-                            <li th:each="r : ${day.roomsToClean}">
-                                <span><span class="room-pill" th:text="${r.roomNumber}"></span><span class="text-muted text-truncate" th:text="${r.roomType.name}"></span></span>
-                                <form class="no-print m-0" method="post" th:action="@{/admin/rooms/{id}/mark-ready(id=${r.id}, back='today')}">
-                                    <button type="submit" class="btn btn-sm btn-outline-success fw-semibold text-nowrap"><i class="bi bi-check-lg me-1"></i>Đã dọn xong</button>
+                        <div class="tile-grid" th:unless="${#lists.isEmpty(day.roomsToClean)}">
+                            <div class="tile" th:each="r : ${day.roomsToClean}">
+                                <div class="tile-no" th:text="${r.roomNumber}"></div>
+                                <div class="tile-sub" th:text="${r.roomType.name}" th:title="${r.roomType.name}"></div>
+                                <form class="no-print m-0 mt-auto" method="post" th:action="@{/admin/rooms/{id}/mark-ready(id=${r.id}, back='today')}">
+                                    <button type="submit" class="tile-btn"><i class="bi bi-check-lg"></i> Đã dọn xong</button>
                                 </form>
-                            </li>
-                        </ul>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <!-- Dang o -->
+                <!-- Dang o: luoi o phong, khach tra hom nay to vang -->
                 <div class="col-lg-6">
                     <div class="fd-card h-100" id="dang-o">
                         <div class="fd-card-head">
-                            <h5><i class="bi bi-house-check" style="color:#1d7a43"></i>Đang ở</h5>
+                            <h5><span class="hd-dot" style="background:#2a9d6a"></span>Đang ở</h5>
                             <span class="count" th:text="${#lists.size(day.inHouse)}"></span>
                         </div>
                         <div th:if="${#lists.isEmpty(day.inHouse)}" class="fd-empty"><i class="bi bi-info-circle"></i>Chưa có khách nào đang ở.</div>
-                        <ul class="fd-list" th:unless="${#lists.isEmpty(day.inHouse)}">
-                            <li th:each="b : ${day.inHouse}">
-                                <span><span class="room-pill" th:text="${b.room.roomNumber}"></span><a class="fw-semibold" th:href="@{/admin/bookings/{id}(id=${b.id})}" th:text="${b.guestName}"></a></span>
-                                <span class="small text-nowrap" th:classappend="${b.checkOutDate.isAfter(day.date)} ? 'text-muted' : 'text-danger fw-bold'"
-                                      th:text="'trả ' + ${#temporals.format(b.checkOutDate, 'dd/MM')}"></span>
-                            </li>
-                        </ul>
+                        <div class="tile-grid" th:unless="${#lists.isEmpty(day.inHouse)}">
+                            <a class="tile link" th:each="b : ${day.inHouse}" th:href="@{/admin/bookings/{id}(id=${b.id})}"
+                               th:classappend="${b.checkOutDate.isAfter(day.date)} ? '' : 'due'">
+                                <div class="tile-no" th:text="${b.room.roomNumber}"></div>
+                                <div class="tile-name" th:text="${b.guestName}" th:title="${b.guestName}"></div>
+                                <div class="tile-sub mt-auto" th:text="${b.checkOutDate.isAfter(day.date)} ? 'trả ' + ${#temporals.format(b.checkOutDate, 'dd/MM')} : 'trả hôm nay'"></div>
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -323,69 +398,103 @@
     </div>
 </main>
 
-<!-- Mau 1 dong khach den -->
 <th:block th:if="false">
-<div th:fragment="arrivalRow(e)" class="fd-row" th:with="b=${e.booking}">
-    <div class="fd-when">
-        <div class="time" th:text="${#temporals.format(b.checkInTime, 'HH:mm')}"></div>
-        <span class="room-pill" th:text="${b.room.roomNumber}"></span>
+<!-- 1 dong khach qua han tra phong: phong | ten + phai tra ngay / qua may dem / SDT | Tra phong + gia han + goi -->
+<div th:fragment="overdueRow(b)" class="ux-row" th:with="late=${T(java.time.temporal.ChronoUnit).DAYS.between(b.checkOutDate, day.date)}">
+    <span class="ux-room" th:text="${b.room.roomNumber}"></span>
+    <div class="ux-main">
+        <a class="ux-name" th:href="@{/admin/bookings/{id}(id=${b.id})}" th:text="${b.guestName}"></a>
+        <div class="ux-meta">
+            <span th:text="'Phải trả ' + ${#temporals.format(b.checkOutDate, 'dd/MM')}"></span>
+            <span class="ux-late" th:classappend="${late >= 2} ? 'hot'" th:text="'quá ' + ${late} + ' đêm'"></span>
+            <a th:if="${b.guestPhone != null}" th:href="'tel:' + ${b.guestPhone}" th:text="${b.guestPhone}"></a>
+        </div>
     </div>
-    <div>
-        <div class="fd-guest"><a th:href="@{/admin/bookings/{id}(id=${b.id})}" th:text="${b.guestName}"></a></div>
-        <div class="fd-meta">
+    <div class="ux-act no-print">
+        <a class="btn btn-sm ux-primary" th:href="@{/admin/bookings/{id}/check-out(id=${b.id})}"><i class="bi bi-box-arrow-right me-1"></i>Check-out</a>
+        <a class="btn btn-sm ux-icon" th:href="@{/admin/bookings/{id}/extend(id=${b.id})}" title="Gia hạn ở thêm" aria-label="Gia hạn ở thêm"><i class="bi bi-calendar-plus"></i></a>
+        <a class="btn btn-sm ux-icon" th:if="${b.guestPhone != null}" th:href="'tel:' + ${b.guestPhone}" title="Gọi khách" aria-label="Gọi khách"><i class="bi bi-telephone"></i></a>
+    </div>
+</div>
+
+<!-- 1 dong khach chua den: phong | ten + le ra den / ma don / SDT | goi + xem don + khach khong den -->
+<div th:fragment="noShowRow(b)" class="ux-row">
+    <span class="ux-room" th:text="${b.room.roomNumber}"></span>
+    <div class="ux-main">
+        <a class="ux-name" th:href="@{/admin/bookings/{id}(id=${b.id})}" th:text="${b.guestName}"></a>
+        <div class="ux-meta">
+            <span th:text="'Lẽ ra đến ' + ${#temporals.format(b.checkInDate, 'dd/MM')}"></span>
+            <span th:text="'Đơn #' + ${b.code}"></span>
+            <a th:if="${b.guestPhone != null}" th:href="'tel:' + ${b.guestPhone}" th:text="${b.guestPhone}"></a>
+        </div>
+    </div>
+    <div class="ux-act no-print">
+        <a class="btn btn-sm ux-icon" th:if="${b.guestPhone != null}" th:href="'tel:' + ${b.guestPhone}" title="Gọi khách" aria-label="Gọi khách"><i class="bi bi-telephone"></i></a>
+        <a class="btn btn-sm ux-icon" th:href="@{/admin/bookings/{id}(id=${b.id})}" title="Xem đơn" aria-label="Xem đơn"><i class="bi bi-file-text"></i></a>
+        <form method="post" th:action="@{/admin/bookings/{id}/no-show(id=${b.id}, back='today')}"
+              onsubmit="return confirm('Đánh dấu khách không đến? Đơn sẽ đóng, phòng trả lại để bán, tiền cọc không hoàn.')">
+            <button type="submit" class="btn btn-sm ux-danger">Khách không đến</button>
+        </form>
+    </div>
+</div>
+
+<!-- Mau 1 dong khach den -->
+<div th:fragment="arrivalRow(e)" class="ux-row arr" th:with="b=${e.booking}">
+    <span class="ux-room" th:text="${b.room.roomNumber}"></span>
+    <div class="ux-main">
+        <div><a class="ux-name" th:href="@{/admin/bookings/{id}(id=${b.id})}" th:text="${b.guestName}"></a>
+            <span class="ux-time" th:text="${#temporals.format(b.checkInTime, 'HH:mm')}"></span></div>
+        <div class="ux-meta">
+            <span th:text="${b.nights} + ' đêm · ' + (${b.numberOfGuests != null ? b.numberOfGuests : '?'}) + ' khách'"></span>
             <span th:text="'#' + ${b.code}"></span>
-            <span><i class="bi bi-telephone"></i> <a th:href="'tel:' + ${b.guestPhone}" th:text="${b.guestPhone}"></a></span>
-            <span><i class="bi bi-moon"></i> <span th:text="${b.nights} + ' đêm'"></span></span>
-            <span><i class="bi bi-people"></i> <span th:text="${b.numberOfGuests != null ? b.numberOfGuests : '?'} + ' khách'"></span></span>
+            <a th:if="${b.guestPhone != null}" th:href="'tel:' + ${b.guestPhone}" th:text="${b.guestPhone}"></a>
         </div>
-        <div class="fd-chips">
-            <span th:if="${e.done}" class="chip t-green"><i class="bi bi-check-circle"></i>Đã nhận phòng</span>
-            <span th:if="${!e.done and b.status.name() == 'PENDING'}" class="chip t-amber"><i class="bi bi-hourglass-split"></i>Chờ xác nhận</span>
-            <span th:if="${b.awaitingDeposit}" class="chip t-amber"><i class="bi bi-cash-coin"></i>Chưa chuyển cọc</span>
-            <span th:if="${e.roomNotReady}" class="chip t-red"><i class="bi bi-exclamation-triangle"></i>
-                <span th:text="${b.room.status.name() == 'OCCUPIED'} ? 'Khách trước chưa trả phòng' : (${b.room.status.name() == 'MAINTENANCE'} ? 'Phòng đang bảo trì' : 'Phòng chưa dọn')"></span></span>
-            <span th:if="${!e.done and e.declaredGuests == 0}" class="chip muted"><i class="bi bi-person-vcard"></i>Chưa khai báo lưu trú</span>
-            <span th:if="${b.combo != null}" class="chip info"><i class="bi bi-gift"></i><span th:text="${b.combo.name}"></span></span>
-            <span th:each="tg : ${b.requestTagList}" class="chip info" th:text="${tg.vietnameseLabel}"></span>
+        <div class="ux-tags">
+            <span th:if="${e.done}" class="ux-tag ok">Đã nhận phòng</span>
+            <span th:if="${!e.done and b.status.name() == 'PENDING'}" class="ux-tag warn">Chờ xác nhận</span>
+            <span th:if="${b.awaitingDeposit}" class="ux-tag warn">Chưa chuyển cọc</span>
+            <span th:if="${e.roomNotReady}" class="ux-tag bad"
+                  th:text="${b.room.status.name() == 'OCCUPIED'} ? 'Khách trước chưa trả phòng' : (${b.room.status.name() == 'MAINTENANCE'} ? 'Phòng đang bảo trì' : 'Phòng chưa dọn')"></span>
+            <span th:if="${!e.done and e.declaredGuests == 0}" class="ux-tag muted">Chưa khai báo lưu trú</span>
+            <span th:if="${b.combo != null}" class="ux-tag info" th:text="${b.combo.name}"></span>
+            <span th:each="tg : ${b.requestTagList}" class="ux-tag info" th:text="${tg.vietnameseLabel}"></span>
         </div>
-        <div class="fd-note" th:if="${b.specialRequests != null}"><i class="bi bi-chat-quote me-1"></i><span th:text="${b.specialRequests}"></span></div>
-        <div class="fd-note staff" th:if="${b.customer != null and b.customer.staffNotes != null}">
-            <i class="bi bi-person-exclamation me-1"></i><b>Lưu ý khách:</b> <span th:text="${b.customer.staffNotes}"></span></div>
+        <div class="ux-note" th:if="${b.specialRequests != null}" th:title="${b.specialRequests}"><i class="bi bi-chat-quote"></i> <span th:text="${b.specialRequests}"></span></div>
+        <div class="ux-note staff" th:if="${b.customer != null and b.customer.staffNotes != null}" th:title="${b.customer.staffNotes}">
+            <i class="bi bi-person-exclamation"></i> <b>Lưu ý:</b> <span th:text="${b.customer.staffNotes}"></span></div>
     </div>
-    <div class="fd-actions no-print">
+    <div class="ux-act no-print">
         <th:block th:if="${b.status.name() == 'CONFIRMED' and e.declaredGuests > 0}">
-            <form method="post" th:action="@{/admin/bookings/{id}/check-in(id=${b.id}, back='today')}">
-                <button type="submit" class="btn btn-success" th:disabled="${e.roomNotReady}"><i class="bi bi-door-open me-1"></i>Check-in</button>
+            <form method="post" th:action="@{/admin/bookings/{id}/check-in(id=${b.id}, back='today')}"
+                  th:title="${e.roomNotReady} ? 'Phòng chưa sẵn sàng' : null">
+                <button type="submit" class="btn btn-sm ux-primary" th:disabled="${e.roomNotReady}"><i class="bi bi-door-open me-1"></i>Check-in</button>
             </form>
-            <div class="fd-hint" th:if="${e.roomNotReady}">Phòng chưa sẵn sàng</div>
         </th:block>
-        <a th:if="${b.status.name() == 'CONFIRMED' and e.declaredGuests == 0}" class="btn btn-primary"
+        <a th:if="${b.status.name() == 'CONFIRMED' and e.declaredGuests == 0}" class="btn btn-sm ux-primary"
            th:href="@{/admin/bookings/{id}(id=${b.id})}"><i class="bi bi-person-vcard me-1"></i>Khai báo &amp; check-in</a>
-        <a th:if="${b.status.name() == 'PENDING'}" class="btn btn-outline-primary"
+        <a th:if="${b.status.name() == 'PENDING'}" class="btn btn-sm ux-outline"
            th:href="@{/admin/bookings/{id}(id=${b.id})}"><i class="bi bi-check2-square me-1"></i>Xác nhận</a>
-        <a th:if="${e.done}" class="btn btn-sm btn-outline-secondary" th:href="@{/admin/bookings/{id}(id=${b.id})}">Xem đơn</a>
+        <a th:if="${e.done}" class="btn btn-sm ux-icon" th:href="@{/admin/bookings/{id}(id=${b.id})}" title="Xem đơn" aria-label="Xem đơn"><i class="bi bi-file-text"></i></a>
     </div>
 </div>
 
 <!-- Mau 1 dong khach di -->
-<div th:fragment="departureRow(b)" class="fd-row">
-    <div class="fd-when">
-        <div class="time" th:text="${#temporals.format(b.checkOutTime, 'HH:mm')}"></div>
-        <span class="room-pill" th:text="${b.room.roomNumber}"></span>
-    </div>
-    <div>
-        <div class="fd-guest"><a th:href="@{/admin/bookings/{id}(id=${b.id})}" th:text="${b.guestName}"></a></div>
-        <div class="fd-meta">
+<div th:fragment="departureRow(b)" class="ux-row dep">
+    <span class="ux-room" th:text="${b.room.roomNumber}"></span>
+    <div class="ux-main">
+        <div><a class="ux-name" th:href="@{/admin/bookings/{id}(id=${b.id})}" th:text="${b.guestName}"></a>
+            <span class="ux-time" th:text="${#temporals.format(b.checkOutTime, 'HH:mm')}"></span></div>
+        <div class="ux-meta">
             <span th:text="'#' + ${b.code}"></span>
-            <span><i class="bi bi-telephone"></i> <a th:href="'tel:' + ${b.guestPhone}" th:text="${b.guestPhone}"></a></span>
-            <span><i class="bi bi-receipt"></i> <b th:text="${#numbers.formatDecimal(b.totalAmount, 1, 'POINT', 0, 'COMMA')} + ' VND'"></b></span>
+            <a th:if="${b.guestPhone != null}" th:href="'tel:' + ${b.guestPhone}" th:text="${b.guestPhone}"></a>
+            <span th:unless="${b.status.name() == 'CHECKED_IN'}" class="ux-tag ok" th:text="${b.status.vietnameseLabel}"></span>
         </div>
-        <div class="fd-chips"><span th:class="'badge ' + ${b.status.badgeClass}" th:text="${b.status.vietnameseLabel}"></span></div>
     </div>
-    <div class="fd-actions no-print">
-        <a th:if="${b.status.name() == 'CHECKED_IN'}" class="btn btn-warning"
+    <div class="ux-amount" th:text="${#numbers.formatDecimal(b.totalAmount, 1, 'POINT', 0, 'COMMA')} + ' đ'"></div>
+    <div class="ux-act no-print">
+        <a th:if="${b.status.name() == 'CHECKED_IN'}" class="btn btn-sm ux-primary"
            th:href="@{/admin/bookings/{id}/check-out(id=${b.id})}"><i class="bi bi-box-arrow-right me-1"></i>Check-out &amp; thanh toán</a>
-        <a th:unless="${b.status.name() == 'CHECKED_IN'}" class="btn btn-sm btn-outline-secondary" th:href="@{/admin/bookings/{id}(id=${b.id})}">Xem đơn</a>
+        <a th:unless="${b.status.name() == 'CHECKED_IN'}" class="btn btn-sm ux-icon" th:href="@{/admin/bookings/{id}(id=${b.id})}" title="Xem đơn" aria-label="Xem đơn"><i class="bi bi-file-text"></i></a>
     </div>
 </div>
 </th:block>
