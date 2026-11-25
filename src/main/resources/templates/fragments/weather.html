@@ -8,24 +8,21 @@
             border: 2px solid transparent; cursor: pointer; font: inherit; color: inherit; transition: transform .1s, border-color .1s; }
         .weather-strip .wx-day:hover { transform: translateY(-2px); border-color: #b9d4ee; }
         .weather-strip .wx-day.active { border-color: #2a78d6; background: #e8f1fb; }
-        .weather-strip .wx-day.rough { background: #fff1e6; }
-        .weather-strip .wx-day.rough.active { border-color: #c2410c; }
+        /* Ngay giong / gio manh: cung nen voi cac ngay khac, chi bieu tuong doi mau (khong lam 1 o noi han len) */
         .weather-strip .wx-day i { font-size: 1.5rem; display: block; color: #2a78d6; }
         .weather-strip .wx-day.rough i { color: #c2410c; }
         .weather-strip .wx-t { font-weight: 800; }
         .weather-strip .wx-s { font-size: .75rem; color: #5b6b7b; }
         .weather-strip .wx-dow { font-size: .8rem; font-weight: 700; color: #1f3b57; }
         .weather-strip .wx-detail { margin-top: 12px; border-top: 1px dashed #d5e1ec; padding-top: 12px; }
-        .weather-strip .wx-best { background: linear-gradient(90deg, #fff7d6, #e8f6ff); border-radius: 10px; padding: 10px 12px; }
-        .weather-strip .wx-best i.big { font-size: 1.8rem; color: #e8a400; }
+        .weather-strip .wx-best { background: #f4f8fb; border-radius: 10px; padding: 10px 12px; }
+        .weather-strip .wx-best i.big { font-size: 1.8rem; color: #2a78d6; }
         .weather-strip .wx-hours { display: flex; gap: 6px; overflow-x: auto; }
         .weather-strip .wx-hour { flex: 1 0 62px; text-align: center; background: #f7f9fb; border-radius: 8px; padding: 6px 2px; font-size: .8rem; }
-        .weather-strip .wx-hour.best { background: #fff3c4; font-weight: 700; }
+        .weather-strip .wx-hour.best { font-weight: 700; }
         .weather-strip .wx-hour i { font-size: 1.1rem; color: #2a78d6; display: block; }
         .weather-strip .wx-24 .wx-hour { flex: 0 0 66px; }
         .weather-strip .wx-hour.past { opacity: .45; }
-        .weather-strip .wx-hour.night { background: #eef1f7; }
-        .weather-strip .wx-hour.best { background: #fff3c4; }
         .weather-strip .wx-rain { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 38px; color: #2a78d6; font-size: .72rem; }
         .weather-strip .wx-rain .bar { width: 10px; background: #8ec1f0; border-radius: 3px 3px 0 0; }
         .weather-strip .wx-period { background: #f4f8fb; border-radius: 10px; padding: 8px 10px; height: 100%; }
