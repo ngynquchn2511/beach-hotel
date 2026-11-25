@@ -16,6 +16,13 @@
         .shift-AFTERNOON { background: #fff1cc; color: #8a5a00; }
         .shift-NIGHT { background: #ece6fb; color: #5b3fb0; }
         .shift-tag form { display: inline; }
+        .pc { display: block; font-size: .68rem; font-weight: 600; margin: 1px 0 3px; padding: 0 .35rem; border-radius: 4px; width: fit-content; }
+        .pc-ok { color: #1d7a3e; }
+        .pc-late { background: #fff0d6; color: #9a5b00; }
+        .pc-early { background: #fdf0e3; color: #a0521b; }
+        .pc-absent { background: #fde3e3; color: #b42318; }
+        .pc-excused { background: #eef0f3; color: #4a5565; }
+        .pc-missing { color: #b42318; border: 1px dashed #b42318; }
         .shift-tag button { border: 0; background: none; padding: 0 0 0 2px; line-height: 1; color: inherit; opacity: .6; }
         .shift-tag button:hover { opacity: 1; }
     </style>
@@ -68,17 +75,29 @@
                             <td><div class="fw-semibold" th:text="${r.staff.fullName}"></div>
                                 <div class="text-muted" th:text="${r.staff.role.vietnameseLabel}"></div></td>
                             <td th:each="cell, st : ${r.days}" th:classappend="${week.days[st.index] == today} ? 'today'">
-                                <div th:each="d : ${cell}" class="shift-tag" th:classappend="'shift-' + ${d.shift.name()}"
+                                <th:block th:each="d : ${cell}" th:with="ck=${checks[d.id]}">
+                                <div class="shift-tag" th:classappend="'shift-' + ${d.shift.name()}"
                                      th:title="${d.shift.timeRange} + (${d.note != null} ? ' - ' + ${d.note} : '')">
                                     <span th:text="${d.shift.label.replace('Ca ', '')}"></span>
                                     <form sec:authorize="hasRole('ADMIN')" method="post" th:action="@{/admin/duty-roster/{id}/delete(id=${d.id}, week=${week.start})}">
                                         <button title="Bỏ ca này"><i class="bi bi-x"></i></button>
                                     </form>
                                 </div>
+                                    <span th:if="${ck != null and ck.status.name() != 'UPCOMING'}" class="pc" th:classappend="'pc-' + ${ck.status.css}"
+                                          th:text="${ck.short}" th:title="${ck.detail}"></span>
+                                </th:block>
                             </td>
                         </tr>
                         </tbody>
                     </table>
+                </div>
+                <div class="small text-muted mb-2 d-flex flex-wrap gap-2 align-items-center" th:if="${!#maps.isEmpty(checks)}">
+                    <span th:text="${seeAllChecks} ? 'Kết quả chấm công từng ca:' : 'Kết quả chấm công ca của bạn:'"></span>
+                    <span class="pc pc-ok m-0">✓ giờ vào = đúng giờ</span><span class="pc pc-late m-0">Muộn 15' = vào trễ 15 phút</span>
+                    <span class="pc pc-early m-0">Về sớm</span><span class="pc pc-absent m-0">Vắng không báo</span>
+                    <span class="pc pc-excused m-0">Nghỉ có phép</span><span class="pc pc-missing m-0">Chưa vào (ca đang diễn ra)</span>
+                    <a sec:authorize="hasAnyRole('ADMIN','ACCOUNTANT')" th:href="@{/admin/punctuality(month=${#temporals.format(week.start, 'yyyy-MM')})}"
+                       class="ms-auto"><i class="bi bi-alarm me-1"></i>Tổng hợp chuyên cần tháng để xét lương</a>
                 </div>
                 <div th:if="${!#lists.isEmpty(week.gaps)}" class="small text-danger">
                     <i class="bi bi-exclamation-triangle me-1"></i>Ca chưa có ai trực: <span th:text="${#strings.listJoin(week.gaps, ', ')}"></span>

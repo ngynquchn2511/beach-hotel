@@ -23,9 +23,11 @@ import java.time.YearMonth;
 public class AdminPayrollController {
 
     private final PayrollService payrollService;
+    private final com.hotel.service.PunctualityService punctuality;
 
-    public AdminPayrollController(PayrollService payrollService) {
+    public AdminPayrollController(PayrollService payrollService, com.hotel.service.PunctualityService punctuality) {
         this.payrollService = payrollService;
+        this.punctuality = punctuality;
     }
 
     @GetMapping
@@ -34,6 +36,8 @@ public class AdminPayrollController {
         model.addAttribute("sheet", payrollService.sheet(m));
         model.addAttribute("month", m);
         model.addAttribute("canPay", !m.isAfter(YearMonth.now()));
+        // Chuyen can thang (di muon, vang) -> goi y khau tru / thuong, dien san vao form tra luong
+        model.addAttribute("punct", punctuality.month(m, null, java.time.LocalDateTime.now()));
         return "admin/staff/payroll";
     }
 

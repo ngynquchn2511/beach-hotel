@@ -196,6 +196,8 @@
        th:classappend="${p.startsWith('/admin/attendance/me')} ? 'active'"><i class="bi bi-fingerprint"></i>Chấm công của tôi</a>
     <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin/attendance}" class="list-group-item list-group-item-action"
        th:classappend="${p == '/admin/attendance'} ? 'active'"><i class="bi bi-person-check"></i>Chấm công nhân viên</a>
+    <a sec:authorize="hasAnyRole('ADMIN','ACCOUNTANT')" th:href="@{/admin/punctuality}" class="list-group-item list-group-item-action"
+       th:classappend="${p.startsWith('/admin/punctuality')} ? 'active'"><i class="bi bi-alarm"></i>Chuyên cần (muộn / vắng)</a>
     <a sec:authorize="hasAnyRole('ADMIN','ACCOUNTANT')" th:href="@{/admin/payroll}" class="list-group-item list-group-item-action"
        th:classappend="${p.startsWith('/admin/payroll')} ? 'active'"><i class="bi bi-cash-stack"></i>Bảng lương</a>
     <script th:src="@{/js/admin-sidebar.js}" defer></script>

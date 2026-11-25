@@ -2,8 +2,10 @@ package com.hotel.controller;
 
 import com.hotel.entity.Attendance;
 import com.hotel.entity.DutyShift;
+import com.hotel.entity.UserRole;
 import com.hotel.exception.BusinessException;
 import com.hotel.security.CustomUserDetails;
+import com.hotel.service.PunctualityService;
 import com.hotel.service.StaffShiftService;
 import com.hotel.util.PaginationUtil;
 import com.hotel.util.Pager;
@@ -32,15 +34,29 @@ public class AdminStaffShiftController {
     static final List<String> DOW_LABELS = List.of("T2", "T3", "T4", "T5", "T6", "T7", "CN");
 
     private final StaffShiftService service;
+    private final PunctualityService punctuality;
 
-    public AdminStaffShiftController(StaffShiftService service) {
+    public AdminStaffShiftController(StaffShiftService service, PunctualityService punctuality) {
         this.service = service;
+        this.punctuality = punctuality;
     }
 
     @GetMapping("/admin/duty-roster")
-    public String roster(@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate week, Model model) {
+    public String roster(@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate week,
+                         @AuthenticationPrincipal CustomUserDetails user, Model model) {
         LocalDate day = week != null ? week : LocalDate.now();
-        model.addAttribute("week", service.week(day));
+        StaffShiftService.Week w = service.week(day);
+        model.addAttribute("week", w);
+        // Ket qua tung ca (dung gio / muon / vang): quan tri + ke toan xem cua moi nguoi, nhan vien khac chi xem cua minh
+        boolean seeAll = user != null && (user.getUser().getRole() == UserRole.ADMIN || user.getUser().getRole() == UserRole.ACCOUNTANT);
+        java.util.Map<Long, PunctualityService.Check> checks = new java.util.HashMap<>(
+                punctuality.byDuty(w.start(), w.start().plusDays(6), LocalDateTime.now()));
+        if (!seeAll) {
+            Long me = user == null ? null : user.getUser().getId();
+            checks.values().removeIf(ch -> !ch.duty().getStaff().getId().equals(me));
+        }
+        model.addAttribute("checks", checks);
+        model.addAttribute("seeAllChecks", seeAll);
         model.addAttribute("onDuty", service.onDuty(LocalDateTime.now()));
         model.addAttribute("shifts", DutyShift.Shift.values());
         model.addAttribute("staffList", service.staffList().stream().filter(u -> !Boolean.TRUE.equals(u.getLocked())).toList());
@@ -98,6 +114,7 @@ public class AdminStaffShiftController {
         model.addAttribute("month", m);
         model.addAttribute("list", list);
         model.addAttribute("summary", StaffShiftService.summarize(list).get(user.getUser().getId()));
+        model.addAttribute("punct", punctuality.month(m, user.getUser().getId(), LocalDateTime.now()).get(user.getUser().getId()));
         model.addAttribute("me", user.getUser());
         model.addAttribute("todayAttendance", service.current(user.getUser().getId(), LocalDateTime.now()).orElse(null));
         return "admin/staff/my-attendance";

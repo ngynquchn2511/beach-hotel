@@ -110,6 +110,9 @@ public class SecurityConfig {
                         .requestMatchers("/admin/attendance", "/admin/attendance/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/admin/payroll/wage", "/admin/payroll/*/cancel").hasRole("ADMIN")
                         .requestMatchers("/admin/payroll", "/admin/payroll/**").hasAnyRole("ADMIN", "ACCOUNTANT")
+                        // Chuyen can (di muon / vang de xet luong): quan tri + ke toan xem; ghi nhan nghi co phep chi ADMIN
+                        .requestMatchers(HttpMethod.POST, "/admin/punctuality/**").hasRole("ADMIN")
+                        .requestMatchers("/admin/punctuality", "/admin/punctuality/**").hasAnyRole("ADMIN", "ACCOUNTANT")
                         // Quan ly tai khoan nhan vien va xem nhat ky thao tac - chi danh rieng cho ADMIN
                         .requestMatchers("/admin/staff-accounts", "/admin/staff-accounts/**",
                                 "/admin/audit-logs", "/admin/audit-logs/**").hasRole("ADMIN")

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>Chuyên cần</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+    <style>
+        .pc-badge { display: inline-block; font-size: .75rem; font-weight: 600; padding: .12rem .5rem; border-radius: 999px; white-space: nowrap; }
+        .pc-ok { background: #e3f6e9; color: #1d7a3e; }
+        .pc-late { background: #fff0d6; color: #9a5b00; }
+        .pc-early { background: #fdf0e3; color: #a0521b; }
+        .pc-absent { background: #fde3e3; color: #b42318; }
+        .pc-excused { background: #eef0f3; color: #4a5565; }
+        .pc-missing { background: #fde3e3; color: #b42318; border: 1px dashed #b42318; }
+        .pc-upcoming { background: #f4f6f8; color: #8a94a3; }
+        .rate-bar { height: 6px; background: #eef0f3; border-radius: 3px; overflow: hidden; min-width: 70px; }
+        .rate-bar > div { height: 100%; }
+        .stat .num { font-size: 1.5rem; font-weight: 700; line-height: 1.1; }
+        tr.row-link { cursor: pointer; }
+    </style>
+</head>
+<body class="eaut eaut-admin">
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="container py-5">
+    <div class="row g-4">
+        <div class="col-md-3">
+            <div th:replace="~{fragments/admin-sidebar :: sidebar}"></div>
+        </div>
+        <div class="col-md-9">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                <div>
+                    <h3 class="fw-bold mb-1">Chuyên cần tháng <span th:text="${month.monthValue} + '/' + ${month.year}"></span></h3>
+                    <p class="text-muted small mb-0">Đối chiếu lịch trực với chấm công: ai đi muộn, muộn lúc nào, ai vắng ca.
+                        Số tiền trừ / thưởng là <b>gợi ý</b> để xét lương, được điền sẵn ở Bảng lương và sửa được khi trả.</p>
+                </div>
+                <form method="get" class="d-flex gap-2">
+                    <input type="month" name="month" class="form-control form-control-sm" th:value="${month}">
+                    <select name="staffId" class="form-select form-select-sm" style="max-width: 200px">
+                        <option value="">Tất cả nhân viên</option>
+                        <option th:each="u : ${staffList}" th:value="${u.id}" th:text="${u.fullName}" th:selected="${u.id == staffId}"></option>
+                    </select>
+                    <button class="btn btn-sm btn-outline-primary">Xem</button>
+                </form>
+            </div>
+
+            <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+            <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-lg"><div class="bg-white p-3 rounded shadow-sm h-100 stat"><div class="small text-muted">Ca đã qua</div>
+                    <div class="num" th:text="${totalDone}"></div></div></div>
+                <div class="col-6 col-lg"><div class="bg-white p-3 rounded shadow-sm h-100 stat"><div class="small text-muted">Lượt đi muộn</div>
+                    <div class="num text-warning" th:text="${totalLate}"></div></div></div>
+                <div class="col-6 col-lg"><div class="bg-white p-3 rounded shadow-sm h-100 stat"><div class="small text-muted">Về sớm</div>
+                    <div class="num" style="color:#a0521b" th:text="${totalEarly}"></div></div></div>
+                <div class="col-6 col-lg"><div class="bg-white p-3 rounded shadow-sm h-100 stat"><div class="small text-muted">Vắng không báo</div>
+                    <div class="num text-danger" th:text="${totalAbsent}"></div></div></div>
+                <div class="col-12 col-lg"><div class="bg-white p-3 rounded shadow-sm h-100 stat"><div class="small text-muted">Gợi ý trừ lương</div>
+                    <div class="num" th:text="${#numbers.formatDecimal(totalDeduction, 1, 'POINT', 0, 'COMMA')} + ' đ'"></div></div></div>
+            </div>
+
+            <!-- Bang tong hop tung nhan vien -->
+            <div class="bg-white p-4 rounded shadow-sm mb-4">
+                <h6 class="fw-bold mb-3">Tổng hợp theo nhân viên <span class="text-muted fw-normal small">(nhiều vi phạm nhất lên đầu · bấm để xem chi tiết)</span></h6>
+                <div th:if="${#lists.isEmpty(ranking)}" class="text-muted small">Tháng này chưa có lịch trực.</div>
+                <div class="table-responsive" th:unless="${#lists.isEmpty(ranking)}">
+                    <table class="table table-sm small align-middle mb-0">
+                        <thead><tr><th>Nhân viên</th><th class="text-center">Ca đã qua</th><th class="text-center">Đúng giờ</th>
+                            <th class="text-center">Đi muộn</th><th class="text-center">Về sớm</th><th class="text-center">Vắng</th>
+                            <th class="text-center">Có phép</th><th>Chuyên cần</th><th class="text-end">Gợi ý trừ</th><th class="text-end">Gợi ý thưởng</th></tr></thead>
+                        <tbody>
+                        <tr th:each="s : ${ranking}" class="row-link" th:classappend="${s.staff.id == staffId} ? 'table-active'"
+                            th:data-href="@{/admin/punctuality(month=${month}, staffId=${s.staff.id})}">
+                            <td><div class="fw-semibold" th:text="${s.staff.fullName}"></div>
+                                <div class="text-muted" th:text="${s.staff.role.vietnameseLabel}"></div></td>
+                            <td class="text-center" th:text="${s.done}"></td>
+                            <td class="text-center text-success" th:text="${s.onTime}"></td>
+                            <td class="text-center"><span th:if="${s.late > 0}" class="pc-badge pc-late" th:text="${s.late} + ' lần · ' + ${s.lateMinutes} + ' ph'"></span>
+                                <span th:if="${s.late == 0}" class="text-muted">0</span></td>
+                            <td class="text-center"><span th:if="${s.early > 0}" class="pc-badge pc-early" th:text="${s.early}"></span>
+                                <span th:if="${s.early == 0}" class="text-muted">0</span></td>
+                            <td class="text-center"><span th:if="${s.absent > 0}" class="pc-badge pc-absent" th:text="${s.absent}"></span>
+                                <span th:if="${s.absent == 0}" class="text-muted">0</span></td>
+                            <td class="text-center text-muted" th:text="${s.excused}"></td>
+                            <td><div class="d-flex align-items-center gap-2"><div class="rate-bar flex-grow-1">
+                                <div th:style="'width:' + ${s.rate} + '%;background:' + (${s.rate >= 95} ? '#2e9b57' : (${s.rate >= 80} ? '#e0a100' : '#d64545'))"></div></div>
+                                <span class="fw-semibold" th:text="${s.rate} + '%'"></span></div></td>
+                            <td class="text-end" th:classappend="${s.deduction.signum() > 0} ? 'text-danger fw-semibold' : 'text-muted'"
+                                th:text="${s.deduction.signum() > 0} ? '-' + ${#numbers.formatDecimal(s.deduction, 1, 'POINT', 0, 'COMMA')} : '-'"></td>
+                            <td class="text-end" th:classappend="${s.bonus.signum() > 0} ? 'text-success fw-semibold' : 'text-muted'"
+                                th:text="${s.bonus.signum() > 0} ? '+' + ${#numbers.formatDecimal(s.bonus, 1, 'POINT', 0, 'COMMA')} : '-'"></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Chi tiet 1 nhan vien -->
+            <div th:if="${staffId != null}" class="bg-white p-4 rounded shadow-sm mb-4">
+                <div th:if="${person == null}" class="text-muted small">Nhân viên này không có ca trực nào trong tháng.</div>
+                <th:block th:if="${person != null}">
+                    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                        <div>
+                            <h5 class="fw-bold mb-1" th:text="${person.staff.fullName}"></h5>
+                            <div class="small text-muted" th:text="${person.staff.role.vietnameseLabel} + ' · ' + ${person.scheduled} + ' ca trong lịch, '
+                                + ${person.done} + ' ca đã qua · lương ngày ' + (${person.staff.dailyWage != null} ? ${#numbers.formatDecimal(person.staff.dailyWage, 1, 'POINT', 0, 'COMMA')} + ' đ' : 'chưa đặt')"></div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a class="btn btn-sm btn-outline-secondary" th:href="@{/admin/punctuality(month=${month}, staffId=${staffId}, all=${!all})}"
+                               th:text="${all} ? 'Chỉ hiện vi phạm' : 'Hiện tất cả các ca'"></a>
+                            <a class="btn btn-sm btn-outline-primary" th:href="@{/admin/payroll(month=${month})}"><i class="bi bi-cash-stack me-1"></i>Bảng lương</a>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-7">
+                            <div class="border rounded p-3 h-100">
+                                <div class="small fw-semibold mb-2">Gợi ý khi trả lương</div>
+                                <div th:if="${#lists.isEmpty(person.deductions) and person.bonus.signum() == 0}" class="small text-muted">Không có khoản trừ / thưởng nào.</div>
+                                <div th:each="it : ${person.deductions}" class="d-flex justify-content-between small border-bottom py-1">
+                                    <span><span th:text="${#temporals.format(it.day, 'dd/MM')}" class="text-muted me-2"></span><span th:text="${it.reason}"></span></span>
+                                    <span class="text-danger fw-semibold" th:text="'-' + ${#numbers.formatDecimal(it.amount, 1, 'POINT', 0, 'COMMA')}"></span>
+                                </div>
+                                <div th:if="${person.bonus.signum() > 0}" class="d-flex justify-content-between small border-bottom py-1">
+                                    <span th:text="${person.bonusReason}"></span>
+                                    <span class="text-success fw-semibold" th:text="'+' + ${#numbers.formatDecimal(person.bonus, 1, 'POINT', 0, 'COMMA')}"></span>
+                                </div>
+                                <div th:if="${person.late > 0 and #lists.size(person.deductions) < person.late + person.absent}" class="small text-muted mt-1">
+                                    <i class="bi bi-info-circle me-1"></i>Các lần muộn còn lại nằm trong <span th:text="${policy.freeLates}"></span> lần đầu tháng
+                                    (mỗi lần ≤ <span th:text="${policy.freeLateMinutes}"></span> phút) nên chỉ nhắc nhở.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-5">
+                            <div class="border rounded p-3 h-100 small">
+                                <div class="fw-semibold mb-2">Ghi chú sẽ điền vào phiếu lương</div>
+                                <div class="text-muted" th:text="${person.payNote}"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-sm small align-middle mb-0">
+                            <thead><tr><th>Ngày</th><th>Ca</th><th>Giờ vào</th><th>Giờ ra</th><th>Kết quả</th><th>Ghi chú</th>
+                                <th sec:authorize="hasRole('ADMIN')"></th></tr></thead>
+                            <tbody>
+                            <tr th:each="c : ${person.checks}" th:if="${all or c.status.violation or c.status.name() == 'EXCUSED' or c.status.name() == 'NOT_YET_IN'}">
+                                <td class="text-nowrap" th:text="${#temporals.format(c.duty.workDate, 'EEE dd/MM')}"></td>
+                                <td class="text-nowrap" th:text="${c.duty.shift.label} + ' ' + ${c.duty.shift.timeRange}"></td>
+                                <td th:text="${c.attendance != null and c.status.name() != 'EXCUSED'} ? ${#temporals.format(c.attendance.checkInAt, 'HH:mm')} : '-'"></td>
+                                <td th:text="${c.attendance != null and c.status.name() != 'EXCUSED'} ? ${#temporals.format(c.attendance.checkOutAt, 'HH:mm')} + (${c.attendance.ended} ? '' : ' (thao tác cuối)') : '-'"></td>
+                                <td><span class="pc-badge" th:classappend="'pc-' + ${c.status.css}"
+                                          th:text="${c.status.label} + (${c.lateMinutes > 0 and c.status.name() == 'LATE'} ? ' ' + ${c.lateMinutes} + ' phút' : '')
+                                                   + (${c.earlyMinutes > 0} ? ' · về sớm ' + ${c.earlyMinutes} + ' phút' : '')"></span></td>
+                                <td class="text-muted" th:text="${c.attendance != null} ? ${c.attendance.note} : ''"></td>
+                                <td sec:authorize="hasRole('ADMIN')">
+                                    <form th:if="${c.status.name() == 'ABSENT'}" method="post" th:action="@{/admin/punctuality/excuse}" class="d-flex gap-1">
+                                        <input type="hidden" name="staffId" th:value="${person.staff.id}">
+                                        <input type="hidden" name="day" th:value="${c.duty.workDate}">
+                                        <input type="hidden" name="shift" th:value="${c.duty.shift}">
+                                        <input name="reason" class="form-control form-control-sm" style="width: 150px" placeholder="Lý do (ốm, việc riêng...)" required minlength="3">
+                                        <button class="btn btn-sm btn-outline-secondary text-nowrap" title="Ghi nhận nghỉ có phép - không trừ tiền">Có phép</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </th:block>
+            </div>
+
+            <!-- Vi pham ca thang (khi chua chon nhan vien) -->
+            <div th:if="${staffId == null}" class="bg-white p-4 rounded shadow-sm mb-4">
+                <h6 class="fw-bold mb-3">Ai đi muộn / vắng, lúc nào <span class="text-muted fw-normal small">(mới nhất trước)</span></h6>
+                <div th:if="${#lists.isEmpty(incidents)}" class="small text-muted">Tháng này chưa có ai đi muộn, về sớm hay vắng ca.</div>
+                <div class="table-responsive" th:unless="${#lists.isEmpty(incidents)}" style="max-height: 460px; overflow-y: auto">
+                    <table class="table table-sm small align-middle mb-0">
+                        <thead class="table-light" style="position: sticky; top: 0"><tr><th>Ngày</th><th>Nhân viên</th><th>Ca</th><th>Giờ vào</th><th>Kết quả</th></tr></thead>
+                        <tbody>
+                        <tr th:each="c : ${incidents}">
+                            <td class="text-nowrap" th:text="${#temporals.format(c.duty.workDate, 'EEE dd/MM')}"></td>
+                            <td><a th:href="@{/admin/punctuality(month=${month}, staffId=${c.duty.staff.id})}" th:text="${c.duty.staff.fullName}"></a></td>
+                            <td class="text-nowrap" th:text="${c.duty.shift.label} + ' ' + ${c.duty.shift.timeRange}"></td>
+                            <td th:text="${c.attendance != null} ? ${#temporals.format(c.attendance.checkInAt, 'HH:mm')} : '-'"></td>
+                            <td><span class="pc-badge" th:classappend="'pc-' + ${c.status.css}"
+                                      th:text="${c.status.label} + (${c.status.name() == 'LATE'} ? ' ' + ${c.lateMinutes} + ' phút' : '')
+                                               + (${c.earlyMinutes > 0} ? ' · về sớm ' + ${c.earlyMinutes} + ' phút' : '')"></span></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded shadow-sm small text-muted">
+                <div class="fw-semibold text-body mb-1">Cách tính</div>
+                <ul class="mb-0">
+                    <li>Giờ vào = lần đầu mở cổng quản trị trong ngày; vào trễ quá <span th:text="${policy.grace}"></span> phút so với giờ bắt đầu ca là <b>đi muộn</b>.</li>
+                    <li><span th:text="${policy.freeLates}"></span> lần muộn đầu tháng (mỗi lần ≤ <span th:text="${policy.freeLateMinutes}"></span> phút) chỉ nhắc nhở. Từ lần thứ
+                        <span th:text="${policy.freeLates + 1}"></span> hoặc muộn quá <span th:text="${policy.freeLateMinutes}"></span> phút: trừ theo phút
+                        (lương ngày ÷ 480 × số phút), tối thiểu <span th:text="${#numbers.formatDecimal(policy.minLate, 1, 'POINT', 0, 'COMMA')}"></span> đ, tối đa nửa ngày lương.</li>
+                    <li><b>Vắng không báo</b> (có ca mà không chấm công): ngày đó không có công, trừ thêm 50% lương ngày. Quản trị bấm «Có phép» để miễn.</li>
+                    <li><b>Về sớm</b>: bấm «Kết thúc ca» sớm hơn giờ hết ca quá <span th:text="${policy.earlyMinutes}"></span> phút - chỉ nhắc, không tự trừ tiền.</li>
+                    <li><b>Thưởng chuyên cần</b> <span th:text="${#numbers.formatDecimal(policy.bonus, 1, 'POINT', 0, 'COMMA')}"></span> đ:
+                        từ <span th:text="${policy.bonusMinShifts}"></span> ca trong tháng, không muộn, không về sớm, không vắng không báo.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+<script>
+    document.querySelectorAll('tr.row-link').forEach(tr => tr.addEventListener('click', () => location.href = tr.dataset.href));
+</script>
+</body>
+</html>
