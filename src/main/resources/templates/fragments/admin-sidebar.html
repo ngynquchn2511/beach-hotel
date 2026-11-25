@@ -160,6 +160,12 @@
         <span th:if="${newContactCount != null and newContactCount > 0}" class="badge rounded-pill bg-danger"
               th:text="${newContactCount}" title="Tin liên hệ chưa xử lý"></span>
     </a>
+    <a th:href="@{/admin/chat-insights}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+       th:classappend="${p.startsWith('/admin/chat-insights')} ? 'active'">
+        <span><i class="bi bi-robot"></i>Trợ lý Sóng (thống kê)</span>
+        <span th:if="${chatFeedbackCount != null and chatFeedbackCount > 0}" class="badge rounded-pill bg-danger"
+              th:text="${chatFeedbackCount}" title="Khách chưa hài lòng, chưa xử lý"></span>
+    </a>
     <div class="admin-sidebar-title">Danh mục</div>
     <a th:href="@{/admin/room-types}" class="list-group-item list-group-item-action"
        th:classappend="${p.startsWith('/admin/room-types')} ? 'active'"><i class="bi bi-grid-3x3-gap"></i>Loại phòng</a>

@@ -58,7 +58,8 @@ import org.springframework.web.bind.annotation.ModelAttribute;
         AdminInsightController.class,
         AdminBudgetController.class,
         AdminRevenueForecastController.class,
-        AdminCallReminderController.class
+        AdminCallReminderController.class,
+        AdminChatInsightController.class
 })
 public class AdminSidebarModelAdvice {
 
@@ -139,6 +140,19 @@ public class AdminSidebarModelAdvice {
     }
 
     // So tin lien he khach gui ma chua ai xu ly - hien so o muc "Hop thu lien he"
+    // Gop y khach chua hai long voi tro ly "Song" ma chua ai xu ly
+    private com.hotel.service.ChatInsightService chatInsightService;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    void setChatInsightService(com.hotel.service.ChatInsightService chatInsightService) {
+        this.chatInsightService = chatInsightService;
+    }
+
+    @ModelAttribute("chatFeedbackCount")
+    public long chatFeedbackCount() {
+        return chatInsightService != null ? chatInsightService.countOpenFeedback() : 0;
+    }
+
     @ModelAttribute("newContactCount")
     public long newContactCount() {
         return contactMessageService.countNew();

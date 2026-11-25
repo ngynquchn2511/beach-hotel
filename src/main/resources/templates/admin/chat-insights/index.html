@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>Trợ lý Sóng - khách hỏi gì</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <th:block th:replace="~{fragments/viz :: styles}"></th:block>
+    <style>
+        .ci-ring { position: relative; height: 210px; }
+        .ci-ring .center { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; text-align: center; }
+        .ci-ring .center b { display: block; font-size: 1.7rem; font-weight: 800; color: var(--vz-ink); line-height: 1; }
+        .ci-ring .center span { font-size: .74rem; color: var(--vz-mut); }
+        .ci-reason { display: grid; grid-template-columns: minmax(0, 1fr) 120px 30px; gap: 10px; align-items: center; font-size: .84rem; padding: 4px 0; }
+        .ci-reason .vz-bar > span { background: var(--vz-red); }
+        .ci-q td:first-child { max-width: 0; width: 100%; }
+        .ci-q .txt { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .ci-q .vz-bar { min-width: 70px; }
+        .ci-q.miss .vz-bar > span { background: var(--vz-amber); }
+        .ci-tabs a { text-decoration: none; padding: 5px 12px; border-radius: 999px; color: var(--vz-ink); font-size: .85rem; font-weight: 600; }
+        .ci-tabs a.on { background: var(--vz-ink); color: #fff; }
+        .ci-fb { border: 1px solid var(--vz-line); border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; background: #fff; }
+        .ci-fb.done { background: #fbfdfe; }
+        .ci-fb .quote { background: #fff6f7; border-left: 3px solid var(--vz-red); padding: 8px 12px; border-radius: 6px; margin: 8px 0; white-space: pre-line; }
+        .ci-log { font-size: .84rem; border-top: 1px dashed var(--vz-line); margin-top: 8px; padding-top: 6px; }
+        .ci-log .q { font-weight: 600; }
+        .ci-log .a { color: #4a5b6c; white-space: pre-line; padding-left: 14px; border-left: 2px solid #e3edf5; margin: 2px 0 8px; max-height: 7.5em; overflow: auto; }
+        .ci-log .miss { color: #8a5a00; }
+    </style>
+</head>
+<body class="eaut eaut-admin">
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="container-fluid px-lg-5 py-5" th:with="r=${report}">
+    <div class="row g-4">
+        <div class="col-md-3">
+            <div th:replace="~{fragments/admin-sidebar :: sidebar}"></div>
+        </div>
+
+        <div class="col-md-9">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                <div>
+                    <h3 class="fw-bold m-0">Trợ lý Sóng: khách hỏi gì?</h3>
+                    <div class="small text-muted" th:text="|${#temporals.format(r.from, 'dd/MM/yyyy')} – ${#temporals.format(r.to, 'dd/MM/yyyy')} · so với ${r.days} ngày trước đó|"></div>
+                </div>
+                <div class="vz-period">
+                    <a th:each="pd : ${periods}" th:href="@{/admin/chat-insights(days=${pd})}" th:text="|${pd} ngày|"
+                       th:style="${pd == days} ? 'background:#13395e;color:#fff;font-weight:700' : ''"></a>
+                </div>
+            </div>
+
+            <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+            <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+            <!-- O so lieu -->
+            <div class="row g-3 mb-3">
+                <div class="col-6 col-lg">
+                    <div class="vz-kpi hero">
+                        <div class="lbl">Câu hỏi của khách</div>
+                        <div class="val" th:text="${r.questions}" id="ciQuestions"></div>
+                        <div class="sub">
+                            <span th:if="${r.prevQuestions > 0 or r.questions > 0}"
+                                  th:class="${r.questionsDelta() >= 0} ? 'vz-up' : 'vz-down'"
+                                  th:text="${r.questionsDelta() >= 0 ? '▲ ' : '▼ '} + ${T(java.lang.Math).abs(r.questionsDelta())}"></span>
+                            so với kỳ trước
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg">
+                    <div class="vz-kpi">
+                        <div class="lbl">Cuộc trò chuyện</div>
+                        <div class="val" th:text="${r.sessions}"></div>
+                        <div class="sub" th:text="|TB ${r.avgPerSession} câu / cuộc|"></div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg">
+                    <div class="vz-kpi">
+                        <div class="lbl">Khách báo đã giải quyết</div>
+                        <div class="val" th:classappend="${r.resolved + r.unresolved > 0 and r.resolvedPct >= 70} ? 'good' : (${r.resolved + r.unresolved > 0 and r.resolvedPct < 50} ? 'bad')"
+                             th:text="${r.resolved + r.unresolved > 0} ? ${#numbers.formatDecimal(r.resolvedPct, 1, 1)} + '%' : '–'"></div>
+                        <div class="sub" th:text="|${r.resolved} đã ổn · ${r.unresolved} chưa|"></div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg">
+                    <div class="vz-kpi">
+                        <div class="lbl">Sóng chưa hiểu</div>
+                        <div class="val" th:classappend="${r.unansweredPct >= 20} ? 'bad'" th:text="${#numbers.formatDecimal(r.unansweredPct, 1, 1)} + '%'"></div>
+                        <div class="sub" th:text="|${r.unanswered} câu cần dạy thêm|"></div>
+                    </div>
+                </div>
+                <div class="col-12 col-lg">
+                    <a class="vz-kpi d-block text-decoration-none" href="#gop-y">
+                        <div class="lbl">Góp ý chờ xử lý</div>
+                        <div class="val" th:classappend="${r.openFeedback > 0} ? 'bad' : 'good'" th:text="${r.openFeedback}"></div>
+                        <div class="sub">khách chưa hài lòng →</div>
+                    </a>
+                </div>
+            </div>
+
+            <div th:if="${r.questions == 0}" class="vz-card">
+                <div class="vz-empty"><i class="bi bi-chat-square-dots"></i>Chưa có khách nào hỏi Sóng trong khoảng này.
+                    Câu hỏi được ghi lại từ khi khách đăng nhập và chat với Sóng ở trang khách hàng.</div>
+            </div>
+
+            <th:block th:if="${r.questions > 0}">
+            <div class="row g-3">
+                <div class="col-lg-7">
+                    <div class="vz-card h-100">
+                        <div class="vz-head">
+                            <div><h5>Khách hỏi gì nhiều nhất</h5>
+                                <div class="sub">Số câu hỏi theo chủ đề Sóng nhận ra (1 câu có thể nhiều chủ đề, bỏ chào hỏi / cảm ơn)</div></div>
+                        </div>
+                        <div class="vz-chart" th:style="|height: ${T(java.lang.Math).max(180, T(java.lang.Math).min(12, #lists.size(r.topics)) * 30 + 30)}px|">
+                            <canvas id="ciTopics" role="img" aria-label="Số câu hỏi theo chủ đề"></canvas></div>
+                    </div>
+                </div>
+                <div class="col-lg-5">
+                    <div class="vz-card h-100">
+                        <div class="vz-head">
+                            <div><h5>Sau 30 giây Sóng hỏi lại</h5>
+                                <div class="sub">«Đã giải quyết được chưa / tìm được phòng chưa?»</div></div>
+                        </div>
+                        <div th:if="${r.asked == 0}" class="vz-empty"><i class="bi bi-hourglass"></i>Chưa có cuộc trò chuyện nào được hỏi lại.</div>
+                        <th:block th:if="${r.asked > 0}">
+                            <div class="ci-ring">
+                                <canvas id="ciOutcome" role="img" aria-label="Kết quả câu hỏi kiểm tra"></canvas>
+                                <div class="center"><div><b th:text="${#numbers.formatDecimal(r.resolvedPct, 1, 0)} + '%'"></b><span>đã giải quyết</span></div></div>
+                            </div>
+                            <div class="vz-key justify-content-center mt-2">
+                                <span><i style="background: var(--vz-green)"></i>Đã ổn <b th:text="${r.resolved}"></b></span>
+                                <span><i style="background: var(--vz-red)"></i>Chưa hài lòng <b th:text="${r.unresolved}"></b></span>
+                                <span><i style="background: var(--vz-gray)"></i>Không trả lời <b th:text="${r.noResponse}"></b></span>
+                            </div>
+                            <div class="mt-3" th:if="${r.unresolved > 0}">
+                                <div class="small fw-semibold mb-1">Vì sao chưa hài lòng</div>
+                                <div class="ci-reason" th:each="c : ${r.reasons}">
+                                    <span th:text="${c.label}"></span>
+                                    <div class="vz-bar"><span th:style="|width: ${c.count * 100.0 / r.unresolved}%|"></span></div>
+                                    <b class="text-end" th:text="${c.count}"></b>
+                                </div>
+                            </div>
+                        </th:block>
+                    </div>
+                </div>
+            </div>
+
+            <div class="vz-card mt-3">
+                <div class="vz-head">
+                    <div><h5>Câu hỏi theo ngày</h5>
+                        <div class="sub">Cột: câu Sóng trả lời được / chưa hiểu · đường: số cuộc trò chuyện</div></div>
+                    <div class="vz-key">
+                        <span><i style="background: var(--vz-blue)"></i>Sóng trả lời</span>
+                        <span><i style="background: var(--vz-amber)"></i>Chưa hiểu</span>
+                        <span><i class="line" style="border-color: var(--vz-ink)"></i>Cuộc trò chuyện</span>
+                    </div>
+                </div>
+                <div class="vz-chart" style="height: 240px"><canvas id="ciDaily" role="img" aria-label="Câu hỏi theo ngày"></canvas></div>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-lg-7">
+                    <div class="vz-card h-100">
+                        <div class="vz-head">
+                            <div><h5>Khách hỏi vào giờ nào</h5>
+                                <div class="sub">Đông nhất: <b th:text="${r.busiestHour}"></b> · nên có người trực Zalo giờ này</div></div>
+                        </div>
+                        <div class="vz-chart" style="height: 200px"><canvas id="ciHours" role="img" aria-label="Câu hỏi theo giờ"></canvas></div>
+                    </div>
+                </div>
+                <div class="col-lg-5">
+                    <div class="vz-card h-100">
+                        <div class="vz-head"><div><h5>Loại phòng được hỏi</h5>
+                            <div class="sub">Khách nhắc tên loại phòng trong câu hỏi</div></div></div>
+                        <div th:if="${#lists.isEmpty(r.roomTypes)}" class="vz-empty"><i class="bi bi-door-closed"></i>Chưa ai hỏi đích danh loại phòng.</div>
+                        <div class="vz-chart" th:unless="${#lists.isEmpty(r.roomTypes)}" style="height: 200px">
+                            <canvas id="ciRooms" role="img" aria-label="Loại phòng được hỏi"></canvas></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3 mt-0">
+                <div class="col-lg-6">
+                    <div class="vz-card h-100">
+                        <div class="vz-head"><div><h5>Câu hỏi gặp nhiều nhất</h5>
+                            <div class="sub">Gộp câu giống nhau (không phân biệt dấu, hoa thường)</div></div></div>
+                        <table class="vz-table ci-q">
+                            <tbody>
+                            <tr th:each="c : ${r.topQuestions}" th:with="mx=${r.topQuestions[0].count}">
+                                <td><span class="txt" th:text="${c.label}" th:title="${c.label}"></span></td>
+                                <td><div class="vz-bar"><span th:style="|width: ${c.count * 100.0 / mx}%|"></span></div></td>
+                                <td class="r fw-bold" th:text="${c.count}"></td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(r.topQuestions)}"><td colspan="3" class="text-muted">Chưa có.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="vz-card h-100">
+                        <div class="vz-head"><div><h5>Sóng chưa hiểu: cần dạy thêm</h5>
+                            <div class="sub">Khách hỏi nhưng Sóng chỉ trả lời mặc định → thêm từ khóa / nội dung</div></div></div>
+                        <table class="vz-table ci-q miss">
+                            <tbody>
+                            <tr th:each="c : ${r.topUnanswered}" th:with="mx=${r.topUnanswered[0].count}">
+                                <td><span class="txt" th:text="${c.label}" th:title="${c.label}"></span></td>
+                                <td><div class="vz-bar"><span th:style="|width: ${c.count * 100.0 / mx}%|"></span></div></td>
+                                <td class="r fw-bold" th:text="${c.count}"></td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(r.topUnanswered)}"><td colspan="3" class="text-muted">Sóng hiểu hết các câu hỏi 🎉</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            </th:block>
+
+            <!-- Gop y khach chua hai long -->
+            <div class="vz-card mt-3" id="gop-y">
+                <div class="vz-head">
+                    <div><h5>Khách chưa hài lòng</h5>
+                        <div class="sub">Khách bấm «Chưa» khi Sóng hỏi lại và nói điều chưa ổn. Gọi / nhắn khách rồi đánh dấu đã xử lý.</div></div>
+                    <div class="ci-tabs d-flex gap-1">
+                        <a th:href="@{/admin/chat-insights(days=${days}, status='open')} + '#gop-y'" th:classappend="${status == 'open'} ? 'on'"
+                           th:text="|Chờ xử lý (${report.openFeedback})|"></a>
+                        <a th:href="@{/admin/chat-insights(days=${days}, status='handled')} + '#gop-y'" th:classappend="${status == 'handled'} ? 'on'"
+                           th:text="|Đã xử lý (${handledCount})|"></a>
+                        <a th:href="@{/admin/chat-insights(days=${days}, status='all')} + '#gop-y'" th:classappend="${status == 'all'} ? 'on'">Tất cả</a>
+                    </div>
+                </div>
+
+                <div th:if="${#lists.isEmpty(feedbackPager.items)}" class="vz-empty"><i class="bi bi-emoji-smile"></i>Không có góp ý nào ở mục này.</div>
+
+                <div th:each="f : ${feedbackPager.items}" th:with="s=${f.session}" class="ci-fb" th:classappend="${s.handled} ? 'done'"
+                     th:id="'gop-y-' + ${s.id}">
+                    <div class="d-flex flex-wrap justify-content-between gap-2">
+                        <div>
+                            <a th:if="${s.customer != null}" class="fw-bold" th:href="@{/admin/customers/{id}(id=${s.customer.id})}"
+                               th:text="${s.customer.fullName}"></a>
+                            <span th:if="${s.customer == null}" class="fw-bold">Khách</span>
+                            <span class="small text-muted" th:if="${s.customer != null}"
+                                  th:text="|· ${s.customer.phoneNumber != null ? s.customer.phoneNumber : ''} · ${s.customer.email}|"></span>
+                        </div>
+                        <div class="d-flex gap-2 align-items-center">
+                            <span class="vz-pill bad dot" th:text="${f.reasonLabel}"></span>
+                            <span class="small text-muted" th:text="${#temporals.format(s.feedbackAt, 'dd/MM HH:mm')}"></span>
+                        </div>
+                    </div>
+                    <div class="quote" th:if="${s.feedback != null}" th:text="${s.feedback}"></div>
+                    <details class="ci-log">
+                        <summary class="small text-primary fw-semibold" th:text="|Xem ${#lists.size(f.questions)} câu khách đã hỏi và Sóng trả lời|"></summary>
+                        <div th:each="q : ${f.questions}" class="mt-2">
+                            <div class="q"><span class="text-muted small" th:text="${#temporals.format(q.askedAt, 'HH:mm')}"></span>
+                                <span th:text="${q.text}"></span>
+                                <span th:unless="${q.answered}" class="vz-pill warn ms-1">Sóng chưa hiểu</span></div>
+                            <div class="a" th:if="${q.answer != null}" th:text="${#strings.replace(q.answer, '**', '')}"></div>
+                        </div>
+                    </details>
+                    <div th:if="${s.handled}" class="small mt-2 text-success">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <span th:text="|Đã xử lý ${#temporals.format(s.handledAt, 'dd/MM HH:mm')}${s.handledBy != null ? ' · ' + s.handledBy.fullName : ''}|"></span>
+                        <span th:if="${s.staffNote != null}" class="text-muted" th:text="|: ${s.staffNote}|"></span>
+                        <form th:action="@{/admin/chat-insights/{id}/reopen(id=${s.id})}" method="post" class="d-inline ms-2">
+                            <input type="hidden" name="days" th:value="${days}">
+                            <button class="btn btn-link btn-sm p-0">Mở lại</button>
+                        </form>
+                    </div>
+                    <form th:unless="${s.handled}" th:action="@{/admin/chat-insights/{id}/handle(id=${s.id})}" method="post"
+                          class="d-flex gap-2 mt-2">
+                        <input type="hidden" name="days" th:value="${days}">
+                        <input type="text" name="note" class="form-control form-control-sm" th:maxlength="${noteMax}"
+                               placeholder="Ghi chú: đã gọi, đã gửi phòng phù hợp, đã giảm giá...">
+                        <button class="btn btn-sm btn-success text-nowrap"><i class="bi bi-check2"></i> Đã liên hệ / xử lý</button>
+                    </form>
+                </div>
+                <div th:replace="~{fragments/pagination :: pager(${feedbackPager})}"></div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<th:block th:replace="~{fragments/viz :: scripts}"></th:block>
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    const CI = {
+        topics: /*[[${report.topics}]]*/ [],
+        rooms: /*[[${report.roomTypes}]]*/ [],
+        days: /*[[${report.dayLabels}]]*/ [],
+        dq: /*[[${report.dayQuestions}]]*/ [],
+        du: /*[[${report.dayUnanswered}]]*/ [],
+        ds: /*[[${report.daySessions}]]*/ [],
+        hours: /*[[${report.hours}]]*/ [],
+        res: /*[[${report.resolved}]]*/ 0,
+        unres: /*[[${report.unresolved}]]*/ 0,
+        none: /*[[${report.noResponse}]]*/ 0
+    };
+    CI.outcome = [CI.res, CI.unres, CI.none];
+    /*]]>*/
+    (function () {
+        if (!window.VZ) return;
+        const { C, axisX, axisY } = VZ;
+        const el = id => document.getElementById(id);
+        const total = CI.dq.reduce((a, b) => a + b, 0);
+
+        if (el('ciTopics')) {
+            const top = CI.topics.slice(0, 12);
+            new Chart(el('ciTopics'), {
+                type: 'bar',
+                data: { labels: top.map(t => t.label), datasets: [{ data: top.map(t => t.count), backgroundColor: top.map((t, i) => i < 3 ? C.blue : '#9ccbe9'),
+                    borderRadius: 4, barThickness: 18 }] },
+                options: { indexAxis: 'y',
+                    plugins: { tooltip: { callbacks: { label: c => ' ' + c.parsed.x + ' câu · ' + (total ? Math.round(c.parsed.x * 100 / total) : 0) + '% câu hỏi' } } },
+                    scales: { x: axisY({ ticks: { color: C.mut, precision: 0 } }), y: axisX({ ticks: { color: C.ink, font: { size: 12 } } }) } }
+            });
+        }
+        if (el('ciOutcome')) {
+            new Chart(el('ciOutcome'), {
+                type: 'doughnut',
+                data: { labels: ['Đã ổn', 'Chưa hài lòng', 'Không trả lời'],
+                    datasets: [{ data: CI.outcome, backgroundColor: [C.green, C.red, C.gray], borderColor: '#fff', borderWidth: 2 }] },
+                options: { cutout: '68%' }
+            });
+        }
+        if (el('ciDaily')) {
+            const ok = CI.dq.map((v, i) => v - CI.du[i]);
+            new Chart(el('ciDaily'), {
+                data: { labels: CI.days, datasets: [
+                    { type: 'bar', label: 'Sóng trả lời', data: ok, backgroundColor: C.blue, stack: 'q', borderRadius: 2 },
+                    { type: 'bar', label: 'Chưa hiểu', data: CI.du, backgroundColor: C.amber, stack: 'q', borderRadius: 2 },
+                    { type: 'line', label: 'Cuộc trò chuyện', data: CI.ds, borderColor: C.ink, backgroundColor: C.ink, borderWidth: 2,
+                      pointRadius: CI.days.length > 31 ? 0 : 2.5, tension: .3 }] },
+                options: { interaction: { mode: 'index', intersect: false },
+                    scales: { x: axisX({ stacked: true, ticks: { color: C.mut, autoSkip: true, maxTicksLimit: 10, maxRotation: 0 } }),
+                              y: axisY({ stacked: true, beginAtZero: true, ticks: { color: C.mut, precision: 0, maxTicksLimit: 6 } }) } }
+            });
+        }
+        if (el('ciHours')) {
+            const max = Math.max.apply(null, CI.hours);
+            new Chart(el('ciHours'), {
+                type: 'bar',
+                data: { labels: CI.hours.map((v, h) => h + 'h'), datasets: [{ data: CI.hours,
+                    backgroundColor: CI.hours.map(v => v === max && v > 0 ? C.purple : '#c9bdf0'), borderRadius: 3 }] },
+                options: { plugins: { tooltip: { callbacks: { title: c => c[0].dataIndex + ':00 – ' + (c[0].dataIndex + 1) % 24 + ':00',
+                                                               label: c => ' ' + c.parsed.y + ' câu hỏi' } } },
+                    scales: { x: axisX({ ticks: { color: C.mut, autoSkip: true, maxTicksLimit: 12, maxRotation: 0 } }),
+                              y: axisY({ beginAtZero: true, ticks: { color: C.mut, precision: 0, maxTicksLimit: 5 } }) } }
+            });
+        }
+        if (el('ciRooms')) {
+            const rs = CI.rooms.slice(0, 8);
+            new Chart(el('ciRooms'), {
+                type: 'bar',
+                data: { labels: rs.map(t => t.label), datasets: [{ data: rs.map(t => t.count), backgroundColor: C.teal, borderRadius: 4, barThickness: 16 }] },
+                options: { indexAxis: 'y', plugins: { tooltip: { callbacks: { label: c => ' ' + c.parsed.x + ' lần' } } },
+                    scales: { x: axisY({ beginAtZero: true, ticks: { color: C.mut, precision: 0 } }), y: axisX({ ticks: { color: C.ink } }) } }
+            });
+        }
+    })();
+</script>
+</body>
+</html>

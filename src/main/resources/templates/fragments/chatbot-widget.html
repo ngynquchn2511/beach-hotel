@@ -150,6 +150,23 @@
         #chatbotSend:disabled { opacity: .45; cursor: default; transform: none; }
         .may-footnote { text-align: center; font-size: .68rem; color: var(--may-ink-soft); padding: 0 0 8px; background: var(--may-paper); }
 
+        /* Hoi lai "da giai quyet chua?" + form gop y */
+        .may-check { display: flex; flex-direction: column; gap: 6px; }
+        .may-check button, .may-reasons label {
+            text-align: left; border: var(--may-line); border-radius: 12px; padding: 8px 12px; background: var(--may-paper);
+            font: inherit; font-size: .85rem; font-weight: 700; color: var(--may-ink); cursor: pointer; box-shadow: 2px 2px 0 var(--may-baby);
+        }
+        .may-check button:hover, .may-reasons label:hover { background: var(--may-baby-soft); }
+        .may-check button.yes { background: #e6f7ee; }
+        .may-reasons { display: flex; flex-direction: column; gap: 5px; }
+        .may-reasons input { position: absolute; opacity: 0; pointer-events: none; }
+        .may-reasons label { font-weight: 600; box-shadow: none; }
+        .may-reasons label.on { background: var(--may-sun); }
+        .may-reason-text { width: 100%; border: var(--may-line); border-radius: 12px; padding: 8px 10px; font: inherit; font-size: .85rem;
+                           color: var(--may-ink); resize: vertical; min-height: 60px; }
+        .may-check button.may-reason-send { align-self: flex-start; background: var(--may-ink); color: #fff; box-shadow: none; }
+        .may-reason-err { color: #c23d58; font-size: .78rem; }
+
         @keyframes mayFloat { 0%, 100% { translate: 0 0; } 50% { translate: 0 -4px; } }
         @keyframes mayOpen { from { opacity: 0; transform: translateY(16px) scale(.96); transform-origin: bottom right; } }
         @keyframes mayRise { from { opacity: 0; transform: translateY(8px); } }
@@ -223,7 +240,7 @@
 
         <div id="mayPeek" role="button" tabindex="0">
             <button type="button" id="mayPeekClose" th:aria-label="#{chat.w.peekClose}">&times;</button>
-            <span th:utext="#{chat.w.peek}">Chào bạn 👋 Mình là <b>Sóng</b>! Cần tư vấn phòng, tour lặn hay xe đón sân bay ở Hạ Long thì hỏi Sóng nha 🌊</span>
+            <span id="mayPeekText" th:utext="#{chat.w.peek}">Chào bạn 👋 Mình là <b>Sóng</b>! Cần tư vấn phòng, tour lặn hay xe đón sân bay ở Hạ Long thì hỏi Sóng nha 🌊</span>
         </div>
 
         <button type="button" id="chatbotBubble" th:aria-label="#{chat.w.open}">
@@ -268,6 +285,27 @@
             var T_ERROR = /*[[#{chat.w.error}]]*/ '';
             var T_LOGIN = /*[[#{chat.w.loginRequired}]]*/ '';
             var T_LOGIN_BTN = /*[[#{chat.w.loginButton}]]*/ '';
+            var T_CHECK = /*[[#{chat.w.check}]]*/ '';
+            var T_CHECK_YES = /*[[#{chat.w.checkYes}]]*/ '';
+            var T_CHECK_NO = /*[[#{chat.w.checkNo}]]*/ '';
+            var T_CHECK_PEEK = /*[[#{chat.w.checkPeek}]]*/ '';
+            var T_THANKS_RESOLVED = /*[[#{chat.w.thanksResolved}]]*/ '';
+            var T_ASK_REASON = /*[[#{chat.w.askReason}]]*/ '';
+            var T_REASON_NO_ROOM = /*[[#{chat.w.reason.NO_ROOM}]]*/ '';
+            var T_REASON_PRICE = /*[[#{chat.w.reason.PRICE}]]*/ '';
+            var T_REASON_WRONG = /*[[#{chat.w.reason.WRONG_ANSWER}]]*/ '';
+            var T_REASON_STAFF = /*[[#{chat.w.reason.WANT_STAFF}]]*/ '';
+            var T_REASON_OTHER = /*[[#{chat.w.reason.OTHER}]]*/ '';
+            var T_REASON_PH = /*[[#{chat.w.reasonPlaceholder}]]*/ '';
+            var T_REASON_SEND = /*[[#{chat.w.reasonSend}]]*/ '';
+            var T_REASON_PICK = /*[[#{chat.w.reasonPick}]]*/ '';
+            var T_FEEDBACK_SENT = /*[[#{chat.w.feedbackSent}]]*/ '';
+            var T_CONTACT_PAGE = /*[[#{chat.w.contactPage}]]*/ '';
+            var ZALO_PHONE = /*[[${@environment.getProperty('app.contact.zalo-phone')}]]*/ '';
+            var REASONS = [ ['NO_ROOM', T_REASON_NO_ROOM], ['PRICE', T_REASON_PRICE], ['WRONG_ANSWER', T_REASON_WRONG],
+                ['WANT_STAFF', T_REASON_STAFF], ['OTHER', T_REASON_OTHER] ];
+            // Khach khong hoi them sau 30 giay -> Song hoi lai "da giai quyet chua?" (1 lan moi cuoc tro chuyen)
+            var IDLE_MS = 30000;
             // Chatbot bat buoc dang nhap: khach chua dang nhap chi thay loi nhac + nut Dang nhap
             var ANONYMOUS = /*[[${#authorization.expression('isAnonymous()')}]]*/ false;
             var TP_PRICE = /*[[#{chat.t.price}]]*/ '';
@@ -308,9 +346,17 @@
             var sendBtn = document.getElementById('chatbotSend');
             var list = document.getElementById('chatbotMessages');
             var peek = document.getElementById('mayPeek');
+            var peekText = document.getElementById('mayPeekText');
             var csrfToken = document.getElementById('chatbotCsrfToken').value;
             var csrfHeader = document.getElementById('chatbotCsrfHeader').value;
             var busy = false;
+            // Cuoc tro chuyen tren may chu + trang thai hoi lai: '' chua hoi, 'pending' cho mo khung chat, 'asked', 'done'
+            var SID_KEY = STORE_KEY + '.sid';
+            var CHECK_KEY = STORE_KEY + '.check';
+            var LAST_KEY = STORE_KEY + '.lastBot';
+            var idleTimer = null;
+            function getS(k) { try { return sessionStorage.getItem(k) || ''; } catch (e) { return ''; } }
+            function setS(k, v) { try { if (v) sessionStorage.setItem(k, v); else sessionStorage.removeItem(k); } catch (e) { /* bo qua */ } }
 
             
 
@@ -400,6 +446,8 @@
                     });
                     col.appendChild(acts);
                 }
+                if (m.kind === 'check' && !m.done) col.appendChild(checkButtons(m));
+                if (m.kind === 'reason' && !m.done) col.appendChild(reasonForm(m));
                 var time = document.createElement('div');
                 time.className = 'may-time';
                 time.textContent = (m.from === 'bot' ? 'Sóng · ' : '') + timeLabel(m.time);
@@ -500,6 +548,141 @@
                 renderMessage(m);
                 renderSuggestions(m.suggestions);
                 scrollDown();
+                if (data.sessionId) {
+                    setS(SID_KEY, String(data.sessionId));
+                    setS(LAST_KEY, String(Date.now()));
+                    scheduleCheck(IDLE_MS);
+                }
+            }
+
+            function post(url, body) {
+                var headers = { 'Content-Type': 'application/json' };
+                if (csrfHeader && csrfToken) headers[csrfHeader] = csrfToken;
+                return fetch(url, { method: 'POST', headers: headers, body: JSON.stringify(body) }).catch(function () { /* bo qua */ });
+            }
+
+            // ===== Hoi lai sau 30 giay khong co cau hoi moi =====
+            function scheduleCheck(ms) {
+                clearTimeout(idleTimer);
+                if (ANONYMOUS || getS(CHECK_KEY) || !getS(SID_KEY)) return;
+                idleTimer = setTimeout(fireCheck, Math.max(0, ms));
+            }
+            function fireCheck() {
+                if (getS(CHECK_KEY) || !getS(SID_KEY)) return;
+                // Khach dang go cau moi / Song dang tra loi -> doi them
+                if (busy || (input.value && input.value.trim())) { scheduleCheck(10000); return; }
+                if (panel.classList.contains('chatbot-open')) {
+                    showCheck();
+                } else {
+                    setS(CHECK_KEY, 'pending');
+                    peekText.textContent = T_CHECK_PEEK;
+                    peek.classList.add('show');
+                }
+            }
+            function showCheck() {
+                setS(CHECK_KEY, 'asked');
+                removeEphemeral();
+                var m = { from: 'bot', kind: 'check', time: Date.now(), text: T_CHECK };
+                history.push(m);
+                save();
+                renderMessage(m);
+                scrollDown();
+                post('/api/chatbot/check', { sessionId: getS(SID_KEY) });
+            }
+            function userSays(text) {
+                var u = { from: 'user', time: Date.now(), text: text };
+                history.push(u);
+                renderMessage(u);
+            }
+            function botSays(m) {
+                m.from = 'bot';
+                m.time = Date.now();
+                history.push(m);
+                save();
+                renderMessage(m);
+                scrollDown();
+            }
+            function checkButtons(m) {
+                var wrap = document.createElement('div');
+                wrap.className = 'may-check';
+                var yes = document.createElement('button');
+                yes.type = 'button';
+                yes.className = 'yes';
+                yes.textContent = T_CHECK_YES;
+                var no = document.createElement('button');
+                no.type = 'button';
+                no.textContent = T_CHECK_NO;
+                yes.addEventListener('click', function () {
+                    m.done = true;
+                    wrap.remove();
+                    setS(CHECK_KEY, 'done');
+                    userSays(T_CHECK_YES);
+                    post('/api/chatbot/feedback', { sessionId: getS(SID_KEY), resolved: true });
+                    botSays({ text: T_THANKS_RESOLVED });
+                });
+                no.addEventListener('click', function () {
+                    m.done = true;
+                    wrap.remove();
+                    setS(CHECK_KEY, 'done');
+                    userSays(T_CHECK_NO);
+                    post('/api/chatbot/feedback', { sessionId: getS(SID_KEY), resolved: false });
+                    botSays({ kind: 'reason', text: T_ASK_REASON });
+                });
+                wrap.appendChild(yes);
+                wrap.appendChild(no);
+                return wrap;
+            }
+            function reasonForm(m) {
+                var form = document.createElement('div');
+                form.className = 'may-check';
+                var group = document.createElement('div');
+                group.className = 'may-reasons';
+                group.setAttribute('role', 'radiogroup');
+                var err = document.createElement('div');
+                err.className = 'may-reason-err';
+                err.setAttribute('aria-live', 'polite');
+                var chosen = null;
+                REASONS.forEach(function (r) {
+                    var label = document.createElement('label');
+                    var radio = document.createElement('input');
+                    radio.type = 'radio';
+                    radio.name = 'mayReason';
+                    radio.value = r[0];
+                    radio.addEventListener('change', function () {
+                        chosen = r;
+                        group.querySelectorAll('label').forEach(function (l) { l.classList.remove('on'); });
+                        label.classList.add('on');
+                        err.textContent = '';
+                    });
+                    label.appendChild(radio);
+                    label.appendChild(document.createTextNode(r[1]));
+                    group.appendChild(label);
+                });
+                var text = document.createElement('textarea');
+                text.className = 'may-reason-text';
+                text.maxLength = 500;
+                text.rows = 2;
+                text.placeholder = T_REASON_PH;
+                var send = document.createElement('button');
+                send.type = 'button';
+                send.className = 'may-reason-send';
+                send.textContent = T_REASON_SEND;
+                send.addEventListener('click', function () {
+                    if (!chosen) { err.textContent = T_REASON_PICK; return; }
+                    var note = text.value.trim();
+                    m.done = true;
+                    form.remove();
+                    userSays(chosen[1] + (note ? ': ' + note : ''));
+                    post('/api/chatbot/feedback', { sessionId: getS(SID_KEY), resolved: false, reason: chosen[0], text: note });
+                    var acts = [{ label: T_CONTACT_PAGE, url: '/about#lien-he' }];
+                    if (ZALO_PHONE) acts.unshift({ label: 'Zalo', url: 'https://zalo.me/' + ZALO_PHONE });
+                    botSays({ text: T_FEEDBACK_SENT, actions: acts });
+                });
+                form.appendChild(group);
+                form.appendChild(text);
+                form.appendChild(err);
+                form.appendChild(send);
+                return form;
             }
 
             function send(text) {
@@ -508,6 +691,7 @@
                 busy = true;
                 sendBtn.disabled = true;
                 removeEphemeral();
+                clearTimeout(idleTimer);
                 var userMsg = { from: 'user', time: Date.now(), text: text };
                 history.push(userMsg);
                 save();
@@ -518,7 +702,7 @@
                 var headers = { 'Content-Type': 'application/json' };
                 if (csrfHeader && csrfToken) headers[csrfHeader] = csrfToken;
                 var started = Date.now();
-                fetch('/api/chatbot/ask', { method: 'POST', headers: headers, body: JSON.stringify({ message: text }) })
+                fetch('/api/chatbot/ask', { method: 'POST', headers: headers, body: JSON.stringify({ message: text, sessionId: getS(SID_KEY) || null }) })
                     .then(function (res) { if (!res.ok) throw new Error(res.status); return res.json(); })
                     .catch(function () {
                         return { reply: T_ERROR, actions: [], suggestions: [] };
@@ -540,6 +724,7 @@
                 document.body.classList.add('chatbot-panel-open');
                 hidePeek();
                 renderAll();
+                if (getS(CHECK_KEY) === 'pending') showCheck();
                 if (!ANONYMOUS) setTimeout(function () { input.focus(); }, 50);
             }
             function closePanel() {
@@ -556,6 +741,10 @@
             bubble.addEventListener('click', openPanel);
             closeBtn.addEventListener('click', closePanel);
             resetBtn.addEventListener('click', function () {
+                clearTimeout(idleTimer);
+                setS(SID_KEY, '');
+                setS(CHECK_KEY, '');
+                setS(LAST_KEY, '');
                 history = [];
                 save();
                 renderAll();
@@ -576,6 +765,20 @@
                 openPanel();
             });
             peek.addEventListener('keydown', function (e) { if (e.key === 'Enter') openPanel(); });
+
+            // Chuyen trang giua chung: dem tiep 30 giay tu cau tra loi cuoi; dang cho thi nhac bang loi chao nho
+            if (!ANONYMOUS) {
+                if (getS(CHECK_KEY) === 'pending') {
+                    setTimeout(function () {
+                        if (!panel.classList.contains('chatbot-open') && getS(CHECK_KEY) === 'pending') {
+                            peekText.textContent = T_CHECK_PEEK;
+                            peek.classList.add('show');
+                        }
+                    }, 1500);
+                } else if (getS(LAST_KEY)) {
+                    scheduleCheck(IDLE_MS - (Date.now() - Number(getS(LAST_KEY))));
+                }
+            }
 
             // Loi chao nho hien 1 lan moi phien, sau vai giay, neu khach chua mo chat
             var peekShown = false;

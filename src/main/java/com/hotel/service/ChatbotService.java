@@ -67,7 +67,17 @@ public class ChatbotService {
     }
 
     // Cau tra loi day du: noi dung + nut hanh dong + goi y cau hoi tiep theo
-    public record Reply(String text, List<Action> actions, List<String> suggestions) {
+    // topics: ma chu de Song nhan ra (rong = khong hieu), roomTypes: ten loai phong khach nhac toi - dung de thong ke
+    public record Reply(String text, List<Action> actions, List<String> suggestions, List<String> topics,
+                        List<String> roomTypes) {
+
+        public Reply(String text, List<Action> actions, List<String> suggestions) {
+            this(text, actions, suggestions, List.of(), List.of());
+        }
+
+        public boolean understood() {
+            return !topics.isEmpty();
+        }
     }
 
     private final RoomTypeRepository roomTypeRepository;
@@ -344,6 +354,23 @@ public class ChatbotService {
                 sections.add(t("chat.bye"));
             }
 
+            List<String> topics = new ArrayList<>();
+            Object[][] flags = {{greet, "GREET"}, {askPrice, "PRICE"}, {askAvailability, "AVAILABILITY"}, {askDeposit, "DEPOSIT"},
+                    {askPayment, "PAYMENT"}, {askFacilities, "FACILITIES"}, {askCombo, "COMBO"}, {askPromotion, "PROMOTION"},
+                    {askDirections, "DIRECTIONS"}, {askAddress, "ADDRESS"}, {askContact, "CONTACT"}, {askCheckTime, "CHECK_TIME"},
+                    {askSuggestRoom, "SUGGEST_ROOM"}, {askWeather, "WEATHER"}, {askExplore, "EXPLORE"}, {askFood, "FOOD"},
+                    {askTour, "TOUR"}, {askTransfer, "TRANSFER"}, {askHowToBook, "HOW_TO_BOOK"}, {askCancel, "CANCEL"},
+                    {thanks, "THANKS"}, {bye, "BYE"}};
+            for (Object[] f : flags) {
+                if ((Boolean) f[0]) {
+                    topics.add((String) f[1]);
+                }
+            }
+            if (topics.isEmpty() && !matchedTypes.isEmpty()) {
+                topics.add("ROOM_TYPE");
+            }
+            List<String> typeNames = matchedTypes.stream().map(RoomType::getName).toList();
+
             if (sections.isEmpty()) {
                 if (!matchedTypes.isEmpty()) {
                     // Chi nhac ten loai phong -> tra loi tong quan gia + phong trong cua loai do
@@ -361,7 +388,7 @@ public class ChatbotService {
             }
 
             return new Reply(String.join("\n\n", sections), List.copyOf(actions),
-                    suggestions.stream().limit(3).toList());
+                    suggestions.stream().limit(3).toList(), List.copyOf(topics), typeNames);
         }
 
         private String buildPriceAnswer(List<RoomType> matchedTypes) {
