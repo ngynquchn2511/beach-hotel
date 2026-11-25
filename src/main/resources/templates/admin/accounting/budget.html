@@ -7,6 +7,13 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+    <th:block th:replace="~{fragments/viz :: styles}"></th:block>
+    <style>
+        .bg-table input.form-control { max-width: 150px; text-align: right; font-variant-numeric: tabular-nums; }
+        .bg-table td.ach { min-width: 120px; }
+        .bg-table tr.future td.fw-semibold { color: var(--vz-mut); }
+        .bg-table tr.now td { background: #f4f9fd; }
+    </style>
 </head>
 <body class="eaut eaut-admin">
 
@@ -33,13 +40,38 @@
             <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
             <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
 
-            <form method="post" th:action="@{/admin/accounting/budget}" class="bg-white p-3 rounded shadow-sm">
+            <!-- Tong quan nam: luy ke thuc te so voi ke hoach -->
+            <div class="row g-3 mb-3">
+                <div class="col-md-4"><div class="vz-kpi hero"><div class="lbl">Doanh thu lũy kế / kế hoạch cùng kỳ</div>
+                    <div class="val" id="bgYtdPct">–</div><div class="sub" id="bgYtdSub">Chưa có kế hoạch</div></div></div>
+                <div class="col-md-4"><div class="vz-kpi"><div class="lbl">Kế hoạch doanh thu cả năm</div>
+                    <div class="val" id="bgYearRev">–</div><div class="sub" id="bgYearRevSub"></div></div></div>
+                <div class="col-md-4"><div class="vz-kpi"><div class="lbl">Chi phí lũy kế / ngân sách cùng kỳ</div>
+                    <div class="val" id="bgYtdCost">–</div><div class="sub" id="bgYtdCostSub"></div></div></div>
+            </div>
+            <div class="row g-3 mb-3">
+                <div class="col-lg-7"><div class="vz-card h-100 mb-0">
+                    <div class="vz-head"><div><h5>Doanh thu: thực tế so với kế hoạch</h5><div class="sub">Cột = thực tế, vạch = kế hoạch tháng; cột xanh lá là tháng đạt kế hoạch</div></div>
+                        <div class="vz-key"><span><i style="background:var(--vz-blue)"></i>Chưa đạt</span><span><i style="background:var(--vz-green)"></i>Đạt</span>
+                            <span><i class="line" style="background:var(--vz-ink)"></i>Kế hoạch</span></div></div>
+                    <div class="vz-chart" style="height:240px"><canvas id="bgRev" role="img" aria-label="Doanh thu thực tế so với kế hoạch"></canvas></div>
+                </div></div>
+                <div class="col-lg-5"><div class="vz-card h-100 mb-0">
+                    <div class="vz-head"><div><h5>Công suất so với chỉ tiêu</h5><div class="sub">Điểm % chênh lệch mỗi tháng</div></div></div>
+                    <div class="vz-chart" style="height:240px"><canvas id="bgOcc" role="img" aria-label="Công suất so với chỉ tiêu"></canvas></div>
+                </div></div>
+            </div>
+
+            <form method="post" th:action="@{/admin/accounting/budget}" class="vz-card">
+                <div class="vz-head"><div><h5>Nhập chỉ tiêu từng tháng</h5><div class="sub">Biểu đồ phía trên cập nhật ngay khi gõ; bấm «Lưu kế hoạch» để lưu</div></div></div>
                 <input type="hidden" name="year" th:value="${year}">
                 <div class="table-responsive">
-                    <table class="table table-sm align-middle mb-3">
-                        <thead><tr><th>Tháng</th><th>Doanh thu (VND)</th><th>Chi phí tối đa (VND)</th><th>Công suất (%)</th><th>ADR (VND)</th><th></th></tr></thead>
+                    <table class="table table-sm align-middle mb-3 vz-table bg-table">
+                        <thead><tr><th>Tháng</th><th>Doanh thu (VND)</th><th>Chi phí tối đa (VND)</th><th>Công suất (%)</th><th>ADR (VND)</th><th>Đạt doanh thu</th><th></th></tr></thead>
                         <tbody>
-                        <tr th:each="b : ${budgets}" th:with="mm=${b.month.monthValue}">
+                        <tr th:each="b, st : ${budgets}" th:with="mm=${b.month.monthValue}" class="bg-row"
+                            th:classappend="(${mm > currentMonth} ? 'future ' : '') + (${mm == currentMonth and year == #temporals.year(#temporals.createNow())} ? 'now' : '')"
+                            th:attr="data-m=${mm}, data-rev=${actualRevenue != null ? actualRevenue[st.index] : null}, data-cost=${actualCost != null ? actualCost[st.index] : null}, data-occ=${actualOccupancy != null ? actualOccupancy[st.index] : null}">
                             <td class="fw-semibold" th:text="${mm} + '/' + ${year}"></td>
                             <td><input type="number" class="form-control form-control-sm" min="0" step="1000000" th:name="'revenue_' + ${mm}"
                                        th:value="${b.revenueTarget != null ? b.revenueTarget.longValue() : ''}"></td>
@@ -49,6 +81,7 @@
                                        th:value="${b.occupancyTarget}"></td>
                             <td><input type="number" class="form-control form-control-sm" min="0" step="10000" th:name="'adr_' + ${mm}"
                                        th:value="${b.adrTarget != null ? b.adrTarget.longValue() : ''}"></td>
+                            <td class="ach"></td>
                             <td><a class="small text-nowrap" th:href="@{/admin/accounting/pnl(month=${#temporals.format(b.month, 'yyyy-MM')})}">Lãi lỗ</a></td>
                         </tr>
                         </tbody>
@@ -61,5 +94,62 @@
 </main>
 
 <div th:replace="~{fragments/footer :: footer}"></div>
+<th:block th:replace="~{fragments/viz :: scripts}"></th:block>
+<script>
+    (function () {
+        if (!window.VZ) return;
+        const { C, num, short, pct, axisX, axisY } = VZ;
+        const rows = [...document.querySelectorAll('tr.bg-row')];
+        const val = (tr, name) => { const i = tr.querySelector('input[name^="' + name + '_"]'); return i && i.value !== '' ? Number(i.value) : null; };
+        const act = (tr, k) => tr.dataset[k] === undefined || tr.dataset[k] === '' ? null : num(tr.dataset[k]);
+        const labels = rows.map(tr => 'T' + tr.dataset.m);
+        const revChart = new Chart(document.getElementById('bgRev'), {
+            data: { labels, datasets: [
+                { type: 'line', label: 'Kế hoạch', data: [], showLine: false, pointStyle: 'line', pointRadius: 13, pointHoverRadius: 13,
+                  borderColor: C.ink, borderWidth: 3, order: 0 },
+                { type: 'bar', label: 'Thực tế', data: [], backgroundColor: [], borderRadius: 3, categoryPercentage: .7, barPercentage: .85, order: 1 } ] },
+            options: { interaction: { mode: 'index', intersect: false },
+                plugins: { tooltip: { callbacks: { label: c => ' ' + c.dataset.label + ': ' + (c.parsed.y == null ? 'chưa có' : short(c.parsed.y)),
+                    footer: it => { const k = it[0].dataIndex, a = revChart.data.datasets[1].data[k], p = revChart.data.datasets[0].data[k];
+                        return a != null && p ? 'Đạt ' + pct(a * 100 / p) : ''; } } } },
+                scales: { x: axisX(), y: axisY({ beginAtZero: true, afterFit: a => { a.width += 8; }, ticks: { color: C.mut, maxTicksLimit: 5, callback: v => short(v) } }) } }
+        });
+        const occChart = new Chart(document.getElementById('bgOcc'), { type: 'bar',
+            data: { labels, datasets: [{ label: 'Chênh lệch', data: [], backgroundColor: [], borderRadius: 3, categoryPercentage: .7, barPercentage: .85 }] },
+            options: { plugins: { tooltip: { callbacks: { label: c => { const k = c.dataIndex, tr = rows[k];
+                        return ' Thực tế ' + act(tr, 'occ') + '% · chỉ tiêu ' + val(tr, 'occupancy') + '% (' + (c.parsed.y > 0 ? '+' : '') + c.parsed.y.toFixed(1) + ' điểm)'; } } } },
+                scales: { x: axisX(), y: axisY({ grid: { color: c => c.tick.value === 0 ? '#9fb3c6' : C.grid }, ticks: { color: C.mut, maxTicksLimit: 5, callback: v => (v > 0 ? '+' : '') + v } }) } }
+        });
+        function refresh() {
+            let pYtd = 0, aYtd = 0, cP = 0, cA = 0, yearRev = 0, planned = 0;
+            const plan = [], actual = [], colors = [], occ = [], occCol = [];
+            rows.forEach(tr => {
+                const p = val(tr, 'revenue'), a = act(tr, 'rev'), cb = val(tr, 'cost'), ca = act(tr, 'cost');
+                plan.push(p); actual.push(a); colors.push(a != null && p && a >= p ? C.green : C.blue);
+                if (p) { yearRev += p; planned++; }
+                if (a != null && p) { pYtd += p; aYtd += a; }
+                if (ca != null && cb) { cP += cb; cA += ca; }
+                const ot = val(tr, 'occupancy'), oa = act(tr, 'occ'), d = ot != null && oa != null ? oa - ot : null;
+                occ.push(d); occCol.push(d == null ? C.gray : d >= 0 ? C.green : C.red);
+                const cell = tr.querySelector('td.ach');
+                if (a != null && p) { const r = a * 100 / p;
+                    cell.innerHTML = '<div class="d-flex align-items-center gap-2"><div class="vz-bar flex-grow-1"><span style="width:' + Math.min(100, r) + '%;background:'
+                        + (r >= 100 ? 'var(--vz-green)' : 'var(--vz-blue)') + '"></span></div><b class="small">' + pct(r) + '</b></div>';
+                } else cell.innerHTML = '<span class="small text-muted">' + (a == null ? 'chưa tới' : 'chưa có KH') + '</span>';
+            });
+            revChart.data.datasets[0].data = plan; revChart.data.datasets[1].data = actual; revChart.data.datasets[1].backgroundColor = colors; revChart.update('none');
+            occChart.data.datasets[0].data = occ; occChart.data.datasets[0].backgroundColor = occCol; occChart.update('none');
+            const set = (id, t) => { const e = document.getElementById(id); if (e) e.textContent = t; };
+            if (pYtd) { const r = aYtd * 100 / pYtd; set('bgYtdPct', pct(r)); set('bgYtdSub', short(aYtd) + ' / ' + short(pYtd) + (r >= 100 ? ' · vượt ' : ' · còn thiếu ') + short(Math.abs(aYtd - pYtd))); }
+            else { set('bgYtdPct', '–'); set('bgYtdSub', 'Chưa có kế hoạch cho các tháng đã qua'); }
+            set('bgYearRev', yearRev ? short(yearRev) : '–'); set('bgYearRevSub', planned + '/12 tháng đã đặt chỉ tiêu');
+            if (cP) { const r = cA * 100 / cP; set('bgYtdCost', pct(r)); set('bgYtdCostSub', short(cA) + ' / ' + short(cP) + (r > 100 ? ' · vượt ngân sách' : ' · trong ngân sách'));
+                document.getElementById('bgYtdCost').classList.toggle('bad', r > 100); document.getElementById('bgYtdCost').classList.toggle('good', r <= 100); }
+            else { set('bgYtdCost', '–'); set('bgYtdCostSub', 'Chưa có ngân sách chi'); }
+        }
+        refresh();
+        document.querySelectorAll('tr.bg-row input').forEach(i => i.addEventListener('input', refresh));
+    })();
+</script>
 </body>
 </html>

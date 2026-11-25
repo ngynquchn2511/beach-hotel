@@ -35,6 +35,14 @@ public class AdminCustomerController {
         List<com.hotel.service.CustomerProfileService.Row> all = profileService.list(q, type);
         model.addAttribute("pager", com.hotel.util.Pager.of(all, page, PaginationUtil.DEFAULT_PAGE_SIZE));
         model.addAttribute("totalElements", all.size());
+        // Dem theo hang (theo o tim kiem, bo qua loc hang) cho tab + thanh co cau
+        List<com.hotel.service.CustomerProfileService.Row> forCounts = type == null ? all : profileService.list(q, null);
+        java.util.Map<String, Long> typeCounts = new java.util.LinkedHashMap<>();
+        for (CustomerType ct : CustomerType.values()) {
+            typeCounts.put(ct.name(), forCounts.stream().filter(r -> r.customer().getCustomerType() == ct).count());
+        }
+        model.addAttribute("typeCounts", typeCounts);
+        model.addAttribute("typeTotal", (long) forCounts.size());
         model.addAttribute("customerTypes", CustomerType.values());
         model.addAttribute("q", q);
         model.addAttribute("type", type);

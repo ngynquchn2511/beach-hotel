@@ -21,9 +21,15 @@ import java.util.Map;
 public class AdminBudgetController {
 
     private final BudgetService budgetService;
+    private com.hotel.service.ProfitService profitService;
 
     public AdminBudgetController(BudgetService budgetService) {
         this.budgetService = budgetService;
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    void setProfitService(com.hotel.service.ProfitService profitService) {
+        this.profitService = profitService;
     }
 
     @GetMapping
@@ -31,6 +37,25 @@ public class AdminBudgetController {
         int y = year != null ? year : Year.now().getValue();
         model.addAttribute("year", y);
         model.addAttribute("budgets", budgetService.year(y));
+        // Thuc te tung thang (chi cac thang da bat dau) de ve ke hoach so voi thuc te
+        java.util.List<BigDecimal> actualRevenue = new java.util.ArrayList<>();
+        java.util.List<BigDecimal> actualCost = new java.util.ArrayList<>();
+        java.util.List<Double> actualOccupancy = new java.util.ArrayList<>();
+        YearMonth now = YearMonth.now();
+        java.util.List<com.hotel.service.ProfitService.MonthPnl> trend = profitService == null || YearMonth.of(y, 1).isAfter(now)
+                ? java.util.List.of() : profitService.report(YearMonth.of(y, 12)).trend();
+        for (int m = 1; m <= 12; m++) {
+            YearMonth ym = YearMonth.of(y, m);
+            com.hotel.service.ProfitService.MonthPnl p = ym.isAfter(now) ? null
+                    : trend.stream().filter(t -> t.month().equals(ym)).findFirst().orElse(null);
+            actualRevenue.add(p == null ? null : p.totalRevenue());
+            actualCost.add(p == null ? null : p.totalCost());
+            actualOccupancy.add(p == null ? null : p.occupancy());
+        }
+        model.addAttribute("actualRevenue", actualRevenue);
+        model.addAttribute("actualCost", actualCost);
+        model.addAttribute("actualOccupancy", actualOccupancy);
+        model.addAttribute("currentMonth", y == now.getYear() ? now.getMonthValue() : (y < now.getYear() ? 12 : 0));
         return "admin/accounting/budget";
     }
 

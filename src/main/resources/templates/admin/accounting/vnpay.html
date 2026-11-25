@@ -7,6 +7,15 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+    <th:block th:replace="~{fragments/viz :: styles}"></th:block>
+    <style>
+        .vp-kind { display: grid; grid-template-columns: 120px 1fr 110px 46px; gap: 10px; align-items: center; font-size: .86rem; margin-bottom: 8px; }
+        .vp-kind .vz-bar { height: 10px; }
+        .vp-kind .r { text-align: right; font-variant-numeric: tabular-nums; }
+        .vp-ring { width: 92px; height: 92px; border-radius: 50%; display: grid; place-items: center; flex: 0 0 auto; }
+        .vp-ring b { width: 72px; height: 72px; border-radius: 50%; background: #fff; display: grid; place-items: center; font-size: 1.1rem; }
+        tr.vp-bad td { background: #fdf3f5; }
+    </style>
 </head>
 <body class="eaut eaut-admin">
 
@@ -35,17 +44,27 @@
 
             <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
 
-            <div class="row g-3 mb-4">
-                <div class="col-sm-4"><div class="bg-white p-3 rounded shadow-sm h-100"><div class="small text-muted">Số giao dịch</div>
-                    <div class="fw-bold" th:text="${#lists.size(txns)}"></div></div></div>
-                <div class="col-sm-4"><div class="bg-white p-3 rounded shadow-sm h-100"><div class="small text-muted">Tiền vào (VND)</div>
-                    <div class="fw-bold" th:text="${#numbers.formatDecimal(totalIn, 1, 'POINT', 0, 'COMMA')}"></div></div></div>
-                <div class="col-sm-4"><div class="bg-white p-3 rounded shadow-sm h-100"><div class="small text-muted">Hoàn tiền (VND)</div>
-                    <div class="fw-bold text-danger" th:text="${#numbers.formatDecimal(totalOut, 1, 'POINT', 0, 'COMMA')}"></div></div></div>
+            <div class="row g-3 mb-3">
+                <div class="col-sm-4"><div class="vz-kpi hero"><div class="lbl">Tiền vào qua VNPay</div>
+                    <div class="val" th:text="${#numbers.formatDecimal(totalIn, 1, 'POINT', 0, 'COMMA')}"></div>
+                    <div class="sub" th:text="'đ · ngày ' + ${dayLabel}"></div></div></div>
+                <div class="col-sm-4"><div class="vz-kpi"><div class="lbl">Hoàn tiền</div>
+                    <div class="val" th:classappend="${totalOut.signum() > 0} ? 'bad'" th:text="${#numbers.formatDecimal(totalOut, 1, 'POINT', 0, 'COMMA')}"></div>
+                    <div class="sub">đ</div></div></div>
+                <div class="col-sm-4"><div class="vz-kpi"><div class="lbl">Số giao dịch</div>
+                    <div class="val" th:text="${#lists.size(txns)}"></div>
+                    <div class="sub" th:text="${reconciliation == null} ? 'chưa đối soát' : (${reconciliation.problems == 0} ? 'đã khớp toàn bộ' : ${reconciliation.problems} + ' cần kiểm tra')"></div></div></div>
             </div>
 
-            <div class="bg-white p-4 rounded shadow-sm mb-4">
-                <h5 class="fw-bold mb-2">So khớp với sao kê VNPay</h5>
+            <!-- Co cau theo loai giao dich -->
+            <div class="vz-card" th:unless="${#lists.isEmpty(txns)}">
+                <div class="vz-head"><div><h5>Theo loại giao dịch</h5><div class="sub">Số tiền và số giao dịch trong ngày</div></div></div>
+                <div id="vpKinds"></div>
+                <span class="d-none vp-t" th:each="t : ${txns}" th:attr="data-k=${t.kind.label}, data-kn=${t.kind.name()}, data-a=${t.amount}"></span>
+            </div>
+
+            <div class="vz-card">
+                <div class="vz-head"><div><h5>So khớp với sao kê VNPay</h5></div></div>
                 <p class="small text-muted">Tải thẳng file .xlsx / .csv xuất từ cổng merchant VNPay: hệ thống tự tìm cột
                     <b>Mã giao dịch VNPay</b> và <b>Số tiền</b> theo tiêu đề (bỏ qua dòng trạng thái thất bại / hủy).
                     File tự làm thì để cột 1 = mã giao dịch, cột 2 = số tiền. Hoàn tiền ghi số âm vẫn được.</p>
@@ -58,21 +77,27 @@
                 </form>
             </div>
 
-            <div class="bg-white p-4 rounded shadow-sm mb-4" th:if="${reconciliation != null}">
-                <h5 class="fw-bold mb-2">Kết quả đối soát <span class="small text-muted fw-normal" th:text="${statementName}"></span></h5>
-                <div class="alert py-2" th:classappend="${reconciliation.problems == 0} ? 'alert-success' : 'alert-warning'"
-                     th:text="${reconciliation.problems == 0} ? 'Khớp toàn bộ ' + ${reconciliation.matched} + ' giao dịch.'
-                              : ${reconciliation.matched} + ' giao dịch khớp, ' + ${reconciliation.problems} + ' giao dịch cần kiểm tra.'"></div>
+            <div class="vz-card" th:if="${reconciliation != null}"
+                 th:with="tot=${reconciliation.matched + reconciliation.problems}, okPct=${tot > 0 ? reconciliation.matched * 100 / tot : 100}">
+                <div class="vz-head"><div><h5>Kết quả đối soát</h5><div class="sub" th:text="${statementName}"></div></div></div>
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="vp-ring" th:style="'background: conic-gradient(var(--vz-green) ' + ${okPct} + '%, var(--vz-red) 0)'"><b th:text="${okPct} + '%'"></b></div>
+                    <div>
+                        <div class="fw-semibold" th:text="${reconciliation.problems == 0} ? 'Khớp toàn bộ ' + ${reconciliation.matched} + ' giao dịch'
+                              : ${reconciliation.matched} + ' giao dịch khớp, ' + ${reconciliation.problems} + ' giao dịch cần kiểm tra'"></div>
+                        <div class="small text-muted" th:text="'Tỷ lệ khớp trên ' + ${tot} + ' mã giao dịch'"></div>
+                    </div>
+                </div>
                 <div class="table-responsive">
-                    <table class="table table-sm align-middle mb-0">
+                    <table class="table table-sm align-middle mb-0 vz-table">
                         <thead><tr><th>Mã GD</th><th>Nội dung</th><th class="text-end">Hệ thống</th><th class="text-end">Sao kê</th><th>Kết quả</th></tr></thead>
                         <tbody>
-                        <tr th:each="l : ${reconciliation.lines}">
+                        <tr th:each="l : ${reconciliation.lines}" th:classappend="${l.status.name() != 'MATCHED'} ? 'vp-bad'">
                             <td class="small font-monospace" th:text="${l.ref}"></td>
                             <td class="small" th:text="${l.system != null} ? ${l.system.kind.label} + ' - ' + ${l.system.description} : '-'"></td>
                             <td class="text-end" th:text="${l.system != null} ? ${#numbers.formatDecimal(l.system.amount, 1, 'POINT', 0, 'COMMA')} : '-'"></td>
                             <td class="text-end" th:text="${l.statementAmount != null} ? ${#numbers.formatDecimal(l.statementAmount, 1, 'POINT', 0, 'COMMA')} : '-'"></td>
-                            <td><span class="badge" th:classappend="${l.status.name() == 'MATCHED'} ? 'bg-success' : 'bg-danger'" th:text="${l.status.label}"></span>
+                            <td><span class="vz-pill" th:classappend="${l.status.name() == 'MATCHED'} ? 'ok' : 'bad'"><span class="dot"></span><span th:text="${l.status.label}"></span></span>
                                 <span class="small text-danger" th:if="${l.status.name() == 'AMOUNT_MISMATCH'}"
                                       th:text="'(' + ${#numbers.formatDecimal(l.difference, 1, 'POINT', 0, 'COMMA')} + ')'"></span></td>
                         </tr>
@@ -81,11 +106,11 @@
                 </div>
             </div>
 
-            <div class="bg-white p-4 rounded shadow-sm">
-                <h5 class="fw-bold mb-3">Giao dịch ngày <span th:text="${dayLabel}"></span></h5>
+            <div class="vz-card">
+                <div class="vz-head"><div><h5>Giao dịch ngày <span th:text="${dayLabel}"></span></h5></div></div>
                 <div th:if="${#lists.isEmpty(txns)}" class="text-muted small">Không có giao dịch VNPay nào trong ngày.</div>
                 <div class="table-responsive" th:unless="${#lists.isEmpty(txns)}">
-                    <table class="table table-sm align-middle mb-0">
+                    <table class="table table-sm align-middle mb-0 vz-table">
                         <thead><tr><th>Giờ</th><th>Mã GD</th><th>Loại</th><th>Nội dung</th><th class="text-end">Số tiền</th></tr></thead>
                         <tbody>
                         <tr th:each="t : ${txnPager.items}">
@@ -106,5 +131,21 @@
 </main>
 
 <div th:replace="~{fragments/footer :: footer}"></div>
+<th:block th:replace="~{fragments/viz :: scripts}"></th:block>
+<script>
+    (function () {
+        const box = document.getElementById('vpKinds');
+        if (!box || !window.VZ) return;
+        const { num, vnd } = VZ;
+        const COL = { DEPOSIT: 'var(--vz-blue)', GROUP_DEPOSIT: 'var(--vz-purple)', GIFT_VOUCHER: 'var(--vz-teal)', REFUND: 'var(--vz-red)' };
+        const g = {};
+        document.querySelectorAll('.vp-t').forEach(e => { const k = e.dataset.kn;
+            g[k] = g[k] || { label: e.dataset.k, a: 0, n: 0 }; g[k].a += num(e.dataset.a); g[k].n++; });
+        const list = Object.entries(g).sort((x, y) => y[1].a - x[1].a), max = Math.max(...list.map(x => x[1].a), 1);
+        box.innerHTML = list.map(([k, v]) => '<div class="vp-kind"><span><span class="vz-pill muted" style="background:none;padding:0"><span class="dot" style="background:'
+            + COL[k] + '"></span></span>' + v.label + '</span><div class="vz-bar"><span style="width:' + (v.a * 100 / max) + '%;background:' + COL[k] + '"></span></div>'
+            + '<span class="r fw-semibold' + (k === 'REFUND' ? ' vz-neg' : '') + '">' + (k === 'REFUND' ? '-' : '') + vnd(v.a) + '</span><span class="r text-muted">' + v.n + ' GD</span></div>').join('');
+    })();
+</script>
 </body>
 </html>

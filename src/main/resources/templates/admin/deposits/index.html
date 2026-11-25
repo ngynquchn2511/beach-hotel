@@ -14,7 +14,14 @@
         .day-strip a.active { background: #2a78d6; color: #fff; }
         .day-strip a .n { font-weight: 800; font-size: .95rem; }
         .day-strip a.zero .n { opacity: .4; }
+        .dp-chart-on .day-strip { display: none; }
+        .dp-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+        .dp-tabs a { padding: 6px 14px; border-radius: 999px; border: 1px solid var(--vz-line); color: var(--vz-ink); text-decoration: none;
+                     font-size: .86rem; font-weight: 600; background: #fff; }
+        .dp-tabs a.active { background: var(--vz-ink); border-color: var(--vz-ink); color: #fff !important; }
+        .dp-table tbody tr { cursor: pointer; }
     </style>
+    <th:block th:replace="~{fragments/viz :: styles}"></th:block>
 </head>
 <body class="eaut eaut-admin">
 
@@ -41,10 +48,12 @@
             </div>
 
             <!-- 14 ngay gan nhat -->
-            <div class="bg-white p-3 rounded shadow-sm mb-3">
-                <div class="small fw-semibold mb-2">Số khách cọc 14 ngày (bấm để xem ngày đó)</div>
+            <div class="vz-card" id="dpCard">
+                <div class="vz-head"><div><h5>Tiền cọc nhận 14 ngày</h5><div class="sub" id="dpSub">Bấm vào cột để xem khách cọc ngày đó</div></div>
+                    <div class="vz-key"><span><i style="background:var(--vz-blue)"></i>Tiền cọc</span><span><i style="background:var(--vz-ink)"></i>Ngày đang xem</span></div></div>
+                <div class="vz-chart" style="height:190px"><canvas id="dpChart" role="img" aria-label="Tiền cọc 14 ngày"></canvas></div>
                 <div class="day-strip">
-                    <a th:each="d : ${days}" th:href="@{/admin/deposits(date=${d.date}, view='paid')}"
+                    <a th:each="d : ${days}" th:href="@{/admin/deposits(date=${d.date}, view='paid')}" th:attr="data-d=${#temporals.format(d.date, 'dd/MM')}, data-n=${d.count}, data-amt=${d.amount}, data-cur=${d.date == day}"
                        th:classappend="(${d.date == day and view == 'paid'} ? 'active ' : '') + (${d.count == 0} ? 'zero' : '')"
                        th:title="${d.count} + ' khách · ' + ${#numbers.formatDecimal(d.amount, 1, 'POINT', 0, 'COMMA')} + ' đ'">
                         <div th:text="${#temporals.format(d.date, 'dd/MM')}"></div>
@@ -53,23 +62,28 @@
                 </div>
             </div>
 
-            <ul class="nav nav-tabs mb-0">
-                <li class="nav-item"><a class="nav-link" th:classappend="${view == 'paid'} ? 'active'" th:href="@{/admin/deposits(date=${day}, view='paid')}">
-                    <i class="bi bi-cash-coin me-1"></i>Đã cọc trong ngày</a></li>
-                <li class="nav-item"><a class="nav-link" th:classappend="${view == 'arrival'} ? 'active'" th:href="@{/admin/deposits(date=${day}, view='arrival')}">
-                    <i class="bi bi-box-arrow-in-right me-1"></i>Khách đến ngày này</a></li>
-                <li class="nav-item"><a class="nav-link" th:classappend="${view == 'due'} ? 'active'" th:href="@{/admin/deposits(date=${day}, view='due')}">
-                    <i class="bi bi-hourglass-split me-1"></i>Hết hạn cọc ngày này</a></li>
-            </ul>
-            <div class="bg-white p-4 rounded-bottom shadow-sm">
-                <div class="d-flex flex-wrap gap-4 mb-3 small">
-                    <div><span class="text-muted">Số đơn:</span> <b th:text="${#lists.size(list)}"></b></div>
-                    <div th:if="${view != 'due'}"><span class="text-muted">Tiền cọc đã nhận:</span>
-                        <b class="text-success" th:text="${#numbers.formatDecimal(paidTotal, 1, 'POINT', 0, 'COMMA')} + ' đ'"></b></div>
-                    <div th:if="${view != 'paid'}"><span class="text-muted">Tổng cọc yêu cầu:</span>
-                        <b th:text="${#numbers.formatDecimal(total, 1, 'POINT', 0, 'COMMA')} + ' đ'"></b></div>
-                    <div th:if="${view == 'paid'}"><span class="text-muted">Qua VNPay:</span> <b th:text="${onlineCount}"></b></div>
-                </div>
+            <div class="dp-tabs">
+                <a th:classappend="${view == 'paid'} ? 'active'" th:href="@{/admin/deposits(date=${day}, view='paid')}">
+                    <i class="bi bi-cash-coin me-1"></i>Đã cọc trong ngày</a>
+                <a th:classappend="${view == 'arrival'} ? 'active'" th:href="@{/admin/deposits(date=${day}, view='arrival')}">
+                    <i class="bi bi-box-arrow-in-right me-1"></i>Khách đến ngày này</a>
+                <a th:classappend="${view == 'due'} ? 'active'" th:href="@{/admin/deposits(date=${day}, view='due')}">
+                    <i class="bi bi-hourglass-split me-1"></i>Hết hạn cọc ngày này</a>
+            </div>
+            <div class="row g-3 mb-3">
+                <div class="col-6 col-md-3"><div class="vz-kpi"><div class="lbl">Số đơn</div><div class="val" th:text="${#lists.size(list)}"></div></div></div>
+                <div class="col-6 col-md-3" th:if="${view != 'due'}"><div class="vz-kpi"><div class="lbl">Tiền cọc đã nhận</div>
+                    <div class="val good" th:text="${#numbers.formatDecimal(paidTotal, 1, 'POINT', 0, 'COMMA')}"></div><div class="sub">đ</div></div></div>
+                <div class="col-6 col-md-3" th:if="${view != 'paid'}"><div class="vz-kpi"><div class="lbl">Tổng cọc yêu cầu</div>
+                    <div class="val" th:text="${#numbers.formatDecimal(total, 1, 'POINT', 0, 'COMMA')}"></div><div class="sub">đ</div></div></div>
+                <div class="col-6 col-md-3" th:if="${view == 'arrival' and paidTotal != null and total != null and total.signum() > 0}"><div class="vz-kpi"><div class="lbl">Đã thu được</div>
+                    <div class="val" th:text="${#numbers.formatDecimal(paidTotal * 100 / total, 1, 0)} + '%'"></div>
+                    <div class="vz-bar mt-2"><span th:style="'width:' + ${paidTotal * 100 / total} + '%;background:var(--vz-green)'"></span></div></div></div>
+                <div class="col-6 col-md-3" th:if="${view == 'paid'}"><div class="vz-kpi"><div class="lbl">Qua VNPay</div>
+                    <div class="val" th:text="${onlineCount}"></div>
+                    <div class="sub" th:text="${#lists.isEmpty(list)} ? '' : ${onlineCount * 100 / #lists.size(list)} + '% số đơn'"></div></div></div>
+            </div>
+            <div class="vz-card">
 
                 <div th:if="${#lists.isEmpty(list)}" class="text-muted small">
                     <span th:if="${view == 'paid'}">Không có khách nào đặt cọc trong ngày này.</span>
@@ -77,14 +91,14 @@
                     <span th:if="${view == 'due'}">Không có đơn nào hết hạn cọc ngày này.</span>
                 </div>
                 <div class="table-responsive" th:unless="${#lists.isEmpty(list)}">
-                    <table class="table table-sm small align-middle mb-0">
+                    <table class="table table-sm small align-middle mb-0 vz-table dp-table">
                         <thead><tr>
                             <th>Mã đơn</th><th>Khách</th><th>Phòng</th><th>Nhận - trả</th>
                             <th class="text-end">Tiền cọc</th>
                             <th th:text="${view == 'due'} ? 'Hạn cọc' : 'Cọc lúc'"></th><th>Hình thức</th><th>Trạng thái</th>
                         </tr></thead>
                         <tbody>
-                        <tr th:each="b : ${list}">
+                        <tr th:each="b : ${list}" th:attr="data-href=@{/admin/bookings/{id}(id=${b.id})}">
                             <td><a class="fw-semibold" th:href="@{/admin/bookings/{id}(id=${b.id})}" th:text="${b.code}"></a></td>
                             <td><div th:text="${b.guestName != null} ? ${b.guestName} : ${b.customer.fullName}"></div>
                                 <th:block th:with="ph=${b.guestPhone != null ? b.guestPhone : b.customer.phoneNumber}">
@@ -97,10 +111,10 @@
                                 <span th:if="${view != 'due' and b.depositPaid}" th:text="${#temporals.format(b.depositPaidAt, 'HH:mm dd/MM')}"></span>
                                 <span th:if="${view != 'due' and !b.depositPaid}" class="text-danger">Chưa cọc</span>
                             </td>
-                            <td><span th:if="${b.depositPaidOnline}" class="badge bg-primary">VNPay</span>
-                                <span th:if="${b.depositPaid and !b.depositPaidOnline}" class="badge bg-secondary">Tại quầy / CK</span></td>
-                            <td><span class="badge bg-light text-dark border" th:text="${b.status.vietnameseLabel}"></span>
-                                <span th:if="${b.refunded}" class="badge bg-info text-dark">Đã hoàn cọc</span></td>
+                            <td><span th:if="${b.depositPaidOnline}" class="vz-pill info"><span class="dot"></span>VNPay</span>
+                                <span th:if="${b.depositPaid and !b.depositPaidOnline}" class="vz-pill muted"><span class="dot"></span>Tại quầy / CK</span></td>
+                            <td><span class="vz-pill" th:classappend="${b.status.name() == 'CANCELLED' or b.status.name() == 'NO_SHOW'} ? 'bad' : (${b.status.name() == 'PENDING'} ? 'warn' : 'ok')"><span class="dot"></span><span th:text="${b.status.vietnameseLabel}"></span></span>
+                                <span th:if="${b.refunded}" class="vz-pill muted"><span class="dot"></span>Đã hoàn cọc</span></td>
                         </tr>
                         </tbody>
                     </table>
@@ -111,5 +125,32 @@
 </main>
 
 <div th:replace="~{fragments/footer :: footer}"></div>
+<th:block th:replace="~{fragments/viz :: scripts}"></th:block>
+<script>
+    (function () {
+        document.querySelectorAll('.dp-table tbody tr[data-href]').forEach(tr => tr.addEventListener('click', e => {
+            if (!e.target.closest('a,button,form')) location.href = tr.dataset.href; }));
+        if (!window.VZ) return;
+        const { C, num, vnd, short, axisX, axisY } = VZ;
+        const links = [...document.querySelectorAll('.day-strip a')];
+        if (!links.length) return;
+        document.getElementById('dpCard').classList.add('dp-chart-on');
+        const amt = links.map(a => num(a.dataset.amt)), cnt = links.map(a => num(a.dataset.n));
+        const totA = amt.reduce((x, y) => x + y, 0), totN = cnt.reduce((x, y) => x + y, 0);
+        document.getElementById('dpSub').textContent = '14 ngày: ' + totN + ' khách cọc · ' + short(totA) + ' · bấm vào cột để xem ngày đó';
+        new Chart(document.getElementById('dpChart'), { type: 'bar',
+            data: { labels: links.map(a => a.dataset.d), datasets: [{ data: amt, borderRadius: 3, categoryPercentage: .75, barPercentage: .9, minBarLength: 2,
+                backgroundColor: links.map(a => a.dataset.cur === 'true' ? C.ink : (num(a.dataset.amt) ? C.blue : '#dfe8f0')) }] },
+            options: { layout: { padding: { top: 16 } }, onClick: (e, el) => { if (el.length) location.href = links[el[0].index].href; },
+                onHover: (e, el) => { e.native.target.style.cursor = el.length ? 'pointer' : 'default'; },
+                plugins: { tooltip: { displayColors: false, callbacks: { label: c => cnt[c.dataIndex] + ' khách · ' + vnd(amt[c.dataIndex]) + ' đ' } } },
+                scales: { x: axisX({ ticks: { color: C.mut, maxRotation: 0, autoSkip: false, font: { size: 10.5 } } }),
+                          y: axisY({ beginAtZero: true, ticks: { color: C.mut, maxTicksLimit: 4, callback: v => short(v) } }) } },
+            plugins: [{ id: 'dpN', afterDatasetsDraw(c) { const ctx = c.ctx; ctx.save(); ctx.font = '600 10.5px "Be Vietnam Pro", system-ui';
+                ctx.fillStyle = C.ink; ctx.textAlign = 'center';
+                c.getDatasetMeta(0).data.forEach((b, k) => { if (cnt[k]) ctx.fillText(cnt[k], b.x, b.y - 4); }); ctx.restore(); } }]
+        });
+    })();
+</script>
 </body>
 </html>

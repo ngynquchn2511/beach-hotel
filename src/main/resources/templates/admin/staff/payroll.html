@@ -7,6 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+    <th:block th:replace="~{fragments/viz :: styles}"></th:block>
 </head>
 <body class="eaut eaut-admin">
 
@@ -34,19 +35,33 @@
             <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
             <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
 
-            <div class="row g-3 mb-4">
-                <div class="col-sm-6"><div class="bg-white p-3 rounded shadow-sm h-100"><div class="small text-muted">Còn phải trả (tạm tính)</div>
-                    <div class="fw-bold fs-5" th:text="${#numbers.formatDecimal(sheet.totalDue, 1, 'POINT', 0, 'COMMA')} + ' đ'"></div></div></div>
-                <div class="col-sm-6"><div class="bg-white p-3 rounded shadow-sm h-100"><div class="small text-muted">Đã trả</div>
-                    <div class="fw-bold fs-5 text-success" th:text="${#numbers.formatDecimal(sheet.totalPaid, 1, 'POINT', 0, 'COMMA')} + ' đ'"></div></div></div>
+            <div class="row g-3 mb-3" th:with="all=${sheet.totalDue + sheet.totalPaid}">
+                <div class="col-md-4"><div class="vz-kpi hero"><div class="lbl">Tổng quỹ lương tháng (tạm tính)</div>
+                    <div class="val" th:text="${#numbers.formatDecimal(all, 1, 'POINT', 0, 'COMMA')}"></div>
+                    <div class="sub" th:text="'đ · ' + ${#lists.size(sheet.lines)} + ' nhân viên'"></div></div></div>
+                <div class="col-md-8"><div class="vz-kpi">
+                    <div class="d-flex justify-content-between"><div><div class="lbl">Đã trả</div>
+                        <div class="val good" th:text="${#numbers.formatDecimal(sheet.totalPaid, 1, 'POINT', 0, 'COMMA')}"></div></div>
+                        <div class="text-end"><div class="lbl">Còn phải trả</div>
+                        <div class="val" th:text="${#numbers.formatDecimal(sheet.totalDue, 1, 'POINT', 0, 'COMMA')}"></div></div></div>
+                    <div class="vz-bar mt-2" style="height:10px"><span th:style="'width:' + ${all.signum() > 0 ? sheet.totalPaid * 100 / all : 0} + '%;background:var(--vz-green)'"></span></div>
+                    <div class="sub mt-1" th:text="${all.signum() > 0} ? 'Đã trả ' + ${#numbers.formatDecimal(sheet.totalPaid * 100 / all, 1, 0)} + '% quỹ lương' : 'Chưa có công'"></div>
+                </div></div>
             </div>
 
-            <div class="bg-white p-4 rounded shadow-sm mb-3">
+            <div class="vz-card" th:unless="${#lists.isEmpty(sheet.lines)}">
+                <div class="vz-head"><div><h5>Lương theo nhân viên</h5><div class="sub">Sắp theo số tiền · xanh lá = đã trả, xanh dương = chưa trả</div></div>
+                    <div class="vz-key"><span><i style="background:var(--vz-green)"></i>Đã trả</span><span><i style="background:var(--vz-blue)"></i>Chưa trả</span></div></div>
+                <div class="vz-chart" id="prBox"><canvas id="prChart" role="img" aria-label="Lương theo nhân viên"></canvas></div>
+            </div>
+
+            <div class="vz-card">
                 <div class="table-responsive">
-                    <table class="table table-sm small align-middle">
+                    <table class="table table-sm small align-middle vz-table">
                         <thead><tr><th>Nhân viên</th><th class="text-end">Công</th><th>Lương ngày</th><th class="text-end">Thành tiền</th><th style="min-width: 300px">Trả lương</th></tr></thead>
                         <tbody>
-                        <tr th:each="l : ${sheet.lines}">
+                        <tr th:each="l : ${sheet.lines}" class="pr-row"
+                            th:attr="data-name=${l.staff.fullName}, data-amt=${l.payslip != null ? l.payslip.amount : l.gross}, data-paid=${l.payslip != null}, data-units=${l.payslip != null ? l.payslip.workUnits : l.units}">
                             <td><div class="fw-semibold" th:text="${l.staff.fullName}"></div>
                                 <div class="text-muted" th:text="${l.staff.role.vietnameseLabel}"></div>
                                 <a class="text-muted" th:href="@{/admin/attendance(month=${month}, staffId=${l.staff.id})}"
@@ -110,5 +125,27 @@
 </main>
 
 <div th:replace="~{fragments/footer :: footer}"></div>
+<th:block th:replace="~{fragments/viz :: scripts}"></th:block>
+<script>
+    (function () {
+        const el = document.getElementById('prChart');
+        if (!el || !window.VZ) return;
+        const { C, num, vnd, short, axisY } = VZ;
+        const ppl = [...document.querySelectorAll('tr.pr-row')].map(tr => ({ n: tr.dataset.name, a: num(tr.dataset.amt), paid: tr.dataset.paid === 'true', u: tr.dataset.units }))
+            .filter(p => p.a > 0).sort((x, y) => y.a - x.a);
+        if (!ppl.length) { el.closest('.vz-card').style.display = 'none'; return; }
+        document.getElementById('prBox').style.height = Math.max(140, ppl.length * 28 + 40) + 'px';
+        new Chart(el, { type: 'bar',
+            data: { labels: ppl.map(p => p.n), datasets: [{ data: ppl.map(p => p.a), backgroundColor: ppl.map(p => p.paid ? C.green : C.blue),
+                borderRadius: 3, barThickness: 16 }] },
+            options: { indexAxis: 'y', layout: { padding: { right: 70 } },
+                plugins: { tooltip: { displayColors: false, callbacks: { label: c => vnd(c.parsed.x) + ' đ · ' + ppl[c.dataIndex].u + ' công · ' + (ppl[c.dataIndex].paid ? 'đã trả' : 'chưa trả') } } },
+                scales: { x: axisY({ beginAtZero: true, ticks: { color: C.mut, maxTicksLimit: 5, callback: v => short(v) } }),
+                          y: { grid: { display: false }, border: { display: false }, afterFit: a => { a.width += 10; }, ticks: { color: C.ink, font: { size: 12 } } } } },
+            plugins: [{ id: 'prV', afterDatasetsDraw(c) { const ctx = c.ctx; ctx.save(); ctx.font = '600 11px "Be Vietnam Pro", system-ui'; ctx.fillStyle = C.ink;
+                ctx.textBaseline = 'middle'; c.getDatasetMeta(0).data.forEach((b, k) => ctx.fillText(short(ppl[k].a), b.x + 6, b.y)); ctx.restore(); } }]
+        });
+    })();
+</script>
 </body>
 </html>

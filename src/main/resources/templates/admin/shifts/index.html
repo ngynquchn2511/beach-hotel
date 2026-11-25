@@ -7,6 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+    <th:block th:replace="~{fragments/viz :: styles}"></th:block>
 </head>
 <body class="eaut eaut-admin">
 
@@ -33,6 +34,7 @@
                     <div class="mt-1" th:if="${lastClosed.handoverNote != null}"><b>Bàn giao:</b>
                         <span style="white-space: pre-line" th:text="${lastClosed.handoverNote}"></span></div>
                 </div>
+                <p sec:authorize="!hasAnyRole('ADMIN','STAFF')" class="small text-muted mb-0">Hiện không có ca trực nào đang mở. Lễ tân nhận ca tại trang này; khi ca đóng, kết quả đếm tiền hiện ở bảng bên dưới.</p>
                 <form sec:authorize="hasAnyRole('ADMIN','STAFF')" method="post" th:action="@{/admin/shifts/open}" class="row g-2 align-items-end">
                     <div class="col-md-4"><label class="form-label small">Tiền mặt đếm được khi nhận ca (đ)</label>
                         <input type="number" name="openingCash" class="form-control" min="0" step="1000" required
@@ -91,13 +93,20 @@
                 </div>
             </div>
 
-            <div class="bg-white p-4 rounded shadow-sm" th:unless="${#lists.isEmpty(history)}">
-                <h6 class="fw-bold">Các ca đã đóng</h6>
+            <div class="vz-card" th:unless="${#lists.isEmpty(history)}">
+                <div class="vz-head"><div><h5>Chênh lệch tiền mặt các ca gần đây</h5><div class="sub" id="shSub">Đếm thực tế trừ sổ sách · dưới 0 = thiếu tiền, trên 0 = thừa</div></div>
+                    <div class="vz-key"><span><i style="background:var(--vz-red)"></i>Thiếu</span><span><i style="background:var(--vz-amber)"></i>Thừa</span><span><i style="background:var(--vz-green)"></i>Khớp</span></div></div>
+                <div class="vz-chart" style="height:200px"><canvas id="shChart" role="img" aria-label="Chênh lệch tiền mặt từng ca"></canvas></div>
+            </div>
+
+            <div class="vz-card" th:unless="${#lists.isEmpty(history)}">
+                <div class="vz-head"><div><h5>Các ca đã đóng</h5></div></div>
                 <div class="table-responsive">
-                    <table class="table table-sm align-middle mb-0">
+                    <table class="table table-sm align-middle mb-0 vz-table">
                         <thead><tr><th>Ca</th><th>Người trực</th><th class="text-end">Tiền mặt thu</th><th class="text-end">Lệch</th><th></th></tr></thead>
                         <tbody>
-                        <tr th:each="s : ${history}">
+                        <tr th:each="s : ${history}" class="sh-row"
+                            th:attr="data-l=${#temporals.format(s.openedAt, 'dd/MM HH:mm')}, data-who=${s.openedBy.fullName}, data-d=${s.cashDifference}, data-in=${s.cashIn}">
                             <td class="small" th:text="${#temporals.format(s.openedAt, 'HH:mm dd/MM')} + ' → ' + ${#temporals.format(s.closedAt, 'HH:mm dd/MM')}"></td>
                             <td th:text="${s.openedBy.fullName} + (${s.closedBy.id != s.openedBy.id} ? ' / ' + ${s.closedBy.fullName} : '')"></td>
                             <td class="text-end" th:text="${#numbers.formatDecimal(s.cashIn, 1, 'POINT', 0, 'COMMA')}"></td>
@@ -115,5 +124,31 @@
 </main>
 
 <div th:replace="~{fragments/footer :: footer}"></div>
+<th:block th:replace="~{fragments/viz :: scripts}"></th:block>
+<script>
+    (function () {
+        const el = document.getElementById('shChart');
+        if (!el || !window.VZ) return;
+        const { C, num, vnd, short, axisX, axisY } = VZ;
+        const rows = [...document.querySelectorAll('tr.sh-row')].reverse();
+        const d = rows.map(tr => num(tr.dataset.d));
+        const off = d.filter(v => v !== 0).length, sumShort = d.filter(v => v < 0).reduce((a, b) => a + b, 0);
+        document.getElementById('shSub').textContent = rows.length + ' ca gần nhất: ' + (off ? off + ' ca lệch' + (sumShort ? ', tổng thiếu ' + vnd(-sumShort) + ' đ' : '') : 'tất cả đều khớp')
+            + ' · dưới 0 = thiếu, trên 0 = thừa';
+        new Chart(el, { type: 'bar',
+            data: { labels: rows.map(tr => tr.dataset.l.split(' ')[0]), datasets: [{ data: d.map(v => v === 0 ? null : v), borderRadius: 3, minBarLength: 3,
+                backgroundColor: d.map(v => v < 0 ? C.red : C.amber), categoryPercentage: .7, barPercentage: .9 }] },
+            options: { plugins: { tooltip: { displayColors: false, callbacks: {
+                    title: it => rows[it[0].dataIndex].dataset.l + ' · ' + rows[it[0].dataIndex].dataset.who,
+                    label: c => (d[c.dataIndex] < 0 ? 'Thiếu ' : 'Thừa ') + vnd(Math.abs(d[c.dataIndex])) + ' đ',
+                    afterLabel: c => 'Tiền mặt thu trong ca: ' + vnd(num(rows[c.dataIndex].dataset.in)) + ' đ' } } },
+                scales: { x: axisX({ ticks: { color: C.mut, maxRotation: 0, autoSkip: true, font: { size: 10.5 } } }),
+                          y: axisY({ suggestedMin: -100000, suggestedMax: 100000, grid: { color: c => c.tick.value === 0 ? '#9fb3c6' : C.grid },
+                                     ticks: { color: C.mut, maxTicksLimit: 5, callback: v => short(v) } }) } },
+            plugins: [{ id: 'shOk', afterDatasetsDraw(c) { const ctx = c.ctx, y0 = c.scales.y.getPixelForValue(0); ctx.save(); ctx.fillStyle = C.green;
+                c.getDatasetMeta(0).data.forEach((b, k) => { if (d[k] === 0) { ctx.beginPath(); ctx.arc(b.x, y0, 4, 0, Math.PI * 2); ctx.fill(); } }); ctx.restore(); } }]
+        });
+    })();
+</script>
 </body>
 </html>

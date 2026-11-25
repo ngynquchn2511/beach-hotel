@@ -7,9 +7,25 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+    <th:block th:replace="~{fragments/viz :: styles}"></th:block>
     <style>
-        .kpi { background: #fff; border-radius: 8px; padding: 14px; height: 100%; box-shadow: 0 1px 3px rgba(0, 0, 0, .08); }
-        .kpi .v { font-size: 1.35rem; font-weight: 800; }
+        .dr-meter { height: 6px; border-radius: 4px; background: #eef3f7; margin-top: 8px; overflow: hidden; }
+        .dr-meter span { display: block; height: 100%; border-radius: 4px; background: var(--vz-blue); }
+        .dr-flow { display: grid; grid-template-columns: 110px 1fr 64px; gap: 10px; align-items: center; margin-bottom: 10px; font-size: .86rem; }
+        .dr-flow .vz-bar { height: 12px; }
+        .dr-flow .n { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .dr-mix { display: flex; height: 14px; border-radius: 7px; overflow: hidden; background: #eef3f7; gap: 2px; }
+        .dr-mix span { display: block; height: 100%; }
+        .dr-money td { padding: 7px 4px; }
+        .dr-money .vz-bar { height: 7px; width: 90px; display: inline-block; vertical-align: middle; }
+        .dr-pend a, .dr-pend div.row-i { display: grid; grid-template-columns: 1fr 90px 30px; gap: 10px; align-items: center; padding: 5px 6px;
+                       border-radius: 6px; color: var(--vz-ink); text-decoration: none; font-size: .85rem; }
+        .dr-pend a:hover { background: #f1f7fc; }
+        .dr-pend .vz-bar { height: 8px; }
+        .dr-pend .vz-bar span { background: var(--vz-amber); }
+        .dr-pend .n { text-align: right; font-weight: 700; }
+        .dr-pend .zero { color: var(--vz-mut); }
+        .dr-pend .zero .n { font-weight: 400; }
         @media print {
             .no-print, nav.admin-sidebar, header, footer { display: none !important; }
             .col-md-9 { width: 100% !important; }
@@ -49,73 +65,104 @@
             <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
             <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
 
-            <h6 class="fw-bold mt-2">Phòng</h6>
-            <div class="row g-3 mb-4">
-                <div class="col-6 col-lg-3"><div class="kpi"><div class="small text-muted">Công suất</div>
-                    <div class="v" th:text="${r.kpi.occupancyRate} + '%'"></div>
-                    <div class="small text-muted" th:text="${r.kpi.soldRoomNights} + ' / ' + ${r.kpi.availableRoomNights} + ' phòng'"></div></div></div>
-                <div class="col-6 col-lg-3"><div class="kpi"><div class="small text-muted">ADR / RevPAR</div>
-                    <div class="v" th:text="${#numbers.formatDecimal(r.kpi.adr, 1, 'POINT', 0, 'COMMA')}"></div>
-                    <div class="small text-muted" th:text="'RevPAR ' + ${#numbers.formatDecimal(r.kpi.revPar, 1, 'POINT', 0, 'COMMA')}"></div></div></div>
-                <div class="col-6 col-lg-3"><div class="kpi"><div class="small text-muted">Khách đến / đi</div>
-                    <div class="v" th:text="${r.arrivalsDone} + '/' + ${r.arrivalsExpected} + ' · ' + ${r.departuresDone} + '/' + ${r.departuresExpected}"></div>
-                    <div class="small text-muted" th:text="'Đang ở ' + ${r.inHouse} + ' phòng'"></div></div></div>
-                <div class="col-6 col-lg-3"><div class="kpi"><div class="small text-muted">Không đến</div>
-                    <div class="v" th:text="${#lists.size(r.noShowsMarked)}"></div>
-                    <div class="small" th:classappend="${#lists.isEmpty(r.stillNotArrived)} ? 'text-muted' : 'text-danger fw-semibold'"
-                         th:text="${#lists.size(r.stillNotArrived)} + ' khách quá giờ chưa đến'"></div></div></div>
+            <!-- Chi so chinh -->
+            <div class="row g-3 mb-3">
+                <div class="col-6 col-lg-3"><div class="vz-kpi hero"><div class="lbl">Thực thu trong ngày</div>
+                    <div class="val" th:text="${#numbers.formatDecimal(r.net, 1, 'POINT', 0, 'COMMA')}"></div>
+                    <div class="sub" th:text="'đ · hoàn cọc ' + ${#numbers.formatDecimal(r.refunds, 1, 'POINT', 0, 'COMMA')}"></div></div></div>
+                <div class="col-6 col-lg-3"><div class="vz-kpi"><div class="lbl">Công suất</div>
+                    <div class="val" th:text="${r.kpi.occupancyRate} + '%'"></div>
+                    <div class="sub" th:text="${r.kpi.soldRoomNights} + ' / ' + ${r.kpi.availableRoomNights} + ' phòng có khách'"></div>
+                    <div class="dr-meter"><span th:style="'width:' + ${r.kpi.occupancyRate} + '%'"></span></div></div></div>
+                <div class="col-6 col-lg-3"><div class="vz-kpi"><div class="lbl">Giá phòng TB (ADR)</div>
+                    <div class="val" th:text="${#numbers.formatDecimal(r.kpi.adr, 1, 'POINT', 0, 'COMMA')}"></div>
+                    <div class="sub" th:text="'RevPAR ' + ${#numbers.formatDecimal(r.kpi.revPar, 1, 'POINT', 0, 'COMMA')}"></div></div></div>
+                <div class="col-6 col-lg-3"><div class="vz-kpi"><div class="lbl">Việc còn tồn</div>
+                    <div class="val" th:classappend="${r.pending.total > 0} ? 'bad' : 'good'" th:text="${r.pending.total}"></div>
+                    <div class="sub" th:text="${r.pending.total > 0} ? 'cần xử lý trước khi giao ca' : 'không còn việc tồn'"></div></div></div>
             </div>
 
-            <h6 class="fw-bold">Thu chi (VND)</h6>
-            <div class="bg-white rounded shadow-sm p-3 mb-4">
-                <table class="table table-sm mb-0">
-                    <tbody>
-                    <tr><td>Tiền mặt</td><td class="text-end" th:text="${#numbers.formatDecimal(r.income[T(com.hotel.entity.PaymentMethod).CASH], 1, 'POINT', 0, 'COMMA')}"></td></tr>
-                    <tr><td>Chuyển khoản</td><td class="text-end" th:text="${#numbers.formatDecimal(r.income[T(com.hotel.entity.PaymentMethod).BANK_TRANSFER], 1, 'POINT', 0, 'COMMA')}"></td></tr>
-                    <tr><td>Online (VNPay)</td><td class="text-end" th:text="${#numbers.formatDecimal(r.income[T(com.hotel.entity.PaymentMethod).ONLINE], 1, 'POINT', 0, 'COMMA')}"></td></tr>
-                    <tr><td>Hoàn cọc</td><td class="text-end text-danger" th:text="'-' + ${#numbers.formatDecimal(r.refunds, 1, 'POINT', 0, 'COMMA')}"></td></tr>
-                    <tr class="fw-bold"><td>Thực thu</td><td class="text-end" th:text="${#numbers.formatDecimal(r.net, 1, 'POINT', 0, 'COMMA')}"></td></tr>
-                    </tbody>
-                </table>
-                <div class="small mt-2" th:unless="${#lists.isEmpty(r.shifts)}">
-                    <span th:text="${#lists.size(r.shifts)} + ' ca trực đóng trong ngày, chênh lệch tiền mặt '"></span>
-                    <b th:classappend="${r.shiftDifferenceTotal.signum() != 0} ? 'text-danger'"
-                       th:text="${#numbers.formatDecimal(r.shiftDifferenceTotal, 1, 'POINT', 0, 'COMMA')}"></b>
-                    <a class="no-print ms-1" th:each="s : ${r.shifts}" th:href="@{/admin/shifts/{id}(id=${s.shift.id})}" th:text="'#' + ${s.shift.id}"></a>
-                </div>
+            <div class="row g-3 mb-3">
+                <!-- Khach den / di -->
+                <div class="col-lg-6"><div class="vz-card h-100 mb-0">
+                    <div class="vz-head"><div><h5>Khách đến / đi</h5>
+                        <div class="sub" th:text="'Đang ở ' + ${r.inHouse} + ' phòng · đơn mới ' + ${r.newBookings} + ' · hủy ' + ${#lists.size(r.cancellations)}"></div></div></div>
+                    <div class="dr-flow"><span>Nhận phòng</span>
+                        <div class="vz-bar"><span th:style="'width:' + ${r.arrivalsExpected > 0 ? r.arrivalsDone * 100.0 / r.arrivalsExpected : 0} + '%;background:var(--vz-green)'"></span></div>
+                        <span class="n" th:text="${r.arrivalsDone} + '/' + ${r.arrivalsExpected}"></span></div>
+                    <div class="dr-flow"><span>Trả phòng</span>
+                        <div class="vz-bar"><span th:style="'width:' + ${r.departuresExpected > 0 ? r.departuresDone * 100.0 / r.departuresExpected : 0} + '%;background:var(--vz-blue)'"></span></div>
+                        <span class="n" th:text="${r.departuresDone} + '/' + ${r.departuresExpected}"></span></div>
+                    <div class="dr-flow"><span>Không đến</span>
+                        <div class="vz-bar"><span th:style="'width:' + ${r.arrivalsExpected > 0 ? #lists.size(r.noShowsMarked) * 100.0 / r.arrivalsExpected : 0} + '%;background:var(--vz-red)'"></span></div>
+                        <span class="n" th:text="${#lists.size(r.noShowsMarked)}"></span></div>
+                    <div class="small text-muted mt-2" th:text="'Giá trị đơn mới: ' + ${#numbers.formatDecimal(r.newBookingsValue, 1, 'POINT', 0, 'COMMA')} + ' đ'"></div>
+                    <ul class="small mb-0 mt-2 ps-3" th:unless="${#lists.isEmpty(r.noShowsMarked)}">
+                        <li th:each="b : ${r.noShowsMarked}"><a th:href="@{/admin/bookings/{id}(id=${b.id})}" th:text="'#' + ${b.code}"></a>
+                            <span th:text="' không đến · phòng ' + ${b.room.roomNumber} + ' · ' + ${b.guestName}"></span></li>
+                    </ul>
+                    <div class="mt-3 p-2 rounded small" style="background:#fdeef1" th:unless="${#lists.isEmpty(r.stillNotArrived)}">
+                        <div class="fw-semibold" style="color:#b03a55"><i class="bi bi-exclamation-circle me-1"></i><span th:text="${#lists.size(r.stillNotArrived)} + ' khách quá giờ nhận phòng mà chưa đến'"></span></div>
+                        <div th:each="b : ${r.stillNotArrived}"><a th:href="@{/admin/bookings/{id}(id=${b.id})}" th:text="'#' + ${b.code}"></a>
+                            <span th:text="' · phòng ' + ${b.room.roomNumber} + ' · ' + ${b.guestName} + ' · ' + ${b.guestPhone} + ' · nhận ' + ${#temporals.format(b.checkInDate, 'dd/MM')}"></span></div>
+                    </div>
+                </div></div>
+
+                <!-- Thu chi -->
+                <div class="col-lg-6"><div class="vz-card h-100 mb-0"
+                     th:with="cash=${r.income[T(com.hotel.entity.PaymentMethod).CASH] ?: 0}, bank=${r.income[T(com.hotel.entity.PaymentMethod).BANK_TRANSFER] ?: 0},
+                              card=${r.income[T(com.hotel.entity.PaymentMethod).CARD] ?: 0}, online=${r.income[T(com.hotel.entity.PaymentMethod).ONLINE] ?: 0},
+                              gross=${cash + bank + card + online}">
+                    <div class="vz-head"><div><h5>Thu chi trong ngày</h5>
+                        <div class="sub" th:text="'Tổng tiền vào ' + ${#numbers.formatDecimal(gross, 1, 'POINT', 0, 'COMMA')} + ' đ'"></div></div></div>
+                    <div class="dr-mix mb-3" th:if="${gross > 0}">
+                        <span th:if="${cash > 0}" th:style="'flex:' + ${cash} + ';background:var(--vz-green)'" title="Tiền mặt"></span>
+                        <span th:if="${bank > 0}" th:style="'flex:' + ${bank} + ';background:var(--vz-blue)'" title="Chuyển khoản"></span>
+                        <span th:if="${card > 0}" th:style="'flex:' + ${card} + ';background:var(--vz-purple)'" title="Thẻ"></span>
+                        <span th:if="${online > 0}" th:style="'flex:' + ${online} + ';background:var(--vz-teal)'" title="Online"></span>
+                    </div>
+                    <table class="w-100 small dr-money">
+                        <tr th:each="row : ${ {
+                                {'Tiền mặt', cash, 'var(--vz-green)'}, {'Chuyển khoản', bank, 'var(--vz-blue)'},
+                                {'Thẻ ngân hàng', card, 'var(--vz-purple)'}, {'Online (VNPay)', online, 'var(--vz-teal)'} } }">
+                            <td><span class="vz-pill muted" style="background:none;padding:0"><span class="dot" th:style="'background:' + ${row[2]}"></span></span><span th:text="${row[0]}"></span></td>
+                            <td class="text-end"><div class="vz-bar"><span th:style="'width:' + ${gross > 0 ? row[1] * 100.0 / gross : 0} + '%;background:' + ${row[2]}"></span></div></td>
+                            <td class="text-end" style="width:34%" th:classappend="${row[1] == 0} ? 'text-muted'" th:text="${#numbers.formatDecimal(row[1], 1, 'POINT', 0, 'COMMA')}"></td>
+                        </tr>
+                        <tr><td colspan="2">Hoàn cọc</td><td class="text-end" th:classappend="${r.refunds.signum() > 0} ? 'vz-neg' : 'text-muted'" th:text="(${r.refunds.signum() > 0} ? '-' : '') + ${#numbers.formatDecimal(r.refunds, 1, 'POINT', 0, 'COMMA')}"></td></tr>
+                        <tr class="fw-bold" style="border-top:1px solid var(--vz-line)"><td colspan="2">Thực thu</td>
+                            <td class="text-end" th:text="${#numbers.formatDecimal(r.net, 1, 'POINT', 0, 'COMMA')}"></td></tr>
+                    </table>
+                    <div class="small mt-2" th:unless="${#lists.isEmpty(r.shifts)}">
+                        <span th:text="${#lists.size(r.shifts)} + ' ca trực đóng trong ngày, chênh lệch tiền mặt '"></span>
+                        <b th:classappend="${r.shiftDifferenceTotal.signum() != 0} ? 'text-danger'"
+                           th:text="${#numbers.formatDecimal(r.shiftDifferenceTotal, 1, 'POINT', 0, 'COMMA')}"></b>
+                        <a class="no-print ms-1" th:each="s : ${r.shifts}" th:href="@{/admin/shifts/{id}(id=${s.shift.id})}" th:text="'#' + ${s.shift.id}"></a>
+                    </div>
+                </div></div>
             </div>
 
-            <div class="row g-3 mb-4">
-                <div class="col-md-6">
-                    <h6 class="fw-bold">Đặt phòng trong ngày</h6>
-                    <div class="bg-white rounded shadow-sm p-3 h-100 small">
-                        <div th:text="'Đơn mới: ' + ${r.newBookings} + ' (' + ${#numbers.formatDecimal(r.newBookingsValue, 1, 'POINT', 0, 'COMMA')} + ' VND)'"></div>
-                        <div th:text="'Đơn hủy: ' + ${#lists.size(r.cancellations)}"></div>
-                        <ul class="mb-0 mt-1" th:unless="${#lists.isEmpty(r.noShowsMarked)}">
-                            <li th:each="b : ${r.noShowsMarked}"><a th:href="@{/admin/bookings/{id}(id=${b.id})}" th:text="'#' + ${b.code}"></a>
-                                <span th:text="' không đến · phòng ' + ${b.room.roomNumber} + ' · ' + ${b.guestName}"></span></li>
-                        </ul>
+            <!-- Viec con ton -->
+            <div class="vz-card" th:with="p=${r.pending}, mx=${r.pending.total > 0 ? r.pending.total : 1}">
+                <div class="vz-head"><div><h5>Việc còn tồn cuối ngày</h5><div class="sub">Độ dài thanh = phần trong tổng số việc tồn · bấm từng dòng để mở danh sách</div></div></div>
+                <div class="dr-pend row g-0">
+                    <div class="col-md-6">
+                        <a th:href="@{/admin/bookings(status='PENDING')}" th:classappend="${p.bookingsToConfirm == 0} ? 'zero'"><span>Đơn chờ xác nhận</span>
+                            <div class="vz-bar"><span th:style="'width:' + ${p.bookingsToConfirm * 100.0 / mx} + '%'"></span></div><span class="n" th:text="${p.bookingsToConfirm}"></span></a>
+                        <a th:href="@{/admin/bookings(refund='pending')}" th:classappend="${p.refunds == 0} ? 'zero'"><span>Hoàn cọc chờ chuyển</span>
+                            <div class="vz-bar"><span th:style="'width:' + ${p.refunds * 100.0 / mx} + '%'"></span></div><span class="n" th:text="${p.refunds}"></span></a>
+                        <a th:href="@{/admin/today}" th:classappend="${p.stayTimeRequests == 0} ? 'zero'"><span>Nhận sớm / trả muộn chờ duyệt</span>
+                            <div class="vz-bar"><span th:style="'width:' + ${p.stayTimeRequests * 100.0 / mx} + '%'"></span></div><span class="n" th:text="${p.stayTimeRequests}"></span></a>
+                    </div>
+                    <div class="col-md-6">
+                        <a th:href="@{/admin/facility-reservations}" th:classappend="${p.facilities == 0} ? 'zero'"><span>Spa / bàn chờ xác nhận</span>
+                            <div class="vz-bar"><span th:style="'width:' + ${p.facilities * 100.0 / mx} + '%'"></span></div><span class="n" th:text="${p.facilities}"></span></a>
+                        <a th:href="@{/admin/room-service}" th:classappend="${p.roomService == 0} ? 'zero'"><span>Gọi lên phòng chờ giao</span>
+                            <div class="vz-bar"><span th:style="'width:' + ${p.roomService * 100.0 / mx} + '%'"></span></div><span class="n" th:text="${p.roomService}"></span></a>
+                        <a th:href="@{/admin/maintenance}" th:classappend="${p.maintenance == 0} ? 'zero'"><span>Phiếu bảo trì chưa xong</span>
+                            <div class="vz-bar"><span th:style="'width:' + ${p.maintenance * 100.0 / mx} + '%'"></span></div><span class="n" th:text="${p.maintenance}"></span></a>
                     </div>
                 </div>
-                <div class="col-md-6">
-                    <h6 class="fw-bold">Việc còn tồn <span class="badge bg-warning text-dark" th:text="${r.pending.total}"></span></h6>
-                    <div class="bg-white rounded shadow-sm p-3 h-100 small">
-                        <div th:text="'Đơn chờ xác nhận: ' + ${r.pending.bookingsToConfirm}"></div>
-                        <div th:text="'Hoàn cọc chờ chuyển: ' + ${r.pending.refunds}"></div>
-                        <div th:text="'Nhận sớm / trả muộn chờ duyệt: ' + ${r.pending.stayTimeRequests}"></div>
-                        <div th:text="'Spa / bàn chờ xác nhận: ' + ${r.pending.facilities}"></div>
-                        <div th:text="'Gọi lên phòng chờ giao: ' + ${r.pending.roomService}"></div>
-                        <div th:text="'Phiếu bảo trì chưa xong: ' + ${r.pending.maintenance}"></div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white rounded shadow-sm p-3" th:unless="${#lists.isEmpty(r.stillNotArrived)}">
-                <h6 class="fw-bold text-danger">Khách quá giờ nhận phòng mà chưa đến</h6>
-                <ul class="small mb-0">
-                    <li th:each="b : ${r.stillNotArrived}"><a th:href="@{/admin/bookings/{id}(id=${b.id})}" th:text="'#' + ${b.code}"></a>
-                        <span th:text="' · phòng ' + ${b.room.roomNumber} + ' · ' + ${b.guestName} + ' · ' + ${b.guestPhone} + ' · nhận ' + ${#temporals.format(b.checkInDate, 'dd/MM')}"></span></li>
-                </ul>
             </div>
         </div>
     </div>

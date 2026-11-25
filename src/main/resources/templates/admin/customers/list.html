@@ -7,6 +7,26 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link th:href="@{/css/eaut-theme.css}" rel="stylesheet">
+    <th:block th:replace="~{fragments/viz :: styles}"></th:block>
+    <style>
+        .cu-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+        .cu-tabs a { padding: 6px 14px; border-radius: 999px; border: 1px solid var(--vz-line); color: var(--vz-ink); text-decoration: none;
+                     font-size: .86rem; font-weight: 600; background: #fff; display: inline-flex; align-items: center; gap: 6px; }
+        .cu-tabs a .c { font-weight: 700; color: var(--vz-mut); font-variant-numeric: tabular-nums; }
+        .cu-tabs a.active { background: var(--vz-ink); border-color: var(--vz-ink); color: #fff !important; }
+        .cu-tabs a.active .c { color: #cfe0ef; }
+        .cu-mix { display: flex; height: 12px; border-radius: 6px; overflow: hidden; gap: 2px; background: #eef3f7; }
+        .cu-mix span { display: block; height: 100%; }
+        .cu-search { display: flex; align-items: center; gap: 8px; border: 1px solid var(--vz-line); border-radius: 999px; padding: 4px 6px 4px 14px; background: #fff; }
+        .cu-search input { border: 0; outline: 0; flex: 1; min-width: 200px; font-size: .9rem; background: transparent; }
+        .cu-table tbody tr { cursor: pointer; }
+        .cu-table .name { font-weight: 600; color: var(--vz-ink); }
+        .cu-stays { display: flex; align-items: center; gap: 8px; }
+        .cu-stays .vz-bar { width: 60px; height: 6px; }
+        tr.locked td { opacity: .6; }
+        .cu-table td:first-child { min-width: 190px; }
+        .cu-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+    </style>
 </head>
 <body class="eaut eaut-admin">
 
@@ -26,24 +46,41 @@
                 <span class="badge bg-warning text-dark">Khách VIP</span> từ [[${T(com.hotel.entity.CustomerType).VIP_MIN_STAYS}]] lần.
                 Bấm tên khách để xem toàn bộ lịch sử đặt phòng.</p>
 
-            <form method="get" th:action="@{/admin/customers}" class="d-flex flex-wrap gap-2 bg-white p-2 rounded shadow-sm mb-3">
-                <input type="text" name="q" class="form-control form-control-sm" style="max-width:280px" th:value="${q}"
-                       placeholder="Tìm tên, email, số điện thoại">
-                <select name="type" class="form-select form-select-sm" style="width:auto">
-                    <option value="">Mọi hạng</option>
-                    <option th:each="ct : ${customerTypes}" th:value="${ct}" th:text="${ct.vietnameseLabel}" th:selected="${ct == type}"></option>
-                </select>
-                <button class="btn btn-primary btn-sm" type="submit"><i class="bi bi-search"></i> Tìm</button>
-                <a class="btn btn-outline-secondary btn-sm" th:href="@{/admin/customers}" th:if="${q != null or type != null}">Bỏ lọc</a>
-                <span class="ms-auto align-self-center small text-muted" th:text="${totalElements} + ' khách'"></span>
-            </form>
+            <!-- Co cau hang khach + tab loc theo hang -->
+            <div class="vz-card" th:if="${typeCounts != null}">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                    <div class="cu-tabs">
+                        <a th:classappend="${type == null} ? 'active'" th:href="@{/admin/customers(q=${q})}">Tất cả <span class="c" th:text="${typeTotal}"></span></a>
+                        <a th:each="ct : ${customerTypes}" th:classappend="${type == ct} ? 'active'" th:href="@{/admin/customers(q=${q}, type=${ct})}">
+                            <i class="cu-dot" th:style="'background:' + (${ct.name() == 'VIP'} ? 'var(--vz-amber)' : (${ct.name() == 'REGULAR'} ? 'var(--vz-blue)' : '#b8c7d6'))"></i>
+                            <span th:text="${ct.vietnameseLabel}"></span> <span class="c" th:text="${typeCounts.get(ct.name())}"></span></a>
+                    </div>
+                    <form method="get" th:action="@{/admin/customers}" class="cu-search">
+                        <i class="bi bi-search text-muted"></i>
+                        <input type="hidden" name="type" th:if="${type != null}" th:value="${type}">
+                        <input type="text" name="q" th:value="${q}" placeholder="Tìm tên, email, số điện thoại">
+                        <a class="small text-muted px-1" th:href="@{/admin/customers(type=${type})}" th:if="${q != null and !#strings.isEmpty(q)}" title="Xóa tìm kiếm"><i class="bi bi-x-lg"></i></a>
+                    </form>
+                </div>
+                <div class="cu-mix" th:if="${typeTotal > 0}">
+                    <span th:style="'flex:' + ${typeCounts.get('NEW')} + ';background:#b8c7d6'" th:title="'Khách lần đầu: ' + ${typeCounts.get('NEW')}"></span>
+                    <span th:style="'flex:' + ${typeCounts.get('REGULAR')} + ';background:var(--vz-blue)'" th:title="'Khách quen: ' + ${typeCounts.get('REGULAR')}"></span>
+                    <span th:style="'flex:' + ${typeCounts.get('VIP')} + ';background:var(--vz-amber)'" th:title="'Khách VIP: ' + ${typeCounts.get('VIP')}"></span>
+                </div>
+                <div class="d-flex flex-wrap gap-3 small text-muted mt-2" th:if="${typeTotal > 0}">
+                    <span th:text="'Quay lại ít nhất 1 lần nữa: ' + ${#numbers.formatDecimal((typeCounts.get('REGULAR') + typeCounts.get('VIP')) * 100.0 / typeTotal, 1, 1)} + '%'"></span>
+                    <span th:text="'VIP: ' + ${#numbers.formatDecimal(typeCounts.get('VIP') * 100.0 / typeTotal, 1, 1)} + '%'"></span>
+                </div>
+            </div>
 
             <div th:if="${#lists.isEmpty(pager.items)}" class="alert alert-info">
                 Không có khách hàng nào phù hợp.
             </div>
 
-            <div class="table-responsive" th:if="${not #lists.isEmpty(pager.items)}">
-            <table class="table table-striped bg-white align-middle" style="--bs-table-striped-bg: #eaf6ff;">
+            <div class="vz-card" th:if="${not #lists.isEmpty(pager.items)}">
+            <div class="vz-head"><div><h5 th:text="${totalElements} + ' khách'"></h5><div class="sub">Bấm vào dòng để xem toàn bộ lịch sử đặt phòng</div></div></div>
+            <div class="table-responsive">
+            <table class="table align-middle mb-0 vz-table cu-table">
                 <thead>
                 <tr>
                     <th>Họ tên</th>
@@ -57,25 +94,27 @@
                 </tr>
                 </thead>
                 <tbody>
-                <tr th:each="r : ${pager.items}" th:with="c=${r.customer}, s=${r.summary}">
-                    <td><a class="fw-semibold text-decoration-none" th:href="@{/admin/customers/{id}(id=${c.id})}" th:text="${c.fullName}"></a>
+                <tr th:each="r : ${pager.items}" th:with="c=${r.customer}, s=${r.summary}" th:classappend="${c.isLocked()} ? 'locked'"
+                    th:attr="data-href=@{/admin/customers/{id}(id=${c.id})}">
+                    <td><a class="name text-decoration-none" th:href="@{/admin/customers/{id}(id=${c.id})}" th:text="${c.fullName}"></a>
                         <div class="small text-muted" th:text="'Đăng ký ' + ${#temporals.format(c.createdAt, 'dd/MM/yyyy')}"></div></td>
                     <td class="small"><div th:text="${c.email}"></div><div class="text-muted" th:text="${c.phoneNumber}"></div></td>
-                    <td><span class="badge" th:classappend="${c.customerType?.name() == 'VIP'} ? 'bg-warning text-dark' : (${c.customerType?.name() == 'REGULAR'} ? 'bg-info text-dark' : 'bg-light text-dark border')"
-                              th:text="${c.customerType?.vietnameseLabel}"></span></td>
+                    <td><span class="vz-pill" th:classappend="${c.customerType?.name() == 'VIP'} ? 'warn' : (${c.customerType?.name() == 'REGULAR'} ? 'info' : 'muted')"><span class="dot"></span><span
+                              th:text="${c.customerType?.vietnameseLabel}"></span></span></td>
                     <td class="text-center fw-semibold" th:text="${s.bookings}"></td>
-                    <td class="text-center"><span class="fw-semibold" th:text="${s.stays}"></span>
+                    <td class="text-center"><div class="cu-stays justify-content-center"><span class="fw-semibold" th:text="${s.stays}"></span>
+                        <div class="vz-bar" th:title="'Còn ' + ${s.stays >= T(com.hotel.entity.CustomerType).VIP_MIN_STAYS ? 0 : (s.stays >= T(com.hotel.entity.CustomerType).REGULAR_MIN_STAYS ? T(com.hotel.entity.CustomerType).VIP_MIN_STAYS - s.stays : T(com.hotel.entity.CustomerType).REGULAR_MIN_STAYS - s.stays)} + ' lần ở nữa lên hạng'"><span
+                             th:style="'width:' + ${s.stays >= T(com.hotel.entity.CustomerType).VIP_MIN_STAYS ? 100 : s.stays * 100 / T(com.hotel.entity.CustomerType).VIP_MIN_STAYS} + '%;background:' + (${s.stays >= T(com.hotel.entity.CustomerType).VIP_MIN_STAYS} ? 'var(--vz-amber)' : 'var(--vz-blue)')"></span></div></div>
                         <div class="small text-muted" th:if="${s.upcoming > 0}" th:text="'+' + ${s.upcoming} + ' sắp tới'"></div>
                         <div class="small text-danger" th:if="${s.cancelled > 0}" th:text="${s.cancelled} + ' hủy'"></div></td>
                     <td class="small" th:text="${s.lastStay != null} ? ${#temporals.format(s.lastStay, 'dd/MM/yyyy')} : '-'"></td>
                     <td>
-                        <span class="badge" th:classappend="${c.isLocked()} ? 'bg-danger' : 'bg-success'"
-                              th:text="${c.isLocked()} ? 'Đã khóa' : 'Hoạt động'"></span>
-                        <span th:if="${!c.isLocked() and c.temporarilyLocked}" class="badge bg-warning text-dark d-block mt-1"
-                              th:text="'Tạm khóa (sai mật khẩu) đến ' + ${#temporals.format(c.loginLockedUntil, 'HH:mm')}"></span>
+                        <span class="vz-pill" th:classappend="${c.isLocked()} ? 'bad' : 'ok'"><span class="dot"></span><span
+                              th:text="${c.isLocked()} ? 'Đã khóa' : 'Hoạt động'"></span></span>
+                        <span th:if="${!c.isLocked() and c.temporarilyLocked}" class="vz-pill warn mt-1"><span class="dot"></span><span
+                              th:text="'Tạm khóa (sai mật khẩu) đến ' + ${#temporals.format(c.loginLockedUntil, 'HH:mm')}"></span></span>
                     </td>
                     <td class="text-end text-nowrap">
-                        <a class="btn btn-sm btn-outline-primary" th:href="@{/admin/customers/{id}(id=${c.id})}">Chi tiết</a>
                         <form sec:authorize="hasRole('ADMIN')" th:action="@{/admin/customers/{id}/toggle-lock(id=${c.id})}" method="post" class="d-inline"
                               onsubmit="return confirm('Xác nhận thay đổi trạng thái khóa của tài khoản này?')">
                             <button type="submit" class="btn btn-sm"
@@ -87,13 +126,17 @@
                 </tbody>
             </table>
             </div>
-
             <div th:replace="~{fragments/pagination :: pager(${pager})}"></div>
+            </div>
         </div>
     </div>
 </main>
 
 <div th:replace="~{fragments/footer :: footer}"></div>
+<script>
+    document.querySelectorAll('.cu-table tbody tr[data-href]').forEach(tr => tr.addEventListener('click', e => {
+        if (!e.target.closest('a,button,form')) location.href = tr.dataset.href; }));
+</script>
 
 </body>
 </html>

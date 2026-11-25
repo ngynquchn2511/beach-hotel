@@ -133,6 +133,7 @@ public class DailyReportService {
         sb.append("THU CHI\n");
         sb.append("- Tiền mặt: ").append(Money.format(r.income().get(PaymentMethod.CASH))).append(" VND\n");
         sb.append("- Chuyển khoản: ").append(Money.format(r.income().get(PaymentMethod.BANK_TRANSFER))).append(" VND\n");
+        sb.append("- Thẻ ngân hàng: ").append(Money.format(r.income().getOrDefault(PaymentMethod.CARD, java.math.BigDecimal.ZERO))).append(" VND\n");
         sb.append("- Online (VNPay): ").append(Money.format(r.income().get(PaymentMethod.ONLINE))).append(" VND\n");
         sb.append("- Hoàn cọc: -").append(Money.format(r.refunds())).append(" VND\n");
         sb.append("- Thực thu: ").append(Money.format(r.net())).append(" VND\n");
