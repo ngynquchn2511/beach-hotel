@@ -185,7 +185,7 @@ class SupportParamTest {
     @TcSteps("Giả lập đăng nhập thành công bằng tài khoản vai trò R tại cổng P, gọi onAuthenticationSuccess()")
     @ParameterizedTest(name = "Điều hướng sau đăng nhập - {1} tại cổng {0} ¦ portal={0}, role={1} ¦ Chuyển tới \"{2}\"")
     @CsvSource({"khách hàng,CUSTOMER,/customer/rooms", "khách hàng,STAFF,/login?error=wrong_portal", "khách hàng,ADMIN,/login?error=wrong_portal",
-            "quản trị,CUSTOMER,/admin?error=wrong_portal", "quản trị,STAFF,/admin/dashboard", "quản trị,ADMIN,/admin/dashboard"})
+            "quản trị,CUSTOMER,/admin?error=wrong_portal", "quản trị,STAFF,/admin/today", "quản trị,ADMIN,/admin/dashboard"})
     void successHandlers(String portal, UserRole role, String target) throws Exception {
         MockHttpServletRequest req = new MockHttpServletRequest();
         MockHttpServletResponse res = new MockHttpServletResponse();

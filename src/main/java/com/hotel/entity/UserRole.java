@@ -29,6 +29,7 @@ public enum UserRole {
         return switch (this) {
             case HOUSEKEEPER -> "/admin/housekeeping";
             case ACCOUNTANT -> "/admin/company-invoices";
+            case STAFF -> "/admin/today";
             default -> "/admin/dashboard";
         };
     }

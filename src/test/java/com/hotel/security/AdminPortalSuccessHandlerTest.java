@@ -35,7 +35,7 @@ class AdminPortalSuccessHandlerTest {
     }
 
     @Test
-    void onAuthenticationSuccess_staffRole_redirectsToDashboard() throws Exception {
+    void onAuthenticationSuccess_staffRole_redirectsToToday() throws Exception {
         User staff = User.builder().email("staff@hotel.com").role(UserRole.STAFF).build();
         when(authentication.getPrincipal()).thenReturn(new CustomUserDetails(staff));
         when(request.getContextPath()).thenReturn("");
@@ -43,7 +43,7 @@ class AdminPortalSuccessHandlerTest {
 
         handler.onAuthenticationSuccess(request, response, authentication);
 
-        verify(response).sendRedirect("/admin/dashboard");
+        verify(response).sendRedirect("/admin/today");
     }
 
     @Test

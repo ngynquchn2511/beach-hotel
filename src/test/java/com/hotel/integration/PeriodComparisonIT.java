@@ -42,7 +42,7 @@ class PeriodComparisonIT extends ItFixtures {
         assertThat(c.rows().get(1).snapshot().from()).isEqualTo(today.minusYears(1));
         assertThat(c.rows().get(1).delta().paidPercent()).isEqualTo(100.0);
 
-        User staff = persistUser(UserRole.STAFF, null);
+        User staff = persistUser(UserRole.ADMIN, null);
         mockMvc.perform(get("/admin/dashboard").with(as(staff)).param("fromDate", today.toString()).param("toDate", today.toString()))
                 .andExpect(content().string(containsString("So sánh cùng kỳ")))
                 .andExpect(content().string(containsString("Cùng kỳ năm trước")))

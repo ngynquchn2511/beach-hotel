@@ -111,7 +111,7 @@ class LoginLockoutIT {
         User unlocked = userRepository.findByEmail("staff@hotel.com").orElseThrow();
         assertThat(unlocked.isTemporarilyLocked()).isFalse();
         assertThat(unlocked.isLocked()).isFalse();
-        login("/admin/login", "staff@hotel.com", "staff123").andExpect(redirectedUrl("/admin/dashboard"));
+        login("/admin/login", "staff@hotel.com", "staff123").andExpect(redirectedUrl("/admin/today"));
     }
 
     @Test

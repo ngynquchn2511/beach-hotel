@@ -2,7 +2,8 @@
     <nav class="navbar navbar-expand-lg container py-3">
         <!-- Nhan vien/admin bam logo hoac "Danh sach phong" thi o lai trang quan tri, khong bi day sang giao dien khach hang -->
         <a class="navbar-brand fw-bold" th:href="@{/}" sec:authorize="!hasAnyRole('ADMIN','STAFF','HOUSEKEEPER','ACCOUNTANT')">Sóng Xanh Resort</a>
-        <a class="navbar-brand fw-bold" th:href="@{/admin/dashboard}" sec:authorize="hasAnyRole('ADMIN','STAFF')">Sóng Xanh Resort</a>
+        <a class="navbar-brand fw-bold" th:href="@{/admin/dashboard}" sec:authorize="hasRole('ADMIN')">Sóng Xanh Resort</a>
+        <a class="navbar-brand fw-bold" th:href="@{/admin/today}" sec:authorize="hasRole('STAFF')">Sóng Xanh Resort</a>
         <a class="navbar-brand fw-bold" th:href="@{/admin/home}" sec:authorize="hasAnyRole('HOUSEKEEPER','ACCOUNTANT')">Sóng Xanh Resort</a>
         <div class="ms-auto d-flex align-items-center gap-3 flex-wrap justify-content-end">
             <a th:href="@{/about}" class="text-decoration-none text-dark" sec:authorize="!hasAnyRole('ADMIN','STAFF','HOUSEKEEPER','ACCOUNTANT')" th:text="#{nav.about}">Giới thiệu</a>

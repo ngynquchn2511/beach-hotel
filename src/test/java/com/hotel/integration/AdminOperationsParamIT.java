@@ -362,11 +362,11 @@ class AdminOperationsParamIT extends ItFixtures {
 
     // ===================== Dashboard =====================
 
-    @TcSteps("Nhân viên GET /admin/dashboard với tham số ngày theo bộ dữ liệu")
+    @TcSteps("Quản trị viên GET /admin/dashboard với tham số ngày theo bộ dữ liệu")
     @ParameterizedTest(name = "Dashboard với khoảng ngày {0} ¦ fromDate={1}, toDate={2} ¦ Trang 200, model có đủ số liệu và 3 bộ dữ liệu biểu đồ; from ≤ to")
     @CsvSource({"mặc định,'',''", "1 tuần,2026-03-01,2026-03-07", "nhập ngược thứ tự (tự đảo),2026-03-31,2026-03-01", "cả năm,2026-01-01,2026-12-31"})
     void dashboard(String label, String from, String to) throws Exception {
-        var req = get("/admin/dashboard").with(as(staff));
+        var req = get("/admin/dashboard").with(as(persistUser(UserRole.ADMIN, null)));
         if (from != null && !from.isEmpty()) {
             req.param("fromDate", from).param("toDate", to);
         }
@@ -380,12 +380,12 @@ class AdminOperationsParamIT extends ItFixtures {
     }
 
     @Test
-    @TcSteps("Tạo đơn đã trả phòng hôm nay, nhân viên GET /admin/dashboard/export, đọc file Excel trả về bằng Apache POI")
+    @TcSteps("Tạo đơn đã trả phòng hôm nay, quản trị viên GET /admin/dashboard/export, đọc file Excel trả về bằng Apache POI")
     void exportRevenueExcel() throws Exception {
         Booking b = persistBooking(customer, room, BookingStatus.CHECKED_OUT, 0, 2);
         LocalDate today = LocalDate.now();
         var res = mockMvc.perform(get("/admin/dashboard/export").param("fromDate", today.minusDays(3).toString())
-                        .param("toDate", today.toString()).with(as(staff)))
+                        .param("toDate", today.toString()).with(as(persistUser(UserRole.ADMIN, null))))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString(".xlsx")))
                 .andReturn().getResponse();

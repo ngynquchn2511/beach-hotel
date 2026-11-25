@@ -9,7 +9,8 @@
                 <!-- Nhan vien/admin: lien ket o lai khu quan tri, khong day sang giao dien khach hang -->
                 <ul class="list-inline mb-0 small" sec:authorize="hasAnyRole('ADMIN','STAFF')">
                     <li class="list-inline-item mx-2">
-                        <a th:href="@{/admin/dashboard}" class="link-light link-opacity-75 link-opacity-100-hover text-decoration-none">Tổng quan</a>
+                        <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin/dashboard}" class="link-light link-opacity-75 link-opacity-100-hover text-decoration-none">Tổng quan</a>
+                        <a sec:authorize="!hasRole('ADMIN')" th:href="@{/admin/today}" class="link-light link-opacity-75 link-opacity-100-hover text-decoration-none">Hôm nay</a>
                     </li>
                     <li class="list-inline-item mx-2">
                         <a th:href="@{/admin/bookings}" class="link-light link-opacity-75 link-opacity-100-hover text-decoration-none">Đặt phòng</a>

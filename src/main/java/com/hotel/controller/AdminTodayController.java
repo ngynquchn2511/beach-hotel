@@ -32,6 +32,14 @@ public class AdminTodayController {
         this.weatherService = weatherService;
     }
 
+    private com.hotel.service.ExecutiveBoardService boardService;
+
+    // Viec ton + so do phong (truoc o Tong quan, nay Tong quan chi quan tri xem)
+    @org.springframework.beans.factory.annotation.Autowired
+    void setBoardService(com.hotel.service.ExecutiveBoardService boardService) {
+        this.boardService = boardService;
+    }
+
     @org.springframework.beans.factory.annotation.Autowired
     void setStaffShiftService(com.hotel.service.StaffShiftService staffShiftService) {
         this.staffShiftService = staffShiftService;
@@ -49,6 +57,9 @@ public class AdminTodayController {
         }
         if (staffShiftService != null && (date == null || date.equals(today))) {
             model.addAttribute("onDuty", staffShiftService.onDuty(java.time.LocalDateTime.now()));
+        }
+        if (boardService != null && (date == null || date.equals(today))) {
+            model.addAttribute("board", boardService.build(java.time.LocalDateTime.now(), true, false));
         }
         return "admin/today";
     }

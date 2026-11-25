@@ -47,7 +47,7 @@ class BackOfficeRoleIT extends ItFixtures {
     void accountant_readsReportsButCannotOperate() throws Exception {
         User acc = persistUser(UserRole.ACCOUNTANT, null);
         mockMvc.perform(get("/admin/home").with(as(acc))).andExpect(redirectedUrl("/admin/company-invoices"));
-        for (String url : new String[]{"/admin/company-invoices", "/admin/dashboard", "/admin/shifts", "/admin/gift-vouchers", "/admin/forecast"}) {
+        for (String url : new String[]{"/admin/company-invoices", "/admin/shifts", "/admin/gift-vouchers", "/admin/forecast", "/admin/reports/cancellations"}) {
             mockMvc.perform(get(url).with(as(acc))).andExpect(status().isOk());
         }
         mockMvc.perform(get("/admin/shifts").with(as(acc)))
@@ -55,7 +55,7 @@ class BackOfficeRoleIT extends ItFixtures {
         mockMvc.perform(post("/admin/shifts/open").with(csrf()).with(as(acc)).param("openingCash", "0"))
                 .andExpect(status().isForbidden());
         mockMvc.perform(post("/admin/gift-vouchers/1/cancel").with(csrf()).with(as(acc))).andExpect(status().isForbidden());
-        for (String url : new String[]{"/admin/bookings", "/admin/housekeeping", "/admin/staff-accounts"}) {
+        for (String url : new String[]{"/admin/bookings", "/admin/housekeeping", "/admin/staff-accounts", "/admin/dashboard"}) {
             mockMvc.perform(get(url).with(as(acc))).andExpect(status().isForbidden());
         }
     }

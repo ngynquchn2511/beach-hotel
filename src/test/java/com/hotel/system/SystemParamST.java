@@ -55,7 +55,7 @@ class SystemParamST extends StBase {
     @ParameterizedTest(name = "Đăng nhập cổng {0} bằng tài khoản {1}, mật khẩu {2} ¦ POST {3} ¦ Chuyển hướng tới \"{4}\"")
     @CsvSource({"khách hàng,CUSTOMER,đúng,/login,/customer/rooms", "khách hàng,CUSTOMER,sai,/login,/login?error=true",
             "khách hàng,STAFF,đúng,/login,/login?error=wrong_portal", "khách hàng,ADMIN,đúng,/login,/login?error=wrong_portal",
-            "quản trị,STAFF,đúng,/admin/login,/admin/dashboard", "quản trị,ADMIN,đúng,/admin/login,/admin/dashboard",
+            "quản trị,STAFF,đúng,/admin/login,/admin/today", "quản trị,ADMIN,đúng,/admin/login,/admin/dashboard",
             "quản trị,ADMIN,sai,/admin/login,/admin?error=true", "quản trị,CUSTOMER,đúng,/admin/login,/admin?error=wrong_portal"})
     void login(String portal, UserRole role, String pw, String endpoint, String target) {
         User u = createUser(role, CustomerType.NEW, "matkhau123");
@@ -77,7 +77,7 @@ class SystemParamST extends StBase {
 
     @TcSteps("Đăng nhập thật, sau đó gửi POST đăng xuất, rồi truy cập lại trang cần đăng nhập")
     @ParameterizedTest(name = "Đăng xuất {0} ¦ POST {1} ¦ Chuyển tới \"{2}\"; truy cập lại {3} bị đưa về trang đăng nhập")
-    @CsvSource({"khách hàng,/logout,/login?logout=true,/customer/bookings", "nhân viên,/admin/logout,/admin?logout=true,/admin/dashboard"})
+    @CsvSource({"khách hàng,/logout,/login?logout=true,/customer/bookings", "nhân viên,/admin/logout,/admin?logout=true,/admin/today"})
     void logout(String who, String endpoint, String target, String protectedPage) {
         Browser b = new Browser();
         if (who.equals("khách hàng")) {
@@ -86,7 +86,7 @@ class SystemParamST extends StBase {
             b.loginAdmin(createUser(UserRole.STAFF, CustomerType.NEW, "matkhau123").getEmail(), "matkhau123");
         }
         assertThat(b.get(protectedPage).status()).isEqualTo(200);
-        b.get(who.equals("khách hàng") ? "/" : "/admin/dashboard");
+        b.get(who.equals("khách hàng") ? "/" : "/admin/today");
         assertThat(b.post(endpoint, form()).location()).isEqualTo(target);
         Res again = b.get(protectedPage);
         assertThat(again.status()).isEqualTo(302);
@@ -94,13 +94,13 @@ class SystemParamST extends StBase {
     }
 
     @TcSteps("Đăng nhập bằng tài khoản mặc định do DataInitializer tạo khi khởi động")
-    @ParameterizedTest(name = "Tài khoản mặc định {0} đăng nhập được ¦ {0} / {1} ¦ Vào được /admin/dashboard")
-    @CsvSource({"admin@hotel.com,admin123", "staff@hotel.com,staff123"})
-    void defaultAccounts(String email, String pw) {
+    @ParameterizedTest(name = "Tài khoản mặc định {0} đăng nhập được ¦ {0} / {1} ¦ Vào được {2}")
+    @CsvSource({"admin@hotel.com,admin123,/admin/dashboard,Tổng quan hệ thống", "staff@hotel.com,staff123,/admin/today,Hôm nay"})
+    void defaultAccounts(String email, String pw, String home, String text) {
         Browser b = new Browser();
         b.get("/admin");
-        assertThat(b.post("/admin/login", form("username", email, "password", pw)).location()).isEqualTo("/admin/dashboard");
-        assertThat(b.get("/admin/dashboard").body()).contains("Tổng quan hệ thống");
+        assertThat(b.post("/admin/login", form("username", email, "password", pw)).location()).isEqualTo(home);
+        assertThat(b.get(home).body()).contains(text);
     }
 
     // ===================== Đăng ký =====================
@@ -160,10 +160,10 @@ class SystemParamST extends StBase {
     @TcSteps("Đăng nhập thật vào cổng quản trị bằng vai trò R, mở trang quản trị, đọc HTML")
     @ParameterizedTest(name = "{1} mở trang {0} ¦ phiên đăng nhập {1}, GET {0} ¦ HTTP 200, hiển thị \"{2}\"")
     @CsvSource(delimiter = '|', value = {
-            "/admin/dashboard|STAFF|Tổng quan hệ thống", "/admin/bookings|STAFF|Quản lý đặt phòng", "/admin/rooms|STAFF|Danh sách phòng",
+            "/admin/today|STAFF|Hôm nay", "/admin/bookings|STAFF|Quản lý đặt phòng", "/admin/rooms|STAFF|Danh sách phòng",
             "/admin/room-types|STAFF|Danh sách loại phòng", "/admin/combos|STAFF|Danh sách combo", "/admin/discount-codes|STAFF|Mã giảm giá",
             "/admin/customers|STAFF|Danh sách khách hàng", "/admin/bookings/walk-in/new|STAFF|Đặt phòng tại quầy",
-            "/admin/dashboard|ADMIN|Đăng nhập thành công với quyền Quản trị viên", "/admin/dashboard|STAFF|Đăng nhập thành công với quyền Nhân viên",
+            "/admin/dashboard|ADMIN|Đăng nhập thành công với quyền Quản trị viên", "/admin/dashboard|ADMIN|Tổng quan hệ thống",
             "/admin/rooms/new|ADMIN|Thêm phòng", "/admin/room-types/new|ADMIN|Thêm loại phòng", "/admin/combos/new|ADMIN|Thêm combo",
             "/admin/discount-codes/new|ADMIN|Thêm mã giảm giá"})
     void adminPages(String path, UserRole role, String text) {
@@ -192,20 +192,20 @@ class SystemParamST extends StBase {
     // ===================== Điều hướng nhất quán =====================
 
     @TcSteps("Đăng nhập nhân viên, mở trang quản trị, kiểm tra liên kết logo/menu trên header")
-    @ParameterizedTest(name = "Header trang {0} giữ nhân viên trong khu quản trị ¦ phiên STAFF, GET {0} ¦ Logo trỏ /admin/dashboard, \"Danh sách phòng\" trỏ /admin/rooms")
-    @ValueSource(strings = {"/admin/dashboard", "/admin/bookings", "/admin/bookings/walk-in/new", "/admin/rooms", "/admin/combos", "/admin/customers"})
+    @ParameterizedTest(name = "Header trang {0} giữ nhân viên trong khu quản trị ¦ phiên STAFF, GET {0} ¦ Logo trỏ /admin/today, \"Danh sách phòng\" trỏ /admin/rooms")
+    @ValueSource(strings = {"/admin/today", "/admin/bookings", "/admin/bookings/walk-in/new", "/admin/rooms", "/admin/combos", "/admin/customers"})
     void adminHeaderLinks(String path) {
         Browser b = new Browser();
         b.loginAdmin(createUser(UserRole.STAFF, CustomerType.NEW, "matkhau123").getEmail(), "matkhau123");
         String html = b.get(path).body();
         String header = html.substring(html.indexOf("<header"), html.indexOf("</header>"));
-        assertThat(header).contains("href=\"/admin/dashboard\"").contains("href=\"/admin/rooms\"")
+        assertThat(header).contains("href=\"/admin/today\"").contains("href=\"/admin/rooms\"")
                 .doesNotContain("href=\"/\"").doesNotContain("href=\"/rooms\"");
     }
 
     @TcSteps("Đăng nhập nhân viên, mở trang quản trị, kiểm tra TẤT CẢ liên kết trên trang (header + footer)")
     @ParameterizedTest(name = "Trang {0} không có liên kết nào dẫn sang giao diện khách hàng ¦ phiên STAFF, GET {0} ¦ Không có href=\"/\" hoặc href=\"/rooms\" ở bất kỳ đâu")
-    @ValueSource(strings = {"/admin/dashboard", "/admin/bookings", "/admin/bookings/walk-in/new", "/admin/rooms"})
+    @ValueSource(strings = {"/admin/today", "/admin/bookings", "/admin/bookings/walk-in/new", "/admin/rooms"})
     void adminNoCustomerLinks(String path) {
         Browser b = new Browser();
         b.loginAdmin(createUser(UserRole.STAFF, CustomerType.NEW, "matkhau123").getEmail(), "matkhau123");

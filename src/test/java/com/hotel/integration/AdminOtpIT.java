@@ -55,7 +55,7 @@ class AdminOtpIT extends ItFixtures {
         assertThat(lastCode()).matches("\\d{6}");
 
         // Chua nhap ma -> moi trang quan tri deu bi dua ve trang nhap ma
-        mockMvc.perform(get("/admin/dashboard").session(session)).andExpect(redirectedUrl("/admin/otp"));
+        mockMvc.perform(get("/admin/today").session(session)).andExpect(redirectedUrl("/admin/otp"));
         mockMvc.perform(get("/admin/otp").session(session))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Xác thực 2 bước")))
@@ -68,7 +68,7 @@ class AdminOtpIT extends ItFixtures {
 
         mockMvc.perform(post("/admin/otp").session(session).with(csrf()).param("code", lastCode()))
                 .andExpect(redirectedUrl("/admin/home"));
-        mockMvc.perform(get("/admin/dashboard").session(session)).andExpect(status().isOk());
+        mockMvc.perform(get("/admin/today").session(session)).andExpect(status().isOk());
     }
 
     @Test
@@ -106,7 +106,7 @@ class AdminOtpIT extends ItFixtures {
     void mailNotConfigured_skipsOtp() throws Exception {
         when(emailService.isConfigured()).thenReturn(false);
         mockMvc.perform(post("/admin/login").with(csrf()).param("username", staff.getEmail()).param("password", "matkhau123"))
-                .andExpect(redirectedUrl("/admin/dashboard"));
+                .andExpect(redirectedUrl("/admin/today"));
         verify(emailService, never()).sendAdminOtp(anyString(), anyString(), anyString(), anyLong());
     }
 }

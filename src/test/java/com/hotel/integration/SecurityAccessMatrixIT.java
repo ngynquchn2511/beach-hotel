@@ -40,8 +40,10 @@ class SecurityAccessMatrixIT extends ItFixtures {
             // Chỉ khách hàng đã đăng nhập
             "/customer/bookings,ANONYMOUS,Chuyển về /login", "/customer/bookings,CUSTOMER,200 OK",
             "/customer/bookings,STAFF,403 Forbidden", "/customer/bookings,ADMIN,403 Forbidden",
+            // Tổng quan: chỉ ADMIN (lễ tân dùng trang Hôm nay)
+            "/admin/dashboard,ANONYMOUS,Chuyển về /admin", "/admin/dashboard,CUSTOMER,403 Forbidden", "/admin/dashboard,STAFF,403 Forbidden", "/admin/dashboard,ADMIN,200 OK",
+            "/admin/today,ANONYMOUS,Chuyển về /admin", "/admin/today,CUSTOMER,403 Forbidden", "/admin/today,STAFF,200 OK", "/admin/today,ADMIN,200 OK",
             // Khu vực quản trị: STAFF + ADMIN
-            "/admin/dashboard,ANONYMOUS,Chuyển về /admin", "/admin/dashboard,CUSTOMER,403 Forbidden", "/admin/dashboard,STAFF,200 OK", "/admin/dashboard,ADMIN,200 OK",
             "/admin/bookings,ANONYMOUS,Chuyển về /admin", "/admin/bookings,CUSTOMER,403 Forbidden", "/admin/bookings,STAFF,200 OK", "/admin/bookings,ADMIN,200 OK",
             "/admin/rooms,ANONYMOUS,Chuyển về /admin", "/admin/rooms,CUSTOMER,403 Forbidden", "/admin/rooms,STAFF,200 OK", "/admin/rooms,ADMIN,200 OK",
             "/admin/room-types,ANONYMOUS,Chuyển về /admin", "/admin/room-types,CUSTOMER,403 Forbidden", "/admin/room-types,STAFF,200 OK", "/admin/room-types,ADMIN,200 OK",

@@ -201,10 +201,13 @@ class SystemJourneyST extends StBase {
 
     @Test
     @Order(15)
-    @TcSteps("Nhân viên mở Dashboard với khoảng ngày hôm nay")
+    @TcSteps("Quản trị viên mở Tổng quan với khoảng ngày hôm nay (lễ tân không xem được Tổng quan)")
     @DisplayName("Dashboard ghi nhận doanh thu đơn vừa hoàn tất ¦ GET /admin/dashboard?fromDate=hôm nay&toDate=hôm nay ¦ Dữ liệu biểu đồ doanh thu có khoản 989.100 của đơn vừa trả phòng")
     void s15_dashboard() {
-        Res r = staff.get("/admin/dashboard?fromDate=" + LocalDate.now() + "&toDate=" + LocalDate.now());
+        assertThat(staff.get("/admin/dashboard").status()).isEqualTo(403);
+        Browser admin = new Browser();
+        admin.loginAdmin("admin@hotel.com", "admin123");
+        Res r = admin.get("/admin/dashboard?fromDate=" + LocalDate.now() + "&toDate=" + LocalDate.now());
         assertThat(r.status()).isEqualTo(200);
         assertThat(r.body()).contains("Doanh thu theo loại phòng").contains("989100");
     }

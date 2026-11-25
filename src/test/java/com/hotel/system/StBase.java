@@ -112,7 +112,8 @@ abstract class StBase {
         Res loginAdmin(String email, String password) {
             get("/admin");
             Res r = post("/admin/login", Map.of("username", email, "password", password));
-            get("/admin/dashboard");
+            // Mo trang dau tien theo vai tro (quan tri: Tong quan, le tan: Hom nay...)
+            get(r.location() != null && r.location().startsWith("/admin") ? r.location() : "/admin/home");
             return r;
         }
 

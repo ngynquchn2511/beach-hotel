@@ -119,6 +119,11 @@
             <div th:if="${successMessage}" class="alert alert-success fw-semibold"><i class="bi bi-check-circle me-2"></i><span th:text="${successMessage}"></span></div>
 
             <th:block th:if="${onDuty != null}"><div th:replace="~{fragments/on-duty :: box(${onDuty})}"></div></th:block>
+            <th:block th:if="${board != null}">
+                <style th:replace="~{fragments/ops-board :: styles}"></style>
+                <div th:replace="~{fragments/ops-board :: alerts(${board})}"></div>
+                <div th:replace="~{fragments/ops-board :: roomMap(${board.rooms}, true)}"></div>
+            </th:block>
             <th:block th:if="${weatherDays != null and !#lists.isEmpty(weatherDays)}">
                 <div th:replace="~{fragments/weather :: strip(${weatherDays}, 'Thời tiết Hạ Long 3 ngày tới')}"></div>
                 <div th:if="${weatherDays[0].rough}" class="alert alert-warning small"><i class="bi bi-wind me-1"></i>Hôm nay gió mạnh / có giông:

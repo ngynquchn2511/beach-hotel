@@ -148,10 +148,11 @@ class PaginationIT extends ItFixtures {
                 .andExpect(content().string(containsString("days=14&amp;page=2")));
     }
 
-    // Trang du bao cong suat mo duoc cho le tan, chon 14 / 30 / 60 ngay
+    // Trang du bao cong suat: quan tri + ke toan (le tan khong xem), chon 14 / 30 / 60 ngay
     @Test
     void forecastPage_renders() throws Exception {
-        User staff = persistUser(UserRole.STAFF, null);
+        mockMvc.perform(get("/admin/forecast").with(as(persistUser(UserRole.STAFF, null)))).andExpect(status().isForbidden());
+        User staff = persistUser(UserRole.ACCOUNTANT, null);
         mockMvc.perform(get("/admin/forecast").param("days", "14").with(as(staff)))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Dự báo công suất")))

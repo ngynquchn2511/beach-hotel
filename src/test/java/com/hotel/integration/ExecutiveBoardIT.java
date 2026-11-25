@@ -82,17 +82,19 @@ class ExecutiveBoardIT extends ItFixtures {
                 .andExpect(content().string(containsString("lai-lo-thang")))
                 .andExpect(content().string(containsString("Phân tích theo khoảng ngày")));
 
-        // Le tan: thay viec can xu ly, khong thay lai lo
-        mockMvc.perform(get("/admin/dashboard").with(as(persistUser(UserRole.STAFF, null))))
+        // Tong quan chi quan tri xem
+        User staff = persistUser(UserRole.STAFF, null);
+        mockMvc.perform(get("/admin/dashboard").with(as(staff))).andExpect(status().isForbidden());
+        mockMvc.perform(get("/admin/dashboard").with(as(persistUser(UserRole.ACCOUNTANT, null)))).andExpect(status().isForbidden());
+
+        // Le tan: viec can xu ly + so do phong o trang Hom nay, khong co lai lo
+        mockMvc.perform(get("/admin/today").with(as(staff)))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("can-xu-ly")))
+                .andExpect(content().string(containsString("Khách quá hạn trả phòng chưa check-out")))
+                .andExpect(content().string(containsString("so-do-phong")))
+                .andExpect(content().string(containsString("data-rm-filter=\"overdue\"")))
                 .andExpect(content().string(not(containsString("id=\"lai-lo-thang\""))));
-
-        // Ke toan: thay lai lo, khong thay khung viec van hanh
-        mockMvc.perform(get("/admin/dashboard").with(as(persistUser(UserRole.ACCOUNTANT, null))))
-                .andExpect(status().isOk())
-                .andExpect(content().string(containsString("id=\"lai-lo-thang\"")))
-                .andExpect(content().string(not(containsString("Khách quá hạn trả phòng chưa check-out"))));
     }
 
     @Test

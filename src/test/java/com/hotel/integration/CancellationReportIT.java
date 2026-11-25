@@ -61,13 +61,15 @@ class CancellationReportIT extends ItFixtures {
 
         mockMvc.perform(get("/admin/reports/cancellations").with(as(persistUser(UserRole.ACCOUNTANT, null))))
                 .andExpect(status().isOk()).andExpect(content().string(containsString(flaky.getFullName())));
-        byte[] xlsx = mockMvc.perform(get("/admin/reports/cancellations/export").with(as(persistUser(UserRole.STAFF, null))))
+        byte[] xlsx = mockMvc.perform(get("/admin/reports/cancellations/export").with(as(persistUser(UserRole.ADMIN, null))))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsByteArray();
         try (var wb = new XSSFWorkbook(new ByteArrayInputStream(xlsx))) {
             assertThat(wb.getNumberOfSheets()).isEqualTo(3);
             assertThat(wb.getSheet("Khach huy nhieu lan").getLastRowNum()).isGreaterThanOrEqualTo(1);
         }
         mockMvc.perform(get("/admin/reports/cancellations").with(as(persistUser(UserRole.HOUSEKEEPER, null)))).andExpect(status().isForbidden());
+        // Le tan khong xem bao cao huy (tien mat do huy / hoan coc): chi quan tri + ke toan
+        mockMvc.perform(get("/admin/reports/cancellations").with(as(persistUser(UserRole.STAFF, null)))).andExpect(status().isForbidden());
     }
 
     @Test

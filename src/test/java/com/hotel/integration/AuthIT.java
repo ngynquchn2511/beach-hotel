@@ -112,12 +112,12 @@ class AuthIT {
     }
 
     @Test
-    void adminLogin_staffAccount_redirectsToDashboard() throws Exception {
+    void adminLogin_staffAccount_redirectsToToday() throws Exception {
         mockMvc.perform(post("/admin/login").with(csrf())
                         .param("username", "staff@hotel.com")
                         .param("password", "staff123"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/admin/dashboard"));
+                .andExpect(redirectedUrl("/admin/today"));
     }
 
     @Test

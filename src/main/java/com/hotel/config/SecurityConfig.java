@@ -154,11 +154,15 @@ public class SecurityConfig {
                         // Bao cao cuoi ngay: le tan / ke toan xem, gui email ngay chi ADMIN
                         .requestMatchers(HttpMethod.POST, "/admin/reports/daily/send").hasRole("ADMIN")
                         .requestMatchers("/admin/reports/daily").hasAnyRole("ADMIN", "STAFF", "ACCOUNTANT")
-                        .requestMatchers("/admin/reports/cancellations", "/admin/reports/cancellations/**").hasAnyRole("ADMIN", "STAFF", "ACCOUNTANT")
+                        // Bao cao huy (tien mat do huy / hoan coc) + du bao cong suat: quan tri + ke toan
+                        .requestMatchers("/admin/reports/cancellations", "/admin/reports/cancellations/**").hasAnyRole("ADMIN", "ACCOUNTANT")
+                        .requestMatchers("/admin/forecast", "/admin/forecast/**").hasAnyRole("ADMIN", "ACCOUNTANT")
+                        // Tong quan (bang dieu hanh, doanh thu theo khoang ngay, lai lo): chi quan tri.
+                        // Le tan xem viec ton + so do phong o trang Hom nay
+                        .requestMatchers("/admin/dashboard", "/admin/dashboard/**").hasRole("ADMIN")
                         // Bao cao ke toan: so quy thang, doi soat VNPay
                         .requestMatchers("/admin/accounting", "/admin/accounting/**").hasAnyRole("ADMIN", "ACCOUNTANT")
-                        .requestMatchers(HttpMethod.GET, "/admin/dashboard", "/admin/dashboard/export", "/admin/forecast",
-                                "/admin/shifts", "/admin/shifts/*", "/admin/gift-vouchers",
+                        .requestMatchers(HttpMethod.GET, "/admin/shifts", "/admin/shifts/*", "/admin/gift-vouchers",
                                 "/admin/bookings/*/invoice", "/admin/bookings/*/invoice.pdf").hasAnyRole("ADMIN", "STAFF", "ACCOUNTANT")
                         .requestMatchers(HttpMethod.GET, "/admin/deposits").hasAnyRole("ADMIN", "STAFF", "ACCOUNTANT")
                         .requestMatchers("/admin/**").hasAnyRole("ADMIN", "STAFF")
