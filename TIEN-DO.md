@@ -1,7 +1,7 @@
 # Tiến độ dự án Sóng Xanh Resort (beach-hotel)
 
 > File bàn giao giữa các phiên làm việc với Claude. Mở phiên mới, bảo Claude: **"đọc file TIEN-DO.md"**.
-> Cập nhật lần cuối: 26/11/2026 (tối: thưởng điểm khi viết đánh giá; làm lại trang Hôm nay của lễ tân; đổi avatar Sóng; bỏ tô màu nổi 1 ô).
+> Cập nhật lần cuối: 26/11/2026 (khuya: báo cáo Word cập nhật theo chức năng 23 - 26/11; trước đó: thưởng điểm khi viết đánh giá, làm lại trang Hôm nay, đổi avatar Sóng).
 
 ## 1. Dự án
 
@@ -36,6 +36,13 @@
    - Thử AI với khóa thật: đóng gói jar, chạy cổng 8084, dùng curl đăng nhập `quanly.vanthanh@example.com` / `Songxanh@2026` (lấy `_csrf` từ trang `/admin`), POST `/admin/accounting/insights/analyze?month=...` hoặc `/ask/stream`; lệnh mạng phải tắt sandbox.
 
 ## 3. Đã làm (theo thứ tự gần nhất trước)
+
+### 26/11/2026 (khuya) - Báo cáo Word khớp với dự án
+Chủ dự án: «làm lại file word cho đúng với dự án». Sửa `docs/BaoCao-DoAn.docx` (làm trên bản chủ dự án đã sửa tay 22/11, giữ nguyên mọi hình / sơ đồ):
+- **Sửa lỗi**: tiêu đề «CHƯƠNG 3» mất kiểu Heading 1 (do xóa dòng trống, đoạn ngắt trang bị gộp vào tiêu đề) nên mất khỏi mục lục → tách lại ngắt trang, trả kiểu Heading 1. Đổi chỗ QT10 / QT11 cho đúng thứ tự.
+- **Chỗ sai so với code**: Bảng 1.2 «SVG vẽ phía máy chủ, không cần JavaScript» → Chart.js 4; «45 bảng» → 58; mục 2.4.1 «chatbot không dùng AI bên ngoài» → Sóng chuyển câu chưa hiểu cho Claude; bảo mật: dữ liệu gửi AI của Sóng; ERD: 58 bảng, 5 sơ đồ trình bày 45 bảng cốt lõi; bookings 84 cột.
+- **Viết thêm chức năng 23 - 26/11**: Mở đầu, phạm vi, Bảng 1.3 (Sóng tìm phòng theo nhu cầu + AI, trang Khách nói gì, thả tim / bình luận / chia sẻ, thưởng điểm đánh giá, giao người kiểm phòng, lưới đổi phòng, quyền xem số liệu, tự chia việc buồng phòng, chuyên cần, thống kê Sóng + trần chi phí AI), QT06 thêm thưởng đánh giá, **QT16** (mỗi việc buồng phòng 1 người, 3 phút / tối đa 2 lần chuyển), **QT17** (giới hạn AI của Sóng), Bảng 1.5 / 1.6, Bảng 2.1 (luồng Sóng hỏi lại sau 30 giây, chống spam, thu hồi điểm), mô tả Hình 2.45 theo trang Hôm nay mới, Bảng 2.6 + `room_check_assignee_id`, Bảng 2.10 + `reward_points`, đoạn 6 bảng mới (chat_*, review_likes / comments / shares) và các cột mới; Bảng 3.1 (58 bảng, số dòng demo lấy từ DB dev 26/11: 147.463), Bảng 3.2 / cây thư mục (41.177 / 21.786 dòng, 79 / 87 / 55 / 77, 123 trang, 64 migration, 153 tệp test, **2.013 ca kiểm thử** theo surefire 26/11), 4.1 thêm đoạn đợt cuối, 4.2 / 4.3.
+- Word cập nhật mục lục, danh mục hình / bảng: **95 trang**. Chưa xuất PDF vào `docs/`.
 
 ### 26/11/2026 (tối) - Thưởng điểm đánh giá, trang Hôm nay gọn hơn, avatar con sóng
 - **Thưởng điểm khi viết đánh giá** (chủ dự án: «viết đánh giá được cộng điểm thưởng, có ảnh và video được cộng nhiều hơn»). `LoyaltyService.reviewPoints / rewardReview / revokeReview`: chỉ chấm sao **5 điểm**; nhận xét ≥ 20 ký tự **20 điểm**; mỗi ảnh **+10** (tối đa 3); có video **+30** → tối đa 80 điểm (= 80.000đ, 1 điểm = 1.000đ khi đặt lần sau). Cộng ngay khi gửi đánh giá (thông báo «Bạn được cộng N điểm thưởng»), trang đơn ghi «Bạn đã nhận N điểm», lịch sử điểm ở Tài khoản có loại mới «Thưởng đánh giá» / «Thu hồi thưởng đánh giá» (`PointTransaction.Type.REVIEW / REVOKE`). Chống lạm dụng: mỗi đơn đã trả phòng 1 đánh giá (sẵn có), tài khoản tạm khách vãng lai không được thưởng, **quản trị ẩn đánh giá thì thu hồi điểm, hiện lại thì cộng lại** (`ReviewService.toggleHidden`). Form đánh giá có khung «Viết đánh giá nhận điểm thưởng»: bảng mức điểm + ước tính điểm cập nhật ngay khi khách gõ / chọn ảnh, video. Trang quản trị đánh giá ghi «Khách được thưởng N điểm». Cột mới `reviews.reward_points`, thêm `REVIEW`, `REVOKE` vào ENUM `point_transactions.type` nếu Hibernate tạo ENUM (`sql/2026-11-26_thuong-diem-danh-gia.sql`, đã kiểm validate + áp DB dev). Test `ReviewRewardIT`.
